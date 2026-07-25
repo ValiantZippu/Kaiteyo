@@ -18,10 +18,10 @@ jobs:
 
       - name: Build
         env:
-          KEYSTORE: ${{ secrets.KEYSTORE }}
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
-          SIGN_KEY: ${{ secrets.SIGN_KEY }}
-          SIGN_PASS: ${{ secrets.SIGN_PASS }}
+          KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGN_KEY: ${{ secrets.KEY_ALIAS }}
+          SIGN_PASS: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           echo $KEYSTORE | base64 --decode > keystore.jks
@@ -41,6 +41,7 @@ jobs:
           name: linux
           path: desktopApp/linux/AppImage/Kanji_Dojo-x86_64.AppImage
           retention-days: 1
+
 
   build-desktop-windows:
     runs-on: windows-latest
@@ -64,6 +65,7 @@ jobs:
           name: windows
           path: desktopApp/build/compose/binaries/main/msi/*.msi
           retention-days: 1
+
 
   build-desktop-mac-intel:
     runs-on: macos-15-intel
@@ -119,6 +121,7 @@ jobs:
           name: mac-arm
           path: desktopApp/build/compose/binaries/main/dmg/*.dmg
           retention-days: 1
+
 
   verify-uploaded-builds:
     needs:
