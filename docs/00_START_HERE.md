@@ -47,6 +47,33 @@ docs/
 ├── 08_UI_GUIDELINES.md       Component specs, interaction rules
 ├── 09_ANIMATION_GUIDELINES.md Animation philosophy, presets, patterns
 ├── AI_CONTEXT.md             Written for AI assistants — read this first
+├── Commands.md               Searchable command library for development and releases
+│
+├── troubleshooting/           Build, setup, platform, Git, and toolchain issues
+│   ├── README.md              Troubleshooting index and issue template
+│   ├── BuildErrors.md         Recorded build failures and warnings
+│   ├── Gradle.md              Gradle configuration and dependency issues
+│   ├── Java.md                JDK and JAVA_HOME issues
+│   ├── Git.md                 Repository and workflow issues
+│   ├── VSCode.md              Editor and language-server issues
+│   ├── Android.md             Android SDK and APK issues
+│   ├── Desktop.md             Desktop runtime and packaging issues
+│   ├── iOS.md                 iOS host and Xcode issues
+│   ├── Windows.md             Windows shell and environment issues
+│   ├── Linux.md               Linux permissions and desktop issues
+│   ├── macOS.md               macOS/Xcode issues
+│   └── CommonProblems.md      Cross-platform recurring issues
+│
+├── setup/                     Fresh machine and first-build guides
+│   ├── FreshSetup.md
+│   ├── FirstBuild.md
+│   ├── RequiredSoftware.md
+│   └── UpdatingDependencies.md
+│
+├── maintenance/               Ongoing project maintenance records
+│   ├── DependencyUpdates.md
+│   ├── VersionHistory.md       Release and solved-issue history
+│   └── KnownLimitations.md     Statused limitations
 │
 ├── development/
 │   ├── DEVELOPMENT_SETUP.md  From zero to running
@@ -99,6 +126,7 @@ docs/
 4. Check `planning/TODO.md` for prioritized tasks
 5. Follow `development/STYLE_GUIDE.md` for code standards
 6. Read `02_DESIGN_LANGUAGE.md` and `08_UI_GUIDELINES.md` before making UI changes
+7. Read `troubleshooting/README.md` and record any solved issue immediately
 
 ## Current Status
 

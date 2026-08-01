@@ -26,3 +26,16 @@ pluginManagement {
 
 rootProject.name = "kaiteyo"
 include(":app", ":iosApp", ":desktopApp", ":core", ":mediaGenerator")
+
+val localProperties = File(rootDir, "local.properties")
+if (localProperties.exists()) {
+    localProperties.readLines().forEach { line ->
+        if (line.startsWith("sdk.dir=")) {
+            val sdkDir = line.removePrefix("sdk.dir=").trim().removeSurrounding("\"")
+            System.setProperty("sdk.dir", sdkDir)
+            System.setProperty("android.sdk.path", sdkDir)
+            System.setProperty("android.sdk.root", sdkDir)
+            System.setProperty("android.home", sdkDir)
+        }
+    }
+}

@@ -22,6 +22,10 @@ Kaiteyo/
 ├── keystore.txt           ← Keystore credentials
 │
 ├── docs/                  ← Project documentation (see below)
+│   ├── troubleshooting/   ← Searchable solved-issue knowledge base
+│   ├── setup/             ← Fresh machine and first-build guides
+│   ├── maintenance/       ← Dependency, version, and limitation records
+│   └── Commands.md        ← Development, build, release, and debugging commands
 ├── app/                   ← Android application module
 ├── core/                  ← Shared Kotlin Multiplatform module
 ├── desktopApp/            ← Desktop application module

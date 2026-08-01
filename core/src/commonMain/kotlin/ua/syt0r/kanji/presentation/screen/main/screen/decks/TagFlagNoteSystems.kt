@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ua.syt0r.kanji.presentation.screen.main.screen.decks
 
 import androidx.compose.animation.*

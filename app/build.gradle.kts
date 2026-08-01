@@ -19,11 +19,11 @@ android {
 
     namespace = "ua.syt0r.kanji"
 
-    compileSdk = 36
+    compileSdk = 35
     defaultConfig {
         applicationId = "ua.syt0r.kanji"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = AppVersion.versionCode
         versionName = AppVersion.versionName
     }

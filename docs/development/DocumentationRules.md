@@ -25,6 +25,9 @@ Documentation MUST be updated whenever:
 | Release made | `docs/planning/CHANGELOG.md`, `docs/planning/COMPLETED.md` |
 | Roadmap changed | `docs/04_ROADMAP.md` |
 | New document created | `docs/00_START_HERE.md` (update documentation map) |
+| Build/setup/toolchain issue solved | `docs/troubleshooting/` issue entry, `docs/maintenance/VersionHistory.md` |
+| Build/setup/toolchain issue remains | `docs/maintenance/KnownLimitations.md` with a status |
+| Dependency changed | `docs/setup/UpdatingDependencies.md`, `docs/maintenance/DependencyUpdates.md` |
 
 ## Documentation Quality Standards
 
@@ -83,3 +86,15 @@ After implementation, update:
 - Module responsibilities change
 
 The file structure document should always accurately reflect the current state of the repository.
+
+## Permanent Troubleshooting Workflow
+
+Documentation is part of the definition of done. When any developer fixes a bug, changes architecture, setup, dependencies, folders, Gradle, Java, Git workflow, project structure, build process, or release process:
+
+1. Add or update the issue in `docs/troubleshooting/` using Title, Symptoms, Cause, Diagnosis, Fix, Verification, Prevention, and Related Issues.
+2. Append the dated result to `docs/maintenance/VersionHistory.md`.
+3. Add or update a status in `docs/maintenance/KnownLimitations.md`.
+4. Update the relevant setup, dependency, architecture, or file-structure page.
+5. Run the affected verification command and record it in the issue.
+
+Every troubleshooting page links back to the issue index, setup guidance, dependency guidance, and Git workflow. Do not close a task until those links and records are current.
