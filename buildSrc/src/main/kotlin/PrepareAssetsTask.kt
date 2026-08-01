@@ -18,21 +18,19 @@ private fun Project.registerAppAssetTask(sourceSet: PrepareAssetsTask.SourceSet)
     val composeResourcesDir = File(project.rootDir, "core/src/${sourceSet.title}/composeResources")
     val assetsDir = File(composeResourcesDir, "files")
 
+    val sourceSetTitle = sourceSet.title.capitalized()
     val prepareTask = tasks.create(
-        "prepareKanjiDojoAssetsFor${sourceSet.title.capitalized()}",
-        PrepareAssetsTask::class.java,
-        {
-            this.sourceSet = sourceSet
-            this.assetsPath = assetsDir.path
-        }
+        "prepareKaiteyoAssetsFor$sourceSetTitle",
+        PrepareAssetsTask::class.java
     )
+    prepareTask.sourceSet = sourceSet
+    prepareTask.assetsPath = assetsDir.path
 
     prepareTask.dependsOn(cleanupTask)
 
-    val sourceSetTitle = "${sourceSet.title.capitalized()}"
     val dependentTasks = setOf(
         "copyNonXmlValueResourcesFor$sourceSetTitle",
-        "prepareComposeResourcesTaskFor${sourceSetTitle}"
+        "prepareComposeResourcesTaskFor$sourceSetTitle"
     )
 
     dependentTasks
@@ -70,7 +68,7 @@ open class PrepareAssetsTask : DefaultTask() {
 
     @TaskAction
     fun run() {
-        println("Preparing Kanji Dojo Assets for $sourceSet at $assetsPath...")
+        println("Preparing Kaiteyo Assets for $sourceSet at $assetsPath...")
         handleAssets(sourceSet.assetLocation)
     }
 
@@ -102,7 +100,21 @@ open class PrepareAssetsTask : DefaultTask() {
     }
 
     private fun downloadFile(file: File, url: String) {
-        ant.invokeMethod("get", mapOf("src" to url, "dest" to file))
+        val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+        connection.connectTimeout = 15000
+        connection.readTimeout = 60000
+        connection.instanceFollowRedirects = true
+        connection.connect()
+        val responseCode = connection.responseCode
+        if (responseCode !in 200..299) {
+            throw RuntimeException("HTTP $responseCode: Failed to download $url")
+        }
+        connection.inputStream.use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        println("Downloaded $url to ${file.absolutePath}")
     }
 
 }

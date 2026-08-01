@@ -9,6 +9,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -30,10 +31,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +62,8 @@ import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Material3BottomSheetScaffold
 import ua.syt0r.kanji.presentation.common.ui.Orientation
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSelector
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSettings
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWritingProgress
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswerButtonsContainer
@@ -78,6 +83,8 @@ fun LetterPracticeWritingUI(
 ) {
 
     val reviewState = rememberUpdatedState(reviewState)
+
+    var brushSettings by remember { mutableStateOf(BrushSettings.default) }
 
     val infoSectionState = reviewState.asInfoSectionState(layoutConfiguration)
     val wordsBottomSheetState = reviewState.asWordsBottomSheetState()
@@ -151,8 +158,20 @@ fun LetterPracticeWritingUI(
                 modifier = Modifier.fillMaxSize(),
             )
 
+            // Brush selector toolbar above the drawing input
+            BrushSelector(
+                brushSettings = brushSettings,
+                onBrushSettingsChange = { brushSettings = it },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .trackItemPosition { infoSectionBottomPadding.value = it.heightFromScreenBottom }
+                    .sizeIn(maxWidth = 400.dp)
+                    .padding(horizontal = 20.dp)
+            )
+
             LetterPracticeWritingInputSection(
                 state = reviewState,
+                brushSettings = brushSettings,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .trackItemPosition {
@@ -197,16 +216,27 @@ fun LetterPracticeWritingUI(
         }
 
         val inputSection: @Composable RowScope.() -> Unit = {
-            LetterPracticeWritingInputSection(
-                state = reviewState,
+            Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)
                     .wrapContentSize()
-                    .sizeIn(maxWidth = 400.dp)
-                    .aspectRatio(1f)
-                    .padding(20.dp)
-            )
+            ) {
+                BrushSelector(
+                    brushSettings = brushSettings,
+                    onBrushSettingsChange = { brushSettings = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                LetterPracticeWritingInputSection(
+                    state = reviewState,
+                    brushSettings = brushSettings,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sizeIn(maxWidth = 400.dp)
+                        .aspectRatio(1f)
+                        .padding(20.dp)
+                )
+            }
         }
 
         val (firstSection, secondSection) = when (layoutConfiguration.leftHandedMode) {

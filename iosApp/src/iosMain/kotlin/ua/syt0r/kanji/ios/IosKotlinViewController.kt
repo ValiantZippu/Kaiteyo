@@ -13,14 +13,14 @@ import platform.UIKit.UIUserInterfaceStyle
 import platform.UIKit.UIViewController
 import ua.syt0r.kanji.core.theme_manager.ThemeManager
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme
-import ua.syt0r.kanji.presentation.KanjiDojoApp
+import ua.syt0r.kanji.presentation.KaiteyoApp
 
 @OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3WindowSizeClassApi::class)
 fun MainViewController(): UIViewController = ComposeUIViewController {
 
     UpdateTheme()
 
-    KanjiDojoApp(
+    KaiteyoApp(
         windowSizeClass = calculateWindowSizeClass()
     )
 

@@ -13,7 +13,7 @@
             android:name="ua.syt0r.kanji.presentation.screen.main.GooglePlayMainActivity"
             android:exported="true"
             android:launchMode="singleInstance"
-            android:theme="@style/KanjiDojoBaseTheme.AppTheme">
+            android:theme="@style/KaiteyoBaseTheme.AppTheme">
 
             <intent-filter>
 
@@ -28,7 +28,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="kanji-dojo" />
+                <data android:scheme="kaiteyo" />
             </intent-filter>
 
         </activity>

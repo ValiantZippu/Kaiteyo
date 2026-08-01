@@ -42,7 +42,8 @@ import kotlin.math.max
 @Composable
 fun CharacterWriter(
     state: CharacterWriterState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
 
     Box(modifier) {
@@ -53,7 +54,8 @@ fun CharacterWriter(
                 SingleStrokeInputContent(
                     strokes = state.strokes,
                     inputState = writerContent,
-                    onStrokeDrawn = { state.submit(it) }
+                    onStrokeDrawn = { state.submit(it) },
+                    brushSettings = brushSettings
                 )
 
             }
@@ -61,6 +63,7 @@ fun CharacterWriter(
             is CharacterWriterContent.MultipleStrokeInput -> {
                 MultipleStrokeInputContent(
                     state = rememberUpdatedState(writerContent),
+                    brushSettings = brushSettings
                 )
             }
 
@@ -75,7 +78,8 @@ fun CharacterWriter(
 
 @Composable
 private fun BoxScope.MultipleStrokeInputContent(
-    state: State<CharacterWriterContent.MultipleStrokeInput>
+    state: State<CharacterWriterContent.MultipleStrokeInput>,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
 
     when (val currentState = state.value) {
@@ -84,12 +88,14 @@ private fun BoxScope.MultipleStrokeInputContent(
 
             Kanji(
                 strokes = strokes,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                brushSettings = brushSettings
             )
 
             StrokeInput(
                 onUserPathDrawn = { path -> strokes = strokes.plus(path) },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                brushSettings = brushSettings
             )
         }
 
@@ -141,7 +147,8 @@ private fun BoxScope.MultipleStrokeInputContent(
 private fun SingleStrokeInputContent(
     strokes: List<Path>,
     inputState: CharacterWriterContent.SingleStrokeInput,
-    onStrokeDrawn: (CharacterInputData.SingleStroke) -> Unit
+    onStrokeDrawn: (CharacterInputData.SingleStroke) -> Unit,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
 
     val isAnimatingCorrectStroke = remember { mutableStateOf(false) }
@@ -224,7 +231,8 @@ private fun SingleStrokeInputContent(
 
             },
             state = strokeInputState,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            brushSettings = brushSettings
         )
     }
 
@@ -405,7 +413,8 @@ private fun AnimatedCharacter(
                 drawKanjiStroke(
                     path = it,
                     color = strokeColor,
-                    width = StrokeWidth
+                    width = StrokeWidth,
+                    brushSettings = BrushSettings.default
                 )
             }
 
@@ -414,7 +423,8 @@ private fun AnimatedCharacter(
                     path = it,
                     color = strokeColor,
                     width = StrokeWidth,
-                    drawProgress = lastStrokeAnimationProgress.value
+                    drawProgress = lastStrokeAnimationProgress.value,
+                    brushSettings = BrushSettings.default
                 )
             }
 

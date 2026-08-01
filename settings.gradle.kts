@@ -16,7 +16,6 @@ pluginManagement {
         id("com.android.application") version agpVersion
         id("com.android.library") version agpVersion
         id("org.jetbrains.compose") version "1.8.2"
-        id("org.jetbrains.compose.hot-reload") version "1.0.0-alpha09"
         id("com.google.gms.google-services") version "4.4.2"
         id("com.google.firebase.crashlytics") version "3.0.2"
         id("com.codingfeline.buildkonfig") version "0.13.3"
@@ -25,5 +24,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "kanji-dojo"
+rootProject.name = "kaiteyo"
 include(":app", ":iosApp", ":desktopApp", ":core", ":mediaGenerator")

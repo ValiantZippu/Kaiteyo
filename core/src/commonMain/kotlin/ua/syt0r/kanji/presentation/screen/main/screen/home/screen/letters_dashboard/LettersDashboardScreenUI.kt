@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.letters_dashboard
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -51,7 +52,7 @@ fun LettersDashboardScreenUI(
 
         AnimatedContent(
             targetState = state.value,
-            transitionSpec = { fadeIn() togetherWith fadeOut() using snapSizeTransform() },
+            transitionSpec = { ContentTransform(targetContentEnter = fadeIn(), initialContentExit = fadeOut(), sizeTransform = snapSizeTransform()) },
         ) { screenState ->
             when (screenState) {
                 ScreenState.Loading -> {

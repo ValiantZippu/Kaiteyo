@@ -1,120 +1,140 @@
 <div align="center">
 
-  <img src="preview_assets//inkscape_icon.svg" height=120 style="border-radius: 20px;">
+  <img src="preview_assets/kaiteyo_logo.svg" height=120 style="border-radius: 20px;">
 
-  # Kanji Dojo
-  ![Version Badge](https://img.shields.io/badge/version-v2.2.1-blue?style=for-the-badge&labelColor=ffffff&color=ff5555)
+  # Kaiteyo (書いてよ)
+  ![Version Badge](https://img.shields.io/badge/version-v1.1.0-blue?style=for-the-badge&labelColor=1A1A1A&color=C2FC8B)
+  ![License](https://img.shields.io/badge/license-GPLv3-green?style=for-the-badge&labelColor=1A1A1A&color=FEAB57)
+
+  **A premium, cross-platform Japanese language learning application**
+
+  [![Desktop](https://img.shields.io/badge/Desktop-Windows%20%7C%20macOS%20%7C%20Linux-1A1A1A?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/your-org/kaiteyo/releases)
+  [![Android](https://img.shields.io/badge/Android-1A1A1A?style=for-the-badge&logo=android&logoColor=white)](https://github.com/your-org/kaiteyo/releases)
 
 </div>
 
-## Table of Contents
-- [About this app](#about-this-app)
-- [Screenshots](#screenshots)
-- [Downloads and Installation](#downloads)
-  * [Android](#android)
-  * [Desktop (Windows, Linux, MacOS)](#desktop)
-- [Version Comparison](#version-comparison)
-- [Contributions](#contributions)
-- [Technical Details](#technical-details)
-- [Credits](#credits)
+---
 
-## About this app
-Practice writing Japanese letters, learn their meanings and related words 
+## About Kaiteyo
+
+Kaiteyo (書いてよ) — "write it!" in Japanese — is a premium, cross-platform application for learning Japanese. Originally based on Kanji Dojo by syt0r, Kaiteyo is now independently developed with its own design language, roadmap, branding, and feature set.
 
 ### Features
-- Memorize how to write and read kana and kanji
-- Follow JLPT levels or school grades
-- Create your own decks to study, more than 6000 characters in total are available
-- Use SRS reviewing system to avoid forgetting learned information
-- Search letters and words with built-in dictionary
-- Study words with flashcards
-- Available modes to write words and pick correct letter readings
-- Works offline
 
-Repository with dictionary data and parsers here: [Kanji-Dojo-Data](https://github.com/syt0r/Kanji-Dojo-Data)
+- **Study kanji and kana** — Follow JLPT levels or school grades
+- **Spaced repetition** — Scientifically sound SRS review system
+- **Custom decks** — Create your own study decks from 6000+ characters
+- **Built-in dictionary** — Search letters and words with definitions
+- **Flashcards** — Study words with interactive flashcards
+- **Writing practice** — Stroke order diagrams and drawing canvas
+- **Offline-first** — Works completely offline
+- **Cross-platform** — Desktop (Windows, macOS, Linux), Android, iOS
+- **Premium desktop experience** — Undecorated window, floating controls, custom theming
+- **Appearance Studio** — Full theme customization with live preview
 
 ## Screenshots
+
 <p float="left">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400"/>
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="400"/>
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400"/>
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="400"/>
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" height="400"/>
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" height="400"/>
 </p>
 
 ## Downloads
-### Android
-[![Play Store](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ua.syt0r.kanji)
-[![F-Droid](https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white)](https://f-droid.org/en/packages/ua.syt0r.kanji.fdroid/)
-
-1. Available in [F-Droid](https://f-droid.org/en/packages/ua.syt0r.kanji.fdroid/), the same version is published in [GitHub Releases](https://github.com/syt0r/Kanji-Dojo/releases/latest)
-2. [Google Play](https://play.google.com/store/apps/details?id=ua.syt0r.kanji)
-
-### iOS
-[![App Store](https://img.shields.io/badge/App_Store-blue?style=for-the-badge&logo=appstore&logoColor=blue&color=white)](https://apps.apple.com/ua/app/kanji-dojo/id6745169386)
 
 ### Desktop
 
-#### Windows
-- Download `.msi` installer from [Github Releases](https://github.com/syt0r/Kanji-Dojo/releases)
-#### Mac
-1. Download `.dmg` installer from [Github Releases](https://github.com/syt0r/Kanji-Dojo/releases) for your platform
-   - `Kanji Dojo-arm-*.dmg` for Apple Silicon
-   - `Kanji Dojo-intel-*.dmg` for devices with older Intel CPU
-2. Install the app
-   - Go to `Privacy & Security` screen in system settings and click on `Open Anyway` button under security section for `Kanji Dojo.app`
-#### Linux
-- Download `.AppImage` executable from [Github Releases](https://github.com/syt0r/Kanji-Dojo/releases)
+| Platform | Download |
+|----------|----------|
+| Windows | [Download MSI](https://github.com/your-org/kaiteyo/releases/latest) |
+| macOS | [Download DMG](https://github.com/your-org/kaiteyo/releases/latest) |
+| Linux | [Download Deb/AppImage](https://github.com/your-org/kaiteyo/releases/latest) |
 
-## Version comparison
-| Google Play                                                                         | F-Droid | Desktop |
-|-------------------------------------------------------------------------------------|---------|---------|
-| Firebase Analytics </br>Play services for in app review </br> Billing for donations | -       | -       |
+### Android
 
-## Contributions
-- Pull-Requests are welcome!
-- Before making PR create and discuss your issue
-- Use proper code formatting
+[![Play Store](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ua.syt0r.kanji)
+[![F-Droid](https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white)](https://f-droid.org/en/packages/ua.syt0r.kanji.fdroid/)
+[![GitHub Releases](https://img.shields.io/badge/GitHub_Releases-1A1A1A?style=for-the-badge&logo=github&logoColor=white)](https://github.com/your-org/kaiteyo/releases/latest)
 
-### Technical details
-Used Libraries: `Compose Multiplatform`, `Kotlin Coroutines`, `Koin`, `SqlDelight`
+### iOS
 
-### Credits
-* **KanjiVG**</br>
-  Provides writing strokes, radicals information </br>
-  License: Creative Commons Attribution-Share Alike 3.0</br>
-  Link: https://kanjivg.tagaini.net/
-* **Kanji Dic**</br>
-  Provides characters info, such as meanings, readings and classifications </br>
-  License: Creative Commons Attribution-Share Alike 3.0</br>
-  Link: http://www.edrdg.org/wiki/index.php/KANJIDIC_Project
-* **Tanos by Jonathan Waller**</br>
-  Provides JLPT classification for kanji </br>
-  License: Creative Commons BY</br>
-  Link: http://www.tanos.co.uk/jlpt/
-* **JMDict**</br>
-  Japanese-Multilingual dictionary, provides expressions </br>
-  License: Creative Commons Attribution-Share Alike 4.0</br>
-  Link: https://www.edrdg.org/jmdict/j_jmdict.html
-* **JmdictFurigana**</br>
-  Open-source furigana resource to complement the EDICT/Jmdict and ENAMDICT/Jmnedict dictionary files </br>
-  License: Creative Commons Attribution-Share Alike 4.0</br>
-  Link: https://github.com/Doublevil/JmdictFurigana
-* **Frequency list by Leeds university**</br>
-  Words ranking by frequency of usage in internet </br>
-  License: Creative Commons BY</br>
-  Link: http://corpus.leeds.ac.uk/list.html
-* **yomichan-jlpt-vocab**</br>
-  This meta dictionary adds JLPT-level tags to words in Yomichan. Provides associations between JLPT words from Tanos and JMDict</br>
-  License: Creative Commons Attribution-Share Alike 4.0</br>
-  Link: https://github.com/stephenmk/yomichan-jlpt-vocab</br>
+[![App Store](https://img.shields.io/badge/App_Store-blue?style=for-the-badge&logo=appstore&logoColor=blue&color=white)](https://apps.apple.com/ua/app/kanji-dojo/id6745169386)
 
-### License
-> (c) 2022-2023 Yaroslav Shuliak
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/kaiteyo.git
+cd kaiteyo
+
+# Run the desktop application
+./gradlew :desktopApp:run
+
+# Build for distribution
+./gradlew :desktopApp:packageMsi    # Windows
+./gradlew :desktopApp:packageDmg    # macOS
+./gradlew :desktopApp:packageDeb    # Linux
+```
+
+## Documentation
+
+The project includes comprehensive documentation in the `/docs` directory:
+
+| Category | Location |
+|----------|----------|
+| 📖 Start Here | `docs/00_START_HERE.md` |
+| 🤖 AI Context | `docs/AI_CONTEXT.md` |
+| 🎨 Design Language | `docs/02_DESIGN_LANGUAGE.md` |
+| 🧠 Features | `docs/features/` |
+| 🚀 Roadmap | `docs/planning/` |
+| 🐞 Issues | `docs/planning/CURRENT_ISSUES.md` |
+| 📚 Guides | `docs/guides/` |
+| 🔧 Development | `docs/development/` |
+
+## Technical Stack
+
+- **Language**: Kotlin Multiplatform
+- **UI**: Compose Multiplatform
+- **DI**: Koin
+- **Database**: SQLDelight
+- **Networking**: Ktor
+- **Preferences**: DataStore
+- **Build**: Gradle with version catalog
+
+## Contributing
+
+Contributions are welcome! Please read:
+
+1. `docs/08_CONTRIBUTING.md` — Contribution guidelines
+2. `docs/development/CONTRIBUTING.md` — Detailed contributing guide
+3. `docs/development/DEVELOPMENT_SETUP.md` — Development environment setup
+4. `docs/12_CODING_STANDARDS.md` — Coding standards
+
+## License
+
+> (c) 2022-2023 Yaroslav Shuliak (original Kanji Dojo)
 > 
+> Kaiteyo is a fork of Kanji Dojo. It is independently developed with its own design language, roadmap, branding, and feature set.
+>
 > This is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 > 
 > This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 > 
 > You should have received a copy of the GNU General Public License along with this app. If not, see https://www.gnu.org/licenses/.
+
+## Credits
+
+Originally based on [Kanji Dojo](https://github.com/syt0r/Kanji-Dojo) by syt0r. Kaiteyo is now independently developed.
+
+### Data Sources
+
+- **KanjiVG** — Writing strokes, radicals information (CC BY-SA 3.0)
+- **Kanji Dic** — Character info, meanings, readings (CC BY-SA 3.0)
+- **Tanos by Jonathan Waller** — JLPT classification (CC BY)
+- **JMDict** — Japanese-Multilingual dictionary (CC BY-SA 4.0)
+- **JmdictFurigana** — Furigana resource (CC BY-SA 4.0)
+- **Leeds University Frequency List** — Word frequency ranking (CC BY)
+- **yomichan-jlpt-vocab** — JLPT vocabulary tags (CC BY-SA 4.0)

@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -54,7 +55,7 @@ fun VocabDashboardScreenUI(
 
         AnimatedContent(
             targetState = screenState.value,
-            transitionSpec = { fadeIn() togetherWith fadeOut() using snapSizeTransform() },
+            transitionSpec = { ContentTransform(targetContentEnter = fadeIn(), initialContentExit = fadeOut(), sizeTransform = snapSizeTransform()) },
             modifier = Modifier.fillMaxSize()
         ) { screenState ->
 

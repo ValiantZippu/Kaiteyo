@@ -1,0 +1,85 @@
+# Kaiteyo — Documentation Rules
+
+## Why Documentation Must Stay Current
+
+Outdated documentation is worse than no documentation. It actively misleads developers. These rules ensure documentation evolves with the project.
+
+## When Documentation Must Be Updated
+
+Documentation MUST be updated whenever:
+
+| Change | Documentation to Update |
+|--------|------------------------|
+| New folder created | `docs/Reference/FileStructure.md` |
+| New module added | `docs/Reference/FileStructure.md`, `docs/06_ARCHITECTURE.md` |
+| New feature added | `docs/05_FEATURES.md`, relevant feature spec in `docs/features/` |
+| Feature removed | `docs/05_FEATURES.md`, `docs/planning/CHANGELOG.md` |
+| Feature renamed | All references to the feature name |
+| New dependency added | `docs/06_ARCHITECTURE.md`, `docs/Reference/FileStructure.md` |
+| Architecture changes | `docs/06_ARCHITECTURE.md`, `docs/Reference/FileStructure.md` |
+| API changes | `docs/api/` relevant files |
+| Theme system changes | `docs/07_THEME_SYSTEM.md` |
+| UI component changes | `docs/08_UI_GUIDELINES.md` |
+| Animation changes | `docs/09_ANIMATION_GUIDELINES.md` |
+| Bug fixed | `docs/planning/CURRENT_ISSUES.md` (mark as fixed) |
+| Release made | `docs/planning/CHANGELOG.md`, `docs/planning/COMPLETED.md` |
+| Roadmap changed | `docs/04_ROADMAP.md` |
+| New document created | `docs/00_START_HERE.md` (update documentation map) |
+
+## Documentation Quality Standards
+
+1. **Every document must have a clear purpose** — The first paragraph should explain what the document covers and who should read it.
+
+2. **Every document must be findable** — The documentation map in `docs/00_START_HERE.md` must list all documents.
+
+3. **Every folder must have a README.md** — Explaining the folder's purpose, contents, and how to use it.
+
+4. **No dead links** — All internal links must resolve. Broken links are bugs.
+
+5. **No placeholder content** — "TODO" or "Coming soon" in documentation is not acceptable. Either write the content or don't include the document.
+
+6. **Code examples must compile** — Any code snippet in documentation should be valid Kotlin/Compose code.
+
+7. **Screenshots must be current** — If a screenshot shows UI, it must match the current implementation.
+
+## Documentation Review Checklist
+
+Before merging any PR that changes functionality:
+
+- [ ] Does this change affect any existing documentation?
+- [ ] Have I updated all affected documentation?
+- [ ] Have I checked for broken links?
+- [ ] Have I updated the changelog?
+- [ ] Have I updated the feature status?
+- [ ] Have I updated the issue tracker if this fixes a known issue?
+- [ ] Have I updated the roadmap if this changes priorities?
+
+## AI Documentation Workflow
+
+When using AI assistants:
+
+1. **Before making changes**: The AI should read relevant documentation first
+2. **After making changes**: The AI should update all affected documentation
+3. **Verification**: The AI should check that documentation is consistent with code
+
+Prompt template for AI:
+```
+Read docs/AI_CONTEXT.md first.
+Then read docs/planning/CURRENT_ISSUES.md.
+Implement the fix for [issue].
+After implementation, update:
+- docs/planning/CURRENT_ISSUES.md (mark issue as fixed)
+- docs/planning/CHANGELOG.md (add entry)
+- Any other affected documentation
+```
+
+## File Structure Documentation
+
+`docs/Reference/FileStructure.md` is the map of the project. It must be updated whenever:
+
+- A new directory is created at the root level
+- A new module is added
+- A key file is added or removed
+- Module responsibilities change
+
+The file structure document should always accurately reflect the current state of the repository.

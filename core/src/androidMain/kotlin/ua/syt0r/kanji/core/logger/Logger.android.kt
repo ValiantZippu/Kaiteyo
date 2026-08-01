@@ -2,7 +2,7 @@ package ua.syt0r.kanji.core.logger
 
 import android.util.Log
 
-private const val LogTag = "KanjiDojo"
+private const val LogTag = "Kaiteyo"
 
 actual fun platformLogMessage(message: String) {
     Log.d(

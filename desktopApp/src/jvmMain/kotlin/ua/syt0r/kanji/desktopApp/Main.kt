@@ -2,8 +2,10 @@ package ua.syt0r.kanji.desktopApp
 
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -12,7 +14,7 @@ import org.koin.core.context.loadKoinModules
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import ua.syt0r.kanji.di.appModules
-import ua.syt0r.kanji.presentation.KanjiDojoApp
+import ua.syt0r.kanji.presentation.KaiteyoApp
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.screen.main.screen.credits.GetCreditLibrariesUseCase
 
@@ -27,20 +29,24 @@ fun main(args: Array<String>) = application {
     startKoin { loadKoinModules(koinModuleList) }
 
     val windowState = rememberWindowState(
-        size = DpSize(1000.dp, 600.dp)
+        size = DpSize(1200.dp, 800.dp)
     )
 
     Window(
         onCloseRequest = { exitApplication() },
         state = windowState,
         title = resolveString { appName },
-        icon = painterResource(Res.drawable.windowIcon)
+        icon = painterResource(Res.drawable.windowIcon),
+        undecorated = true
     ) {
-
-        KanjiDojoApp(
-            windowSizeClass = calculateWindowSizeClass()
+        KaiteyoWindow(
+            windowState = windowState,
+            onClose = { exitApplication() },
+            content = {
+                KaiteyoApp(
+                    windowSizeClass = calculateWindowSizeClass()
+                )
+            }
         )
-
     }
-
 }

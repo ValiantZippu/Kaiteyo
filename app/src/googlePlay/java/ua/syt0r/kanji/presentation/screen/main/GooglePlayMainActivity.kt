@@ -1,5 +1,5 @@
 package ua.syt0r.kanji.presentation.screen.main
 
-import ua.syt0r.kanji.presentation.KanjiDojoActivity
+import ua.syt0r.kanji.presentation.KaiteyoActivity
 
-class GooglePlayMainActivity : KanjiDojoActivity()
+class GooglePlayMainActivity : KaiteyoActivity()

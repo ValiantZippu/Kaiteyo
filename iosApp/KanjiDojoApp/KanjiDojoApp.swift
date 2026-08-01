@@ -5,7 +5,7 @@ import AVFoundation
 import Firebase
 
 @main
-struct KanjiDojoApp: App {
+struct KaiteyoApp: App {
     
     let kotlinApplication: IosKotlinApplication
     

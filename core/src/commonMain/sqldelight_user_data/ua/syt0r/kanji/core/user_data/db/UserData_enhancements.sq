@@ -1,0 +1,330 @@
+-- ============================================
+-- KAITEYO ENHANCEMENTS: Tags, Flags, Notes,
+-- Card Status, Keyboard Shortcuts, History, etc.
+-- New tables and queries (ALTER TABLE goes in
+-- migration code, not in .sq files)
+-- ============================================
+
+------- TAGS SYSTEM -------
+
+CREATE TABLE IF NOT EXISTS tag (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT NOT NULL DEFAULT '#808080',
+    parent_id INTEGER,
+    created_at INTEGER NOT NULL,
+    modified_at INTEGER NOT NULL,
+    FOREIGN KEY(parent_id) REFERENCES tag(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS tag_parent_idx ON tag(parent_id);
+CREATE INDEX IF NOT EXISTS tag_name_idx ON tag(name);
+
+CREATE TABLE IF NOT EXISTS card_tag (
+    card_key TEXT NOT NULL,
+    practice_type INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    PRIMARY KEY(card_key, practice_type, tag_id),
+    FOREIGN KEY(tag_id) REFERENCES tag(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS card_tag_tag_idx ON card_tag(tag_id);
+CREATE INDEX IF NOT EXISTS card_tag_card_idx ON card_tag(card_key, practice_type);
+
+insertTag:
+INSERT INTO tag(name, color, parent_id, created_at, modified_at)
+VALUES (?, ?, ?, ?, ?);
+
+updateTag:
+UPDATE tag SET name = ?, color = ?, parent_id = ?, modified_at = ? WHERE id = ?;
+
+deleteTag:
+DELETE FROM tag WHERE id = ?;
+
+mergeTag:
+UPDATE card_tag SET tag_id = ? WHERE tag_id = ?;
+
+deleteUnusedTags:
+DELETE FROM tag WHERE id NOT IN (SELECT DISTINCT tag_id FROM card_tag);
+
+getAllTags:
+SELECT id, name, color, parent_id, created_at, modified_at FROM tag ORDER BY name;
+
+getTagById:
+SELECT id, name, color, parent_id, created_at, modified_at FROM tag WHERE id = ?;
+
+getTagsByCard:
+SELECT t.id, t.name, t.color, t.parent_id, t.created_at, t.modified_at
+FROM tag t
+INNER JOIN card_tag ct ON t.id = ct.tag_id
+WHERE ct.card_key = ? AND ct.practice_type = ?
+ORDER BY t.name;
+
+addTagToCard:
+INSERT OR IGNORE INTO card_tag(card_key, practice_type, tag_id) VALUES (?, ?, ?);
+
+removeTagFromCard:
+DELETE FROM card_tag WHERE card_key = ? AND practice_type = ? AND tag_id = ?;
+
+getCardsByTag:
+SELECT ct.card_key, ct.practice_type FROM card_tag ct WHERE ct.tag_id = ?;
+
+getTagUsageCount:
+SELECT COUNT(*) FROM card_tag WHERE tag_id = ?;
+
+searchTags:
+SELECT id, name, color, parent_id, created_at, modified_at
+FROM tag
+WHERE name LIKE ? COLLATE NOCASE
+ORDER BY name
+LIMIT ?;
+
+getChildTags:
+SELECT id, name, color, parent_id, created_at, modified_at
+FROM tag
+WHERE parent_id = ?
+ORDER BY name;
+
+------- FLAGS SYSTEM -------
+
+CREATE TABLE IF NOT EXISTS card_flag (
+    card_key TEXT NOT NULL,
+    practice_type INTEGER NOT NULL,
+    flag_type INTEGER NOT NULL,
+    set_at INTEGER NOT NULL,
+    PRIMARY KEY(card_key, practice_type)
+);
+
+setCardFlag:
+INSERT OR REPLACE INTO card_flag(card_key, practice_type, flag_type, set_at)
+VALUES (?, ?, ?, ?);
+
+removeCardFlag:
+DELETE FROM card_flag WHERE card_key = ? AND practice_type = ?;
+
+getCardFlag:
+SELECT flag_type, set_at FROM card_flag WHERE card_key = ? AND practice_type = ?;
+
+getCardsByFlag:
+SELECT card_key, practice_type FROM card_flag WHERE flag_type = ?;
+
+getFlaggedCardCount:
+SELECT COUNT(*) FROM card_flag WHERE flag_type = ?;
+
+bulkSetFlag:
+INSERT OR REPLACE INTO card_flag(card_key, practice_type, flag_type, set_at)
+VALUES (?, ?, ?, ?);
+
+bulkRemoveFlag:
+DELETE FROM card_flag WHERE card_key = ? AND practice_type = ?;
+
+------- NOTES SYSTEM -------
+
+CREATE TABLE IF NOT EXISTS card_note (
+    card_key TEXT NOT NULL,
+    practice_type INTEGER NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    content_format INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    modified_at INTEGER NOT NULL,
+    PRIMARY KEY(card_key, practice_type)
+);
+
+setCardNote:
+INSERT OR REPLACE INTO card_note(card_key, practice_type, content, content_format, created_at, modified_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getCardNote:
+SELECT content, content_format, created_at, modified_at FROM card_note WHERE card_key = ? AND practice_type = ?;
+
+deleteCardNote:
+DELETE FROM card_note WHERE card_key = ? AND practice_type = ?;
+
+------- STUDY HISTORY / AUDIT LOG -------
+
+CREATE TABLE IF NOT EXISTS study_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action_type INTEGER NOT NULL,
+    card_key TEXT,
+    practice_type INTEGER,
+    details TEXT,
+    timestamp INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS study_history_timestamp_idx ON study_history(timestamp);
+CREATE INDEX IF NOT EXISTS study_history_action_idx ON study_history(action_type);
+CREATE INDEX IF NOT EXISTS study_history_card_idx ON study_history(card_key, practice_type);
+
+insertStudyHistory:
+INSERT INTO study_history(action_type, card_key, practice_type, details, timestamp)
+VALUES (?, ?, ?, ?, ?);
+
+getRecentStudyHistory:
+SELECT id, action_type, card_key, practice_type, details, timestamp
+FROM study_history
+ORDER BY timestamp DESC
+LIMIT ?;
+
+getStudyHistoryByAction:
+SELECT id, action_type, card_key, practice_type, details, timestamp
+FROM study_history
+WHERE action_type = ?
+ORDER BY timestamp DESC
+LIMIT ?;
+
+getStudyHistoryForCard:
+SELECT id, action_type, card_key, practice_type, details, timestamp
+FROM study_history
+WHERE card_key = ? AND practice_type = ?
+ORDER BY timestamp DESC
+LIMIT ?;
+
+clearOldStudyHistory:
+DELETE FROM study_history WHERE timestamp < ?;
+
+------- KEYBOARD SHORTCUTS -------
+
+CREATE TABLE IF NOT EXISTS keyboard_shortcut (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action_id TEXT NOT NULL UNIQUE,
+    primary_key TEXT NOT NULL,
+    modifier_flags INTEGER NOT NULL DEFAULT 0,
+    is_enabled INTEGER NOT NULL DEFAULT 1,
+    profile_name TEXT NOT NULL DEFAULT 'default'
+);
+
+insertOrUpdateShortcut:
+INSERT OR REPLACE INTO keyboard_shortcut(action_id, primary_key, modifier_flags, is_enabled, profile_name)
+VALUES (?, ?, ?, ?, ?);
+
+getShortcut:
+SELECT id, action_id, primary_key, modifier_flags, is_enabled, profile_name
+FROM keyboard_shortcut
+WHERE action_id = ? AND profile_name = ?;
+
+getAllShortcuts:
+SELECT id, action_id, primary_key, modifier_flags, is_enabled, profile_name
+FROM keyboard_shortcut
+ORDER BY action_id;
+
+getShortcutsByProfile:
+SELECT id, action_id, primary_key, modifier_flags, is_enabled, profile_name
+FROM keyboard_shortcut
+WHERE profile_name = ?
+ORDER BY action_id;
+
+deleteShortcut:
+DELETE FROM keyboard_shortcut WHERE action_id = ? AND profile_name = ?;
+
+resetShortcutsToProfile:
+DELETE FROM keyboard_shortcut WHERE profile_name = ?;
+
+checkShortcutConflict:
+SELECT id, action_id, primary_key, modifier_flags, profile_name
+FROM keyboard_shortcut
+WHERE primary_key = ? AND modifier_flags = ? AND action_id != ? AND profile_name = ?;
+
+------- BACKUP METADATA -------
+
+CREATE TABLE IF NOT EXISTS backup_metadata (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    checksum TEXT NOT NULL,
+    is_automatic INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    notes TEXT
+);
+
+insertBackupMetadata:
+INSERT INTO backup_metadata(filename, file_size, checksum, is_automatic, created_at, notes)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getBackupList:
+SELECT id, filename, file_size, checksum, is_automatic, created_at, notes
+FROM backup_metadata
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?;
+
+getLatestBackup:
+SELECT id, filename, file_size, checksum, is_automatic, created_at, notes
+FROM backup_metadata
+ORDER BY created_at DESC
+LIMIT 1;
+
+deleteBackupMetadata:
+DELETE FROM backup_metadata WHERE id = ?;
+
+verifyBackupChecksum:
+SELECT checksum FROM backup_metadata WHERE filename = ?;
+
+------- DUPLICATE DETECTION -------
+
+getPotentialDuplicateLetterEntries:
+SELECT character, COUNT(*) AS cnt
+FROM letter_deck_entry
+GROUP BY character
+HAVING COUNT(*) > 1;
+
+getPotentialDuplicateVocabEntries:
+SELECT kanji_reading, kana_reading, COUNT(*) AS cnt
+FROM vocab_deck_entry
+GROUP BY kanji_reading, kana_reading
+HAVING COUNT(*) > 1;
+
+------- FILTERED DECKS / CUSTOM STUDY -------
+
+CREATE TABLE IF NOT EXISTS filtered_deck (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    search_query TEXT NOT NULL,
+    max_cards INTEGER NOT NULL DEFAULT 9999,
+    is_rescheduled INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL
+);
+
+insertFilteredDeck:
+INSERT INTO filtered_deck(name, search_query, max_cards, is_rescheduled, created_at)
+VALUES (?, ?, ?, ?, ?);
+
+getFilteredDecks:
+SELECT id, name, search_query, max_cards, is_rescheduled, created_at
+FROM filtered_deck
+ORDER BY created_at DESC;
+
+deleteFilteredDeck:
+DELETE FROM filtered_deck WHERE id = ?;
+
+------- PLUGIN REGISTRY (future-proof) -------
+
+CREATE TABLE IF NOT EXISTS plugin_registry (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plugin_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    plugin_type TEXT NOT NULL,
+    config_json TEXT,
+    installed_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+insertOrUpdatePlugin:
+INSERT OR REPLACE INTO plugin_registry(plugin_id, name, version, enabled, plugin_type, config_json, installed_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getPlugin:
+SELECT id, plugin_id, name, version, enabled, plugin_type, config_json, installed_at, updated_at
+FROM plugin_registry
+WHERE plugin_id = ?;
+
+getAllPlugins:
+SELECT id, plugin_id, name, version, enabled, plugin_type, config_json, installed_at, updated_at
+FROM plugin_registry
+ORDER BY name;
+
+setPluginEnabled:
+UPDATE plugin_registry SET enabled = ?, updated_at = ? WHERE plugin_id = ?;
+
+deletePlugin:
+DELETE FROM plugin_registry WHERE plugin_id = ?;

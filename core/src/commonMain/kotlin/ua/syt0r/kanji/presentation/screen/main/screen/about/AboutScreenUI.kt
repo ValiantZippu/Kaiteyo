@@ -82,7 +82,7 @@ fun AboutScreenUI(
             AboutTextRow(
                 title = resolveString { about.githubTitle },
                 subtitle = resolveString { about.githubDescription },
-                onClick = { openLink(KanjiDojoGithubLink) }
+                onClick = { openLink(KaiteyoGithubLink) }
             )
 
             var shouldShowVersionChangeDialog by remember { mutableStateOf(false) }

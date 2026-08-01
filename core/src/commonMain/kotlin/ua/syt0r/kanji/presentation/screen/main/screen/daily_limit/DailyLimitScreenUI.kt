@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.daily_limit
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -237,7 +238,7 @@ private fun ScreenLayout(
 
         AnimatedContent(
             targetState = state.value,
-            transitionSpec = { fadeIn() togetherWith fadeOut() using snapSizeTransform() },
+            transitionSpec = { ContentTransform(targetContentEnter = fadeIn(), initialContentExit = fadeOut(), sizeTransform = snapSizeTransform()) },
             modifier = Modifier.padding(paddingValues)
         ) { screenState ->
 
@@ -331,7 +332,7 @@ private fun FabContainer(
 
     AnimatedContent(
         targetState = fabState.value,
-        transitionSpec = { scaleIn() togetherWith scaleOut() using snapToBiggerSizeTransform() },
+        transitionSpec = { ContentTransform(targetContentEnter = scaleIn(), initialContentExit = scaleOut(), sizeTransform = snapToBiggerSizeTransform()) },
         modifier = modifier
     ) {
         if (it == null || !it.second) return@AnimatedContent

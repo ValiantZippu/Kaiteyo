@@ -19,7 +19,7 @@ import kotlin.time.Duration
 
 object EnglishStrings : Strings {
 
-    override val appName: String = "Kanji Dojo"
+    override val appName: String = "Kaiteyo"
 
     override val hiragana: String = "Hiragana"
     override val katakana: String = "Katakana"
@@ -77,7 +77,7 @@ object EnglishStrings : Strings {
 }
 
 object EnglishHomeStrings : HomeStrings {
-    override val screenTitle: String = "Kanji Dojo"
+    override val screenTitle: String = "Kaiteyo"
     override val generalDashboardTabLabel: String = "Home"
     override val lettersDashboardTabLabel: String = "Letters"
     override val vocabDashboardTabLabel: String = "Vocab"
@@ -328,7 +328,7 @@ object EnglishFeedbackStrings : FeedbackStrings {
 
 object EnglishSponsorStrings : SponsorStrings {
     override val message: String = """
-        Development of Kanji Dojo started in 2021 by a single person and it remains free for all users who want to learn Japanese
+        Development of Kaiteyo started in 2021 by a single person and it remains free for all users who want to learn Japanese
         
         If you find the app useful please consider supporting this project financially, every contribution counts
         

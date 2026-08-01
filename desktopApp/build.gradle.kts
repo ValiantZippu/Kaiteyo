@@ -1,11 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.compose.reload.ComposeHotRun
 
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.compose")
     id("org.jetbrains.compose")
-    id("org.jetbrains.compose.hot-reload")
     id("com.mikepenz.aboutlibraries.plugin")
 }
 
@@ -40,7 +38,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
 
-            packageName = "Kanji Dojo"
+            packageName = "Kaiteyo"
             packageVersion = AppVersion.desktopAppVersion
             vendor = "syt0r"
 
@@ -54,7 +52,7 @@ compose.desktop {
             }
 
             macOS {
-                bundleID = "ua.syt0r.kanji-dojo"
+                bundleID = "ua.syt0r.kaiteyo"
                 iconFile.set(File("mac_icon.icns"))
             }
 
@@ -65,11 +63,6 @@ compose.desktop {
 
         }
     }
-}
-
-tasks.withType<ComposeHotRun>().configureEach {
-    mainClass.set(mainClassKt)
-    javaLauncher
 }
 
 compose.resources {

@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
@@ -135,7 +136,11 @@ fun LetterPracticeWritingInfoSection(
             val exitTransition = slideOutHorizontally {
                 -min(it / 3, with(density) { MaxTransitionSlideDistance.roundToPx() })
             } + fadeOut()
-            enterTransition togetherWith exitTransition using SizeTransform(clip = false)
+            ContentTransform(
+                targetContentEnter = enterTransition,
+                initialContentExit = exitTransition,
+                sizeTransform = SizeTransform(clip = false)
+            )
         }
     ) { currentSectionData ->
 

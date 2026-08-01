@@ -19,6 +19,11 @@ import ua.syt0r.kanji.core.lerpTo
 import ua.syt0r.kanji.core.svg.SvgCommandParser
 import ua.syt0r.kanji.core.svg.SvgPathCreator
 import ua.syt0r.kanji.presentation.common.ExcludeNavigationGesturesModifier
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSettings
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveAlpha
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveStrokeCap
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveStrokeJoin
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveStrokeWidth
 
 const val KanjiSize = 109
 const val StrokeWidth = 3f
@@ -33,10 +38,11 @@ fun Kanji(
     strokes: List<Path>,
     modifier: Modifier = Modifier,
     strokeColor: Color = defaultStrokeColor(),
-    stokeWidth: Float = StrokeWidth
+    stokeWidth: Float = StrokeWidth,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
     Canvas(modifier) {
-        strokes.forEach { drawKanjiStroke(it, strokeColor, stokeWidth) }
+        strokes.forEach { drawKanjiStroke(it, strokeColor, stokeWidth, brushSettings = brushSettings) }
     }
 }
 
@@ -45,10 +51,11 @@ fun Kanji(
     strokes: State<List<Path>>,
     modifier: Modifier = Modifier,
     strokeColor: Color = defaultStrokeColor(),
-    stokeWidth: Float = StrokeWidth
+    stokeWidth: Float = StrokeWidth,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
     Canvas(modifier) {
-        strokes.value.forEach { drawKanjiStroke(it, strokeColor, stokeWidth) }
+        strokes.value.forEach { drawKanjiStroke(it, strokeColor, stokeWidth, brushSettings = brushSettings) }
     }
 }
 
@@ -57,10 +64,11 @@ fun Stroke(
     path: Path,
     modifier: Modifier = Modifier,
     color: Color = defaultStrokeColor(),
-    stokeWidth: Float = StrokeWidth
+    stokeWidth: Float = StrokeWidth,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
     Canvas(modifier) {
-        clipRect { drawKanjiStroke(path, color, stokeWidth) }
+        clipRect { drawKanjiStroke(path, color, stokeWidth, brushSettings = brushSettings) }
     }
 }
 
@@ -91,7 +99,8 @@ fun StrokeInput(
     state: StrokeInputState = rememberStrokeInputState(),
     modifier: Modifier = Modifier,
     color: Color = defaultStrokeColor(),
-    stokeWidth: Float = StrokeWidth
+    stokeWidth: Float = StrokeWidth,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
 
     Canvas(
@@ -133,7 +142,8 @@ fun StrokeInput(
                 drawKanjiStroke(
                     path = state.internalPath.value,
                     color = color,
-                    width = stokeWidth
+                    width = stokeWidth,
+                    brushSettings = brushSettings
                 )
             }
         }
@@ -148,11 +158,12 @@ fun AnimatedStroke(
     progress: () -> Float,
     modifier: Modifier = Modifier,
     strokeColor: Color = defaultStrokeColor(),
-    stokeWidth: Float = StrokeWidth
+    stokeWidth: Float = StrokeWidth,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
     Canvas(modifier) {
         val path = fromPath.lerpTo(toPath, progress())
-        drawKanjiStroke(path, strokeColor, stokeWidth)
+        drawKanjiStroke(path, strokeColor, stokeWidth, brushSettings = brushSettings)
     }
 }
 
@@ -160,7 +171,8 @@ expect fun DrawScope.drawKanjiStroke(
     path: Path,
     color: Color,
     width: Float,
-    drawProgress: Float? = null
+    drawProgress: Float? = null,
+    brushSettings: BrushSettings = BrushSettings.default
 )
 
 fun parseKanjiStrokes(strokes: List<String>): List<Path> {

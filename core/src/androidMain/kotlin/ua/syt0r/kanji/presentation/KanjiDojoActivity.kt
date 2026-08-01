@@ -12,7 +12,7 @@ import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.theme_manager.ThemeManager
 import ua.syt0r.kanji.presentation.screen.main.features.DeepLinkHandler
 
-open class KanjiDojoActivity : AppCompatActivity() {
+open class KaiteyoActivity : AppCompatActivity() {
 
     private val deepLinkHandler by inject<DeepLinkHandler>()
     private val themeManager by inject<ThemeManager>()
@@ -27,7 +27,7 @@ open class KanjiDojoActivity : AppCompatActivity() {
         intent.dataString?.let { deepLinkHandler.notifyDeepLink(it) }
 
         setContent {
-            KanjiDojoApp(
+            KaiteyoApp(
                 windowSizeClass = calculateWindowSizeClass(this),
                 deepLinkHandler = deepLinkHandler
             )

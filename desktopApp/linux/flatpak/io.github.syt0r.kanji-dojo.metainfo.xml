@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.syt0r.kanji-dojo</id>
+  <id>io.github.syt0r.kaiteyo</id>
   <metadata_license>MIT</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   
-  <name>Kanji Dojo</name>
+  <name>Kaiteyo</name>
   <summary>Japanese language learning app with writing exercises, flashcards and built-in dictionary</summary>
   <developer id="ua.syt0r">
     <name>syt0r</name>
@@ -25,7 +25,7 @@
     </ul>
   </description>
   
-  <launchable type="desktop-id">io.github.syt0r.kanji-dojo.desktop</launchable>
+  <launchable type="desktop-id">io.github.syt0r.kaiteyo.desktop</launchable>
   
   <branding>
     <color scheme_preference="light" type="primary">#e1e4e6</color>
@@ -34,33 +34,33 @@
   
   <content_rating type="oars-1.1" />
   
-  <url type="homepage">https://github.com/syt0r/Kanji-Dojo</url>
-  <url type="bugtracker">https://github.com/syt0r/Kanji-Dojo/issues</url>
+  <url type="homepage">https://github.com/syt0r/Kaiteyo</url>
+  <url type="bugtracker">https://github.com/syt0r/Kaiteyo/issues</url>
   <url type="donation">https://buymeacoffee.com/syt0r</url>
-  <url type="vcs-browser">https://github.com/syt0r/Kanji-Dojo</url>
+  <url type="vcs-browser">https://github.com/syt0r/Kaiteyo</url>
   
   <screenshots>
     <screenshot type="default">
       <caption>Use SRS (Spaced Repetition System) for efficient memorization</caption>
-      <image>https://raw.githubusercontent.com/syt0r/Kanji-Dojo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/1.png</image>
+      <image>https://raw.githubusercontent.com/syt0r/Kaiteyo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/1.png</image>
     </screenshot>
     <screenshot>
       <caption>Learn how to write kana and kanji</caption>
-      <image>https://raw.githubusercontent.com/syt0r/Kanji-Dojo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/2.png</image>
+      <image>https://raw.githubusercontent.com/syt0r/Kaiteyo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/2.png</image>
     </screenshot>
     <screenshot>
       <caption>Built-in dictionary with search by radicals</caption>
-      <image>https://raw.githubusercontent.com/syt0r/Kanji-Dojo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/3.png</image>
+      <image>https://raw.githubusercontent.com/syt0r/Kaiteyo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/3.png</image>
     </screenshot>
     <screenshot>
       <caption>Includes various pre-made decks</caption>
-      <image>https://raw.githubusercontent.com/syt0r/Kanji-Dojo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/4.png</image>
+      <image>https://raw.githubusercontent.com/syt0r/Kaiteyo/3b62a61865f7e88608001efcd8fc4e7fff29b3b6/app/linux/flatpak/screenshots/4.png</image>
     </screenshot>
   </screenshots>
   
   <releases>
     <release date="2025-01-31" version="2.1.5">
-      <url type="details">https://raw.githubusercontent.com/syt0r/Kanji-Dojo/refs/heads/develop/fastlane/metadata/android/en-US/changelog/2150.txt</url>
+      <url type="details">https://raw.githubusercontent.com/syt0r/Kaiteyo/refs/heads/develop/fastlane/metadata/android/en-US/changelog/2150.txt</url>
       <description>
         <ul>
           <li>Updated installers for Windows and Linux, now it's not required to have Java installed</li>

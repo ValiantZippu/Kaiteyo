@@ -56,6 +56,12 @@ fun Module.addUserDataDatabaseDefinitions() {
         )
     }
 
+    single<CardDatabaseManager> {
+        CardDatabaseManagerImpl(
+            transactionScope = get<UserDataDatabaseContract.Manager>()
+        )
+    }
+
     single<ReviewHistoryRepository> {
         SqlDelightReviewHistoryRepository(
             userDataDatabaseManager = get()

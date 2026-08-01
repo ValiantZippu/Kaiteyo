@@ -278,7 +278,7 @@ class DefaultNetworkApi(
 
     private companion object {
 
-        const val BASE = "https://kanji-dojo.com/api/v2"
+        const val BASE = "https://kaiteyo.app/api/v2"
 
         const val GET_USER_INFO_URL = "$BASE/user/info"
         const val GET_USER_ID_URL = "$BASE/user/id"

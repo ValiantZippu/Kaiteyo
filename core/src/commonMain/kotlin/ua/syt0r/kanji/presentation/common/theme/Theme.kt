@@ -4,11 +4,15 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.AnimationConstants
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.ButtonColors
@@ -23,80 +27,218 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import ua.syt0r.kanji.presentation.common.resources.string.LocalStrings
 import ua.syt0r.kanji.presentation.common.resources.string.getStrings
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
 
-private val LightThemeColors = lightColorScheme(
-    primary = md_theme_light_primary,
-    onPrimary = md_theme_light_onPrimary,
-    primaryContainer = md_theme_light_primaryContainer,
-    onPrimaryContainer = md_theme_light_onPrimaryContainer,
-    secondary = md_theme_light_secondary,
-    onSecondary = md_theme_light_onSecondary,
-    secondaryContainer = md_theme_light_secondaryContainer,
-    onSecondaryContainer = md_theme_light_onSecondaryContainer,
-    tertiary = md_theme_light_tertiary,
-    onTertiary = md_theme_light_onTertiary,
-    tertiaryContainer = md_theme_light_tertiaryContainer,
-    onTertiaryContainer = md_theme_light_onTertiaryContainer,
-    error = md_theme_light_error,
-    errorContainer = md_theme_light_errorContainer,
-    onError = md_theme_light_onError,
-    onErrorContainer = md_theme_light_onErrorContainer,
-    background = md_theme_light_background,
-    onBackground = md_theme_light_onBackground,
-    surface = md_theme_light_surface,
-    onSurface = md_theme_light_onSurface,
-    surfaceVariant = md_theme_light_surfaceVariant,
-    onSurfaceVariant = md_theme_light_onSurfaceVariant,
-    surfaceContainerHigh = md_theme_light_surfaceVariant,
-    surfaceContainerHighest = md_theme_light_surfaceVariant,
-    surfaceDim = lightSurfaceDim,
-    outline = md_theme_light_outline,
-    outlineVariant = md_theme_light_outline_variant,
-    inverseOnSurface = md_theme_light_inverseOnSurface,
-    inverseSurface = md_theme_light_inverseSurface,
-    inversePrimary = md_theme_light_inversePrimary,
+// ============================================
+// KAITEYO v1.2.0 — Theme Engine
+// Premium animation system, gradient & glow support
+// ============================================
+
+// --- Local Composition Providers for Kaiteyo theme ---
+
+val LocalKaiteyoAccent = compositionLocalOf { AllAccentSchemes.first() }
+val LocalBaseMode = compositionLocalOf { BaseMode.Oled }
+val LocalSurfaceColors = compositionLocalOf { surfaceForBaseMode(BaseMode.Oled) }
+
+// ============================================
+// ANIMATION CONFIGURATION
+// ============================================
+
+enum class PageTransitionType(val displayName: String) {
+    Crossfade("Crossfade"),
+    Slide("Slide"),
+    FadeThrough("Fade Through"),
+    Scale("Scale")
+}
+
+enum class AnimationSpeed(val displayName: String, val multiplier: Float) {
+    Slow("Slow", 1.5f),
+    Normal("Normal", 1.0f),
+    Fast("Fast", 0.6f),
+    Instant("Off", 0.0f)
+}
+
+data class AnimationConfig(
+    val speed: AnimationSpeed = AnimationSpeed.Normal,
+    val reducedMotion: Boolean = false,
+    val springDamping: Float = 0.6f,
+    val springStiffness: Float = 300f,
+    val defaultDuration: Int = 300,
+    val pageTransition: PageTransitionType = PageTransitionType.FadeThrough
 )
 
-private val DarkThemeColors = darkColorScheme(
-    primary = md_theme_dark_primary,
-    onPrimary = md_theme_dark_onPrimary,
-    primaryContainer = md_theme_dark_primaryContainer,
-    onPrimaryContainer = md_theme_dark_onPrimaryContainer,
-    secondary = md_theme_dark_secondary,
-    onSecondary = md_theme_dark_onSecondary,
-    secondaryContainer = md_theme_dark_secondaryContainer,
-    onSecondaryContainer = md_theme_dark_onSecondaryContainer,
-    tertiary = md_theme_dark_tertiary,
-    onTertiary = md_theme_dark_onTertiary,
-    tertiaryContainer = md_theme_dark_tertiaryContainer,
-    onTertiaryContainer = md_theme_dark_onTertiaryContainer,
-    error = md_theme_dark_error,
-    errorContainer = md_theme_dark_errorContainer,
-    onError = md_theme_dark_onError,
-    onErrorContainer = md_theme_dark_onErrorContainer,
-    background = md_theme_dark_background,
-    onBackground = md_theme_dark_onBackground,
-    surface = md_theme_dark_surface,
-    surfaceDim = darkSurfaceDim,
-    onSurface = md_theme_dark_onSurface,
-    surfaceVariant = md_theme_dark_surfaceVariant,
-    surfaceContainerHighest = md_theme_dark_surfaceVariant,
-    onSurfaceVariant = md_theme_dark_onSurfaceVariant,
-    outline = md_theme_dark_outline,
-    inverseOnSurface = md_theme_dark_inverseOnSurface,
-    inverseSurface = md_theme_dark_inverseSurface,
+val LocalAnimationConfig = compositionLocalOf { AnimationConfig() }
+
+// ============================================
+// CORNER RADIUS CONFIGURATION
+// ============================================
+
+enum class CornerRadiusStyle(val displayName: String, val globalMultiplier: Float) {
+    Square("Square", 0.5f),
+    Rounded("Rounded", 1.0f),
+    VeryRounded("Very Rounded", 1.5f),
+    Soft("Soft", 2.0f)
+}
+
+data class RadiusConfig(
+    val style: CornerRadiusStyle = CornerRadiusStyle.Rounded,
+    val customRadius: Float? = null
 )
 
-private val AmoledThemeColors = DarkThemeColors.copy(
-    background = amoled_theme_background,
-    surface = amoled_theme_surface,
-    surfaceDim = amoledSurfaceDim,
+val LocalRadiusConfig = compositionLocalOf { RadiusConfig() }
+
+// ============================================
+// GLOW CONFIGURATION
+// ============================================
+
+data class GlowConfig(
+    val intensity: Float = 1.0f,
+    val radius: Float = 1.0f,
+    val opacity: Float = 1.0f
 )
+
+val LocalGlowConfig = compositionLocalOf { GlowConfig() }
+
+// ============================================
+// DENSITY & LAYOUT CONFIGURATION
+// ============================================
+
+enum class UIDensity(val displayName: String, val spacingMultiplier: Float) {
+    Compact("Compact", 0.7f),
+    Comfortable("Comfortable", 1.0f),
+    Spacious("Spacious", 1.3f)
+}
+
+enum class SidebarMode(val displayName: String) {
+    Expanded("Expanded"),
+    Compact("Compact"),
+    IconsOnly("Icons Only"),
+    FloatingIsland("Floating Island"),
+    Docked("Docked"),
+    AutoHide("Auto Hide")
+}
+
+enum class SidebarPosition(val displayName: String) {
+    Left("Left"),
+    Right("Right"),
+    Top("Top"),
+    Bottom("Bottom")
+}
+
+data class LayoutConfig(
+    val density: UIDensity = UIDensity.Comfortable,
+    val sidebarMode: SidebarMode = SidebarMode.Expanded,
+    val sidebarPosition: SidebarPosition = SidebarPosition.Left,
+    val transparencyEnabled: Boolean = false,
+    val blurEnabled: Boolean = false,
+    val glassOpacity: Float = 0.8f
+)
+
+val LocalLayoutConfig = compositionLocalOf { LayoutConfig() }
+
+// ============================================
+// THEME STATE
+// ============================================
+
+class KaiteyoThemeState(
+    initialBaseMode: BaseMode = BaseMode.Oled,
+    initialAccentScheme: KaiteyoAccentScheme = AllAccentSchemes.first(),
+    initialAnimationConfig: AnimationConfig = AnimationConfig(),
+    initialRadiusConfig: RadiusConfig = RadiusConfig(),
+    initialGlowConfig: GlowConfig = GlowConfig(),
+    initialLayoutConfig: LayoutConfig = LayoutConfig()
+) {
+    var baseMode by mutableStateOf(initialBaseMode)
+    var accentScheme by mutableStateOf(initialAccentScheme)
+    var animationConfig by mutableStateOf(initialAnimationConfig)
+    var radiusConfig by mutableStateOf(initialRadiusConfig)
+    var glowConfig by mutableStateOf(initialGlowConfig)
+    var layoutConfig by mutableStateOf(initialLayoutConfig)
+}
+
+val LocalKaiteyoThemeState = compositionLocalOf { KaiteyoThemeState() }
+
+// --- Material Color Scheme Generators ---
+
+private fun createDarkColorScheme(
+    accent: KaiteyoAccentScheme,
+    surface: SurfaceColors
+) = darkColorScheme(
+    primary = accent.primary,
+    onPrimary = accent.onPrimary,
+    primaryContainer = accent.primary.copy(alpha = 0.15f),
+    onPrimaryContainer = accent.primary,
+    secondary = accent.secondary,
+    onSecondary = accent.onSecondary,
+    secondaryContainer = accent.secondary.copy(alpha = 0.15f),
+    onSecondaryContainer = accent.secondary,
+    tertiary = accent.tertiary ?: accent.secondary,
+    onTertiary = accent.onSecondary,
+    tertiaryContainer = (accent.tertiary ?: accent.secondary).copy(alpha = 0.15f),
+    onTertiaryContainer = accent.tertiary ?: accent.secondary,
+    error = semanticError,
+    onError = textInverse,
+    errorContainer = semanticError.copy(alpha = 0.15f),
+    onErrorContainer = semanticError,
+    background = surface.background,
+    onBackground = surface.textPrimary,
+    surface = surface.surface,
+    onSurface = surface.textPrimary,
+    surfaceVariant = surface.surfaceElevated,
+    onSurfaceVariant = surface.textSecondary,
+    surfaceContainerHigh = surface.surface,
+    surfaceContainerHighest = surface.surfaceElevated,
+    surfaceDim = surface.background,
+    outline = surface.border,
+    outlineVariant = surface.border.copy(alpha = 0.5f),
+    inverseOnSurface = surface.textInverse,
+    inverseSurface = surface.textPrimary,
+    inversePrimary = accent.onPrimary,
+)
+
+private fun createLightColorScheme(
+    accent: KaiteyoAccentScheme,
+    surface: SurfaceColors
+) = lightColorScheme(
+    primary = accent.primaryDark,
+    onPrimary = accent.onPrimary,
+    primaryContainer = accent.primary.copy(alpha = 0.2f),
+    onPrimaryContainer = accent.primaryDark,
+    secondary = accent.secondaryDark,
+    onSecondary = accent.onSecondary,
+    secondaryContainer = accent.secondary.copy(alpha = 0.2f),
+    onSecondaryContainer = accent.secondaryDark,
+    tertiary = accent.tertiary ?: accent.secondaryDark,
+    onTertiary = accent.onSecondary,
+    tertiaryContainer = (accent.tertiary ?: accent.secondary).copy(alpha = 0.2f),
+    onTertiaryContainer = accent.tertiary ?: accent.secondaryDark,
+    error = semanticError,
+    onError = textInverseLight,
+    errorContainer = semanticError.copy(alpha = 0.15f),
+    onErrorContainer = semanticError,
+    background = surface.background,
+    onBackground = surface.textPrimary,
+    surface = surface.surface,
+    onSurface = surface.textPrimary,
+    surfaceVariant = surface.surfaceElevated,
+    onSurfaceVariant = surface.textSecondary,
+    surfaceContainerHigh = surface.surface,
+    surfaceContainerHighest = surface.surfaceElevated,
+    surfaceDim = surface.background,
+    outline = surface.border,
+    outlineVariant = surface.border.copy(alpha = 0.5f),
+    inverseOnSurface = surface.textInverse,
+    inverseSurface = surface.textPrimary,
+    inversePrimary = accent.onPrimary,
+)
+
+// --- Extra colors scheme (backward compatible) ---
 
 class ExtraColorsScheme(
     val link: Color,
@@ -107,19 +249,19 @@ class ExtraColorsScheme(
 )
 
 val LightExtraColorScheme = ExtraColorsScheme(
-    link = lightThemeLinkColor,
-    success = lightThemeSuccessColor,
-    pending = lightThemePendingColor,
-    due = lightThemeDueColor,
-    new = lightThemeNewColor
+    link = semanticInfo,
+    success = semanticSuccess,
+    pending = textMutedLight,
+    due = semanticWarning,
+    new = semanticNew
 )
 
 val DarkExtraColorScheme = ExtraColorsScheme(
-    link = darkThemeLinkColor,
-    success = darkThemeSuccessColor,
-    pending = darkThemePendingColor,
-    due = darkThemeDueColor,
-    new = darkThemeNewColor
+    link = semanticInfo,
+    success = semanticSuccess,
+    pending = textMuted,
+    due = semanticWarning,
+    new = semanticNew
 )
 
 val LocalExtraColors = compositionLocalOf { LightExtraColorScheme }
@@ -128,35 +270,94 @@ val MaterialTheme.extraColorScheme: ExtraColorsScheme
     @Composable
     get() = LocalExtraColors.current
 
+// --- Convenience accessors for Kaiteyo theme ---
+
+val MaterialTheme.kaiteyoAccent: KaiteyoAccentScheme
+    @Composable
+    get() = LocalKaiteyoAccent.current
+
+val MaterialTheme.baseMode: BaseMode
+    @Composable
+    get() = LocalBaseMode.current
+
+val MaterialTheme.surfaceColors: SurfaceColors
+    @Composable
+    get() = LocalSurfaceColors.current
+
+val MaterialTheme.kaiteyoThemeState: KaiteyoThemeState
+    @Composable
+    get() = LocalKaiteyoThemeState.current
+
+val MaterialTheme.animationConfig: AnimationConfig
+    @Composable
+    get() = LocalAnimationConfig.current
+
+val MaterialTheme.glowConfig: GlowConfig
+    @Composable
+    get() = LocalGlowConfig.current
+
+val MaterialTheme.radiusConfig: RadiusConfig
+    @Composable
+    get() = LocalRadiusConfig.current
+
+val MaterialTheme.layoutConfig: LayoutConfig
+    @Composable
+    get() = LocalLayoutConfig.current
+
+// ============================================
+// Main Kaiteyo AppTheme Composable
+// ============================================
+
 @Composable
 fun AppTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
     useAmoledTheme: Boolean = false,
     orientation: Orientation = Orientation.Portrait,
+    baseMode: BaseMode = if (useAmoledTheme) BaseMode.Oled
+        else if (!useDarkTheme) BaseMode.Light
+        else BaseMode.Dark,
+    accentScheme: KaiteyoAccentScheme = AllAccentSchemes.first(),
+    animationConfig: AnimationConfig = AnimationConfig(),
+    radiusConfig: RadiusConfig = RadiusConfig(),
+    glowConfig: GlowConfig = GlowConfig(),
+    layoutConfig: LayoutConfig = LayoutConfig(),
     content: @Composable () -> Unit
 ) {
-    val (colors, extraColors) = if (useAmoledTheme) {
-        AmoledThemeColors to DarkExtraColorScheme
-    } else if (!useDarkTheme) {
-        LightThemeColors to LightExtraColorScheme
+    val surface = surfaceForBaseMode(baseMode)
+    val isDark = baseMode != BaseMode.Light
+
+    val colors = if (isDark) {
+        createDarkColorScheme(accentScheme, surface)
     } else {
-        DarkThemeColors to DarkExtraColorScheme
+        createLightColorScheme(accentScheme, surface)
     }
 
-    MaterialTheme(
-        colorScheme = colors,
-        typography = AppTypography,
-        content = {
-            CompositionLocalProvider(
-                LocalExtraColors provides extraColors,
-                LocalOrientation provides orientation,
-                LocalStrings provides getStrings(),
-                LocalTextSelectionColors provides neutralTextSelectionColors()
-            ) {
-                content()
+    val extraColors = if (isDark) DarkExtraColorScheme else LightExtraColorScheme
+
+    CompositionLocalProvider(
+        LocalKaiteyoAccent provides accentScheme,
+        LocalBaseMode provides baseMode,
+        LocalSurfaceColors provides surface,
+        LocalAnimationConfig provides animationConfig,
+        LocalRadiusConfig provides radiusConfig,
+        LocalGlowConfig provides glowConfig,
+        LocalLayoutConfig provides layoutConfig
+    ) {
+        MaterialTheme(
+            colorScheme = colors,
+            typography = AppTypography,
+            content = {
+                CompositionLocalProvider(
+                    LocalExtraColors provides extraColors,
+                    LocalOrientation provides orientation,
+                    LocalStrings provides getStrings(),
+                    LocalTextSelectionColors provides neutralTextSelectionColors()
+                ) {
+                    content()
+                }
             }
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -184,7 +385,6 @@ fun ButtonDefaults.neutralTextButtonColors(): ButtonColors {
     }
 }
 
-
 @Composable
 fun TextFieldDefaults.neutralColors(): TextFieldColors = MaterialTheme.colorScheme.run {
     val labelColor = onSurface.copy(alpha = 0.4f)
@@ -210,6 +410,40 @@ fun ListItemDefaults.errorColors(): ListItemColors {
     )
 }
 
+// ============================================
+// Animation Helpers
+// ============================================
+
+/**
+ * Get spring animation spec based on animation config
+ */
+fun springAnim(
+    config: AnimationConfig = AnimationConfig(),
+    dampingRatio: Float = config.springDamping,
+    stiffness: Float = config.springStiffness
+): FiniteAnimationSpec<Float> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+
+/**
+ * Get tween duration based on animation speed
+ */
+fun tweenDuration(
+    config: AnimationConfig = AnimationConfig(),
+    baseDuration: Int = config.defaultDuration
+): Int = if (config.reducedMotion) 0
+    else (baseDuration * config.speed.multiplier).toInt()
+
+/**
+ * Page transition specifications
+ * Returns a fade-through transition by default
+ */
+fun <S> pageTransitionSpec(
+    animationConfig: AnimationConfig = AnimationConfig()
+): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
+    val duration = tweenDuration(animationConfig, 350)
+    fadeIn(animationSpec = tween(duration / 2)) togetherWith
+        fadeOut(animationSpec = tween(duration / 2))
+}
+
 fun snapSizeTransform(): SizeTransform = SizeTransform() { _, _ -> snap() }
 
 fun snapToBiggerSizeTransform(
@@ -222,5 +456,9 @@ fun snapToBiggerSizeTransform(
 fun <S> snapToBiggerContainerCrossfadeTransitionSpec(
     snapToSmallerContainerDelay: Int = AnimationConstants.DefaultDurationMillis
 ): AnimatedContentTransitionScope<S>.() -> ContentTransform = {
-    fadeIn() togetherWith fadeOut() using snapToBiggerSizeTransform(snapToSmallerContainerDelay)
+    ContentTransform(
+        targetContentEnter = fadeIn(),
+        initialContentExit = fadeOut(),
+        sizeTransform = snapToBiggerSizeTransform(snapToSmallerContainerDelay)
+    )
 }

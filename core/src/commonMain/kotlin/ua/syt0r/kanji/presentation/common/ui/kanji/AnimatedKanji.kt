@@ -21,13 +21,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.unit.dp
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSettings
 
 @Composable
 fun AnimatedKanji(
     strokes: List<Path>,
     modifier: Modifier = Modifier,
     strokeColor: Color = defaultStrokeColor(),
-    strokeWidth: Float = StrokeWidth
+    strokeWidth: Float = StrokeWidth,
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
 
     val strokesToDraw = remember { mutableStateOf(strokes) }
@@ -65,7 +67,8 @@ fun AnimatedKanji(
                     drawKanjiStroke(
                         path = it,
                         color = strokeColor.copy(strokeAlpha),
-                        width = strokeWidth
+                        width = strokeWidth,
+                        brushSettings = brushSettings
                     )
                 }
 
@@ -74,7 +77,8 @@ fun AnimatedKanji(
                         path = it,
                         color = strokeColor.copy(strokeAlpha),
                         width = strokeWidth,
-                        drawProgress = lastStrokeAnimationProgress.value
+                        drawProgress = lastStrokeAnimationProgress.value,
+                        brushSettings = brushSettings
                     )
                 }
 
@@ -100,7 +104,8 @@ fun AnimatedStroke(
     modifier: Modifier = Modifier,
     strokeColor: Color = defaultStrokeColor(),
     strokeWidth: Float = StrokeWidth,
-    strokeAlpha: () -> Float = { 1f }
+    strokeAlpha: () -> Float = { 1f },
+    brushSettings: BrushSettings = BrushSettings.default
 ) {
 
     Canvas(
@@ -111,7 +116,8 @@ fun AnimatedStroke(
             path = stroke,
             width = strokeWidth,
             color = strokeColor.copy(alpha = strokeAlpha()),
-            drawProgress = drawProgress()
+            drawProgress = drawProgress(),
+            brushSettings = brushSettings
         )
 
     }

@@ -16,6 +16,10 @@ object Logger : KoinComponent {
         if (configuration.isEnabled) platformLogMethod()
     }
 
+    fun w(message: String) {
+        if (configuration.isEnabled) platformLogMessage("WARN: $message")
+    }
+
     fun e(message: String) {
         platformLogError(message)
     }

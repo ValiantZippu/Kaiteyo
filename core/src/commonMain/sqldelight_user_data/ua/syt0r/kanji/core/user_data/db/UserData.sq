@@ -267,3 +267,217 @@ SELECT id, text, timestamp, translation, annotatedTextJson
 FROM text_analysis
 ORDER BY timestamp DESC
 LIMIT :offset, :limit;
+
+------- ENHANCEMENTS (TAGS, FLAGS, NOTES, HISTORY, SHORTCUTS, BACKUPS, FILTERED DECKS, PLUGINS) -------
+
+------- TAGS -------
+
+insertTag:
+INSERT INTO tag(name, color, parent_id, created_at, modified_at)
+VALUES (?, ?, ?, ?, ?);
+
+updateTag:
+UPDATE tag SET name = ?, color = ?, parent_id = ?, modified_at = ? WHERE id = ?;
+
+deleteTag:
+DELETE FROM tag WHERE id = ?;
+
+mergeTag:
+UPDATE card_tag SET tag_id = ? WHERE tag_id = ?;
+
+deleteUnusedTags:
+DELETE FROM tag WHERE id NOT IN (SELECT DISTINCT tag_id FROM card_tag);
+
+getAllTags:
+SELECT id, name, color, parent_id, created_at, modified_at FROM tag ORDER BY name;
+
+getTagById:
+SELECT id, name, color, parent_id, created_at, modified_at FROM tag WHERE id = ?;
+
+getTagsByCard:
+SELECT t.id, t.name, t.color, t.parent_id, t.created_at, t.modified_at
+FROM tag t
+INNER JOIN card_tag ct ON t.id = ct.tag_id
+WHERE ct.card_key = ? AND ct.practice_type = ?
+ORDER BY t.name;
+
+addTagToCard:
+INSERT OR IGNORE INTO card_tag(card_key, practice_type, tag_id) VALUES (?, ?, ?);
+
+removeTagFromCard:
+DELETE FROM card_tag WHERE card_key = ? AND practice_type = ? AND tag_id = ?;
+
+getCardsByTag:
+SELECT ct.card_key, ct.practice_type FROM card_tag ct WHERE ct.tag_id = ?;
+
+getTagUsageCount:
+SELECT COUNT(*) FROM card_tag WHERE tag_id = ?;
+
+searchTags:
+SELECT id, name, color, parent_id, created_at, modified_at
+FROM tag
+WHERE name LIKE ? COLLATE NOCASE
+ORDER BY name
+LIMIT ?;
+
+getChildTags:
+SELECT id, name, color, parent_id, created_at, modified_at
+FROM tag
+WHERE parent_id = ?
+ORDER BY name;
+
+------- FLAGS -------
+
+setCardFlag:
+INSERT OR REPLACE INTO card_flag(card_key, practice_type, flag_type, set_at)
+VALUES (?, ?, ?, ?);
+
+removeCardFlag:
+DELETE FROM card_flag WHERE card_key = ? AND practice_type = ?;
+
+getCardFlag:
+SELECT flag_type, set_at FROM card_flag WHERE card_key = ? AND practice_type = ?;
+
+getCardsByFlag:
+SELECT card_key, practice_type FROM card_flag WHERE flag_type = ?;
+
+getFlaggedCardCount:
+SELECT COUNT(*) FROM card_flag WHERE flag_type = ?;
+
+bulkSetFlag:
+INSERT OR REPLACE INTO card_flag(card_key, practice_type, flag_type, set_at)
+VALUES (?, ?, ?, ?);
+
+bulkRemoveFlag:
+DELETE FROM card_flag WHERE card_key = ? AND practice_type = ?;
+
+------- NOTES -------
+
+setCardNote:
+INSERT OR REPLACE INTO card_note(card_key, practice_type, content, content_format, created_at, modified_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getCardNote:
+SELECT content, content_format, created_at, modified_at FROM card_note WHERE card_key = ? AND practice_type = ?;
+
+deleteCardNote:
+DELETE FROM card_note WHERE card_key = ? AND practice_type = ?;
+
+------- STUDY HISTORY -------
+
+insertStudyHistory:
+INSERT INTO study_history(action_type, card_key, practice_type, details, timestamp)
+VALUES (?, ?, ?, ?, ?);
+
+getRecentStudyHistory:
+SELECT id, action_type, card_key, practice_type, details, timestamp
+FROM study_history
+ORDER BY timestamp DESC
+LIMIT ?;
+
+getStudyHistoryByAction:
+SELECT id, action_type, card_key, practice_type, details, timestamp
+FROM study_history
+WHERE action_type = ?
+ORDER BY timestamp DESC
+LIMIT ?;
+
+getStudyHistoryForCard:
+SELECT id, action_type, card_key, practice_type, details, timestamp
+FROM study_history
+WHERE card_key = ? AND practice_type = ?
+ORDER BY timestamp DESC
+LIMIT ?;
+
+clearOldStudyHistory:
+DELETE FROM study_history WHERE timestamp < ?;
+
+------- KEYBOARD SHORTCUTS -------
+
+insertOrUpdateShortcut:
+INSERT OR REPLACE INTO keyboard_shortcut(action_id, primary_key, modifier_flags, is_enabled, profile_name)
+VALUES (?, ?, ?, ?, ?);
+
+getShortcut:
+SELECT id, action_id, primary_key, modifier_flags, is_enabled, profile_name
+FROM keyboard_shortcut
+WHERE action_id = ? AND profile_name = ?;
+
+getAllShortcuts:
+SELECT id, action_id, primary_key, modifier_flags, is_enabled, profile_name
+FROM keyboard_shortcut
+ORDER BY action_id;
+
+getShortcutsByProfile:
+SELECT id, action_id, primary_key, modifier_flags, is_enabled, profile_name
+FROM keyboard_shortcut
+WHERE profile_name = ?
+ORDER BY action_id;
+
+deleteShortcut:
+DELETE FROM keyboard_shortcut WHERE action_id = ? AND profile_name = ?;
+
+resetShortcutsToProfile:
+DELETE FROM keyboard_shortcut WHERE profile_name = ?;
+
+checkShortcutConflict:
+SELECT id, action_id, primary_key, modifier_flags, profile_name
+FROM keyboard_shortcut
+WHERE primary_key = ? AND modifier_flags = ? AND action_id != ? AND profile_name = ?;
+
+------- BACKUP METADATA -------
+
+insertBackupMetadata:
+INSERT INTO backup_metadata(filename, file_size, checksum, is_automatic, created_at, notes)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getBackupList:
+SELECT id, filename, file_size, checksum, is_automatic, created_at, notes
+FROM backup_metadata
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?;
+
+getLatestBackup:
+SELECT id, filename, file_size, checksum, is_automatic, created_at, notes
+FROM backup_metadata
+ORDER BY created_at DESC
+LIMIT 1;
+
+deleteBackupMetadata:
+DELETE FROM backup_metadata WHERE id = ?;
+
+verifyBackupChecksum:
+SELECT checksum FROM backup_metadata WHERE filename = ?;
+
+------- FILTERED DECKS -------
+
+insertFilteredDeck:
+INSERT INTO filtered_deck(name, search_query, max_cards, is_rescheduled, created_at)
+VALUES (?, ?, ?, ?, ?);
+
+getFilteredDecks:
+SELECT id, name, search_query, max_cards, is_rescheduled, created_at
+FROM filtered_deck
+ORDER BY created_at DESC;
+
+deleteFilteredDeck:
+DELETE FROM filtered_deck WHERE id = ?;
+
+------- PLUGIN REGISTRY -------
+
+insertOrUpdatePlugin:
+INSERT OR REPLACE INTO plugin_registry(plugin_id, name, version, enabled, plugin_type, config_json, installed_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getPlugin:
+SELECT id, plugin_id, name, version, enabled, plugin_type, config_json, installed_at, updated_at
+FROM plugin_registry
+WHERE plugin_id = ?;
+
+getAllPlugins:
+SELECT id, plugin_id, name, version, enabled, plugin_type, config_json, installed_at, updated_at
+FROM plugin_registry
+ORDER BY name;
+
+deletePlugin:
+DELETE FROM plugin_registry WHERE plugin_id = ?;

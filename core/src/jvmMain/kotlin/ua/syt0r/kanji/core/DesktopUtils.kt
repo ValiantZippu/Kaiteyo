@@ -7,18 +7,18 @@ fun getUserDataDirectory(): File {
     val userDir = System.getProperty("user.home")
     return when {
         osName.contains("linux", true) -> {
-            File("$userDir/.local/share/kanji-dojo/")
+            File("$userDir/.local/share/kaiteyo/")
         }
 
         osName.contains("windows", true) -> {
-            File("$userDir/AppData/Local/Kanji Dojo")
+            File("$userDir/AppData/Local/Kaiteyo")
         }
 
         osName.contains("mac", true) -> {
-            File("$userDir/Library/KanjiDojo")
+            File("$userDir/Library/Kaiteyo")
         }
 
-        else -> File("KanjiDojoData/")
+        else -> File("KaiteyoData/")
     }
 }
 

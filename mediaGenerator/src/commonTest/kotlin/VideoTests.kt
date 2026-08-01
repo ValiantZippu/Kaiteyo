@@ -59,7 +59,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import media.Res
-import media.kanji_dojo_icon
+import media.kaiteyo_icon
 import media.video_footer
 import media.video_platforms
 import org.jetbrains.compose.resources.painterResource
@@ -337,13 +337,13 @@ private fun AppLogo(modifier: Modifier) {
         modifier = modifier
     ) {
         Icon(
-            painter = painterResource(Res.drawable.kanji_dojo_icon),
+            painter = painterResource(Res.drawable.kaiteyo_icon),
             contentDescription = null,
             modifier = Modifier.size(36.dp),
             tint = Color.Unspecified
         )
         Text(
-            text = "Kanji Dojo",
+            text = "Kaiteyo",
             fontSize = 24.sp,
             fontWeight = FontWeight.Thin
         )

@@ -1,12 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
-    <style name="KanjiDojoBaseTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="KaiteyoBaseTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">#000</item>
     </style>
 
-    <style name="KanjiDojoBaseTheme.AppTheme">
+    <style name="KaiteyoBaseTheme.AppTheme">
         <item name="android:windowLightStatusBar">true</item>
     </style>
 

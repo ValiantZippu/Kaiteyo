@@ -3,6 +3,11 @@ package ua.syt0r.kanji.presentation.common.ui.kanji
 import android.graphics.Matrix
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSettings
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveAlpha
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveStrokeCap
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveStrokeJoin
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.resolveStrokeWidth
 
 /***
  * Drawing path without scale using android-specific matrix transformations
@@ -15,7 +20,8 @@ actual fun DrawScope.drawKanjiStroke(
     path: Path,
     color: Color,
     width: Float,
-    drawProgress: Float?
+    drawProgress: Float?,
+    brushSettings: BrushSettings
 ) {
 
     val kanjiScale = size.maxDimension / KanjiSize
@@ -35,11 +41,11 @@ actual fun DrawScope.drawKanjiStroke(
     drawPath(
         path = scaledPath,
         color = color,
-        alpha = color.alpha,
+        alpha = color.alpha * brushSettings.resolveAlpha(),
         style = androidx.compose.ui.graphics.drawscope.Stroke(
-            width = width * kanjiScale,
-            cap = StrokeCap.Round,
-            join = StrokeJoin.Round,
+            width = brushSettings.resolveStrokeWidth(width) * kanjiScale,
+            cap = brushSettings.resolveStrokeCap(),
+            join = brushSettings.resolveStrokeJoin(),
             pathEffect = pathEffect
         )
     )
