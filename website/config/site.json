@@ -1,0 +1,36 @@
+{
+  "name": "Kaiteyo",
+  "japaneseName": "書いてよ",
+  "tagline": "Write. Practice. Master.",
+  "description": "Kaiteyo is a premium, cross-platform Japanese language learning application. Study kanji and kana with spaced repetition, writing practice, and a built-in dictionary — offline-first, and free.",
+  "keywords": [
+    "kaiteyo", "kanji", "japanese", "learning", "spaced repetition",
+    "srs", "flashcards", "writing practice", "kotlin", "compose multiplatform",
+    "open source"
+  ],
+  "url": "https://valiantzippu.github.io/Kaiteyo",
+  "basePath": "/Kaiteyo/",
+  "repository": "https://github.com/ValiantZippu/Kaiteyo",
+  "releasesUrl": "https://github.com/ValiantZippu/Kaiteyo/releases",
+  "issuesUrl": "https://github.com/ValiantZippu/Kaiteyo/issues",
+  "discussionsUrl": "https://github.com/ValiantZippu/Kaiteyo/discussions",
+  "upstreamRepository": "https://github.com/syt0r/Kanji-Dojo",
+  "version": "2.2.1",
+  "license": {
+    "name": "GPL-3.0",
+    "spdx": "GPL-3.0-only",
+    "url": "https://www.gnu.org/licenses/gpl-3.0.html"
+  },
+  "locale": "en",
+  "social": {
+    "twitter": "@KaiteyoApp"
+  },
+  "footer": {
+    "platforms": ["Windows", "macOS", "Linux", "Android", "iOS"]
+  },
+  "githubPages": true,
+  "rss": {
+    "title": "Kaiteyo — Changelog",
+    "description": "Release notes and version history for Kaiteyo."
+  }
+}

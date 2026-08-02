@@ -1,0 +1,63 @@
+{# Generic page layout — breadcrumbs, article header, prose, optional TOC. #}
+{% extends "base.html" %}
+
+{% block content %}
+{% if breadcrumbs %}
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumbs">
+    {% for crumb in breadcrumbs %}
+    <li>
+      {% if crumb.url %}
+      <a href="{{ basePath }}{{ crumb.url.lstrip('/') }}">{{ crumb.title }}</a>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      {% else %}
+      <span class="current">{{ crumb.title }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
+<div style="height: var(--space-6)"></div>
+{% endif %}
+
+<article class="prose">
+  {% if not hide_title %}
+  <header style="margin-bottom: var(--space-10)">
+    <h1>{{ page_title }}</h1>
+    {% if page_description %}<p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>{% endif %}
+  </header>
+  {% endif %}
+
+  {% if toc and toc | length > 3 %}
+  <nav class="toc" aria-label="On this page">
+    <div class="toc-title">On this page</div>
+    <ul>
+      {% for heading in toc %}
+      <li style="margin-left: {{ (heading.level - 2) * 12 }}px">
+        <a href="#{{ heading.id }}">{{ heading.title }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {{ content_html | safe }}
+
+  {% if prev or next_page %}
+  <nav class="pagination" aria-label="Pagination">
+    {% if prev %}
+    <a class="pagination-link" href="{{ basePath }}{{ prev.url.lstrip('/') }}">
+      <span class="pagination-label">Previous</span>
+      <span class="pagination-title">{{ prev.title }}</span>
+    </a>
+    {% else %}<span></span>{% endif %}
+    {% if next_page %}
+    <a class="pagination-link pagination-next" href="{{ basePath }}{{ next_page.url.lstrip('/') }}">
+      <span class="pagination-label">Next</span>
+      <span class="pagination-title">{{ next_page.title }}</span>
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+</article>
+{% endblock %}

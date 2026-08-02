@@ -87,6 +87,23 @@ interface Strings {
 
     val reminderNotification: ReminderNotificationStrings
 
+    val nav: NavStrings
+
+}
+
+interface NavStrings {
+    val homeSection: String
+    val featuresSection: String
+    val systemSection: String
+    val collapseTooltip: String
+    val expandTooltip: String
+    val decksLabel: String
+    val textAnalysisLabel: String
+    val appearanceLabel: String
+    val sponsorLabel: String
+    val aboutLabel: String
+    val backupLabel: String
+    val syncLabel: String
 }
 
 interface AccountScreenStrings {

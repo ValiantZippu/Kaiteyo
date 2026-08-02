@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="{{ site.locale }}" data-base-path="{{ basePath }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ page_title or site.name }} — {{ site.name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ page_description or site.description }}{% endblock %}" />
+  <meta name="generator" content="Kaiteyo website builder" />
+
+  {% if site.keywords %}
+  <meta name="keywords" content="{{ site.keywords | join(', ') }}" />
+  {% endif %}
+
+  <link rel="canonical" href="{{ site.url }}{{ canonical_path or page_url }}" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+  <meta property="og:site_name" content="{{ site.name }}" />
+  <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}{{ self.description() }}{% endblock %}" />
+  <meta property="og:url" content="{{ site.url }}{{ canonical_path or page_url }}" />
+  <meta property="og:image" content="{{ site.url }}{{ basePath }}assets/images/og-cover.svg" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  {% if site.social.twitter %}
+  <meta name="twitter:site" content="{{ site.social.twitter }}" />
+  {% endif %}
+  <meta name="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %}" />
+  <meta name="twitter:description" content="{% block twitter_description %}{{ self.description() }}{% endblock %}" />
+  <meta name="twitter:image" content="{{ site.url }}{{ basePath }}assets/images/og-cover.svg" />
+
+  <!-- Icons -->
+  <link rel="icon" href="{{ basePath }}assets/images/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="{{ basePath }}assets/images/kaiteyo-mark.svg" />
+  <link rel="mask-icon" href="{{ basePath }}assets/images/kaiteyo-mark.svg" color="#C2FC8B" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "{{ site.name }} ({{ site.japaneseName }})",
+    "alternateName": "{{ site.japaneseName }}",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Windows, macOS, Linux, Android, iOS",
+    "description": {{ site.description | tojson }},
+    "url": "{{ site.url }}",
+    "softwareVersion": "{{ site.version }}",
+    "license": "{{ site.license.url }}",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/tokens.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/themes.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/base.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/layout.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/components.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/prose.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/animations.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/utilities.css" />
+
+  <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
+  <script>
+    (function () {
+      try {
+        var theme = JSON.parse(localStorage.getItem("kaiteyo:theme"));
+        var root = document.documentElement;
+        if (theme && theme.baseMode) {
+          root.dataset.baseMode = theme.baseMode;
+          root.dataset.accent = theme.accent || "signature";
+          root.dataset.glass = theme.glass ? "true" : "false";
+        } else {
+          root.dataset.baseMode =
+            window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "oled";
+          root.dataset.accent = "signature";
+        }
+        var nav = JSON.parse(localStorage.getItem("kaiteyo:nav"));
+        if (nav) {
+          root.dataset.navPosition = nav.mode === "floating" ? "floating" : (nav.position || "left");
+          root.dataset.navCollapsed = nav.collapsed ? "true" : "false";
+          root.dataset.navAutoHide = nav.autoHide ? "true" : "false";
+          if (nav.width && nav.width !== "default") {
+            var widths = { compact: 220, wide: 300 };
+            root.style.setProperty("--sidebar-width", widths[nav.width] + "px");
+          }
+          if (nav.floating) {
+            root.style.setProperty("--floating-x", nav.floating.x + "px");
+            root.style.setProperty("--floating-y", nav.floating.y + "px");
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+  {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+  <a class="skip-link" href="#mainContent">Skip to content</a>
+
+  {% include "partials/icons.html" %}
+
+  <div class="app-window">
+    {% include "partials/navigation.html" %}
+
+    <div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
+
+    <div class="content-panel">
+      {% include "partials/topbar.html" %}
+
+      <main class="content-main {% block main_class %}{% endblock %}" id="mainContent" tabindex="-1">
+        {% block content %}{% endblock %}
+      </main>
+
+      {% include "partials/footer.html" %}
+    </div>
+  </div>
+
+  {% include "partials/dialogs.html" %}
+
+  <script type="module" src="{{ basePath }}assets/scripts/main.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/theme.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/navigation.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/components.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/search.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/persistence.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/utils.js"></script>
+</body>
+</html>

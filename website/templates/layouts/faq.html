@@ -1,0 +1,34 @@
+{# FAQ — categorized, searchable, collapsible sections. #}
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+  <header style="margin-bottom: var(--space-6)">
+    <h1>{{ page_title }}</h1>
+    <p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>
+  </header>
+
+  <div class="search-bar" style="max-width: 420px; margin-bottom: var(--space-8)">
+    <svg class="icon search-icon" aria-hidden="true"><use href="#icon-search"/></svg>
+    <input class="input" type="search" placeholder="Filter questions…"
+           aria-label="Filter FAQ" data-filter-input data-filter-target="faqGroups" />
+  </div>
+
+  <div id="faqGroups" data-filter-scope>
+    {% for category, entries in faq_categories.items() %}
+    <section class="shortcut-group">
+      <h2 style="font-size: var(--text-xl)">{{ category }}</h2>
+      {% for entry in entries %}
+      <details class="accordion-item" id="faq-{{ entry.id }}">
+        <summary class="accordion-trigger" style="list-style: none">
+          <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+          {{ entry.question }}
+        </summary>
+        <div class="accordion-panel prose">{{ entry.body | safe }}</div>
+      </details>
+      {% endfor %}
+    </section>
+    {% endfor %}
+  </div>
+</article>
+{% endblock %}

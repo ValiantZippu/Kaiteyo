@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -661,13 +662,13 @@ private fun OnboardingFinish(accent: Color) {
         Spacer(Modifier.height(24.dp))
 
         Row(Modifier.fillMaxWidth(0.8f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            NextStepCard("\uD83D\uDCDA", "Browse Decks", "Explore kanji decks and start learning", accent)
-            NextStepCard("\uD83D\uDCCA", "View Stats", "Check your progress and streaks", accent)
+            NextStepCard("\uD83D\uDCDA", "Browse Decks", "Explore kanji decks and start learning", accent, Modifier.weight(1f))
+            NextStepCard("\uD83D\uDCCA", "View Stats", "Check your progress and streaks", accent, Modifier.weight(1f))
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(0.8f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            NextStepCard("\u2728", "Customize", "Fine-tune themes in Theme Studio", accent)
-            NextStepCard("\u2699\uFE0F", "Settings", "Adjust all preferences", accent)
+            NextStepCard("\u2728", "Customize", "Fine-tune themes in Theme Studio", accent, Modifier.weight(1f))
+            NextStepCard("\u2699\uFE0F", "Settings", "Adjust all preferences", accent, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(24.dp))
@@ -677,10 +678,11 @@ private fun OnboardingFinish(accent: Color) {
 }
 
 @Composable
-private fun NextStepCard(icon: String, title: String, desc: String, accent: Color) {
+private fun NextStepCard(icon: String, title: String, desc: String, accent: Color,
+                         modifier: Modifier = Modifier) {
     val surfaceColors = LocalSurfaceColors.current
     Column(
-        modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+        modifier = modifier.clip(RoundedCornerShape(12.dp))
             .background(surfaceColors.surface)
             .border(1.dp, surfaceColors.border.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
             .padding(12.dp)

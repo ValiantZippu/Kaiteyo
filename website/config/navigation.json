@@ -1,0 +1,44 @@
+{
+  "comment": "Primary website navigation. Grouped like the Kaiteyo app sidebar.",
+  "groups": [
+    {
+      "id": "learn",
+      "title": "Learn",
+      "items": [
+        { "id": "home", "title": "Dashboard", "url": "/", "icon": "dashboard" },
+        { "id": "features", "title": "Features", "url": "/features/", "icon": "layers" },
+        { "id": "screenshots", "title": "Screenshots", "url": "/screenshots/", "icon": "image" },
+        { "id": "theme-gallery", "title": "Theme Gallery", "url": "/theme-gallery/", "icon": "palette" },
+        { "id": "download", "title": "Download", "url": "/download/", "icon": "download", "badge": "v2.2.1" }
+      ]
+    },
+    {
+      "id": "explore",
+      "title": "Explore",
+      "items": [
+        { "id": "documentation", "title": "Documentation", "url": "/docs/", "icon": "book" },
+        { "id": "wiki", "title": "Wiki", "url": "/wiki/", "icon": "compass" },
+        { "id": "faq", "title": "FAQ", "url": "/faq/", "icon": "help" },
+        { "id": "shortcuts", "title": "Keyboard Shortcuts", "url": "/shortcuts/", "icon": "keyboard" },
+        { "id": "roadmap", "title": "Roadmap", "url": "/roadmap/", "icon": "milestone" },
+        { "id": "changelog", "title": "Changelog", "url": "/changelog/", "icon": "history" }
+      ]
+    },
+    {
+      "id": "project",
+      "title": "Project",
+      "items": [
+        { "id": "contributing", "title": "Contributing", "url": "/contributing/", "icon": "contribute" },
+        { "id": "plugins", "title": "Plugins", "url": "/plugins/", "icon": "puzzle" },
+        { "id": "credits", "title": "Credits", "url": "/credits/", "icon": "users" },
+        { "id": "license", "title": "License", "url": "/license/", "icon": "scale" },
+        { "id": "privacy", "title": "Privacy Policy", "url": "/privacy/", "icon": "shield" }
+      ]
+    }
+  ],
+  "external": [
+    { "id": "github", "title": "GitHub", "url": "https://github.com/ValiantZippu/Kaiteyo", "icon": "github" },
+    { "id": "releases", "title": "Releases", "url": "https://github.com/ValiantZippu/Kaiteyo/releases", "icon": "tag" },
+    { "id": "discussions", "title": "Discussions", "url": "https://github.com/ValiantZippu/Kaiteyo/discussions", "icon": "chat" }
+  ]
+}

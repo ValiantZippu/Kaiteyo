@@ -1,0 +1,165 @@
+/* ============================================================
+   KAITEYO — Prose
+   Styling for rendered markdown (documentation, wiki, pages).
+   ============================================================ */
+
+.prose {
+  font-size: var(--text-base);
+  line-height: var(--line-height-body);
+  color: var(--text-secondary);
+}
+
+.prose > *:first-child { margin-top: 0; }
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  color: var(--text-primary);
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-4);
+  scroll-margin-top: calc(var(--topbar-height) + var(--space-6));
+  font-weight: 700;
+}
+
+.prose h1:first-child,
+.prose h2:first-child,
+.prose h3:first-child { margin-top: 0; }
+
+.prose h1 { font-size: var(--text-3xl); }
+.prose h2 {
+  font-size: var(--text-2xl);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+.prose h3 { font-size: var(--text-xl); }
+.prose h4 { font-size: var(--text-lg); }
+.prose h5 { font-size: var(--text-base); }
+.prose h6 { font-size: var(--text-sm); }
+
+.prose p {
+  margin-bottom: var(--space-5);
+  color: var(--text-secondary);
+}
+
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-glow);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--duration-fast) var(--ease-out);
+}
+
+.prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: var(--space-5);
+  padding-left: var(--space-5);
+  color: var(--text-secondary);
+}
+
+.prose li { margin-bottom: var(--space-1); }
+.prose li > ul,
+.prose li > ol { margin-top: var(--space-1); margin-bottom: var(--space-1); }
+
+.prose li::marker { color: var(--text-muted); }
+
+.prose strong { color: var(--text-primary); font-weight: 600; }
+
+.prose blockquote {
+  margin: var(--space-5) 0;
+  padding: var(--space-2) var(--space-5);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--accent-softer);
+  color: var(--text-secondary);
+}
+
+.prose blockquote p { margin-bottom: var(--space-2); }
+.prose blockquote p:last-child { margin-bottom: 0; }
+
+.prose hr { margin: var(--space-10) 0; }
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-interactive);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 1px 6px;
+  color: var(--accent);
+}
+
+.prose pre { margin-bottom: var(--space-5); }
+
+.prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.prose table { margin-bottom: var(--space-5); }
+
+.prose img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  margin: var(--space-5) 0;
+}
+
+.prose .prose-edit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.prose .prose-edit-link:hover { color: var(--accent); text-decoration: none; }
+
+.prose .prose-edit-link .icon { width: 15px; height: 15px; }
+
+/* Task lists */
+.prose .task-list { list-style: none; padding-left: var(--space-1); }
+
+.prose .task-list li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.prose .task-list input[type="checkbox"] {
+  accent-color: var(--accent);
+  transform: translateY(1px);
+}
+
+/* Callouts written in markdown (blockquote with label) */
+.prose blockquote > p:first-child strong:first-child {
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  color: var(--accent);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+/* Definition lists */
+.prose dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.prose dt {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.prose dd { margin: 0; color: var(--text-secondary); }

@@ -31,6 +31,13 @@ interface AppDataRepository {
     suspend fun getCharacterReadingsOfLength(length: Int, limit: Int): List<String>
     suspend fun getData(kanji: String): KanjiData?
 
+    // Kanji Browser bulk queries
+    suspend fun getAllKanji(): List<ua.syt0r.kanji.core.app_data.data.KanjiListEntry>
+    suspend fun getAllKanjiMeanings(): List<ua.syt0r.kanji.core.app_data.data.KanjiMeaningEntry>
+    suspend fun getAllKanjiReadings(): List<ua.syt0r.kanji.core.app_data.data.KanjiReadingEntry>
+    suspend fun getAllClassifications(): List<ua.syt0r.kanji.core.app_data.data.KanjiClassificationEntry>
+    suspend fun getKanjiStrokeCounts(): Map<String, Int>
+
     suspend fun getRadicals(): List<RadicalData>
     suspend fun getCharactersWithRadicals(radicals: List<String>): List<String>
     suspend fun getAllRadicalsInCharactersWithSelectedRadicals(radicals: Set<String>): List<String>

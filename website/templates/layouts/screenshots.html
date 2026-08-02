@@ -1,0 +1,26 @@
+{# Screenshots layout — phone gallery with lightbox + theme comparison slider. #}
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+  <header style="margin-bottom: var(--space-8)">
+    <h1>{{ page_title }}</h1>
+    <p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>
+  </header>
+
+  <div class="dialog-section-title">On your phone</div>
+  <div class="shot-grid">
+    {% for shot in screenshots.phone %}
+    <a class="shot" href="{{ basePath }}assets/screenshots/phone/{{ shot.file }}" data-lightbox
+       aria-label="{{ shot.caption }}">
+      <img src="{{ basePath }}assets/screenshots/phone/{{ shot.file }}" alt="{{ shot.caption }}" loading="lazy" />
+      <span class="shot-caption">{{ shot.caption }}</span>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="prose">
+    {{ content_html | safe }}
+  </div>
+</article>
+{% endblock %}

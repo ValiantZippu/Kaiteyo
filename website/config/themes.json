@@ -1,0 +1,179 @@
+{
+  "comment": "Mirrors core/src/commonMain/kotlin/ua/syt0r/kanji/presentation/common/theme/Color.kt",
+  "baseModes": [
+    {
+      "id": "oled",
+      "displayName": "OLED Black",
+      "surface": {
+        "background": "#050505",
+        "surface": "#0D0D0D",
+        "surfaceElevated": "#101010",
+        "surfaceInteractive": "#1A1A1A",
+        "border": "#2A2A2A",
+        "textPrimary": "#F0F0F0",
+        "textSecondary": "#A0A0A0",
+        "textMuted": "#606060",
+        "textInverse": "#050505"
+      },
+      "default": true
+    },
+    {
+      "id": "dark",
+      "displayName": "Dark Gray",
+      "surface": {
+        "background": "#121212",
+        "surface": "#1A1A1A",
+        "surfaceElevated": "#242424",
+        "surfaceInteractive": "#2E2E2E",
+        "border": "#2A2A2A",
+        "textPrimary": "#F0F0F0",
+        "textSecondary": "#A0A0A0",
+        "textMuted": "#606060",
+        "textInverse": "#050505"
+      }
+    },
+    {
+      "id": "light",
+      "displayName": "Light",
+      "surface": {
+        "background": "#F5F5F5",
+        "surface": "#EEEEEE",
+        "surfaceElevated": "#E8E8E8",
+        "surfaceInteractive": "#FCFCFC",
+        "border": "#D0D0D0",
+        "textPrimary": "#1A1A1A",
+        "textSecondary": "#606060",
+        "textMuted": "#A0A0A0",
+        "textInverse": "#F0F0F0"
+      }
+    },
+    {
+      "id": "sepia",
+      "displayName": "Sepia",
+      "description": "Reading mode",
+      "surface": {
+        "background": "#F5F0E8",
+        "surface": "#EDE5D8",
+        "surfaceElevated": "#E5DCC8",
+        "surfaceInteractive": "#F8F4EE",
+        "border": "#D4C8B8",
+        "textPrimary": "#3D3028",
+        "textSecondary": "#7A6B5D",
+        "textMuted": "#A89888",
+        "textInverse": "#3D3028"
+      }
+    }
+  ],
+  "accents": [
+    {
+      "id": "signature",
+      "displayName": "Signature Pineapple",
+      "primary": "#C2FC8B",
+      "primaryDark": "#9CE85E",
+      "secondary": "#FEAB57",
+      "secondaryDark": "#FD8A2E",
+      "tertiary": "#7BC8FF",
+      "onPrimary": "#050505",
+      "onSecondary": "#050505",
+      "previewColors": ["#C2FC8B", "#FEAB57"],
+      "gradientStart": "#C2FC8B",
+      "gradientEnd": "#FEAB57",
+      "default": true
+    },
+    {
+      "id": "cotton-candy",
+      "displayName": "Cotton Candy",
+      "primary": "#D4A5F0",
+      "primaryDark": "#C084E8",
+      "secondary": "#FFB5C5",
+      "secondaryDark": "#FF8FA5",
+      "tertiary": "#A0D2FF",
+      "onPrimary": "#1A1A2E",
+      "onSecondary": "#1A1A2E",
+      "previewColors": ["#D4A5F0", "#FFB5C5", "#A0D2FF"],
+      "gradientStart": "#D4A5F0",
+      "gradientEnd": "#FFB5C5"
+    },
+    {
+      "id": "ocean",
+      "displayName": "Ocean",
+      "primary": "#00D4AA",
+      "primaryDark": "#00B894",
+      "secondary": "#00A8FF",
+      "secondaryDark": "#0088CC",
+      "tertiary": "#0D47A1",
+      "onPrimary": "#050505",
+      "onSecondary": "#050505",
+      "previewColors": ["#0D47A1", "#00A8FF", "#00D4AA"],
+      "gradientStart": "#0D47A1",
+      "gradientEnd": "#00D4AA"
+    },
+    {
+      "id": "forest",
+      "displayName": "Forest",
+      "primary": "#81C784",
+      "primaryDark": "#66BB6A",
+      "secondary": "#A5D6A7",
+      "secondaryDark": "#81C784",
+      "tertiary": "#5D4037",
+      "onPrimary": "#1A2E1A",
+      "onSecondary": "#1A2E1A",
+      "previewColors": ["#5D4037", "#A5D6A7", "#81C784"],
+      "gradientStart": "#5D4037",
+      "gradientEnd": "#81C784"
+    },
+    {
+      "id": "sunset",
+      "displayName": "Sunset",
+      "primary": "#FF6B6B",
+      "primaryDark": "#E05555",
+      "secondary": "#FFB347",
+      "secondaryDark": "#E09D3A",
+      "tertiary": "#FF8C69",
+      "onPrimary": "#1A0A0A",
+      "onSecondary": "#1A0A0A",
+      "previewColors": ["#FF6B6B", "#FFB347", "#FF8C69"],
+      "gradientStart": "#FF6B6B",
+      "gradientEnd": "#FFB347"
+    },
+    {
+      "id": "lavender",
+      "displayName": "Lavender",
+      "primary": "#B39DDB",
+      "primaryDark": "#9575CD",
+      "secondary": "#CE93D8",
+      "secondaryDark": "#BA68C8",
+      "tertiary": "#80CBC4",
+      "onPrimary": "#1A1A2E",
+      "onSecondary": "#1A1A2E",
+      "previewColors": ["#B39DDB", "#CE93D8", "#80CBC4"],
+      "gradientStart": "#B39DDB",
+      "gradientEnd": "#CE93D8"
+    },
+    {
+      "id": "monochrome",
+      "displayName": "Monochrome",
+      "primary": "#E0E0E0",
+      "primaryDark": "#BDBDBD",
+      "secondary": "#9E9E9E",
+      "secondaryDark": "#757575",
+      "tertiary": "#616161",
+      "onPrimary": "#121212",
+      "onSecondary": "#121212",
+      "previewColors": ["#E0E0E0", "#9E9E9E", "#616161"],
+      "gradientStart": "#E0E0E0",
+      "gradientEnd": "#9E9E9E"
+    }
+  ],
+  "semantic": {
+    "success": "#C2FC8B",
+    "warning": "#FEAB57",
+    "error": "#FF6B6B",
+    "info": "#7BC8FF",
+    "new": "#A78BFA"
+  },
+  "glass": {
+    "opacity": 0.8,
+    "blur": "20px"
+  }
+}

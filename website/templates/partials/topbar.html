@@ -1,0 +1,25 @@
+{# Content panel top bar — search, theme, navigation, and GitHub actions. #}
+<header class="topbar">
+  <button class="btn-icon topbar-menu" type="button" data-nav-open aria-label="Open navigation">
+    <svg class="icon" aria-hidden="true"><use href="#icon-menu"/></svg>
+  </button>
+  <div class="topbar-title">
+    {% block topbar_title %}<h1>{{ page_title or site.name }}</h1>{% endblock %}
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" type="button" data-open-search aria-label="Open search">
+      <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+      Search
+      <kbd>Ctrl K</kbd>
+    </button>
+    <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
+      <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
+    </button>
+    <button class="btn-icon" type="button" data-open-nav-settings data-tooltip="Navigation settings" aria-label="Open navigation settings">
+      <svg class="icon" aria-hidden="true"><use href="#icon-layout"/></svg>
+    </button>
+    <a class="btn-icon" href="{{ site.repository }}" data-tooltip="GitHub" aria-label="Kaiteyo on GitHub" target="_blank" rel="noopener">
+      <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+    </a>
+  </div>
+</header>

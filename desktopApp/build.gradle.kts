@@ -42,7 +42,7 @@ compose.desktop {
             packageVersion = AppVersion.desktopAppVersion
             vendor = "syt0r"
 
-            modules("jdk.unsupported", "java.sql")
+            modules("jdk.unsupported", "java.sql", "java.net.http")
 
             windows {
                 upgradeUuid = "12c852a8-6e21-41a7-bd47-3bec9ff5c5df"

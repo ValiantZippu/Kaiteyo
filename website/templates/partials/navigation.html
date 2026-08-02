@@ -1,0 +1,61 @@
+{# Site navigation panel — mirrors the Kaiteyo sidebar. #}
+<nav class="nav-panel" id="navPanel" aria-label="Site navigation">
+  <div class="drag-handle" data-tooltip="Drag to move" aria-hidden="true"></div>
+  <div class="nav-inner">
+    <a class="nav-brand" href="{{ basePath }}">
+      <img class="nav-logo" src="{{ basePath }}assets/images/kaiteyo-mark.svg" alt="Kaiteyo logo" width="36" height="36" />
+      <span class="nav-brand-text">
+        <span class="nav-brand-name">KAITEYO</span>
+        <span class="nav-brand-tagline"><span class="lang-ja">{{ site.japaneseName }}</span> — {{ site.tagline }}</span>
+      </span>
+    </a>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-groups">
+      {% for group in navigation.groups %}
+      <div class="nav-group">
+        <div class="nav-group-title">{{ group.title }}</div>
+        <ul class="nav-list">
+          {% for item in group.items %}
+          <li>
+            <a class="nav-item" href="{{ basePath }}{{ item.url.lstrip('/') }}"
+               {% if item.badge %}data-badge="{{ item.badge }}"{% endif %}>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-{{ item.icon }}"/></svg>
+              <span class="nav-label">{{ item.title }}</span>
+              {% if item.badge %}<span class="badge badge-muted nav-badge">{{ item.badge }}</span>{% endif %}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-footer">
+      <a class="btn btn-primary nav-cta" href="{{ basePath }}download/">
+        <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+        <span class="nav-cta-label">Download</span>
+      </a>
+      <div class="flex gap-2 items-center">
+        <button class="btn-icon" type="button" data-nav-collapse-toggle
+                data-tooltip="Toggle collapsed" aria-label="Toggle navigation collapsed state">
+          <svg class="icon" aria-hidden="true"><use href="#icon-layout"/></svg>
+        </button>
+        <button class="btn-icon" type="button" data-open-theme
+                data-tooltip="Theme" aria-label="Open theme settings">
+          <svg class="icon" aria-hidden="true"><use href="#icon-palette"/></svg>
+        </button>
+        <button class="btn-icon" type="button" data-open-nav-settings
+                data-tooltip="Navigation" aria-label="Open navigation settings">
+          <svg class="icon" aria-hidden="true"><use href="#icon-layout"/></svg>
+        </button>
+        <a class="btn-icon" href="{{ site.repository }}" data-tooltip="GitHub" aria-label="Kaiteyo on GitHub" target="_blank" rel="noopener">
+          <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>

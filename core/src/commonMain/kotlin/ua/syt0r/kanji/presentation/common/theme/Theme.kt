@@ -30,6 +30,9 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.presentation.common.resources.string.LocalStrings
 import ua.syt0r.kanji.presentation.common.resources.string.getStrings
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
@@ -131,10 +134,23 @@ enum class SidebarPosition(val displayName: String) {
     Bottom("Bottom")
 }
 
+enum class NavAutoHide(val displayName: String) {
+    Never("Never"),
+    Always("Always"),
+    FullscreenOnly("Fullscreen Only"),
+    Smart("Smart")
+}
+
 data class LayoutConfig(
     val density: UIDensity = UIDensity.Comfortable,
     val sidebarMode: SidebarMode = SidebarMode.Expanded,
     val sidebarPosition: SidebarPosition = SidebarPosition.Left,
+    val autoHide: NavAutoHide = NavAutoHide.Never,
+    val collapsed: Boolean = false,
+    val panelWidth: Dp = 260.dp,
+    val panelHeight: Dp = 56.dp,
+    val floatingOffset: DpOffset = DpOffset.Zero,
+    val accentIndex: Int = -1,
     val transparencyEnabled: Boolean = false,
     val blurEnabled: Boolean = false,
     val glassOpacity: Float = 0.8f

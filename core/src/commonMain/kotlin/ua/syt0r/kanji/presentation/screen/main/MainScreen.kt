@@ -21,10 +21,15 @@ import kotlinx.coroutines.flow.onEach
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
 import ua.syt0r.kanji.core.user_data.database.DatabaseMigrationState
+import ua.syt0r.kanji.presentation.common.nav.NavShell
 import ua.syt0r.kanji.presentation.dialog.VersionChangeDialog
 import ua.syt0r.kanji.presentation.getMultiplatformViewModel
+import ua.syt0r.kanji.presentation.screen.main.features.CommandPaletteOverlay
 import ua.syt0r.kanji.presentation.screen.main.features.DeepLinkHandler
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
 import ua.syt0r.kanji.presentation.screen.main.features.MigrationDialog
+import ua.syt0r.kanji.presentation.screen.main.features.PaletteAction
 import ua.syt0r.kanji.presentation.screen.main.features.SyncDialog
 
 @Composable
@@ -36,6 +41,121 @@ fun MainScreen(
     val navigationState = rememberMainNavigationState()
     val migrationState = viewModel.migrationState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val dataCenter = koinInject<KaiteyoDataCenter>()
+
+    LaunchedEffect(Unit) { dataCenter.ensureLoaded() }
+
+    LaunchedEffect(Unit) {
+        KaiteyoPalette.controller.setActions(
+            buildList {
+                add(
+                    PaletteAction(
+                        title = "Kanji Browser",
+                        subtitle = "Search, filter, browse all kanji",
+                        keywords = "kanji browse search jlpt radical",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.KanjiBrowser()) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Collections",
+                        subtitle = "Smart collections, tags and flags",
+                        keywords = "collections tags flags favorites",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.Collections) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Favorites",
+                        subtitle = "Only favorite kanji",
+                        keywords = "favorites star starred",
+                        category = "Filter"
+                    ) {
+                        navigationState.navigate(
+                            MainDestination.KanjiBrowser(
+                                ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria(
+                                    favoritesOnly = true
+                                )
+                            )
+                        )
+                    }
+                )
+                add(
+                    PaletteAction(
+                        title = "Flagged kanji",
+                        subtitle = "Kanji with any flag set",
+                        keywords = "flagged flags color",
+                        category = "Filter"
+                    ) {
+                        navigationState.navigate(
+                            MainDestination.KanjiBrowser(
+                                ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria(
+                                    showFlagged = true
+                                )
+                            )
+                        )
+                    }
+                )
+                add(
+                    PaletteAction(
+                        title = "Difficult kanji",
+                        subtitle = "Kanji above difficulty threshold",
+                        keywords = "difficult hard problems",
+                        category = "Filter"
+                    ) {
+                        navigationState.navigate(
+                            MainDestination.KanjiBrowser(
+                                ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria(
+                                    showDifficult = true
+                                )
+                            )
+                        )
+                    }
+                )
+                add(
+                    PaletteAction(
+                        title = "Frequently failed",
+                        subtitle = "Kanji with 3+ lapses",
+                        keywords = "failed lapses mistakes",
+                        category = "Filter"
+                    ) {
+                        navigationState.navigate(
+                            MainDestination.KanjiBrowser(
+                                ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria(
+                                    minLapses = 3
+                                )
+                            )
+                        )
+                    }
+                )
+                add(
+                    PaletteAction(
+                        title = "Card Manager",
+                        subtitle = "Legacy deck card browser",
+                        keywords = "decks cards manager anki",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.CardBrowser) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Statistics",
+                        subtitle = "Dashboard and review stats",
+                        keywords = "stats statistics dashboard heatmap",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.StatisticsDashboard) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Close palette",
+                        subtitle = "Dismiss this menu",
+                        keywords = "close exit dismiss esc",
+                        category = "App",
+                        shortcut = "Esc"
+                    ) { KaiteyoPalette.controller.close() }
+                )
+            }
+        )
+    }
 
     Scaffold(
         snackbarHost = {
@@ -45,8 +165,12 @@ fun MainScreen(
             )
         }
     ) {
-        MainNavigation(navigationState)
+        NavShell(navigationState = navigationState) {
+            MainNavigation(navigationState)
+        }
     }
+
+    CommandPaletteOverlay()
 
     deepLinkHandler.HandleDeepLinksLaunchedEffect(navigationState)
 

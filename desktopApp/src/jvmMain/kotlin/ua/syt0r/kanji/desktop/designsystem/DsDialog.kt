@@ -1,0 +1,174 @@
+package ua.syt0r.kanji.desktop.designsystem
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+
+// ============================================
+// KAITEYO DESIGN SYSTEM — DIALOGS
+// ============================================
+
+@Composable
+fun DsDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val sc = surfaceColors()
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Column(
+            modifier = modifier
+                .width(480.dp)
+                .clip(RoundedCornerShape(DsRadius.Xl))
+                .background(sc.surfaceElevated)
+                .padding(DsSpacing.Xl)
+        ) {
+            Text(
+                text = title,
+                color = sc.textPrimary,
+                fontSize = DsType.Title,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(DsSpacing.Lg))
+            content()
+        }
+    }
+}
+
+@Composable
+fun DsConfirmDialog(
+    title: String,
+    message: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    danger: Boolean = false
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    DsDialog(title = title, onDismiss = onDismiss, modifier = modifier) {
+        Text(
+            text = message,
+            color = sc.textSecondary,
+            fontSize = DsType.Body
+        )
+        Spacer(Modifier.height(DsSpacing.Xl))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)
+        ) {
+            DsTextButton(text = "Cancel", onClick = onDismiss)
+            DsButton(
+                text = confirmText,
+                onClick = {
+                    onDismiss()
+                    onConfirm()
+                },
+                kind = if (danger) DsButtonKind.Danger else DsButtonKind.Primary
+            )
+        }
+    }
+}
+
+@Composable
+fun DsPromptDialog(
+    title: String,
+    placeholder: String,
+    initialValue: String = "",
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var value by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(initialValue) }
+    DsDialog(title = title, onDismiss = onDismiss, modifier = modifier) {
+        DsTextField(
+            value = value,
+            onValueChange = { value = it },
+            placeholder = placeholder,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(DsSpacing.Xl))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)
+        ) {
+            DsTextButton(text = "Cancel", onClick = onDismiss)
+            DsButton(
+                text = "Save",
+                onClick = {
+                    onDismiss()
+                    onConfirm(value.trim())
+                },
+                enabled = value.isNotBlank()
+            )
+        }
+    }
+}
+
+@Composable
+fun DsProgressDialog(
+    title: String,
+    message: String,
+    progress: Float,
+    modifier: Modifier = Modifier
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    DsDialog(title = title, onDismiss = {}, modifier = modifier) {
+        Text(
+            text = message,
+            color = sc.textSecondary,
+            fontSize = DsType.Body
+        )
+        Spacer(Modifier.height(DsSpacing.Lg))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(sc.surfaceInteractive)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(ac.primary)
+            )
+        }
+        Spacer(Modifier.height(DsSpacing.Sm))
+        Text(
+            text = "${(progress.coerceIn(0f, 1f) * 100).toInt()}%",
+            color = sc.textMuted,
+            fontSize = DsType.Caption,
+            textAlign = TextAlign.End,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}

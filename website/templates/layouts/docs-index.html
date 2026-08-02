@@ -1,0 +1,34 @@
+{# Documentation index — section overview grid. #}
+{% extends "base.html" %}
+
+{% block main_class %}is-fullwidth{% endblock %}
+
+{% block content %}
+<article>
+  <header style="margin-bottom: var(--space-10)">
+    <h1>{{ page_title }}</h1>
+    <p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>
+    <p style="color: var(--text-muted); font-size: var(--text-sm)">
+      Rendered directly from the <code>docs/</code> folder of the repository —
+      it lives with the source code and never gets out of date.
+    </p>
+  </header>
+
+  <div class="feature-grid">
+    {% for entry in sections %}
+    <a class="card card-hover link-card" href="{{ basePath }}docs/{{ entry.section.id }}/{{ entry.pages[0].slug }}/">
+      <div class="card-label">{{ entry.pages | length }} documents</div>
+      <div class="card-title">{{ entry.section.title }}</div>
+      <p class="card-description">{{ entry.section.description }}</p>
+      <div class="card-divider"></div>
+      <div class="flex-between">
+        <span class="text-sm text-muted">
+          {% for page in entry.pages[:2] %}{{ page.slug | replace('-', ' ') | title }}{% if not loop.last %} · {% endif %}{% endfor %}…
+        </span>
+        <svg class="icon card-arrow" aria-hidden="true"><use href="#icon-arrow-right"/></svg>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</article>
+{% endblock %}

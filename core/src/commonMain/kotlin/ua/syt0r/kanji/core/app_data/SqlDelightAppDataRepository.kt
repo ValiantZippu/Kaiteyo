@@ -97,6 +97,49 @@ class SqlDelightAppDataRepository(
         getRadicals().executeAsList().map { RadicalData(it.radical, it.strokesCount.toInt()) }
     }
 
+    override suspend fun getAllKanji(): List<ua.syt0r.kanji.core.app_data.data.KanjiListEntry> = lettersQuery {
+        getAllKanji().executeAsList().map {
+            ua.syt0r.kanji.core.app_data.data.KanjiListEntry(
+                kanji = it.kanji,
+                frequency = it.frequency?.toInt()
+            )
+        }
+    }
+
+    override suspend fun getAllKanjiMeanings(): List<ua.syt0r.kanji.core.app_data.data.KanjiMeaningEntry> = lettersQuery {
+        getAllKanjiMeanings().executeAsList().map {
+            ua.syt0r.kanji.core.app_data.data.KanjiMeaningEntry(
+                kanji = it.kanji,
+                meaning = it.meaning
+            )
+        }
+    }
+
+    override suspend fun getAllKanjiReadings(): List<ua.syt0r.kanji.core.app_data.data.KanjiReadingEntry> = lettersQuery {
+        getAllKanjiReadings().executeAsList().map {
+            ua.syt0r.kanji.core.app_data.data.KanjiReadingEntry(
+                kanji = it.kanji,
+                readingType = it.reading_type,
+                reading = it.reading
+            )
+        }
+    }
+
+    override suspend fun getAllClassifications(): List<ua.syt0r.kanji.core.app_data.data.KanjiClassificationEntry> = lettersQuery {
+        getAllClassifications().executeAsList().map {
+            ua.syt0r.kanji.core.app_data.data.KanjiClassificationEntry(
+                kanji = it.kanji,
+                classification = it.class_
+            )
+        }
+    }
+
+    override suspend fun getKanjiStrokeCounts(): Map<String, Int> = lettersQuery {
+        getKanjiStrokeCounts().executeAsList().associate {
+            it.character to it.stroke_count.toInt()
+        }
+    }
+
     override suspend fun getCharactersWithRadicals(
         radicals: List<String>
     ): List<String> = lettersQuery {

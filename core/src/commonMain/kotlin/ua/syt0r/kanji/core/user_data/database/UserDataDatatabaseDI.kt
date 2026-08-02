@@ -58,7 +58,7 @@ fun Module.addUserDataDatabaseDefinitions() {
 
     single<CardDatabaseManager> {
         CardDatabaseManagerImpl(
-            transactionScope = get<UserDataDatabaseContract.Manager>()
+            transactionScope = ObservableUserDataRepository(databaseManager = get())
         )
     }
 

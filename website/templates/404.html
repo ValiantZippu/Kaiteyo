@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="{{ site.locale }}" data-base-path="{{ basePath }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Page not found — {{ site.name }}</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="{{ basePath }}assets/images/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/tokens.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/themes.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/base.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/components.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/utilities.css" />
+  <script>
+    (function () {
+      try {
+        var theme = JSON.parse(localStorage.getItem("kaiteyo:theme"));
+        var root = document.documentElement;
+        if (theme && theme.baseMode) {
+          root.dataset.baseMode = theme.baseMode;
+          root.dataset.accent = theme.accent || "signature";
+          root.dataset.glass = theme.glass ? "true" : "false";
+        } else {
+          root.dataset.baseMode =
+            window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "oled";
+          root.dataset.accent = "signature";
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <main style="min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: var(--space-6)">
+    <div style="text-align: center; max-width: 520px">
+      <img src="{{ basePath }}assets/images/kaiteyo-mark.svg" alt="" width="72" height="72"
+           style="margin: 0 auto var(--space-6); border-radius: var(--radius-lg)" />
+      <h1 style="font-size: var(--text-4xl); margin-bottom: var(--space-2)">404</h1>
+      <p style="color: var(--text-secondary); margin-bottom: var(--space-8)">
+        This page was not found — or it has moved. Try the search, or head back to the dashboard.
+      </p>
+      <div class="flex-center gap-3">
+        <a class="btn btn-primary" href="{{ basePath }}">
+          <svg class="icon" aria-hidden="true"><use href="#icon-dashboard"/></svg>
+          Dashboard
+        </a>
+        <button class="btn btn-ghost" type="button" onclick="document.dispatchEvent(new CustomEvent('kaiteyo:open-search'))">
+          <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+          Search
+        </button>
+      </div>
+    </div>
+  </main>
+  <script type="module" src="{{ basePath }}assets/scripts/main.js"></script>
+</body>
+</html>

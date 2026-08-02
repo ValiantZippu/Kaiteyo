@@ -5,6 +5,7 @@ import kotlinx.datetime.LocalTime
 import ua.syt0r.kanji.core.suspended_property.BooleanSuspendedPropertyType
 import ua.syt0r.kanji.core.suspended_property.EnumSuspendedPropertyType.Companion.enumSuspendedPropertyType
 import ua.syt0r.kanji.core.suspended_property.InstantSuspendedPropertyType
+import ua.syt0r.kanji.core.suspended_property.IntSuspendedPropertyType
 import ua.syt0r.kanji.core.suspended_property.LocalTimeSuspendedPropertyType
 import ua.syt0r.kanji.core.suspended_property.StringSuspendedPropertyType
 import ua.syt0r.kanji.core.suspended_property.SuspendedProperty
@@ -216,6 +217,117 @@ class AppPreferences(
         key = "daily_reset_time",
         initialValue = { LocalTime(0, 0) },
         affectSync = true
+    )
+
+    override val navSidebarMode: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "nav_sidebar_mode",
+        initialValue = { "Expanded" },
+        enableBackup = false
+    )
+
+    override val navSidebarPosition: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "nav_sidebar_position",
+        initialValue = { "Left" },
+        enableBackup = false
+    )
+
+    override val navAutoHide: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "nav_auto_hide",
+        initialValue = { "Never" },
+        enableBackup = false
+    )
+
+    override val navCollapsed: SuspendedProperty<Boolean> = createProperty(
+        type = BooleanSuspendedPropertyType,
+        key = "nav_collapsed",
+        initialValue = { false },
+        enableBackup = false
+    )
+
+    override val navWidth: SuspendedProperty<Int> = createProperty(
+        type = IntSuspendedPropertyType,
+        key = "nav_width",
+        initialValue = { 260 },
+        enableBackup = false
+    )
+
+    override val navHeight: SuspendedProperty<Int> = createProperty(
+        type = IntSuspendedPropertyType,
+        key = "nav_height",
+        initialValue = { 56 },
+        enableBackup = false
+    )
+
+    override val navFloatingOffsetX: SuspendedProperty<Int> = createProperty(
+        type = IntSuspendedPropertyType,
+        key = "nav_floating_offset_x",
+        initialValue = { 0 },
+        enableBackup = false
+    )
+
+    override val navFloatingOffsetY: SuspendedProperty<Int> = createProperty(
+        type = IntSuspendedPropertyType,
+        key = "nav_floating_offset_y",
+        initialValue = { 0 },
+        enableBackup = false
+    )
+
+    override val navAccentIndex: SuspendedProperty<Int> = createProperty(
+        type = IntSuspendedPropertyType,
+        key = "nav_accent_index",
+        initialValue = { -1 },
+        enableBackup = false
+    )
+
+    override val reviewSettingsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_review_settings_json",
+        initialValue = { "" }
+    )
+
+    override val backupConfigJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_backup_config_json",
+        initialValue = { "" }
+    )
+
+    override val savedSearchesJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_saved_searches_json",
+        initialValue = { "" }
+    )
+
+    override val browserColumnsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_browser_columns_json",
+        initialValue = { "" }
+    )
+
+    override val shortcutBindingsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_shortcut_bindings_json",
+        initialValue = { "" }
+    )
+
+    override val tagSortOrder: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_tag_sort_order",
+        initialValue = { "name" }
+    )
+
+    override val collectionSortOrder: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_collection_sort_order",
+        initialValue = { "name" }
+    )
+
+    override val browserLastQuery: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_browser_last_query",
+        initialValue = { "" }
     )
 
 }

@@ -74,6 +74,23 @@ object EnglishStrings : Strings {
     override val reminderNotification: ReminderNotificationStrings =
         EnglishReminderNotificationStrings
 
+    override val nav: NavStrings = EnglishNavStrings
+
+}
+
+object EnglishNavStrings : NavStrings {
+    override val homeSection: String = "Home"
+    override val featuresSection: String = "Features"
+    override val systemSection: String = "System"
+    override val collapseTooltip: String = "Collapse"
+    override val expandTooltip: String = "Expand"
+    override val decksLabel: String = "Decks"
+    override val textAnalysisLabel: String = "Text Analysis"
+    override val appearanceLabel: String = "Appearance"
+    override val sponsorLabel: String = "Sponsor"
+    override val aboutLabel: String = EnglishAboutStrings.title
+    override val backupLabel: String = EnglishBackupStrings.title
+    override val syncLabel: String = EnglishSyncScreenStrings.title
 }
 
 object EnglishHomeStrings : HomeStrings {

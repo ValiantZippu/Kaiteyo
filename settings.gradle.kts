@@ -5,6 +5,8 @@ pluginManagement {
         mavenCentral()
     }
 
+    // NOTE: literal versions here (the version catalog is not accessible inside pluginManagement).
+    // Keep in sync with [versions] in gradle/libs.versions.toml.
     val kotlinVersion = "2.1.20"
     val agpVersion = "8.5.2"
 
@@ -26,16 +28,3 @@ pluginManagement {
 
 rootProject.name = "kaiteyo"
 include(":app", ":iosApp", ":desktopApp", ":core", ":mediaGenerator")
-
-val localProperties = File(rootDir, "local.properties")
-if (localProperties.exists()) {
-    localProperties.readLines().forEach { line ->
-        if (line.startsWith("sdk.dir=")) {
-            val sdkDir = line.removePrefix("sdk.dir=").trim().removeSurrounding("\"")
-            System.setProperty("sdk.dir", sdkDir)
-            System.setProperty("android.sdk.path", sdkDir)
-            System.setProperty("android.sdk.root", sdkDir)
-            System.setProperty("android.home", sdkDir)
-        }
-    }
-}

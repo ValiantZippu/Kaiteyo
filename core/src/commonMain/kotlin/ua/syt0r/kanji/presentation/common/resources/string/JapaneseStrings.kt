@@ -71,6 +71,23 @@ object JapaneseStrings : Strings {
     override val reminderNotification: ReminderNotificationStrings =
         JapaneseReminderNotificationStrings
 
+    override val nav: NavStrings = JapaneseNavStrings
+
+}
+
+object JapaneseNavStrings : NavStrings {
+    override val homeSection: String = "ホーム"
+    override val featuresSection: String = "機能"
+    override val systemSection: String = "システム"
+    override val collapseTooltip: String = "折りたたむ"
+    override val expandTooltip: String = "展開"
+    override val decksLabel: String = "デッキ"
+    override val textAnalysisLabel: String = "テキスト解析"
+    override val appearanceLabel: String = "外観"
+    override val sponsorLabel: String = "スポンサー"
+    override val aboutLabel: String = JapaneseAboutStrings.title
+    override val backupLabel: String = JapaneseBackupStrings.title
+    override val syncLabel: String = JapaneseSyncScreenStrings.title
 }
 
 object JapaneseHomeStrings : HomeStrings {

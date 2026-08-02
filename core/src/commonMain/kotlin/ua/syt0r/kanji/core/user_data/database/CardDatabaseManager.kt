@@ -44,14 +44,23 @@ interface CardDatabaseManager {
     suspend fun saveShortcut(actionId: String, primaryKey: String, modifierFlags: Int = 0, profileName: String = "default")
     suspend fun getShortcut(actionId: String, profileName: String = "default"): ShortcutRow?
     suspend fun getAllShortcuts(): List<ShortcutRow>
+    suspend fun deleteShortcut(actionId: String, profileName: String = "default")
+    suspend fun resetShortcuts(profileName: String = "default")
 
     // Backup metadata
     suspend fun recordBackup(filename: String, fileSize: Long, checksum: String, isAutomatic: Boolean, notes: String = "")
     suspend fun getBackups(limit: Int = 20, offset: Int = 0): List<BackupRow>
+    suspend fun deleteBackupMetadata(id: Long)
 
     // Filtered Decks
     suspend fun createFilteredDeck(name: String, searchQuery: String, maxCards: Int = 9999): Long
     suspend fun getFilteredDecks(): List<FilteredDeckRow>
+    suspend fun deleteFilteredDeck(id: Long)
+
+    // History utilities
+    suspend fun getHistoryByAction(actionType: Int, limit: Int = 100): List<StudyHistoryRow>
+    suspend fun clearHistory(beforeTimestamp: Long = Long.MAX_VALUE)
+    suspend fun getTagUsageCount(tagId: Long): Long
 
     // Change events
     val changesFlow: SharedFlow<Unit>
@@ -250,6 +259,16 @@ class CardDatabaseManagerImpl(
             getAllShortcuts().executeAsList().map { it.toShortcutRow() }
         }
 
+    override suspend fun deleteShortcut(actionId: String, profileName: String) =
+        transactionScope.writeTransaction {
+            deleteShortcut(actionId, profileName)
+        }
+
+    override suspend fun resetShortcuts(profileName: String) =
+        transactionScope.writeTransaction {
+            resetShortcutsToProfile(profileName)
+        }
+
     override suspend fun recordBackup(
         filename: String, fileSize: Long, checksum: String,
         isAutomatic: Boolean, notes: String
@@ -276,6 +295,21 @@ class CardDatabaseManagerImpl(
             }
         }
 
+    override suspend fun deleteBackupMetadata(id: Long) =
+        transactionScope.writeTransaction {
+            deleteBackupMetadata(id)
+        }
+
+    override suspend fun getHistoryByAction(actionType: Int, limit: Int): List<StudyHistoryRow> =
+        transactionScope.readTransaction {
+            getStudyHistoryByAction(actionType.toLong(), limit.toLong()).executeAsList().map { it.toHistoryRow() }
+        }
+
+    override suspend fun clearHistory(beforeTimestamp: Long) =
+        transactionScope.writeTransaction {
+            clearOldStudyHistory(beforeTimestamp)
+        }
+
     override suspend fun createFilteredDeck(
         name: String, searchQuery: String, maxCards: Int
     ): Long = transactionScope.writeTransaction {
@@ -296,6 +330,16 @@ class CardDatabaseManagerImpl(
                     createdAt = Instant.fromEpochMilliseconds(it.created_at)
                 )
             }
+        }
+
+    override suspend fun deleteFilteredDeck(id: Long) =
+        transactionScope.writeTransaction {
+            deleteFilteredDeck(id)
+        }
+
+    override suspend fun getTagUsageCount(tagId: Long): Long =
+        transactionScope.readTransaction {
+            getTagUsageCount(tagId).executeAsOne()
         }
 }
 

@@ -1,0 +1,51 @@
+{
+  "comment": "Default keyboard shortcuts, mirroring KeyboardShortcutsPage.kt in the app.",
+  "groups": [
+    {
+      "category": "Review",
+      "items": [
+        { "keys": ["C"], "action": "Again", "description": "Mark card as failed" },
+        { "keys": ["X"], "action": "Hard", "description": "Mark card as hard" },
+        { "keys": ["Z"], "action": "Good", "description": "Mark card as good" },
+        { "keys": ["V"], "action": "Easy", "description": "Mark card as easy" },
+        { "keys": ["1"], "action": "Mark Again", "description": "Quick answer: Again" },
+        { "keys": ["2"], "action": "Mark Hard", "description": "Quick answer: Hard" },
+        { "keys": ["3"], "action": "Mark Good", "description": "Quick answer: Good" },
+        { "keys": ["4"], "action": "Mark Easy", "description": "Quick answer: Easy" },
+        { "keys": ["Ctrl", "Z"], "action": "Undo", "description": "Undo last action" },
+        { "keys": ["Space"], "action": "Show Answer", "description": "Flip card to show answer" },
+        { "keys": ["S"], "action": "Suspend Card", "description": "Suspend current card" },
+        { "keys": ["B"], "action": "Bury Card", "description": "Bury current card" },
+        { "keys": ["F"], "action": "Toggle Flag", "description": "Set/unset flag" },
+        { "keys": ["T"], "action": "Add Tag", "description": "Add tag to card" },
+        { "keys": ["A"], "action": "Play Audio", "description": "Play card audio" },
+        { "keys": ["R"], "action": "Retry", "description": "Retry pronunciation" },
+        { "keys": ["S", "Alt"], "action": "Skip", "description": "Skip card (with Alt)" }
+      ]
+    },
+    {
+      "category": "Navigation",
+      "items": [
+        { "keys": ["Enter"], "action": "Next Card", "description": "Go to next card" },
+        { "keys": ["Shift", "Enter"], "action": "Previous Card", "description": "Go to previous card" },
+        { "keys": ["I"], "action": "Statistics", "description": "Open statistics" },
+        { "keys": ["H"], "action": "Heatmap", "description": "Open heatmap" },
+        { "keys": ["Y"], "action": "History", "description": "Open review history" }
+      ]
+    },
+    {
+      "category": "Browser",
+      "items": [
+        { "keys": ["/"], "action": "Search", "description": "Focus search bar" },
+        { "keys": ["Ctrl", "A"], "action": "Select All", "description": "Select all cards" },
+        { "keys": ["Escape"], "action": "Deselect All", "description": "Clear selection" },
+        { "keys": ["Delete"], "action": "Delete Card", "description": "Delete selected cards" },
+        { "keys": ["P"], "action": "Preview", "description": "Preview card" },
+        { "keys": ["N"], "action": "Edit Note", "description": "Edit card note" },
+        { "keys": ["I", "Alt"], "action": "Card Info", "description": "Show card details" },
+        { "keys": ["Shift", "T"], "action": "Bulk Tag", "description": "Tag selected cards" },
+        { "keys": ["Shift", "F"], "action": "Bulk Flag", "description": "Flag selected cards" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{# Documentation layout — sidebar tree of sections + article. #}
+{% extends "base.html" %}
+
+{% block main_class %}is-fullwidth{% endblock %}
+
+{% block content %}
+<div class="docs-layout">
+  <aside class="docs-sidebar" aria-label="Documentation sections">
+    <div class="docs-sidebar-title">Documentation</div>
+    {% for section in docs_tree %}
+    <details class="docs-section" {% if section.id == current_section %}open{% endif %}>
+      <summary class="docs-section-title">
+        <span>{{ section.title }}</span>
+        <span class="docs-count">{{ section.pages | length }}</span>
+      </summary>
+      <ul class="docs-list">
+        {% for page in section.pages %}
+        <li>
+          <a class="docs-link{% if page.url == current_url %} is-active{% endif %}"
+             href="{{ basePath }}{{ page.url.lstrip('/') }}">{{ page.title }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+
+    <div class="docs-sidebar-footer">
+      <a class="btn btn-ghost btn-sm" href="{{ site.repository }}/tree/develop/docs" target="_blank" rel="noopener">
+        <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+        Source in the repository
+      </a>
+    </div>
+  </aside>
+
+  <article class="docs-article prose">
+    {% if breadcrumbs %}
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumbs">
+        {% for crumb in breadcrumbs %}
+        <li>
+          {% if crumb.url %}
+          <a href="{{ basePath }}{{ crumb.url.lstrip('/') }}">{{ crumb.title }}</a>
+          <span class="breadcrumb-sep" aria-hidden="true">/</span>
+          {% else %}
+          <span class="current">{{ crumb.title }}</span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </nav>
+    <div style="height: var(--space-5)"></div>
+    {% endif %}
+
+    <header style="margin-bottom: var(--space-8)">
+      <h1>{{ page_title }}</h1>
+      {% if page_description %}<p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>{% endif %}
+      {% if source_path %}
+      <a class="prose-edit-link" href="{{ site.repository }}/blob/develop/{{ source_path }}" target="_blank" rel="noopener">
+        <svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>
+        Edit this page on GitHub
+      </a>
+      {% endif %}
+    </header>
+
+    {{ content_html | safe }}
+
+    {% if prev or next_page %}
+    <nav class="pagination" aria-label="Pagination">
+      {% if prev %}
+      <a class="pagination-link" href="{{ basePath }}{{ prev.url.lstrip('/') }}">
+        <span class="pagination-label">Previous</span>
+        <span class="pagination-title">{{ prev.title }}</span>
+      </a>
+      {% else %}<span></span>{% endif %}
+      {% if next_page %}
+      <a class="pagination-link pagination-next" href="{{ basePath }}{{ next_page.url.lstrip('/') }}">
+        <span class="pagination-label">Next</span>
+        <span class="pagination-title">{{ next_page.title }}</span>
+      </a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </article>
+</div>
+{% endblock %}

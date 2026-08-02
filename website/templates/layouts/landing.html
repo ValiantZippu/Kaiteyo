@@ -1,0 +1,52 @@
+{# Landing page layout — hero + sections rendered from page content. #}
+{% extends "base.html" %}
+
+{% block main_class %}is-fullwidth{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-badge-row">
+    <span class="badge badge-secondary">Free &amp; open source</span>
+    <span class="badge badge-accent">v{{ site.version }}</span>
+    <span class="badge badge-muted">Windows · macOS · Linux · Android · iOS</span>
+  </div>
+
+  <h1>
+    <span class="lang-ja">書いてよ</span><br />
+    Kaiteyo
+  </h1>
+  <p class="hero-lead">
+    A quiet, futuristic studio for mastering Japanese.
+    Study kanji, kana, and vocabulary with spaced repetition,
+    stroke-order writing practice, and a built-in dictionary —
+    offline-first, across every platform you use.
+  </p>
+
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="{{ basePath }}download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download for free
+    </a>
+    <a class="btn btn-ghost btn-lg" href="{{ site.repository }}" target="_blank" rel="noopener">
+      <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+      GitHub
+    </a>
+    <a class="btn btn-ghost btn-lg" href="{{ basePath }}docs/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg>
+      Documentation
+    </a>
+  </div>
+
+  <div class="hero-meta">
+    <span>GPL-3.0</span>
+    <span>&middot;</span>
+    <span>Kotlin Multiplatform &amp; Compose</span>
+    <span>&middot;</span>
+    <a href="{{ site.repository }}/releases" target="_blank" rel="noopener">Release notes</a>
+  </div>
+</section>
+
+<div class="prose">
+  {{ content_html | safe }}
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+/* ============================================================
+   KAITEYO — Animations
+   Motion language from DESIGN_SYSTEM §13 and §20.
+   All animation timings are intentionally subtle and short.
+   ============================================================ */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes nav-indicator {
+  from { opacity: 0; transform: scaleY(0); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes glow-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50%  { box-shadow: 0 0 12px var(--accent-glow-strong); }
+  100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+}
+
+@keyframes scroll-down-hint {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+
+@keyframes stroke-draw {
+  from { stroke-dashoffset: var(--draw-length); }
+  to { stroke-dashoffset: 0; }
+}
+
+/* --- Entrance choreography (staggered cards, §13) --- */
+
+.animate-in {
+  animation: rise-in var(--duration-slower) var(--ease-out) both;
+}
+
+.animate-in[data-delay="1"] { animation-delay: 80ms; }
+.animate-in[data-delay="2"] { animation-delay: 160ms; }
+.animate-in[data-delay="3"] { animation-delay: 240ms; }
+.animate-in[data-delay="4"] { animation-delay: 320ms; }
+.animate-in[data-delay="5"] { animation-delay: 400ms; }
+.animate-in[data-delay="6"] { animation-delay: 480ms; }
+.animate-in[data-delay="7"] { animation-delay: 560ms; }
+
+/* Scroll-reveal: elements become animated when intersecting */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--duration-slower) var(--ease-out),
+    transform var(--duration-slower) var(--ease-out);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Theme transition (instant switch with soft fade) --- */
+
+body.theme-switching .app-window {
+  animation: fade-in var(--duration-fast) var(--ease-out);
+}
+
+/* --- Live stroke drawing (hero mark) --- */
+
+.draw-stroke {
+  stroke-dasharray: var(--draw-length);
+  animation: stroke-draw 1.2s var(--ease-in-out) both;
+}
+
+/* --- Page transitions --- */
+
+main.page-enter {
+  animation: fade-in var(--duration-slow) var(--ease-out);
+}
+
+/* --- Reduced motion: honor user preference globally --- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

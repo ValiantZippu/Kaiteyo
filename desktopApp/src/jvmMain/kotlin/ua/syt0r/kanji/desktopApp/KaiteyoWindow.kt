@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
@@ -49,11 +56,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
+import ua.syt0r.kanji.presentation.common.nav.DesktopWindowPlacement
+import ua.syt0r.kanji.presentation.common.nav.LocalWindowPlacement
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 import ua.syt0r.kanji.presentation.common.theme.surfaceForBaseMode
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
 
 // ============================================
 // KAITEYO WINDOW
@@ -76,14 +86,48 @@ fun FrameWindowScope.KaiteyoWindow(
             .fillMaxSize()
             .background(surfaceColors.background)
             .clip(RoundedCornerShape(if (isMaximized) 0.dp else 20.dp))
+            .onPreviewKeyEvent { keyEvent ->
+                val palette = KaiteyoPalette.controller
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when {
+                        palette.isOpen && keyEvent.key == Key.Escape -> {
+                            palette.close()
+                            true
+                        }
+                        palette.isOpen && keyEvent.key == Key.DirectionUp -> {
+                            palette.selectPrevious()
+                            true
+                        }
+                        palette.isOpen && keyEvent.key == Key.DirectionDown -> {
+                            palette.selectNext()
+                            true
+                        }
+                        palette.isOpen && keyEvent.key == Key.Enter -> {
+                            palette.executeSelected()
+                            true
+                        }
+                        keyEvent.key == Key.K && keyEvent.isCtrlPressed -> {
+                            palette.toggle()
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            }
     ) {
-        // Main application content — padded to avoid overlap with floating window controls
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 44.dp, end = 100.dp)
+        CompositionLocalProvider(
+            LocalWindowPlacement provides
+                if (isMaximized) DesktopWindowPlacement.Maximized
+                else DesktopWindowPlacement.Floating
         ) {
-            content()
+            // Main application content — padded to avoid overlap with floating window controls
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 44.dp, end = 100.dp)
+            ) {
+                content()
+            }
         }
 
         // Top-left logo + title

@@ -1,3 +1,4 @@
 {
-    "CodeGPT.apiKey": "OpenRouter"
+    "CodeGPT.apiKey": "OpenRouter",
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

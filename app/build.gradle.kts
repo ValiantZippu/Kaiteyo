@@ -61,7 +61,14 @@ android {
         compose = true
     }
 
-    val keystoreFile = rootProject.file("keystore.jks")
+    // The keystore is kept outside the repository for security.
+    // Resolved from (in order): KEYSTORE_PATH env var, the user's ~/.kaiteyo directory,
+    // or the repository root (where CI decodes it from the KEYSTORE_BASE64 secret).
+    val keystoreFile = run {
+        val fromEnv = System.getenv("KEYSTORE_PATH")?.let(::File)?.takeIf { it.exists() }
+        val fromUserHome = File(System.getProperty("user.home"), ".kaiteyo/keystore.jks").takeIf { it.exists() }
+        fromEnv ?: fromUserHome ?: rootProject.file("keystore.jks")
+    }
 
     val signedBuildSigningConfig = signingConfigs.create("signedBuild") {
         storeFile = keystoreFile

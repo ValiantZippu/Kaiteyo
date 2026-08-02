@@ -1,0 +1,154 @@
+{# Dialogs: theme settings, navigation settings, and the command palette. #}
+
+<dialog id="themeDialog" data-dialog aria-labelledby="themeDialogTitle">
+  <div class="dialog-header">
+    <div>
+      <h2 id="themeDialogTitle">Theme</h2>
+      <p>Base mode, accent, and display preferences. Saved on this device.</p>
+    </div>
+    <button class="btn-icon dialog-close" type="button" data-close-dialog aria-label="Close">
+      <svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg>
+    </button>
+  </div>
+
+  <div class="dialog-section-title">Base Mode</div>
+  <div class="grid-2">
+    {% for mode in themes.baseModes %}
+    <button class="theme-swatch" type="button" data-theme-base="{{ mode.id }}"
+            style="--preview-bg: {{ mode.surface.background }}; --preview-surface: {{ mode.surface.surface }}; --preview-border: {{ mode.surface.border }}; --preview-accent: {{ themes.accents[0].primary }}">
+      <span class="theme-swatch-preview" aria-hidden="true">
+        <span class="theme-swatch-bar"></span>
+        <span class="theme-swatch-accent"></span>
+        <span class="theme-swatch-bar" style="width: 80%"></span>
+      </span>
+      <span>
+        <span class="theme-swatch-name">{{ mode.displayName }}</span>
+        {% if mode.description %}
+        <span class="theme-swatch-sub">{{ mode.description }}</span>
+        {% endif %}
+      </span>
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="dialog-section-title">Accent</div>
+  <div class="flex gap-3" style="flex-wrap: wrap">
+    {% for accent in themes.accents %}
+    <button class="accent-swatch" type="button" data-theme-accent="{{ accent.id }}"
+            data-tooltip="{{ accent.displayName }}" aria-label="Accent: {{ accent.displayName }}"
+            style="background: {{ accent.primary }}"></button>
+    {% endfor %}
+  </div>
+
+  <div class="dialog-section-title">Display</div>
+  <div class="flex-col gap-3">
+    <label class="switch">
+      <input type="checkbox" data-theme-glass />
+      <span class="switch-track" aria-hidden="true"></span>
+      Glass panels <small class="text-muted">(transparency + blur)</small>
+    </label>
+    <label class="switch">
+      <input type="checkbox" data-theme-motion />
+      <span class="switch-track" aria-hidden="true"></span>
+      Reduce motion
+    </label>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn btn-ghost" type="button" data-theme-reset>Reset to defaults</button>
+    <button class="btn btn-primary" type="button" data-close-dialog>Done</button>
+  </div>
+</dialog>
+
+<dialog id="navSettingsDialog" data-dialog aria-labelledby="navSettingsTitle">
+  <div class="dialog-header">
+    <div>
+      <h2 id="navSettingsTitle">Navigation</h2>
+      <p>Position and behavior. Like the application sidebar, your choices are remembered.</p>
+    </div>
+    <button class="btn-icon dialog-close" type="button" data-close-dialog aria-label="Close">
+      <svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg>
+    </button>
+  </div>
+
+  <div class="dialog-section-title">Position</div>
+  <div class="grid-3" style="grid-template-columns: repeat(5, 1fr)">
+    <button class="theme-swatch" type="button" data-nav-pos="left" aria-label="Left">
+      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
+        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
+        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
+      </span>
+      <span class="theme-swatch-name">Left</span>
+    </button>
+    <button class="theme-swatch" type="button" data-nav-pos="right" aria-label="Right">
+      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
+        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
+        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
+      </span>
+      <span class="theme-swatch-name">Right</span>
+    </button>
+    <button class="theme-swatch" type="button" data-nav-pos="top" aria-label="Top">
+      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
+        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
+        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
+      </span>
+      <span class="theme-swatch-name">Top</span>
+    </button>
+    <button class="theme-swatch" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
+        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
+        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
+      </span>
+      <span class="theme-swatch-name">Bottom</span>
+    </button>
+    <button class="theme-swatch" type="button" data-nav-pos="floating" aria-label="Floating">
+      <span class="theme-swatch-preview" style="height: 44px; display: flex; gap: 4px; position: relative">
+        <span style="width: 36%; height: 70%; background: var(--preview-surface); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4)"></span>
+        <span style="flex: 1; height: 100%; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
+      </span>
+      <span class="theme-swatch-name">Floating</span>
+    </button>
+  </div>
+
+  <div class="dialog-section-title">Width</div>
+  <div class="tabs" role="tablist" aria-label="Navigation width">
+    <button class="tab" type="button" data-nav-width="compact">Compact</button>
+    <button class="tab" type="button" data-nav-width="default">Default</button>
+    <button class="tab" type="button" data-nav-width="wide">Wide</button>
+  </div>
+
+  <div class="dialog-section-title">Behavior</div>
+  <div class="flex-col gap-3">
+    <label class="switch">
+      <input type="checkbox" data-nav-collapse />
+      <span class="switch-track" aria-hidden="true"></span>
+      Collapsed (icons only)
+    </label>
+    <label class="switch">
+      <input type="checkbox" data-nav-autohide-toggle />
+      <span class="switch-track" aria-hidden="true"></span>
+      Auto-hide (reveal at the screen edge)
+    </label>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn btn-ghost" type="button" data-nav-reset>Reset</button>
+    <button class="btn btn-primary" type="button" data-close-dialog>Done</button>
+  </div>
+</dialog>
+
+<dialog id="commandPalette" class="palette" data-dialog aria-label="Search">
+  <div class="palette-input">
+    <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+    <input type="search" placeholder="Search pages, documentation, wiki, shortcuts…"
+           autocomplete="off" spellcheck="false" aria-label="Search the website" />
+    <kbd>Esc</kbd>
+  </div>
+  <div class="palette-results" role="listbox" aria-label="Search results"></div>
+  <div class="palette-empty" hidden>Type to search the site, documentation, wiki, and more.</div>
+  <div class="palette-footer">
+    <span class="flex gap-1 items-center"><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span>
+    <span class="flex gap-1 items-center"><kbd>Enter</kbd> open</span>
+    <span class="flex gap-1 items-center"><kbd>Esc</kbd> close</span>
+  </div>
+</dialog>

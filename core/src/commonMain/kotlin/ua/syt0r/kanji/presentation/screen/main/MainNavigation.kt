@@ -40,6 +40,22 @@ import ua.syt0r.kanji.presentation.screen.main.screen.decks.PluginManagerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.StatisticsDashboard
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.BackupManagerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.ImportExportScreen
+import ua.syt0r.kanji.presentation.screen.main.features.BackupRoute
+import ua.syt0r.kanji.presentation.screen.main.features.BulkActionsRoute
+import ua.syt0r.kanji.presentation.screen.main.features.CardBrowserRoute
+import ua.syt0r.kanji.presentation.screen.main.features.CardStatusScreen
+import ua.syt0r.kanji.presentation.screen.main.features.DeckBrowserRoute
+import ua.syt0r.kanji.presentation.screen.main.features.DeckStatisticsScreen
+import ua.syt0r.kanji.presentation.screen.main.features.FlagManagerRoute
+import ua.syt0r.kanji.presentation.screen.main.features.HeatmapRoute
+import ua.syt0r.kanji.presentation.screen.main.features.HistoryRoute
+import ua.syt0r.kanji.presentation.screen.main.features.ImportExportRoute
+import ua.syt0r.kanji.presentation.screen.main.features.KeyboardShortcutsRoute
+import ua.syt0r.kanji.presentation.screen.main.features.NoteEditorRoute
+import ua.syt0r.kanji.presentation.screen.main.features.ReviewSettingsRoute
+import ua.syt0r.kanji.presentation.screen.main.features.SearchRoute
+import ua.syt0r.kanji.presentation.screen.main.features.TagManagerRoute
+import ua.syt0r.kanji.presentation.screen.main.features.UndoHistoryScreen
 import kotlin.reflect.KClass
 
 interface MainNavigationState {
@@ -346,8 +362,8 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            DeckFeaturesHub(
-                navigationState = state,
+            DeckBrowserRoute(
+                controller = koinInject(),
                 onClose = { state.navigateBack() }
             )
         }
@@ -361,7 +377,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            CardManager()
+            CardBrowserRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -373,8 +392,8 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            StatisticsDashboard(
-                cards = emptyList(),
+            DeckStatisticsScreen(
+                controller = koinInject(),
                 onClose = { state.navigateBack() }
             )
         }
@@ -402,13 +421,9 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            BackupManagerScreen(
-                onDismiss = { state.navigateBack() },
-                onCreateBackup = { /* TODO */ },
-                onRestoreBackup = { /* TODO */ },
-                onDeleteBackup = { /* TODO */ },
-                onVerifyBackup = { /* TODO */ },
-                onUpdateConfig = { /* TODO */ }
+            BackupRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
             )
         }
 
@@ -421,7 +436,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            ImportExportScreen()
+            ImportExportRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -433,12 +451,8 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            ua.syt0r.kanji.presentation.screen.main.screen.decks.TagManagerScreen(
-                tags = emptyList(),
-                onAddTag = { _, _, _ -> },
-                onUpdateTag = { _, _, _, _ -> },
-                onDeleteTag = { },
-                onMergeTags = { _, _ -> },
+            TagManagerRoute(
+                controller = koinInject(),
                 onClose = { state.navigateBack() }
             )
         }
@@ -452,8 +466,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            // Flag selector is handled as a dialog from CardManager
-            Text("Flag Manager - Select flags for your cards")
+            FlagManagerRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -465,7 +481,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Note Editor - Add markdown notes to cards")
+            NoteEditorRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -477,7 +496,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Card Status - Change between New, Learning, Young, Mature")
+            CardStatusScreen(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -489,7 +511,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Review Settings - Customize answer buttons and behavior")
+            ReviewSettingsRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -501,7 +526,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Keyboard Shortcuts - Configure key bindings")
+            KeyboardShortcutsRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -513,7 +541,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Study History - Audit log of all reviews")
+            HistoryRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -525,7 +556,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Heatmap - GitHub-style contribution heatmap")
+            HeatmapRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -537,7 +571,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Search Engine - Universal search across all cards")
+            SearchRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -549,7 +586,10 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Bulk Actions - Multi-select operations on cards")
+            BulkActionsRoute(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -561,7 +601,50 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            Text("Undo History - Undo and redo actions")
+            UndoHistoryScreen(
+                controller = koinInject(),
+                onClose = { state.navigateBack() }
+            )
+        }
+
+    }
+
+    // ==================== KAITEYO REDESIGN ====================
+
+    @Serializable
+    data class KanjiBrowser(
+        val criteria: ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria =
+            ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria()
+    ) : MainDestination {
+
+        override val analyticsName: String = "kanji_browser"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            val dataCenter = koinInject<ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter>()
+            androidx.compose.runtime.LaunchedEffect(Unit) { dataCenter.ensureLoaded() }
+            ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserScreen(
+                navigationState = state,
+                dataCenter = dataCenter,
+                initialCriteria = criteria
+            )
+        }
+
+    }
+
+    @Serializable
+    object Collections : MainDestination {
+
+        override val analyticsName: String = "collections"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            val dataCenter = koinInject<ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter>()
+            androidx.compose.runtime.LaunchedEffect(Unit) { dataCenter.ensureLoaded() }
+            ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.CollectionsScreen(
+                navigationState = state,
+                dataCenter = dataCenter
+            )
         }
 
     }
@@ -647,4 +730,6 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.SearchEngine.configuration(),
     MainDestination.BulkActions.configuration(),
     MainDestination.UndoHistory.configuration(),
+    MainDestination.KanjiBrowser::class.configuration(),
+    MainDestination.Collections.configuration(),
 )

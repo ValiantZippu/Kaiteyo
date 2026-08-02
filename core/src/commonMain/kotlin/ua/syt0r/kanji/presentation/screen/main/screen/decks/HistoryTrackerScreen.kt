@@ -75,12 +75,16 @@ fun generateMockHistory(): List<HistoryEntry> {
 @Composable
 fun HistoryFullScreen(
     cards: List<KaiteyoCard> = emptyList(),
+    history: List<HistoryEntry> = emptyList(),
     onClose: () -> Unit = {}
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
 
-    val historyEntries = remember { generateMockHistory() }
+    val historyEntries = remember(history) {
+        if (history.isNotEmpty()) history
+        else generateMockHistory()
+    }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedTypeFilter by remember { mutableStateOf<HistoryEntryType?>(null) }

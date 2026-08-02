@@ -54,6 +54,27 @@ interface PreferencesContract {
         val vocabDashboardSortByTime: SuspendedProperty<Boolean>
 
         val dailyResetTime: SuspendedProperty<LocalTime>
+
+        // Navigation shell
+        val navSidebarMode: SuspendedProperty<String>
+        val navSidebarPosition: SuspendedProperty<String>
+        val navAutoHide: SuspendedProperty<String>
+        val navCollapsed: SuspendedProperty<Boolean>
+        val navWidth: SuspendedProperty<Int>
+        val navHeight: SuspendedProperty<Int>
+        val navFloatingOffsetX: SuspendedProperty<Int>
+        val navFloatingOffsetY: SuspendedProperty<Int>
+        val navAccentIndex: SuspendedProperty<Int>
+
+        // Kaiteyo features (serialized JSON held in string properties)
+        val reviewSettingsJson: SuspendedProperty<String>
+        val backupConfigJson: SuspendedProperty<String>
+        val savedSearchesJson: SuspendedProperty<String>
+        val browserColumnsJson: SuspendedProperty<String>
+        val shortcutBindingsJson: SuspendedProperty<String>
+        val tagSortOrder: SuspendedProperty<String>
+        val collectionSortOrder: SuspendedProperty<String>
+        val browserLastQuery: SuspendedProperty<String>
     }
 
     interface PracticePreferences {

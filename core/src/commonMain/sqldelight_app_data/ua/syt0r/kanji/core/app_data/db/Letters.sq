@@ -110,3 +110,31 @@ WITH characters_with_selected_radicals AS (SELECT kanji
 SELECT radical
 FROM kanji_radical
 WHERE kanji IN characters_with_selected_radicals;
+
+-- ============================================
+-- Kanji Browser queries
+-- ============================================
+
+getAllKanji:
+SELECT kanji, frequency
+FROM kanji_data
+ORDER BY COALESCE(frequency, 2147483647), kanji;
+
+getAllKanjiMeanings:
+SELECT kanji, meaning
+FROM kanji_meaning
+ORDER BY kanji, priority;
+
+getAllKanjiReadings:
+SELECT kanji, reading_type, reading
+FROM kanji_reading
+ORDER BY kanji;
+
+getAllClassifications:
+SELECT kanji, class
+FROM kanji_classification;
+
+getKanjiStrokeCounts:
+SELECT character, COUNT(*) AS stroke_count
+FROM character_stroke
+GROUP BY character;

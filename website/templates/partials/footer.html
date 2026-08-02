@@ -1,0 +1,49 @@
+{# Content panel footer. #}
+<footer class="content-footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a class="nav-brand" href="{{ basePath }}" style="padding: 0; margin-bottom: var(--space-4)">
+        <img class="nav-logo" src="{{ basePath }}assets/images/kaiteyo-mark.svg" alt="Kaiteyo logo" width="32" height="32" />
+        <span class="nav-brand-text">
+          <span class="nav-brand-name">KAITEYO</span>
+          <span class="nav-brand-tagline"><span class="lang-ja">書いてよ</span> — Write. Practice. Master.</span>
+        </span>
+      </a>
+      <p>A premium, cross-platform Japanese language learning application.
+         Study kanji, kana, and vocabulary with spaced repetition and writing practice — offline-first and free.</p>
+      <p>
+        <span class="badge badge-accent">v{{ site.version }}</span>
+        <span class="badge badge-muted">GPL-3.0</span>
+      </p>
+    </div>
+
+    {% for group in footer_columns %}
+    <div class="footer-column">
+      <h4>{{ group.title }}</h4>
+      <ul>
+        {% for item in group.items %}
+        <li>
+          {% if item.external %}
+          <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a>
+          {% else %}
+          <a href="{{ basePath }}{{ item.url.lstrip('/') }}">{{ item.title }}</a>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="footer-bottom">
+    <span>&copy; <span data-year>{{ year }}</span> Kaiteyo contributors</span>
+    <span class="lang-ja">書いてよ</span>
+    <span>Built with Kotlin Multiplatform &amp; Compose</span>
+    <a href="{{ basePath }}changelog/">Changelog</a>
+    <a href="{{ basePath }}rss.xml" target="_blank" rel="noopener">
+      <svg class="icon" style="width: 14px; height: 14px" aria-hidden="true"><use href="#icon-rss"/></svg>
+      RSS
+    </a>
+    <span style="margin-left: auto">The website is an extension of the application.</span>
+  </div>
+</footer>

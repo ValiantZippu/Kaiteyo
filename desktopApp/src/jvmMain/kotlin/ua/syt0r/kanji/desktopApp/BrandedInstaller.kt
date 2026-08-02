@@ -2,7 +2,7 @@ package ua.syt0r.kanji.desktopApp
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateFloatAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -361,15 +361,16 @@ private fun InstallationLocation(accent: Color) {
         Text("Required Space", color = surfaceColors.textSecondary, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            RequirementBar("Application", "450 MB", 0.6f, accent)
+            RequirementBar("Application", "450 MB", 0.6f, accent, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun RequirementBar(label: String, size: String, fraction: Float, accent: Color) {
+private fun RequirementBar(label: String, size: String, fraction: Float, accent: Color,
+                           modifier: Modifier = Modifier) {
     val surfaceColors = LocalSurfaceColors.current
-    Column(Modifier.weight(1f)) {
+    Column(modifier) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = surfaceColors.textMuted, fontSize = 12.sp)
             Text(size, color = surfaceColors.textPrimary, fontSize = 12.sp)
@@ -789,8 +790,8 @@ private fun CompletionStep(accent: Color, onComplete: () -> Unit) {
                 HorizontalDivider(color = surfaceColors.border.copy(alpha = 0.2f))
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ActionButton("\uD83D\uDCD6", "View Release Notes", accent)
-                    ActionButton("\uD83C\uDF10", "Visit GitHub", accent)
+                    ActionButton("\uD83D\uDCD6", "View Release Notes", accent, Modifier.weight(1f))
+                    ActionButton("\uD83C\uDF10", "Visit GitHub", accent, Modifier.weight(1f))
                 }
             }
         }
@@ -801,10 +802,10 @@ private fun CompletionStep(accent: Color, onComplete: () -> Unit) {
 }
 
 @Composable
-private fun ActionButton(icon: String, label: String, accent: Color) {
+private fun ActionButton(icon: String, label: String, accent: Color, modifier: Modifier = Modifier) {
     val surfaceColors = LocalSurfaceColors.current
     Row(
-        modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
+        modifier = modifier.clip(RoundedCornerShape(8.dp))
             .background(surfaceColors.surfaceInteractive)
             .clickable { }.padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,

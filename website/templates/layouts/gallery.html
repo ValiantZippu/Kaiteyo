@@ -1,0 +1,74 @@
+{# Theme gallery — live preview of every base mode, accent, and glass. #}
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+  <header style="margin-bottom: var(--space-8)">
+    <h1>{{ page_title }}</h1>
+    <p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>
+  </header>
+
+  <div class="theme-demo" aria-hidden="true">
+    <div class="theme-demo-nav">
+      <span class="theme-demo-dot" style="background: var(--accent)"></span>
+      <span class="theme-demo-dot" style="background: var(--accent-secondary)"></span>
+      <span class="theme-demo-line" style="width: 55%"></span>
+      <span class="theme-demo-cta"></span>
+    </div>
+    <div class="theme-demo-body">
+      <div class="theme-demo-side">
+        <span class="theme-demo-line" style="width: 80%"></span>
+        <span class="theme-demo-line" style="width: 60%"></span>
+        <span class="theme-demo-line" style="width: 70%"></span>
+      </div>
+      <div class="theme-demo-main">
+        <span class="theme-demo-line" style="width: 40%; height: 12px"></span>
+        <span class="theme-demo-line" style="width: 90%"></span>
+        <span class="theme-demo-line" style="width: 85%"></span>
+        <span class="theme-demo-line" style="width: 88%"></span>
+        <div class="theme-demo-cards">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-section-title">Base Mode — click to apply</div>
+  <div class="grid-4" style="margin-bottom: var(--space-8)">
+    {% for mode in themes.baseModes %}
+    <button class="theme-swatch" type="button" data-theme-base="{{ mode.id }}"
+            style="--preview-bg: {{ mode.surface.background }}; --preview-surface: {{ mode.surface.surface }}; --preview-border: {{ mode.surface.border }}; --preview-accent: {{ themes.accents[0].primary }}">
+      <span class="theme-swatch-preview" aria-hidden="true">
+        <span class="theme-swatch-bar"></span>
+        <span class="theme-swatch-accent"></span>
+        <span class="theme-swatch-bar" style="width: 80%"></span>
+      </span>
+      <span>
+        <span class="theme-swatch-name">{{ mode.displayName }}</span>
+        {% if mode.description %}<span class="theme-swatch-sub">{{ mode.description }}</span>{% endif %}
+      </span>
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="dialog-section-title">Accent — click to apply</div>
+  <div class="flex gap-3" style="flex-wrap: wrap; margin-bottom: var(--space-8)">
+    {% for accent in themes.accents %}
+    <button class="accent-swatch" type="button" data-theme-accent="{{ accent.id }}"
+            data-tooltip="{{ accent.displayName }}" aria-label="Accent: {{ accent.displayName }}"
+            style="background: {{ accent.primary }}"></button>
+    {% endfor %}
+  </div>
+
+  <div class="dialog-section-title">Glass panels</div>
+  <label class="switch" style="margin-bottom: var(--space-8)">
+    <input type="checkbox" data-theme-glass />
+    <span class="switch-track" aria-hidden="true"></span>
+    Enable glass (transparency + blur)
+  </label>
+
+  <div class="prose">
+    {{ content_html | safe }}
+  </div>
+</article>
+{% endblock %}

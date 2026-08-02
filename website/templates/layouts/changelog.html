@@ -1,0 +1,40 @@
+{# Changelog — searchable version history rendered from docs/planning/CHANGELOG.md. #}
+{% extends "base.html" %}
+
+{% block content %}
+<article>
+  <header style="margin-bottom: var(--space-6)">
+    <h1>{{ page_title }}</h1>
+    <p style="font-size: var(--text-lg); color: var(--text-secondary)">{{ page_description }}</p>
+  </header>
+
+  <div class="search-bar" style="max-width: 420px; margin-bottom: var(--space-8)">
+    <svg class="icon search-icon" aria-hidden="true"><use href="#icon-search"/></svg>
+    <input class="input" type="search" placeholder="Filter changelog…"
+           aria-label="Filter changelog" data-filter-input data-filter-target="changelogTimeline" />
+  </div>
+
+  <div class="timeline" id="changelogTimeline" data-filter-scope>
+    {% for version in changelog %}
+    <section class="timeline-item{% if loop.first %} is-current{% endif %}" data-filter-item
+             id="v{{ version.version | replace('.', '-') }}" style="scroll-margin-top: 96px">
+      <div class="timeline-header">
+        <h2>v{{ version.version }}</h2>
+        {% if loop.first %}<span class="badge badge-accent">Latest</span>{% endif %}
+        {% if version.status %}<span class="badge badge-muted">{{ version.status }}</span>{% endif %}
+      </div>
+      {% for section in version.sections %}
+      <div style="margin-bottom: var(--space-4)">
+        <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">{{ section.title }}</h3>
+        <ul>
+          {% for item in section.items %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </section>
+    {% endfor %}
+  </div>
+</article>
+{% endblock %}
