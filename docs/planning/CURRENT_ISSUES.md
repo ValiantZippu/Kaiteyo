@@ -95,6 +95,7 @@ This is a living document. Add issues as they are discovered, mark them as fixed
 
 ## ✅ Recently Fixed
 
+- [x] **Persisted deck archive flag** — `is_archived` columns on `letter_deck`/`vocab_deck` (previously dead, added only by migration 13) are now in the SQLDelight schema, backed by `updateDeckArchived` repository methods and a toggle in the Deck Edit save dialog. **Follow-up:** filter archived decks from the main dashboard lists and add an "Archived" section to restore them (currently archived decks stay visible everywhere).
 - [x] **Unified Library hub** — Home now has a single Library tab (replaces Kanji/Vocabulary split). Includes hub with Sections + stat summary rows and drill-down screens (Kanji Decks, Vocabulary, Word & Sentence Search). Old default-tab preference remapped.
 - [x] **Import error: `animateColorAsState`** — Fixed by importing from `androidx.compose.animation`
 - [x] **Import error: `animateFloatAsState`** — Fixed by importing from `androidx.compose.animation.core`

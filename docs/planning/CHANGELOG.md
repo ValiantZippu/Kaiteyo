@@ -8,6 +8,13 @@
   - Library hub with Sections (Stats, Study, Library, Review) and stat summary rows
   - Drill-down screens: Kanji Decks, Vocabulary, Word & Sentence Search
   - Old `LettersDashboard`/`VocabDashboard` tabs removed; default-tab preference remapped to Library
+- **Persisted deck archive** — The `letter_deck.is_archived` / `vocab_deck.is_archived` columns (previously added by migration 13 but never wired) are now real:
+  - Columns declared in the SQLDelight schema so fresh databases get them too
+  - `updateLetterDeckArchived` / `updateVocabDeckArchived` queries
+  - `LetterDeck`/`VocabDeck` now carry `isArchived`
+  - `updateDeckArchived(id, isArchived)` on both repositories
+  - Archive toggle in the Deck Edit → Save dialog (Edit mode only)
+  - Follow-up (not yet implemented): hide archived decks from main lists + an "Archived" section to restore them
 - **Theme Studio v2.0** — Complete rewrite with functional color editor:
   - Interactive HSV color wheel with drag-to-pick
   - RGB/HSL/HSV/HEX editors that sync together
