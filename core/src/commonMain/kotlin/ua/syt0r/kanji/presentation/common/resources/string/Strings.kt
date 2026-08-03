@@ -238,6 +238,7 @@ interface HomeStrings {
     val generalDashboardTabLabel: String
     val lettersDashboardTabLabel: String
     val vocabDashboardTabLabel: String
+    val libraryTabLabel: String
     val statsTabLabel: String
     val searchTabLabel: String
     val settingsTabLabel: String
@@ -460,6 +461,8 @@ interface DeckEditStrings {
     val saveInputHint: String
     val saveButtonDefault: String
     val saveButtonCompleted: String
+    val archiveTitle: String
+    val archiveHint: String
 
     val deleteTitle: String
     val deleteMessage: (deckTitle: String) -> String

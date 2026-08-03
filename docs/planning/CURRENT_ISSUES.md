@@ -71,11 +71,11 @@ This is a living document. Add issues as they are discovered, mark them as fixed
 
 ### Branding
 
-- [ ] Replace remaining "Kanji Dojo" references in user-facing strings
-- [ ] Update desktop app title/installer name
-- [ ] Update GitHub metadata and README
-- [ ] Update about page
-- [ ] Update splash screen
+- [x] Replace remaining "Kanji Dojo" references in user-facing strings
+- [x] Update desktop app title/installer name
+- [x] Update GitHub metadata and README
+- [x] Update about page
+- [x] Update splash screen
 
 ## 🔵 P3 — Low (Future)
 
@@ -95,6 +95,7 @@ This is a living document. Add issues as they are discovered, mark them as fixed
 
 ## ✅ Recently Fixed
 
+- [x] **Unified Library hub** — Home now has a single Library tab (replaces Kanji/Vocabulary split). Includes hub with Sections + stat summary rows and drill-down screens (Kanji Decks, Vocabulary, Word & Sentence Search). Old default-tab preference remapped.
 - [x] **Import error: `animateColorAsState`** — Fixed by importing from `androidx.compose.animation`
 - [x] **Import error: `animateFloatAsState`** — Fixed by importing from `androidx.compose.animation.core`
 - [x] **`windowState.window!!.close()` error** — Fixed by using `window.close()` in FrameWindowScope

@@ -21,7 +21,8 @@ interface LoadDeckEditLetterDataUseCase {
 
 data class DeckEditLetterData(
     val title: String?,
-    val characters: List<String>
+    val characters: List<String>,
+    val isArchived: Boolean? = null
 )
 
 class DefaultLoadDeckEditLetterDataUseCase(
@@ -72,7 +73,8 @@ class DefaultLoadDeckEditLetterDataUseCase(
                     letterPracticeRepository.getDeckCharacters(configuration.letterDeckId)
                 DeckEditLetterData(
                     title = deck.name,
-                    characters = characters
+                    characters = characters,
+                    isArchived = deck.isArchived
                 )
             }
 

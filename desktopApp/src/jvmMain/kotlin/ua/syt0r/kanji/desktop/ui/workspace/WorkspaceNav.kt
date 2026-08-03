@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MenuOpen
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
@@ -45,7 +47,10 @@ import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -96,8 +101,15 @@ private val navGroups: List<Pair<String, List<NavItem>>> = listOf(
     "Study" to listOf(
         NavItem(WorkspaceView.Dashboard, Icons.Default.SpaceDashboard),
         NavItem(WorkspaceView.Browser, Icons.Default.GridView),
+        NavItem(WorkspaceView.Dictionary, Icons.Default.MenuBook),
         NavItem(WorkspaceView.Review, Icons.Default.PlayArrow),
         NavItem(WorkspaceView.Collections, Icons.Default.Folder)
+    ),
+    "Materials" to listOf(
+        NavItem(WorkspaceView.LearningBrowser, Icons.Default.TextSnippet),
+        NavItem(WorkspaceView.Media, Icons.Default.VideoLibrary),
+        NavItem(WorkspaceView.Ocr, Icons.Default.Camera),
+        NavItem(WorkspaceView.Mining, Icons.Default.Usb)
     ),
     "Organize" to listOf(
         NavItem(WorkspaceView.Tags, Icons.Default.Sell),
@@ -105,6 +117,7 @@ private val navGroups: List<Pair<String, List<NavItem>>> = listOf(
         NavItem(WorkspaceView.History, Icons.Default.History)
     ),
     "System" to listOf(
+        NavItem(WorkspaceView.Integrations, Icons.Default.Tune),
         NavItem(WorkspaceView.Transfer, Icons.Default.ImportExport),
         NavItem(WorkspaceView.Sync, Icons.Default.Sync),
         NavItem(WorkspaceView.Shortcuts, Icons.Default.Keyboard),

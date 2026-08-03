@@ -13,11 +13,13 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -146,7 +148,7 @@ object NavTokens {
     val StripPadding = 8.dp
     val ItemHeight = 40.dp
     val ItemIconSize = 20.dp
-    val CompactStripWidth = 60.dp
+    val CompactStripWidth = Dimens.SidebarCompactWidth
     val CompactItemSize = 36.dp
     val DockItemSize = 42.dp
     val ResizeStripWidth = 5.dp
@@ -498,6 +500,7 @@ private fun ExpandedNavItem(
     val accent = LocalKaiteyoAccent.current
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
     val multiplier = layout.density.spacingMultiplier
     val radius = scaledRadius(Dimens.RadiusMd)
 
@@ -533,6 +536,11 @@ private fun ExpandedNavItem(
             )
             .clip(RoundedCornerShape(radius))
             .background(backgroundColor)
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) accent.primary.copy(alpha = 0.8f) else Color.Transparent,
+                shape = RoundedCornerShape(radius)
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -560,6 +568,7 @@ private fun CompactNavItem(
     val accent = LocalKaiteyoAccent.current
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
     val radius = scaledRadius(Dimens.RadiusMd)
     var bounds by remember { mutableStateOf<Rect?>(null) }
 
@@ -575,6 +584,11 @@ private fun CompactNavItem(
             .size(NavTokens.CompactItemSize)
             .clip(RoundedCornerShape(radius))
             .background(backgroundColor)
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) accent.primary.copy(alpha = 0.8f) else Color.Transparent,
+                shape = RoundedCornerShape(radius)
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -584,7 +598,7 @@ private fun CompactNavItem(
             .hoverable(interactionSource),
         contentAlignment = Alignment.Center
     ) {
-        NavEntryIcon(entry, tint = if (entry.selected) accent.primary else surfaceColors.textMuted)
+        NavEntryIcon(entry, tint = if (entry.selected) accent.primary else surfaceColors.textMuted, label = entry.label())
     }
 
     if (isHovered && bounds != null) {
@@ -593,10 +607,10 @@ private fun CompactNavItem(
 }
 
 @Composable
-private fun NavEntryIcon(entry: NavEntry, tint: Color, size: Dp = NavTokens.ItemIconSize) {
+private fun NavEntryIcon(entry: NavEntry, tint: Color, size: Dp = NavTokens.ItemIconSize, label: String? = null) {
     val icon = entry.icon
     if (icon != null) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(size), tint = tint)
+        Icon(icon, contentDescription = label, modifier = Modifier.size(size), tint = tint)
     } else {
         Box(Modifier.size(size), contentAlignment = Alignment.Center) {
             entry.iconContent?.invoke()
@@ -958,6 +972,7 @@ private fun DockNavItem(
     val accent = LocalKaiteyoAccent.current
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val scale by animateFloatAsState(
         targetValue = if (isHovered) 1.25f else 1f,
@@ -976,6 +991,11 @@ private fun DockNavItem(
             .size(NavTokens.DockItemSize)
             .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
             .background(backgroundColor)
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) accent.primary.copy(alpha = 0.8f) else Color.Transparent,
+                shape = RoundedCornerShape(scaledRadius(Dimens.RadiusMd))
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -989,7 +1009,7 @@ private fun DockNavItem(
             },
         contentAlignment = Alignment.Center
     ) {
-        NavEntryIcon(entry, tint = if (entry.selected) accent.primary else surfaceColors.textMuted)
+        NavEntryIcon(entry, tint = if (entry.selected) accent.primary else surfaceColors.textMuted, label = entry.label())
     }
 }
 
@@ -1110,8 +1130,8 @@ private fun destinationEntry(
 private fun defaultHomeTab(appPreferences: PreferencesContract.AppPreferences): HomeScreenTab {
     return when (runBlocking { appPreferences.defaultHomeTab.get() }) {
         PreferencesDefaultHomeTab.GeneralDashboard -> HomeScreenTab.GeneralDashboard
-        PreferencesDefaultHomeTab.Letters -> HomeScreenTab.LettersDashboard
-        PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.VocabDashboard
+        PreferencesDefaultHomeTab.Letters -> HomeScreenTab.Library
+        PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.Library
     }
 }
 

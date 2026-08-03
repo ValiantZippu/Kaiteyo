@@ -26,8 +26,8 @@ class HomeViewModel(
     override val defaultTab: HomeScreenTab = runBlocking {
         when (appPreferences.defaultHomeTab.get()) {
             PreferencesDefaultHomeTab.GeneralDashboard -> HomeScreenTab.GeneralDashboard
-            PreferencesDefaultHomeTab.Letters -> HomeScreenTab.LettersDashboard
-            PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.VocabDashboard
+            PreferencesDefaultHomeTab.Letters -> HomeScreenTab.Library
+            PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.Library
         }
     }
 

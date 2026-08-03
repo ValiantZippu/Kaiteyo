@@ -91,7 +91,6 @@
       "description": "How to contribute to Kaiteyo.",
       "files": [
         "08_CONTRIBUTING.md",
-        "development/CONTRIBUTING.md",
         "development/DEVELOPMENT_SETUP.md"
       ]
     },

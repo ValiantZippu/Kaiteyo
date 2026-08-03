@@ -21,7 +21,7 @@
     <div class="footer-column">
       <h4>{{ group.title }}</h4>
       <ul>
-        {% for item in group.items %}
+        {% for item in group['items'] %}
         <li>
           {% if item.external %}
           <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a>

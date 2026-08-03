@@ -60,6 +60,7 @@ fun DeckEditScreen(
         },
         saveChanges = { viewModel.saveDeck() },
         deleteDeck = { viewModel.deleteDeck() },
+        toggleArchive = { viewModel.toggleArchive() },
         addNewVocabCardClick = {
             val destination = MainDestination.VocabCard(
                 screenMode = VocabCardScreenMode.New,

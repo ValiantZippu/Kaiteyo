@@ -367,7 +367,7 @@ def build_documentation():
         for page in entry["pages"]:
             DOC_PAGES[page["rel"]] = url(page["url"])
 
-    flat = [{"section": s, "page": p} for s in sections for p in s["pages"]]
+    flat = [{"section": s["section"], "page": p} for s in sections for p in s["pages"]]
 
     # Pass 1: read every document, compute titles and descriptions.
     for item in flat:
@@ -538,7 +538,7 @@ def build_shortcuts():
     if not shortcuts_path.is_file():
         return []
     shortcuts = json.loads(shortcuts_path.read_text(encoding="utf-8"))
-    for group in shortcuts:
+    for group in shortcuts.get("groups", shortcuts):
         for shortcut in group["items"]:
             SEARCH_INDEX.append(
                 {
@@ -642,7 +642,7 @@ def build():
 
     shortcuts = build_shortcuts()
     changelog = build_changelog()
-    print(f"  shortcuts: {sum(len(g['items']) for g in shortcuts)} | changelog versions: {len(changelog)}")
+    print(f"  shortcuts: {sum(len(g['items']) for g in shortcuts.get('groups', shortcuts))} | changelog versions: {len(changelog)}")
 
     wiki_articles = build_wiki()
     print(f"  wiki: {len(wiki_articles)} articles")
@@ -714,7 +714,7 @@ def build():
 
     # --- Templates ---
     env = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_DIR)),
+        loader=FileSystemLoader([str(TEMPLATE_DIR), str(TEMPLATE_DIR / "layouts")]),
         autoescape=select_autoescape(["html", "xml"]),
     )
     env.globals.update(
@@ -774,7 +774,7 @@ def build():
     write_static_outputs(env)
 
     print(f"  pages: {len(PAGES)}")
-    print(f"Done → {DIST_DIR}")
+    print(f"Done -> {DIST_DIR}")
 
 
 def write_static_outputs(env: Environment):

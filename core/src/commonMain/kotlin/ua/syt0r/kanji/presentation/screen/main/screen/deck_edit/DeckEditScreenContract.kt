@@ -17,6 +17,7 @@ interface DeckEditScreenContract {
         fun toggleRemoval(item: DeckEditListItem)
         fun saveDeck()
         fun deleteDeck()
+        fun toggleArchive()
     }
 
     sealed interface ScreenState {
@@ -26,6 +27,8 @@ interface DeckEditScreenContract {
         sealed interface Loaded : ScreenState {
             val title: MutableState<String>
             val confirmExit: State<Boolean>
+            val isArchived: MutableState<Boolean>
+            val isArchiveEnabled: Boolean
             fun getCurrentList(): List<DeckEditListItem>
         }
 

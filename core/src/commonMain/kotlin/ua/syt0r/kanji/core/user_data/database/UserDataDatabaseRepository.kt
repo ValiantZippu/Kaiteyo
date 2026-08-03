@@ -15,6 +15,7 @@ interface LetterPracticeRepository : ObservableRepository {
     suspend fun createDeck(title: String, characters: List<String>)
     suspend fun createDeckAndMerge(title: String, deckIdToMerge: List<Long>)
     suspend fun updateDeckPositions(deckIdToPositionMap: Map<Long, Int>)
+    suspend fun updateDeckArchived(id: Long, isArchived: Boolean)
     suspend fun deleteDeck(id: Long)
     suspend fun updateDeck(
         id: Long,
@@ -32,6 +33,7 @@ interface VocabPracticeRepository : ObservableRepository {
     suspend fun createDeck(title: String, words: List<VocabCardData>)
     suspend fun mergeDecks(newDeckTitle: String, deckIdToMerge: List<Long>)
     suspend fun updateDeckPositions(deckIdToPositionMap: Map<Long, Int>)
+    suspend fun updateDeckArchived(id: Long, isArchived: Boolean)
     suspend fun deleteDeck(id: Long)
     suspend fun getDecks(): List<VocabDeck>
     suspend fun getDecksContainingWord(kanji: String?, kana: String): List<Long>

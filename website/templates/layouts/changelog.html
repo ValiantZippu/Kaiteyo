@@ -27,7 +27,7 @@
       <div style="margin-bottom: var(--space-4)">
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">{{ section.title }}</h3>
         <ul>
-          {% for item in section.items %}
+          {% for item in section['items'] %}
           <li>{{ item }}</li>
           {% endfor %}
         </ul>

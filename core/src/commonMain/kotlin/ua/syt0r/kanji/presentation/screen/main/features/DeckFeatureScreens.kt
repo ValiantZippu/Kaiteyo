@@ -78,6 +78,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.decks.KeyboardShortcutsPag
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.NoteEditorFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.ReviewSettingsFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.SearchEngineScreen
+import ua.syt0r.kanji.presentation.screen.main.screen.decks.StatisticsDashboardV2
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.TagManagerScreenFull
 
 val LocalDeckFeaturesController = staticCompositionLocalOf<DeckFeaturesController?> { null }
@@ -296,157 +297,11 @@ fun ImportExportRoute(controller: DeckFeaturesController, onClose: () -> Unit = 
 @Composable
 fun DeckStatisticsScreen(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
-    val stats = controller.stats
-    val surfaceColors = LocalSurfaceColors.current
-    val accent = LocalKaiteyoAccent.current
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Statistics") },
-                navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(
-                    title = "Reviews Today",
-                    value = stats.todayReviews.toString(),
-                    subtitle = "${stats.todayCardsStudied} cards · ${formatDuration(stats.todayTimeStudied)}",
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Accuracy Today",
-                    value = "${(stats.todayAccuracy * 100).roundToInt()}%",
-                    subtitle = "${stats.todayNewCards} new · ${stats.todayLapses} lapses",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(
-                    title = "Last 7 Days",
-                    value = stats.weekReviews.toString(),
-                    subtitle = "${(stats.weekAccuracy * 100).roundToInt()}% accuracy · ${formatDuration(stats.weekTimeStudied)}",
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Last 30 Days",
-                    value = stats.monthReviews.toString(),
-                    subtitle = "${(stats.monthAccuracy * 100).roundToInt()}% accuracy · ${formatDuration(stats.monthTimeStudied)}",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            StatCard(
-                title = "All Time",
-                value = stats.totalReviews.toString(),
-                subtitle = "${stats.totalCards} cards · ${formatDuration(stats.totalTimeStudied)} · ${(stats.overallAccuracy * 100).roundToInt()}% overall"
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(
-                    title = "Current Streak",
-                    value = "${stats.currentStreak}d",
-                    subtitle = "Longest: ${stats.longestStreak}d",
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    title = "Daily Average",
-                    value = "%.1f".format(stats.averageReviewsPerDay),
-                    subtitle = "${formatDuration(stats.averageTimePerCard)} per card",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Card(colors = CardDefaults.cardColors(containerColor = surfaceColors.surface)) {
-                Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                    Text("Card States", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = surfaceColors.textPrimary)
-                    Spacer(Modifier.height(10.dp))
-                    StatBarRow(
-                        label = "Due", value = stats.cardsDue, color = Color(0xFFFFD93D)
-                    )
-                    StatBarRow(
-                        label = "New", value = stats.cardsNew, color = Color(0xFFC2FC8B)
-                    )
-                    StatBarRow(
-                        label = "Learning", value = stats.cardsLearning, color = Color(0xFF7BC8FF)
-                    )
-                    StatBarRow(
-                        label = "Young", value = stats.cardsYoung, color = Color(0xFFA78BFA)
-                    )
-                    StatBarRow(
-                        label = "Mature", value = stats.cardsMature, color = Color(0xFFFEAB57)
-                    )
-                    StatBarRow(
-                        label = "Relearning", value = stats.cardsRelearning, color = Color(0xFFFF6B6B)
-                    )
-                    StatBarRow(
-                        label = "Suspended", value = stats.cardsSuspended, color = Color(0xFFB0B0B0)
-                    )
-                    StatBarRow(
-                        label = "Buried", value = stats.cardsBuried, color = Color(0xFFB0B0B0)
-                    )
-                    StatBarRow(
-                        label = "Archived", value = stats.cardsArchived, color = Color(0xFF808080)
-                    )
-                }
-            }
-
-            if (stats.forecastNextDays.isNotEmpty()) {
-                Card(colors = CardDefaults.cardColors(containerColor = surfaceColors.surface)) {
-                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                        Text("Due Forecast (next ${stats.forecastNextDays.size} days)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = surfaceColors.textPrimary)
-                        Spacer(Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            val max = stats.forecastNextDays.maxOrNull()?.coerceAtLeast(1) ?: 1
-                            stats.forecastNextDays.forEachIndexed { index, count ->
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("$count", fontSize = 9.sp, color = surfaceColors.textMuted)
-                                    Spacer(Modifier.height(2.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height((28 * count.coerceAtLeast(1).toFloat() / max).coerceAtLeast(3f).dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(accent.primary.copy(alpha = 0.7f))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Card(colors = CardDefaults.cardColors(containerColor = surfaceColors.surface)) {
-                Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text("Retention", fontSize = 12.sp, color = surfaceColors.textMuted)
-                        Text("${(stats.retentionRate * 100).roundToInt()}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textPrimary)
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("Predicted Retention", fontSize = 12.sp, color = surfaceColors.textMuted)
-                        Text("${(stats.predictedRetention * 100).roundToInt()}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = accent.primary)
-                    }
-                }
-            }
-        }
-    }
+    StatisticsDashboardV2(
+        stats = controller.stats,
+        heatmap = controller.heatmap,
+        onClose = onClose
+    )
 }
 
 @Composable

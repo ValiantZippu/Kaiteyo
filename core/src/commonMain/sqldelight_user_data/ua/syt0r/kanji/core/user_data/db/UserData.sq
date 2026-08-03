@@ -8,7 +8,8 @@ SELECT last_insert_rowid();
 CREATE TABLE IF NOT EXISTS letter_deck (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name TEXT NOT NULL,
-    position INTEGER NOT NULL DEFAULT 0 -- bigger values are at the top of the list
+    position INTEGER NOT NULL DEFAULT 0, -- bigger values are at the top of the list
+    is_archived INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS letter_deck_entry (
@@ -38,11 +39,14 @@ UPDATE letter_deck SET name=? WHERE id=?;
 updateLetterDeckPosition:
 UPDATE letter_deck SET position=? WHERE id=?;
 
+updateLetterDeckArchived:
+UPDATE letter_deck SET is_archived=? WHERE id=?;
+
 getAllLetterDecks:
-SELECT * FROM letter_deck;
+SELECT id, name, position, is_archived FROM letter_deck;
 
 getLetterDeck:
-SELECT * FROM letter_deck WHERE id=?;
+SELECT id, name, position, is_archived FROM letter_deck WHERE id=?;
 
 insertOrIgnoreLetterDeckEntry:
 INSERT OR IGNORE INTO letter_deck_entry (character,deck_id) VALUES (?,?);
@@ -63,7 +67,8 @@ SELECT * FROM letter_deck_entry WHERE deck_id=?;
 CREATE TABLE IF NOT EXISTS vocab_deck (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     title TEXT NOT NULL,
-    position INTEGER NOT NULL DEFAULT 0 -- bigger values are at the top of the list
+    position INTEGER NOT NULL DEFAULT 0, -- bigger values are at the top of the list
+    is_archived INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS vocab_deck_entry (
@@ -89,6 +94,9 @@ DELETE FROM vocab_deck WHERE id = :deckId;
 updateVocabDeckPosition:
 UPDATE vocab_deck SET position=? WHERE id=?;
 
+updateVocabDeckArchived:
+UPDATE vocab_deck SET is_archived=? WHERE id=?;
+
 insertVocabDeckEntry:
 INSERT OR IGNORE INTO vocab_deck_entry(deck_id, kanji_reading, kana_reading, meaning, word_id)
 VALUES (?, ?, ?, ?, ?);
@@ -105,7 +113,7 @@ SET deck_id = :deckId
 WHERE deck_id IN :deckIdToMigrate;
 
 getVocabDecks:
-SELECT * FROM vocab_deck;
+SELECT id, title, position, is_archived FROM vocab_deck;
 
 getVocabDeckEntryIds:
 SELECT id FROM vocab_deck_entry WHERE deck_id = :deckId;

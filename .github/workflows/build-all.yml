@@ -84,7 +84,7 @@ jobs:
         run: |
           ./gradlew desktopApp:packageDistributionForCurrentOS
           DMG_PATH=$(find ./desktopApp/build/compose/binaries/main/dmg -name "*.dmg")
-          NEW_DMG_PATH=$(echo $DMG_PATH | sed 's/Kanji Dojo/Kanji Dojo-intel/g')
+          NEW_DMG_PATH=$(echo $DMG_PATH | sed 's/Kaiteyo/Kaiteyo-intel/g')
           mv "$DMG_PATH" "$NEW_DMG_PATH"
 
       - name: Upload Desktop Build
@@ -112,7 +112,7 @@ jobs:
         run: |
           ./gradlew desktopApp:packageDistributionForCurrentOS
           DMG_PATH=$(find ./desktopApp/build/compose/binaries/main/dmg -name "*.dmg")
-          NEW_DMG_PATH=$(echo $DMG_PATH | sed 's/Kanji Dojo/Kanji Dojo-arm/g')
+          NEW_DMG_PATH=$(echo $DMG_PATH | sed 's/Kaiteyo/Kaiteyo-arm/g')
           mv "$DMG_PATH" "$NEW_DMG_PATH"
 
       - name: Upload Desktop Build

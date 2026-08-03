@@ -130,7 +130,7 @@ fun VersionChangeDialog(
                     append(
                         """
                         - Updated installers for Windows and Linux, now it's not required to have Java installed
-                        - Renamed executable for MacOS, please manually delete the old `kanji-dojo` app, tha app name is `Kanji Dojo` now
+                        - Renamed executable for MacOS, please manually delete the old application from your Applications folder
                         - Fixed a sync issue with incorrectly applied timestamp after downloading data from the cloud
                         """.trimIndent()
                     )

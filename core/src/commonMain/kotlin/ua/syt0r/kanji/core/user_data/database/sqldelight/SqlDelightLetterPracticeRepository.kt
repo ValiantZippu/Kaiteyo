@@ -47,6 +47,11 @@ class SqlDelightLetterPracticeRepository(
 
     override suspend fun deleteDeck(id: Long) = writeTransaction { deleteLetterDeck(id) }
 
+    override suspend fun updateDeckArchived(
+        id: Long,
+        isArchived: Boolean,
+    ) = writeTransaction { updateLetterDeckArchived(if (isArchived) 1L else 0L, id) }
+
     override suspend fun updateDeck(
         id: Long,
         title: String,
@@ -60,14 +65,16 @@ class SqlDelightLetterPracticeRepository(
 
     override suspend fun getDecks(): List<LetterDeck> = readTransaction {
         getAllLetterDecks().executeAsList().map {
-            LetterDeck(it.id, it.name, it.position.toInt())
+            LetterDeck(it.id, it.name, it.position.toInt(), it.is_archived != 0L)
         }
     }
 
     override suspend fun getDeck(
         id: Long,
     ): LetterDeck = readTransaction {
-        getLetterDeck(id).executeAsOne().run { LetterDeck(id, name, position.toInt()) }
+        getLetterDeck(id).executeAsOne().run {
+            LetterDeck(id, name, position.toInt(), is_archived != 0L)
+        }
     }
 
     override suspend fun getDeckCharacters(

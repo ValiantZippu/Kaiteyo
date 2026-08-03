@@ -37,6 +37,7 @@ data class LetterDeck(
     val id: Long,
     val name: String,
     val position: Int,
+    val isArchived: Boolean = false,
 )
 
 data class CharacterStudyProgress(
@@ -51,7 +52,8 @@ data class CharacterStudyProgress(
 data class VocabDeck(
     val id: Long,
     val title: String,
-    val position: Int
+    val position: Int,
+    val isArchived: Boolean = false,
 )
 
 data class VocabCardData(

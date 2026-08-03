@@ -15,5 +15,5 @@ const val BackupMimeType = "application/zip"
 fun getDefaultBackupFileName(): String {
     val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         .run { "$year-$monthNumber-$dayOfMonth-$hour-$minute" }
-    return "kanji-dojo-backup-${currentTime}.zip"
+    return "kaiteyo-backup-${currentTime}.zip"
 }

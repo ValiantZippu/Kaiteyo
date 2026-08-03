@@ -34,7 +34,27 @@ description: What Kaiteyo does — decks, reviews, writing practice, and everyth
   <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg></div>
     <h3>Dictionary</h3>
-    <p>17,000+ vocabulary entries with meanings and example sentences. Jump straight from a card into the dictionary lookup.</p>
+    <p>17,000+ vocabulary entries with meanings and example sentences, plus Yomitan-format imports so you can add your own dictionaries and search them side by side.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-play"/></svg></div>
+    <h3>Media workspace</h3>
+    <p>Open video, audio, subtitles, images, PDFs, and text. Bookmark timestamps, capture audio clips, and mine sentences straight from subtitles.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-zap"/></svg></div>
+    <h3>Mining</h3>
+    <p>Turn dictionary entries, subtitle lines, browser selections, and OCR captures into review cards with the context sentence intact.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-eye"/></svg></div>
+    <h3>OCR & screen capture</h3>
+    <p>Recognize Japanese text from images, the clipboard, or your screen — then look it up or mine it. Tesseract-powered with graceful fallback.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-monitor"/></svg></div>
+    <h3>Learning browser</h3>
+    <p>A lightweight browser with tabs, reader mode, and bookmarks — read the web and mine vocabulary while you go.</p>
   </div>
   <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-font"/></svg></div>

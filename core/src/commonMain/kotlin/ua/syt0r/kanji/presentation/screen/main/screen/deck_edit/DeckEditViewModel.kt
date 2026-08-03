@@ -29,6 +29,7 @@ class DeckEditViewModel(
     private lateinit var configuration: DeckEditScreenConfiguration
 
     private val deckTitle = mutableStateOf("")
+    private val deckArchived = mutableStateOf(false)
     private val wasDeckEdited = mutableStateOf(false)
 
     private lateinit var letterEditingState: MutableLetterDeckEditingState
@@ -54,10 +55,13 @@ class DeckEditViewModel(
                     val searchResult = searchValidCharactersUseCase(letterData.characters)
 
                     deckTitle.value = letterData.title ?: ""
+                    deckArchived.value = letterData.isArchived ?: false
 
                     letterEditingState = MutableLetterDeckEditingState(
                         title = deckTitle,
                         confirmExit = wasDeckEdited,
+                        isArchived = deckArchived,
+                        isArchiveEnabled = configuration is DeckEditScreenConfiguration.LetterDeck.Edit,
                         searching = mutableStateOf(false),
                         listState = mutableStateOf(emptyList()),
                         lastSearchResult = mutableStateOf(searchResult),
@@ -80,10 +84,13 @@ class DeckEditViewModel(
                         viewModelScope = viewModelScope
                     )
                     deckTitle.value = vocabData.title ?: ""
+                    deckArchived.value = vocabData.isArchived ?: false
 
                     vocabDeckEditingState = MutableVocabDeckEditingState(
                         title = deckTitle,
                         confirmExit = wasDeckEdited,
+                        isArchived = deckArchived,
+                        isArchiveEnabled = configuration is DeckEditScreenConfiguration.VocabDeck.Edit,
                         list = mutableStateOf(vocabData.items)
                     )
                     _state.value = vocabDeckEditingState
@@ -161,9 +168,19 @@ class DeckEditViewModel(
         val loadedState = _state.value as ScreenState.Loaded
         _state.value = ScreenState.SavingChanges
         viewModelScope.launch {
-            saveDeckUseCase(configuration, deckTitle.value, loadedState.getCurrentList())
+            saveDeckUseCase(
+                configuration = configuration,
+                title = deckTitle.value,
+                list = loadedState.getCurrentList(),
+                isArchived = if (loadedState.isArchiveEnabled) loadedState.isArchived.value else null
+            )
             _state.value = ScreenState.Completed(false)
         }
+    }
+
+    override fun toggleArchive() {
+        deckArchived.value = !deckArchived.value
+        wasDeckEdited.value = true
     }
 
     override fun deleteDeck() {

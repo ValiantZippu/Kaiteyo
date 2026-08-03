@@ -28,12 +28,12 @@
             </tr>
           </thead>
           <tbody>
-            {% for shortcut in group.items %}
+            {% for shortcut in group['items'] %}
             <tr data-filter-item>
               <td><strong style="color: var(--text-primary)">{{ shortcut.action }}</strong></td>
               <td>
-                <span class="key-combo" aria-label="{{ shortcut.keys | join(' + ') }}">
-                  {% for key in shortcut.keys %}
+                <span class="key-combo" aria-label="{{ shortcut['keys'] | join(' + ') }}">
+                  {% for key in shortcut['keys'] %}
                   <span class="key-visual">{{ key }}</span>
                   {% if not loop.last %}<span class="key-plus" aria-hidden="true">+</span>{% endif %}
                   {% endfor %}

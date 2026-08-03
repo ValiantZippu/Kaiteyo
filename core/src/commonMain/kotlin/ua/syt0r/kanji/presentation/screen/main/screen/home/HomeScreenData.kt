@@ -14,11 +14,10 @@ import ua.syt0r.kanji.presentation.common.resources.string.StringResolveScope
 import ua.syt0r.kanji.presentation.common.textDp
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.letters_dashboard.LettersDashboardScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.SettingsScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.stats.StatsScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.VocabDashboardScreen
+import ua.syt0r.kanji.presentation.screen.main.screen.library.LibraryScreen
 
 enum class HomeScreenTab(
     val analyticsName: String,
@@ -33,29 +32,17 @@ enum class HomeScreenTab(
         titleResolver = { home.generalDashboardTabLabel },
         content = { GeneralDashboardScreen(it) }
     ),
-    LettersDashboard(
-        analyticsName = "letters_dashboard",
+    Library(
+        analyticsName = "library",
         iconContent = {
             Text(
-                text = "字",
+                text = "書",
                 fontSize = 18.textDp,
                 fontWeight = FontWeight.Bold
             )
         },
-        titleResolver = { home.lettersDashboardTabLabel },
-        content = { LettersDashboardScreen(mainNavigationState = it) }
-    ),
-    VocabDashboard(
-        analyticsName = "vocab_dashboard",
-        iconContent = {
-            Text(
-                text = "語",
-                fontSize = 18.textDp,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        titleResolver = { home.vocabDashboardTabLabel },
-        content = { VocabDashboardScreen(mainNavigationState = it) }
+        titleResolver = { home.libraryTabLabel },
+        content = { LibraryScreen(navigationState = it) }
     ),
     Stats(
         analyticsName = "stats",

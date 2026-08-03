@@ -19,13 +19,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ViewSidebar
@@ -97,6 +101,8 @@ fun panelKindIcon(kind: PanelKind): ImageVector = when (kind) {
     PanelKind.DeckBrowser -> Icons.Default.Folder
     PanelKind.ThemeStudio -> Icons.Default.Palette
     PanelKind.Search -> Icons.Default.Search
+    PanelKind.Media -> Icons.Default.Movie
+    PanelKind.Ocr -> Icons.Default.Camera
 }
 
 // ============================================
@@ -264,6 +270,69 @@ fun PanelContent(state: AppState, kind: PanelKind) {
         PanelKind.DeckBrowser -> CollectionsView(state)
         PanelKind.ThemeStudio -> ThemeStudioView(state)
         PanelKind.Search -> SearchPanel(state)
+        PanelKind.Media -> MediaPanel(state)
+        PanelKind.Ocr -> OcrPanel(state)
+    }
+}
+
+// ============================================
+// MEDIA PANEL
+// ============================================
+
+@Composable
+private fun MediaPanel(state: AppState) {
+    val sc = surfaceColors()
+    val media = state.media
+    Column(Modifier.fillMaxSize().padding(DsSpacing.Md), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+        Text("Media", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+        media.currentDocument?.let { doc ->
+            Text(doc.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+            Text(
+                media.subtitleTrack?.let { "Subtitles: ${it.name} (${it.cues.size} cues)" } ?: "No subtitle track",
+                color = sc.textMuted,
+                fontSize = DsType.Caption
+            )
+            val cue = media.cueAt(media.currentPositionMs)
+            if (cue != null) {
+                Text(cue.text, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.fillMaxWidth().padding(top = DsSpacing.Sm))
+                Text(MediaEngine.formatTime(cue.startMs), color = sc.textMuted, fontSize = DsType.Caption)
+            }
+        } ?: Text("No media open.", color = sc.textMuted, fontSize = DsType.Caption)
+        Text("${media.bookmarks.size} bookmarks · ${media.audioClips.size} clips", color = sc.textMuted, fontSize = DsType.Caption)
+    }
+}
+
+// ============================================
+// OCR PANEL
+// ============================================
+
+@Composable
+private fun OcrPanel(state: AppState) {
+    val sc = surfaceColors()
+    val ocr = state.ocr
+    Column(Modifier.fillMaxSize().padding(DsSpacing.Md), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+        Text("OCR", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+        DsButton(
+            text = "Capture clipboard",
+            icon = Icons.Default.Camera,
+            kind = DsButtonKind.Secondary,
+            compact = true,
+            onClick = { runCatching { ocr.ocrClipboard() } }
+        )
+        val result = ocr.lastResult
+        if (result != null) {
+            Text(
+                result.text,
+                color = sc.textPrimary,
+                fontSize = DsType.Body,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            )
+        } else {
+            Text("No text captured yet.", color = sc.textMuted, fontSize = DsType.Caption)
+        }
     }
 }
 

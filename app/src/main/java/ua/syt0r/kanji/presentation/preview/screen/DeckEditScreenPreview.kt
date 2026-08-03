@@ -32,6 +32,7 @@ private fun BasePreview(
             editItem = {},
             saveChanges = {},
             deleteDeck = {},
+            toggleArchive = {},
             onCompleted = {},
             addNewVocabCardClick = {}
         )
@@ -61,6 +62,8 @@ private fun randomLetterEditState() = remember {
     MutableLetterDeckEditingState(
         title = mutableStateOf(""),
         confirmExit = mutableStateOf(false),
+        isArchived = mutableStateOf(false),
+        isArchiveEnabled = true,
         searching = mutableStateOf(false),
         listState = mutableStateOf(
             value = (1..80).map {

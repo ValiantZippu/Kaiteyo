@@ -17,7 +17,7 @@
       <div class="nav-group">
         <div class="nav-group-title">{{ group.title }}</div>
         <ul class="nav-list">
-          {% for item in group.items %}
+          {% for item in group['items'] %}
           <li>
             <a class="nav-item" href="{{ basePath }}{{ item.url.lstrip('/') }}"
                {% if item.badge %}data-badge="{{ item.badge }}"{% endif %}>

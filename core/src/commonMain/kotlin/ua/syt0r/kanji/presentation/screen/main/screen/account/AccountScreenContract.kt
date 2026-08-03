@@ -12,7 +12,7 @@ interface AccountScreenContract {
         const val ACCOUNT_WEB_PAGE_URL = "https://kanji-dojo.com/account"
         const val ACCOUNT_DELETE_URL = "$ACCOUNT_WEB_PAGE_URL?delete=true"
         const val DEEP_LINK_AUTH_URL = "$ACCOUNT_WEB_PAGE_URL?deepLinkAuth=true"
-        const val DEEP_LINK_AUTH_REDIRECT_URL = "kanji-dojo://signin"
+        const val DEEP_LINK_AUTH_REDIRECT_URL = "kaiteyo://signin"
 
         fun serverAuthUrl(port: Int): String = "$ACCOUNT_WEB_PAGE_URL?callbackPort=$port"
 

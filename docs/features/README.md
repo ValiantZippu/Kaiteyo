@@ -7,6 +7,7 @@ This directory contains detailed specifications for every major feature.
 | File | Feature | Status |
 |------|---------|--------|
 | `FLASHCARDS.md` | Flashcard study system | ✅ Implemented |
+| `LIBRARY.md` | Unified Library hub | ✅ Implemented |
 | `THEMES.md` | Theme system and Appearance Studio | 🚧 In Progress |
 | `DESKTOP.md` | Desktop window experience | 🚧 In Progress |
 | `MOBILE.md` | Mobile experience | 📋 Planned |

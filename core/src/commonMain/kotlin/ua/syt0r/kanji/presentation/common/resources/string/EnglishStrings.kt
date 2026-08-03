@@ -98,6 +98,7 @@ object EnglishHomeStrings : HomeStrings {
     override val generalDashboardTabLabel: String = "Home"
     override val lettersDashboardTabLabel: String = "Letters"
     override val vocabDashboardTabLabel: String = "Vocab"
+    override val libraryTabLabel: String = "Library"
     override val statsTabLabel: String = "Stats"
     override val searchTabLabel: String = "Search"
     override val settingsTabLabel: String = "Settings"
@@ -467,6 +468,8 @@ object EnglishDeckEditStrings : DeckEditStrings {
     override val saveInputHint: String = "Deck Title"
     override val saveButtonDefault: String = "Save"
     override val saveButtonCompleted: String = "Done"
+    override val archiveTitle: String = "Archive deck"
+    override val archiveHint: String = "Hidden from the main deck list until unarchived"
     override val deleteTitle: String = "Delete confirmation"
     override val deleteMessage: (deckTitle: String) -> String = {
         "Are you sure you want to delete \"$it\" deck?"

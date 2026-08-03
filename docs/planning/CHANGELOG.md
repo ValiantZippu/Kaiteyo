@@ -3,6 +3,11 @@
 ## v2.0.0 (Current) — Premium Experience
 
 ### Added
+- **Unified Library hub** — Replaces the old Kanji/Vocabulary split in Home:
+  - Single Library tab in the Home tab bar (`HomeScreenTab.Library`)
+  - Library hub with Sections (Stats, Study, Library, Review) and stat summary rows
+  - Drill-down screens: Kanji Decks, Vocabulary, Word & Sentence Search
+  - Old `LettersDashboard`/`VocabDashboard` tabs removed; default-tab preference remapped to Library
 - **Theme Studio v2.0** — Complete rewrite with functional color editor:
   - Interactive HSV color wheel with drag-to-pick
   - RGB/HSL/HSV/HEX editors that sync together

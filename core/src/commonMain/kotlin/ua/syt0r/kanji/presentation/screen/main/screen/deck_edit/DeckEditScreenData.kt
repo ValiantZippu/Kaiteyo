@@ -98,6 +98,8 @@ enum class DeckEditItemAction { Nothing, Add, Remove }
 data class MutableLetterDeckEditingState(
     override val title: MutableState<String>,
     override val confirmExit: MutableState<Boolean>,
+    override val isArchived: MutableState<Boolean>,
+    override val isArchiveEnabled: Boolean,
     override val searching: MutableState<Boolean>,
     override val listState: MutableState<List<LetterDeckEditListItem>>,
     override val lastSearchResult: MutableState<SearchResult?>
@@ -106,5 +108,7 @@ data class MutableLetterDeckEditingState(
 data class MutableVocabDeckEditingState(
     override val title: MutableState<String>,
     override val confirmExit: MutableState<Boolean>,
+    override val isArchived: MutableState<Boolean>,
+    override val isArchiveEnabled: Boolean,
     override val list: MutableState<List<VocabDeckEditListItem>>
 ) : ScreenState.VocabDeckEditing

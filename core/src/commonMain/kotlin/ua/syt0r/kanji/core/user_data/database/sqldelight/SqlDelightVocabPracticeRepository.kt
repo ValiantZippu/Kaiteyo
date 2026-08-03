@@ -55,8 +55,13 @@ class SqlDelightVocabPracticeRepository(
 
     override suspend fun deleteDeck(id: Long) = writeTransaction { deleteVocabDeck(id) }
 
+    override suspend fun updateDeckArchived(
+        id: Long,
+        isArchived: Boolean,
+    ) = writeTransaction { updateVocabDeckArchived(if (isArchived) 1L else 0L, id) }
+
     override suspend fun getDecks(): List<VocabDeck> = readTransaction {
-        getVocabDecks().executeAsList().map { VocabDeck(it.id, it.title, it.position.toInt()) }
+        getVocabDecks().executeAsList().map { VocabDeck(it.id, it.title, it.position.toInt(), it.is_archived != 0L) }
     }
 
     override suspend fun getDecksContainingWord(kanji: String?, kana: String): List<Long> {

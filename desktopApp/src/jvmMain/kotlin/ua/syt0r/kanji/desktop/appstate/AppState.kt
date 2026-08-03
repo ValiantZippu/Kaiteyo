@@ -19,6 +19,13 @@ import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 import ua.syt0r.kanji.desktop.engine.sync.SyncEngine
 import ua.syt0r.kanji.desktop.engine.theming.ThemePresets
 import ua.syt0r.kanji.desktop.engine.theming.ThemeSerializer
+import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryService
+import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryRepository
+import ua.syt0r.kanji.desktop.engine.mining.MiningEngine
+import ua.syt0r.kanji.desktop.engine.media.MediaEngine
+import ua.syt0r.kanji.desktop.engine.browser.BrowserEngine
+import ua.syt0r.kanji.desktop.engine.ocr.OcrEngine
+import ua.syt0r.kanji.desktop.engine.api.LocalApiServer
 import ua.syt0r.kanji.desktop.model.CollectionDef
 import ua.syt0r.kanji.desktop.model.CollectionKind
 import ua.syt0r.kanji.desktop.model.DesktopCard
@@ -57,7 +64,13 @@ enum class WorkspaceView(val label: String, val icon: String) {
     Plugins("Plugins", "P"),
     ThemeStudio("Theme Studio", "M"),
     Settings("Settings", "G"),
-    Contributions("Contributions", "A")
+    Contributions("Contributions", "A"),
+    Dictionary("Dictionary", "D"),
+    Mining("Mining", "M"),
+    Media("Media", "V"),
+    LearningBrowser("Learning Browser", "W"),
+    Ocr("OCR", "O"),
+    Integrations("Integrations", "A")
 }
 
 /** Type of browser display. */
@@ -95,7 +108,7 @@ class AppState(
     val toastHost: DsToastHost = DsToastHost()
 ) {
 
-    init {
+init {
         loadWorkspacePanels()
         pluginRegistry.restoreSnapshot(settings.getString("plugins.installed"))
         settings.observe { key, _, newValue ->
@@ -106,6 +119,20 @@ class AppState(
             }
         }
     }
+
+    // ---------------------------------------------------------------
+    // Learning workspace engines (dictionary, mining, media, browser,
+    // OCR and the local integration API).
+    // ---------------------------------------------------------------
+    val dictionary = DictionaryService(DictionaryRepository(dictionaryDir()))
+    val mining = MiningEngine(this)
+    val media = MediaEngine()
+    val browserEngine = BrowserEngine()
+    val ocr = OcrEngine()
+    val localApi = LocalApiServer(mining)
+
+    private fun dictionaryDir(): java.io.File =
+        java.io.File(System.getProperty("user.home"), ".kaiteyo/dictionary")
 
     // ---------------------------------------------------------------
     // Data
@@ -393,7 +420,35 @@ class AppState(
         summaries.fold(Duration.ZERO) { acc, summary -> acc + summary.timeSpent }
 
     // ---------------------------------------------------------------
-    // Theme studio
+    // Card creation / mutation (used by mining, dictionary, browser,
+    // media, OCR and the local API).
+    // ---------------------------------------------------------------
+    fun addCard(card: DesktopCard): DesktopCard {
+        val existingIdx = cards.indexOfFirst { it.id == card.id }
+        if (existingIdx >= 0) {
+            cards[existingIdx] = card
+        } else {
+            cards.add(0, card)
+        }
+        activityLog.record(ActivityCategory.Study, "Added card \"${card.character}\"")
+        return card
+    }
+
+    fun deleteCard(id: String) {
+        val card = cards.firstOrNull { it.id == id }
+        cards.removeAll { it.id == id }
+        if (selectedCard?.id == id) selectedCard = null
+        selectedCardIds.remove(id)
+        activityLog.record(ActivityCategory.Study, "Deleted card \"${card?.character ?: id}\"")
+    }
+
+    fun updateCard(card: DesktopCard) {
+        val idx = cards.indexOfFirst { it.id == card.id }
+        if (idx >= 0) cards[idx] = card
+    }
+
+    // ---------------------------------------------------------------
+    // Theme setup
     // ---------------------------------------------------------------
     fun applyTheme(themeId: String) {
         activeThemeId = themeId
@@ -437,6 +492,17 @@ class AppState(
         seedSummaries()
         seedCollections()
         seedActivity()
+        seedDictionary()
+    }
+
+    /** Install the bundled kanji dictionary on first run. */
+    private fun seedDictionary() {
+        if (dictionary.isInstalled(DictionaryService.SEED_DICTIONARY_ID)) return
+        dictionary.install(
+            DictionaryService.seedMeta(),
+            DictionaryService.seedEntries(),
+            state = this
+        )
     }
 
     private fun seedSummaries() {

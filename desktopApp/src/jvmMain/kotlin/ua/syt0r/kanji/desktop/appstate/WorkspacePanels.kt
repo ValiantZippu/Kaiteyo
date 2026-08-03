@@ -22,7 +22,9 @@ enum class PanelKind(val label: String) {
     Statistics("Statistics"),
     DeckBrowser("Deck Browser"),
     ThemeStudio("Theme Studio"),
-    Search("Search")
+    Search("Search"),
+    Media("Media"),
+    Ocr("OCR")
 }
 
 enum class PanelPlacement { Dock, Floating }

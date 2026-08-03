@@ -13,7 +13,8 @@ interface SaveDeckUseCase {
     suspend operator fun invoke(
         configuration: DeckEditScreenConfiguration,
         title: String,
-        list: List<DeckEditListItem>
+        list: List<DeckEditListItem>,
+        isArchived: Boolean? = null
     )
 }
 
@@ -25,7 +26,8 @@ class DefaultSaveDeckUseCase(
     override suspend fun invoke(
         configuration: DeckEditScreenConfiguration,
         title: String,
-        list: List<DeckEditListItem>
+        list: List<DeckEditListItem>,
+        isArchived: Boolean?
     ) {
         Logger.logMethod()
         when (configuration) {
@@ -47,6 +49,9 @@ class DefaultSaveDeckUseCase(
                     charactersToRemove = list.filter<LetterDeckEditListItem>(DeckEditItemAction.Remove)
                         .map { it.character }
                 )
+                if (isArchived != null) {
+                    letterPracticeRepository.updateDeckArchived(configuration.letterDeckId, isArchived)
+                }
             }
 
             DeckEditScreenConfiguration.VocabDeck.CreateNew,
@@ -73,6 +78,9 @@ class DefaultSaveDeckUseCase(
                     cardsToRemove = list.filter<VocabDeckEditListItem>(DeckEditItemAction.Remove)
                         .mapNotNull { it.savedVocabCard?.cardId }
                 )
+                if (isArchived != null) {
+                    vocabPracticeRepository.updateDeckArchived(configuration.vocabDeckId, isArchived)
+                }
             }
         }
     }

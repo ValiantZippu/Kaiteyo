@@ -69,6 +69,13 @@ import ua.syt0r.kanji.desktop.ui.sync.SyncView
 import ua.syt0r.kanji.desktop.ui.tags.TagFlagView
 import ua.syt0r.kanji.desktop.ui.themes.ThemeStudioView
 import ua.syt0r.kanji.desktop.ui.transfer.TransferView
+import ua.syt0r.kanji.desktop.ui.dictionary.DictionaryManagerView
+import ua.syt0r.kanji.desktop.ui.media.MediaView
+import ua.syt0r.kanji.desktop.ui.browser_web.LearningBrowserView
+import ua.syt0r.kanji.desktop.ui.ocr.OcrView
+import ua.syt0r.kanji.desktop.ui.mining.MiningView
+import ua.syt0r.kanji.desktop.ui.mining.MiningDialog
+import ua.syt0r.kanji.desktop.ui.api.IntegrationsView
 
 /** Shared AppState accessor for every view in the suite. */
 val LocalAppState = staticCompositionLocalOf<AppState> { error("No AppState in composition") }
@@ -100,6 +107,13 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("open-themes") { state.currentView = WorkspaceView.ThemeStudio }
         d.register("open-history") { state.currentView = WorkspaceView.History }
         d.register("open-transfer") { state.currentView = WorkspaceView.Transfer }
+        d.register("open-dictionary") { state.currentView = WorkspaceView.Dictionary }
+        d.register("open-mining") { state.currentView = WorkspaceView.Mining }
+        d.register("open-media") { state.currentView = WorkspaceView.Media }
+        d.register("open-browser2") { state.currentView = WorkspaceView.LearningBrowser }
+        d.register("open-ocr") { state.currentView = WorkspaceView.Ocr }
+        d.register("open-integrations") { state.currentView = WorkspaceView.Integrations }
+        d.register("mine-selection") { if (state.browserEngine.selectedText != null) state.mining.openMining() }
 
         d.register("again") { if (state.reviewSession != null) state.rateCurrent(ReviewRating.Again) }
         d.register("hard") { if (state.reviewSession != null) state.rateCurrent(ReviewRating.Hard) }
@@ -132,6 +146,10 @@ fun KaiteyoWorkspace(state: AppState) {
 
                 if (paletteOpen) {
                     CommandPaletteOverlay(state = state, onDismiss = { paletteOpen = false })
+                }
+
+                if (state.mining.miningDialogOpen) {
+                    MiningDialog(state)
                 }
             }
         }
@@ -238,6 +256,12 @@ private fun WorkspaceContent(state: AppState) {
     when (state.currentView) {
         WorkspaceView.Dashboard -> DashboardView(state)
         WorkspaceView.Browser -> BrowserView(state)
+        WorkspaceView.Dictionary -> DictionaryManagerView(state)
+        WorkspaceView.Mining -> MiningView(state)
+        WorkspaceView.Media -> MediaView(state)
+        WorkspaceView.LearningBrowser -> LearningBrowserView(state)
+        WorkspaceView.Ocr -> OcrView(state)
+        WorkspaceView.Integrations -> IntegrationsView(state)
         WorkspaceView.Review -> ReviewView(state)
         WorkspaceView.Collections -> CollectionsView(state)
         WorkspaceView.Tags -> TagFlagView(state)

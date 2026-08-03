@@ -95,6 +95,7 @@ object JapaneseHomeStrings : HomeStrings {
     override val generalDashboardTabLabel: String = "ホーム"
     override val lettersDashboardTabLabel: String = "文字"
     override val vocabDashboardTabLabel: String = "単語"
+    override val libraryTabLabel: String = "ライブラリ"
     override val statsTabLabel: String = "統計"
     override val searchTabLabel: String = "検索"
     override val settingsTabLabel: String = "設定"
@@ -439,6 +440,8 @@ object JapaneseDeckEditStrings : DeckEditStrings {
     override val saveInputHint: String = "名前"
     override val saveButtonDefault: String = "保存"
     override val saveButtonCompleted: String = "完了"
+    override val archiveTitle: String = "デッキをアーカイブ"
+    override val archiveHint: String = "メインのデッキ一覧からは隠れ、アーカイブを解除すると戻ります"
     override val deleteTitle: String = "削除の確認"
     override val deleteMessage: (practiceTitle: String) -> String = {
         "デッキ「$it」を削除してもよろしいですか？"

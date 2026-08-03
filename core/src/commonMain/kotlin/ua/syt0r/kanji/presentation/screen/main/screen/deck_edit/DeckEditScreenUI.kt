@@ -86,6 +86,7 @@ fun DeckEditScreenUI(
     editItem: (VocabDeckEditListItem) -> Unit,
     saveChanges: () -> Unit,
     deleteDeck: () -> Unit,
+    toggleArchive: () -> Unit,
     addNewVocabCardClick: () -> Unit,
     onCompleted: (ScreenState.Completed) -> Unit
 ) {
@@ -168,6 +169,7 @@ fun DeckEditScreenUI(
                         onItemClick = onItemClick,
                         toggleRemoval = toggleRemoval,
                         editItem = editItem,
+                        toggleArchive = toggleArchive,
                         onSaveConfirmed = saveChanges
                     )
                 }
@@ -278,6 +280,7 @@ private fun LoadedState(
     onItemClick: (DeckEditListItem) -> Unit,
     toggleRemoval: (DeckEditListItem) -> Unit,
     editItem: (VocabDeckEditListItem) -> Unit,
+    toggleArchive: () -> Unit,
     onSaveConfirmed: () -> Unit
 ) {
 
@@ -285,6 +288,9 @@ private fun LoadedState(
     if (showTitleInputDialog) {
         SaveDeckDialog(
             title = screenState.title,
+            isArchived = screenState.isArchived,
+            isArchiveEnabled = screenState.isArchiveEnabled,
+            toggleArchive = toggleArchive,
             onConfirm = onSaveConfirmed,
             onDismissRequest = { showTitleInputDialog = false }
         )

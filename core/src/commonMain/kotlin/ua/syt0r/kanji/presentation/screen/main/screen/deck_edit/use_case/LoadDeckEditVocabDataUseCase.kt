@@ -38,7 +38,8 @@ interface LoadDeckEditVocabDataUseCase {
 
 data class DeckEditVocabData(
     val title: String?,
-    val items: List<VocabDeckEditListItem>
+    val items: List<VocabDeckEditListItem>,
+    val isArchived: Boolean? = null
 )
 
 class DefaultLoadDeckEditVocabDataUseCase(
@@ -93,10 +94,13 @@ class DefaultLoadDeckEditVocabDataUseCase(
                         initialAction = defaultListItemAction
                     ).apply { handleMeaningLoading(this, viewModelScope) }
                 }
+                val deck = practiceRepository.getDecks()
+                    .firstOrNull { it.id == configuration.vocabDeckId }
 
                 DeckEditVocabData(
                     title = configuration.title,
-                    items = deckEditCards
+                    items = deckEditCards,
+                    isArchived = deck?.isArchived
                 )
             }
         }

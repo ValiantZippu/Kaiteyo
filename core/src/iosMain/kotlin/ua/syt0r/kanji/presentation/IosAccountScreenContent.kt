@@ -72,7 +72,7 @@ object IosAccountScreenContent : AccountScreenContract.Content {
                 val authURL = NSURL(string = AccountScreenContract.DEEP_LINK_AUTH_URL)
                 val session = ASWebAuthenticationSession(
                     uRL = authURL,
-                    callbackURLScheme = "kanji-dojo",
+                    callbackURLScheme = "kaiteyo",
                 ) { url, error ->
                     Logger.d("authCallback url[$url] error[$error]")
                     url?.absoluteString
@@ -89,7 +89,7 @@ object IosAccountScreenContent : AccountScreenContract.Content {
                 val authURL = NSURL(string = ACCOUNT_WEB_PAGE_URL)
                 val session = ASWebAuthenticationSession(
                     uRL = authURL,
-                    callbackURLScheme = "kanji-dojo",
+                    callbackURLScheme = "kaiteyo",
                 ) { url, error ->
                     Logger.d("deleteAccount url[$url] error[$error]")
                 }
@@ -101,7 +101,7 @@ object IosAccountScreenContent : AccountScreenContract.Content {
                 val authURL = NSURL(string = ACCOUNT_DELETE_URL)
                 val session = ASWebAuthenticationSession(
                     uRL = authURL,
-                    callbackURLScheme = "kanji-dojo",
+                    callbackURLScheme = "kaiteyo",
                 ) { url, error ->
                     Logger.d("deleteAccount url[$url] error[$error]")
                 }

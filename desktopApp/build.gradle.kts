@@ -23,6 +23,9 @@ kotlin {
             dependencies {
                 implementation(compose.components.resources)
                 implementation(project(":core"))
+                // Local integration API (Ktor netty server)
+                implementation("io.ktor:ktor-server-core:3.1.2")
+                implementation("io.ktor:ktor-server-netty:3.1.2")
             }
         }
 
