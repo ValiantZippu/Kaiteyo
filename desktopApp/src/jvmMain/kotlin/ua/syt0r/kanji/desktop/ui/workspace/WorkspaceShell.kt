@@ -1,5 +1,6 @@
 package ua.syt0r.kanji.desktop.ui.workspace
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -8,6 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -49,6 +51,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.NavLayout
@@ -88,6 +91,8 @@ import ua.syt0r.kanji.desktop.ui.api.IntegrationsView
 import ua.syt0r.kanji.desktop.ui.editor.CardEditorDialog
 import ua.syt0r.kanji.desktop.ui.grammar.GrammarPracticeView
 import ua.syt0r.kanji.desktop.ui.writing.WritingPracticeView
+import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
+import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 
 /** Shared AppState accessor for every view in the suite. */
 val LocalAppState = staticCompositionLocalOf<AppState> { error("No AppState in composition") }
@@ -209,8 +214,11 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
     // removes it entirely and hands navigation to the floating launcher.
     val dockVisible = state.navLayout != NavLayout.Bubble
     val position = state.navPosition
-    val motion = tween<androidx.compose.ui.unit.IntOffset>(240)
-    val fadeMotion = tween<Float>(240)
+    // Dock show/hide honors the animation speed / reduced-motion config,
+    // matching the view transitions.
+    val dockDuration = tweenDuration(LocalAnimationConfig.current, 240)
+    val motion = tween<IntOffset>(dockDuration)
+    val fadeMotion = tween<Float>(dockDuration)
     val rail = position == NavPosition.Left || position == NavPosition.Right
 
     Box(Modifier.fillMaxSize().background(sc.background)) {
@@ -318,34 +326,64 @@ private fun keyName(key: Key): String = when (key) {
 
 @Composable
 private fun WorkspaceContent(state: AppState) {
-    when (state.currentView) {
-        WorkspaceView.Dashboard -> DashboardView(state)
-        // The Library IS the browser — universal search, browsing and
-        // editing all live there. Older entry points that navigated to
-        // the standalone Browser land here now.
-        WorkspaceView.Browser -> LibraryView(state)
-        WorkspaceView.Library -> LibraryView(state)
-        WorkspaceView.Dictionary -> DictionaryManagerView(state)
-        WorkspaceView.Mining -> MiningView(state)
-        WorkspaceView.Media -> MediaView(state)
-        WorkspaceView.LearningBrowser -> LearningBrowserView(state)
-        WorkspaceView.Ocr -> OcrView(state)
-        WorkspaceView.Integrations -> IntegrationsView(state)
-        WorkspaceView.Review -> ReviewView(state)
-        WorkspaceView.Writing -> WritingPracticeView(state)
-        WorkspaceView.Grammar -> GrammarPracticeView(state)
-        WorkspaceView.Collections -> CollectionsView(state)
-        WorkspaceView.Tags -> TagFlagView(state)
-        WorkspaceView.Statistics -> StatsView(state)
-        WorkspaceView.History -> ActivityLogView(state)
-        WorkspaceView.Transfer -> TransferView(state)
-        WorkspaceView.Sync -> SyncView(state)
-        WorkspaceView.Shortcuts -> ShortcutsView(state)
-        WorkspaceView.Plugins -> PluginsView(state)
-        WorkspaceView.ThemeStudio -> ThemeStudioView(state)
-        WorkspaceView.Settings -> SettingsView(state)
-        WorkspaceView.Account -> AccountView(state)
-        WorkspaceView.Contributions -> ContributionsView(state)
+    // Tab switches slide + fade between views. The direction follows the
+    // navigation order — moving forward slides left, moving back slides
+    // right — and the duration honors the animation speed / reduced-motion
+    // configuration.
+    val duration = tweenDuration(LocalAnimationConfig.current, 280)
+    val slideMotion = tween<IntOffset>(duration)
+    val fadeMotion = tween<Float>(duration)
+
+    AnimatedContent(
+        targetState = state.currentView,
+        contentKey = { view ->
+            // Browser is a legacy alias for Library — collapse it so
+            // navigating between them doesn't slide identical content.
+            if (view == WorkspaceView.Browser) WorkspaceView.Library else view
+        },
+        transitionSpec = {
+            val forward = WorkspaceView.entries.indexOf(targetState) >=
+                WorkspaceView.entries.indexOf(initialState)
+            val enterSlide =
+                if (forward) slideInHorizontally(slideMotion) { it }
+                else slideInHorizontally(slideMotion) { -it }
+            val exitSlide =
+                if (forward) slideOutHorizontally(slideMotion) { -it / 3 }
+                else slideOutHorizontally(slideMotion) { it / 3 }
+            (enterSlide + fadeIn(fadeMotion)) togetherWith
+                (exitSlide + fadeOut(fadeMotion))
+        },
+        label = "workspaceView"
+    ) { view ->
+        when (view) {
+            WorkspaceView.Dashboard -> DashboardView(state)
+            // The Library IS the browser — universal search, browsing and
+            // editing all live there. Older entry points that navigated to
+            // the standalone Browser land here now.
+            WorkspaceView.Browser -> LibraryView(state)
+            WorkspaceView.Library -> LibraryView(state)
+            WorkspaceView.Dictionary -> DictionaryManagerView(state)
+            WorkspaceView.Mining -> MiningView(state)
+            WorkspaceView.Media -> MediaView(state)
+            WorkspaceView.LearningBrowser -> LearningBrowserView(state)
+            WorkspaceView.Ocr -> OcrView(state)
+            WorkspaceView.Integrations -> IntegrationsView(state)
+            WorkspaceView.Review -> ReviewView(state)
+            WorkspaceView.Writing -> WritingPracticeView(state)
+            WorkspaceView.Grammar -> GrammarPracticeView(state)
+            WorkspaceView.Collections -> CollectionsView(state)
+            WorkspaceView.Tags -> TagFlagView(state)
+            WorkspaceView.Statistics -> StatsView(state)
+            WorkspaceView.History -> ActivityLogView(state)
+            WorkspaceView.Transfer -> TransferView(state)
+            WorkspaceView.Sync -> SyncView(state)
+            WorkspaceView.Shortcuts -> ShortcutsView(state)
+            WorkspaceView.Plugins -> PluginsView(state)
+            WorkspaceView.ThemeStudio -> ThemeStudioView(state)
+            WorkspaceView.Settings -> SettingsView(state)
+            WorkspaceView.Account -> AccountView(state)
+            WorkspaceView.Contributions -> ContributionsView(state)
+        }
     }
 }
 

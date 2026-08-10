@@ -1,5 +1,6 @@
 package ua.syt0r.kanji.desktop.ui.sync
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,246 +8,234 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import ua.syt0r.kanji.desktop.appstate.AppState
+import ua.syt0r.kanji.desktop.appstate.WorkspaceView
+import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
-import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
-import ua.syt0r.kanji.desktop.designsystem.DsConfirmDialog
 import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
-import ua.syt0r.kanji.desktop.designsystem.DsIconButton
-import ua.syt0r.kanji.desktop.designsystem.DsPromptDialog
+import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
-import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
-import ua.syt0r.kanji.desktop.designsystem.DsTextField
-import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.designsystem.DsType
+import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.errorColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
-import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
-import ua.syt0r.kanji.desktop.engine.sync.ConflictResolution
+import ua.syt0r.kanji.desktop.engine.account.ProviderKind
 import ua.syt0r.kanji.desktop.engine.sync.SyncBlob
 import ua.syt0r.kanji.desktop.engine.sync.SyncCodec
-import ua.syt0r.kanji.desktop.engine.sync.SyncEngine
-import ua.syt0r.kanji.desktop.engine.sync.SyncManifest
-import ua.syt0r.kanji.desktop.engine.sync.SyncProfile
-import ua.syt0r.kanji.desktop.engine.sync.SyncProviderType
 import ua.syt0r.kanji.desktop.engine.sync.SyncResult
-import ua.syt0r.kanji.desktop.engine.sync.SyncTransport
-import ua.syt0r.kanji.desktop.model.ToastKind
+import ua.syt0r.kanji.desktop.ui.account.formatDateTime
 
 // ============================================
 // SYNC
-// Provider profiles + one-click reconciliation.
-// A memory transport stands in for real cloud
-// providers; the diff engine is fully real.
+// Cloud synchronization driven by the connected
+// GitHub account. Push/pull the same versioned
+// blobs (cards, review log, daily summaries)
+// used by the Account → Sync section.
 // ============================================
 
 @Composable
 fun SyncView(state: AppState) {
     val sc = surfaceColors()
     val scope = rememberCoroutineScope()
-    val transport = remember { MemoryTransport() }
-    val profiles = remember { mutableStateListOf<SyncProfile>() }
+    val connections by state.account.connections.collectAsState()
+    val settingsData by state.account.settingsData.collectAsState()
+    val github = connections.firstOrNull { it.kind == ProviderKind.GitHub }
+    val connected = github?.isConnected == true
     val codec = remember { SyncCodec() }
-    var showAdd by remember { mutableStateOf(false) }
-    var deleteTarget by remember { mutableStateOf<SyncProfile?>(null) }
-    var syncDone by remember { mutableStateOf<SyncResult?>(null) }
+    var lastResult by remember { mutableStateOf<SyncResult?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(DsSpacing.Lg)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+    ) {
         DsSectionHeader(
             title = "Sync",
-            subtitle = state.lastSyncMessage,
+            subtitle = if (connected) "Pushing and pulling with ${github?.displayName}" else state.lastSyncMessage,
             action = {
                 DsButton(
-                    text = "Add profile",
-                    icon = Icons.Default.Add,
-                    kind = DsButtonKind.Ghost,
-                    onClick = { showAdd = true },
-                    compact = true
+                    text = if (state.syncBusy) "Syncing…" else "Sync now",
+                    icon = Icons.Default.CloudSync,
+                    onClick = {
+                        if (state.syncBusy) return@DsButton
+                        scope.launch {
+                            lastResult = state.cloudSync.syncNow(manual = true)
+                        }
+                    },
+                    enabled = connected && !state.syncBusy
                 )
             }
         )
 
-        if (profiles.isEmpty()) {
-            DsCard {
-                DsEmptyState(
-                    title = "No sync profiles",
-                    message = "Add a profile to start syncing your deck across devices.",
-                    action = {
-                        DsButton(text = "Add profile", icon = Icons.Default.Add, onClick = { showAdd = true })
-                    }
-                )
-            }
-        } else {
-            profiles.forEachIndexed { index, profile ->
-                ProfileCard(
-                    profile = profile,
-                    onUpdate = { updated -> profiles[index] = updated },
-                    onDelete = { deleteTarget = profile }
-                )
-            }
-        }
-
+        // ── Destination / connection ──
         DsCard {
-            Column(Modifier.padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Sync now", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                        Text("Push and pull ${state.cards.size} cards, ${state.reviewLog.size} reviews, ${state.summaries.size} daily summaries", color = sc.textMuted, fontSize = DsType.Caption)
+            if (!connected) {
+                DsEmptyState(
+                    title = "No cloud account connected",
+                    message = "Connect a GitHub account in Account → Connected accounts to sync your " +
+                        "cards, review history and daily summaries across devices.",
+                    action = {
+                        DsButton(
+                            text = "Open Account",
+                            icon = Icons.Default.Link,
+                            onClick = { state.currentView = WorkspaceView.Account }
+                        )
                     }
-                    DsButton(
-                        text = if (state.syncBusy) "Syncing…" else "Sync now",
-                        icon = Icons.Default.CloudSync,
-                        onClick = {
-                            if (state.syncBusy) return@DsButton
-                            state.syncBusy = true
-                            scope.launch {
-                                val manifest = codec.manifest(
-                                    cards = state.cards.toList(),
-                                    reviewLog = state.reviewLog.toList(),
-                                    summaries = state.summaries.toList()
-                                )
-                                val result = try {
-                                    state.syncEngine.reconcile(transport, manifest, ConflictResolution.LocalWins)
-                                } finally {
-                                    state.syncBusy = false
-                                }
-                                state.lastSyncAt = Clock.System.now()
-                                state.lastSyncMessage = "Synced ${manifest.blobs.size} blobs — pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}"
-                                state.activityLog.record(
-                                    ActivityCategory.Sync,
-                                    "Sync completed",
-                                    details = "pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}",
-                                    affectedCount = result.pushed + result.pulled
-                                )
-                                syncDone = result
-                                state.toastHost.show(state.lastSyncMessage, kind = ToastKind.Success)
-                            }
-                        },
-                        enabled = !state.syncBusy
-                    )
-                }
-
-                val manifest = remember(state.cards.size, state.reviewLog.size, state.summaries.size) {
-                    codec.manifest(
-                        cards = state.cards.toList(),
-                        reviewLog = state.reviewLog.toList(),
-                        summaries = state.summaries.toList()
-                    )
-                }
-                Text("Payload", color = sc.textMuted, fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
-                manifest.blobs.forEach { blob ->
-                    BlobRow(blob)
-                }
-                syncDone?.let { result ->
+                )
+            } else {
+                Column(
+                    modifier = Modifier.padding(DsSpacing.Xl),
+                    verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.CloudSync,
+                            contentDescription = null,
+                            tint = accent().primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(DsSpacing.Sm))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = github?.displayName ?: "GitHub",
+                                color = sc.textPrimary,
+                                fontSize = DsType.BodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Private gist · GitHub account · ${github?.userId?.take(8) ?: ""}",
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption
+                            )
+                        }
+                        if (state.syncBusy) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            DsBadge(text = "Connected", tint = Color(0xFFC2FC8B))
+                        }
+                    }
+                    if (github?.errorMessage?.isNotBlank() == true) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = errorColor(), modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text(github.errorMessage, color = errorColor(), fontSize = DsType.Caption)
+                        }
+                    }
                     Text(
-                        text = "Last run — pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}",
-                        color = sc.textSecondary,
+                        text = state.lastSyncMessage,
+                        color = sc.textMuted,
                         fontSize = DsType.Caption
                     )
                 }
             }
         }
-    }
 
-    if (showAdd) {
-        DsPromptDialog(
-            title = "New sync profile",
-            placeholder = "Profile name (e.g. Work laptop)",
-            onConfirm = { name ->
-                if (name.isNotBlank()) {
-                    profiles.add(
-                        SyncProfile(
-                            id = "profile-${Clock.System.now().toEpochMilliseconds()}",
-                            name = name,
-                            provider = SyncProviderType.LocalFolder
-                        )
-                    )
-                    state.activityLog.record(ActivityCategory.Sync, "Added sync profile '$name'")
-                }
-            },
-            onDismiss = { showAdd = false }
-        )
-    }
-
-    deleteTarget?.let { target ->
-        DsConfirmDialog(
-            title = "Delete sync profile",
-            message = "Remove '${target.name}'? The local deck is never touched.",
-            confirmText = "Delete",
-            danger = true,
-            onConfirm = {
-                profiles.removeAll { it.id == target.id }
-                state.activityLog.record(ActivityCategory.Sync, "Removed sync profile '${target.name}'")
-                deleteTarget = null
-            },
-            onDismiss = { deleteTarget = null }
-        )
-    }
-}
-
-@Composable
-private fun ProfileCard(
-    profile: SyncProfile,
-    onUpdate: (SyncProfile) -> Unit,
-    onDelete: () -> Unit
-) {
-    val sc = surfaceColors()
-    DsCard {
-        Column(Modifier.padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(profile.name, color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                    Text(profile.provider.name + if (profile.endpoint.isNotBlank()) " · ${profile.endpoint}" else "", color = sc.textMuted, fontSize = DsType.Caption)
-                }
-                DsIconButton(icon = Icons.Default.Delete, onClick = onDelete, contentDescription = "Delete profile", size = 30.dp)
+        // ── Payload ──
+        if (connected) {
+            val manifest = remember(state.cards.size, state.reviewLog.size, state.summaries.size) {
+                codec.manifest(
+                    cards = state.cards.toList(),
+                    reviewLog = state.reviewLog.toList(),
+                    summaries = state.summaries.toList()
+                )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md), verticalAlignment = Alignment.CenterVertically) {
-                DsSelect(
-                    selected = profile.provider,
-                    options = SyncProviderType.entries.toList(),
-                    onSelected = { onUpdate(profile.copy(provider = it)) },
-                    labelOf = { it.name },
-                    modifier = Modifier.width(170.dp)
+            DsCard {
+                Column(
+                    modifier = Modifier.padding(DsSpacing.Xl),
+                    verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    DsSectionHeader(
+                        title = "Payload",
+                        subtitle = "${state.cards.size} cards · ${state.reviewLog.size} reviews · " +
+                            "${state.summaries.size} daily summaries"
+                    )
+                    manifest.blobs.forEach { blob ->
+                        BlobRow(blob)
+                    }
+                    lastResult?.let { result ->
+                        Text(
+                            text = "Last run — pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}",
+                            color = sc.textSecondary,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    Text(
+                        text = "Last synced ${state.lastSyncAt?.let { formatDateTime(it.toEpochMilliseconds()) } ?: "never"}",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+            }
+        }
+
+        // ── Automation ──
+        DsCard {
+            Column(
+                modifier = Modifier.padding(DsSpacing.Xl),
+                verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+            ) {
+                Text(
+                    text = "Automatic sync",
+                    color = sc.textPrimary,
+                    fontSize = DsType.Body,
+                    fontWeight = FontWeight.SemiBold
                 )
-                val endpoint = remember(profile.id) { mutableStateOf(profile.endpoint) }
-                DsTextField(
-                    value = endpoint.value,
-                    onValueChange = { endpoint.value = it; onUpdate(profile.copy(endpoint = it)) },
-                    placeholder = "Endpoint / path",
-                    singleLine = true
+                Text(
+                    text = if (settingsData.autoSync)
+                        "Every ${settingsData.syncIntervalMinutes} minutes while connected"
+                    else if (settingsData.syncOnStart)
+                        "On app start"
+                    else
+                        "Manual only — use Sync now above or in Account → Sync",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
                 )
-                DsToggle(
-                    checked = profile.enabled,
-                    onCheckedChange = { onUpdate(profile.copy(enabled = it)) },
-                    label = "Enabled"
-                )
-                DsToggle(
-                    checked = profile.autoSync,
-                    onCheckedChange = { onUpdate(profile.copy(autoSync = it)) },
-                    label = "Auto"
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (connected) Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
+                        contentDescription = null,
+                        tint = if (connected) Color(0xFFC2FC8B) else errorColor(),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    Text(
+                        text = if (connected) "Ready to sync — blobs are versioned and conflicts resolve last-write-wins"
+                        else "Connect a GitHub account to enable syncing",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
             }
         }
     }
@@ -256,7 +245,11 @@ private fun ProfileCard(
 private fun BlobRow(blob: SyncBlob) {
     val sc = surfaceColors()
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DsRadius.Md))
+            .background(sc.surfaceInteractive.copy(alpha = 0.35f))
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(blob.name, color = sc.textPrimary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
@@ -264,28 +257,4 @@ private fun BlobRow(blob: SyncBlob) {
         Spacer(Modifier.width(DsSpacing.Md))
         Text("${blob.payload.length} bytes", color = sc.textMuted, fontSize = DsType.Caption)
     }
-}
-
-/** In-memory transport used as a stand-in for a real cloud provider. */
-private class MemoryTransport : SyncTransport {
-    private val storage = mutableMapOf<String, SyncBlob>()
-
-    override val type: SyncProviderType = SyncProviderType.CustomServer
-
-    override suspend fun list(): List<SyncBlob> = storage.values.toList()
-
-    override suspend fun download(name: String): SyncBlob = storage[name] ?: SyncBlob(name)
-
-    override suspend fun upload(blob: SyncBlob): Long {
-        val version = (storage[blob.name]?.version ?: 0) + 1
-        storage[blob.name] = blob.copy(version = version, modifiedAt = Clock.System.now())
-        return version
-    }
-
-    override suspend fun delete(name: String) {
-        storage.remove(name)
-    }
-
-    override suspend fun testConnection(): Result<String> =
-        Result.success("Connected (in-memory transport)")
 }

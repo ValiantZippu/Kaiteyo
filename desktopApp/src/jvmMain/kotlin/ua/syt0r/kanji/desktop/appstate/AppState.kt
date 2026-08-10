@@ -17,6 +17,7 @@ import ua.syt0r.kanji.desktop.engine.settings.SettingsEngine
 import ua.syt0r.kanji.desktop.engine.shortcuts.ShortcutDispatcher
 import ua.syt0r.kanji.desktop.engine.shortcuts.ShortcutRegistry
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.sync.CloudSyncCoordinator
 import ua.syt0r.kanji.desktop.engine.sync.SyncEngine
 import ua.syt0r.kanji.desktop.engine.theming.ThemeManager
 import ua.syt0r.kanji.desktop.engine.theming.ThemePresets
@@ -224,9 +225,21 @@ class AppState(
     )
 ) {
 
+    /**
+     * Cloud sync: real GitHub-gist transport bridged to the AccountEngine
+     * connection, with auto-sync scheduling. Lazy so it can reference the
+     * fully-constructed state (including [account]) on first access.
+     */
+    val cloudSync: CloudSyncCoordinator by lazy {
+        CloudSyncCoordinator(state = this, account = account)
+    }
+
 init {
         loadWorkspacePanels()
         loadOnboardingFlag()
+        // Force the cloud sync coordinator to start (auto-sync scheduling,
+        // sync-on-start) even when the Sync view is never opened.
+        cloudSync
         pluginRegistry.restoreSnapshot(settings.getString("plugins.installed"))
         // Reconcile the persisted bubble toggle with the stored mode so both stay in sync.
         if (settings.getBool("launcher.enabled") && navLayout != NavLayout.Bubble) {

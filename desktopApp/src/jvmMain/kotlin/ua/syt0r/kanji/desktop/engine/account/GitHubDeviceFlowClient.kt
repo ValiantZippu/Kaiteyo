@@ -67,7 +67,7 @@ class GitHubDeviceFlowClient(
         runCatching {
             val body = postForm(
                 DEVICE_CODE_URL,
-                mapOf("client_id" to clientId, "scope" to "read:user user:email")
+                mapOf("client_id" to clientId, "scope" to "read:user user:email gist")
             )
             val obj = json.parseToJsonElement(body).jsonObject
             DeviceCodeInfo(
@@ -112,7 +112,9 @@ class GitHubDeviceFlowClient(
                         accessToken = obj["access_token"]?.jsonPrimitive?.content
                             ?: error("GitHub response missing access_token"),
                         refreshToken = obj["refresh_token"]?.jsonPrimitive?.content ?: "",
-                        expiresInSeconds = obj["expires_in"]?.jsonPrimitive?.content?.toIntOrNull() ?: 3600,
+                        // GitHub device-flow access tokens are long-lived; the
+                        // absence of expires_in means the token does not expire.
+                        expiresInSeconds = obj["expires_in"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
                         scope = obj["scope"]?.jsonPrimitive?.content ?: ""
                     )
 
@@ -143,7 +145,7 @@ class GitHubDeviceFlowClient(
                 accessToken = obj["access_token"]?.jsonPrimitive?.content
                     ?: error("GitHub response missing access_token"),
                 refreshToken = obj["refresh_token"]?.jsonPrimitive?.content ?: refreshToken,
-                expiresInSeconds = obj["expires_in"]?.jsonPrimitive?.content?.toIntOrNull() ?: 3600,
+                expiresInSeconds = obj["expires_in"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
                 scope = obj["scope"]?.jsonPrimitive?.content ?: ""
             )
         }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
@@ -30,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +68,8 @@ import ua.syt0r.kanji.desktop.engine.account.AccountEngine
 import ua.syt0r.kanji.desktop.engine.account.ConnectionStatus
 import ua.syt0r.kanji.desktop.engine.account.ProviderConnection
 import ua.syt0r.kanji.desktop.engine.account.ProviderKind
+import ua.syt0r.kanji.desktop.engine.sync.SyncResult
+import kotlinx.coroutines.launch
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 import ua.syt0r.kanji.desktop.model.DeckDef
 import ua.syt0r.kanji.desktop.model.DesktopCard
@@ -712,7 +716,12 @@ private fun createBackup(state: AppState, onDone: () -> Unit) {
 @Composable
 fun AccountSyncSection(state: AppState, engine: AccountEngine) {
     val sc = surfaceColors()
+    val scope = rememberCoroutineScope()
     val settingsData by engine.settingsData.collectAsState()
+    val connections by engine.connections.collectAsState()
+    val github = connections.firstOrNull { it.kind == ProviderKind.GitHub }
+    val connected = github?.isConnected == true
+    var lastResult by remember { mutableStateOf<SyncResult?>(null) }
 
     DsCard {
         Column(
@@ -732,6 +741,59 @@ fun AccountSyncSection(state: AppState, engine: AccountEngine) {
                     )
                 }
             )
+
+            // Connection status + one-click sync.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .background(sc.surfaceInteractive.copy(alpha = 0.35f))
+                    .padding(DsSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Sync,
+                    contentDescription = null,
+                    tint = if (connected) accent().primary else sc.textMuted,
+                    modifier = Modifier.size(18.dp)
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = if (connected) "Connected as ${github?.displayName}" else "No cloud account",
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = state.lastSyncMessage,
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+                DsButton(
+                    text = if (state.syncBusy) "Syncing…" else "Sync now",
+                    icon = Icons.Default.CloudSync,
+                    onClick = {
+                        if (state.syncBusy) return@DsButton
+                        scope.launch {
+                            lastResult = state.cloudSync.syncNow(manual = true)
+                        }
+                    },
+                    enabled = connected && !state.syncBusy
+                )
+            }
+
+            lastResult?.let { result ->
+                Text(
+                    text = "Last run — pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}",
+                    color = if (result.pushed + result.pulled > 0) Color(0xFFC2FC8B) else sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
 
             DsToggle(
                 checked = settingsData.autoSync,

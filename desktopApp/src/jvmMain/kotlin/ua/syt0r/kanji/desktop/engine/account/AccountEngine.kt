@@ -221,6 +221,36 @@ class AccountEngine(
         updateSettings { it.copy(githubClientId = value.trim()) }
     }
 
+    /**
+     * Resolves a usable GitHub access token for the connected account.
+     * Refreshes the token first when it is expired and a refresh token
+     * is available; otherwise returns the stored token as-is.
+     */
+    suspend fun githubAccessToken(): Result<String> = runCatching {
+        val stored = tokenVault.read(ProviderKind.GitHub)
+            ?: error("GitHub is not connected")
+        if (stored.accessToken.isBlank()) error("GitHub credentials are missing")
+
+        if (stored.isExpired && stored.refreshToken.isNotBlank()) {
+            val clientId = _settingsData.value.githubClientId.ifBlank {
+                error("GitHub OAuth is not configured")
+            }
+            val refreshed = github.refreshToken(clientId, stored.refreshToken).getOrThrow()
+            val refreshedToken = AuthToken(
+                accessToken = refreshed.accessToken,
+                refreshToken = refreshed.refreshToken.ifBlank { stored.refreshToken },
+                expiresAtEpochMs = if (refreshed.expiresInSeconds > 0) {
+                    Clock.System.now().toEpochMilliseconds() + refreshed.expiresInSeconds * 1000L
+                } else Long.MAX_VALUE,
+                scope = refreshed.scope.ifBlank { stored.scope }
+            )
+            tokenVault.save(ProviderKind.GitHub, refreshedToken)
+            refreshedToken.accessToken
+        } else {
+            stored.accessToken
+        }
+    }
+
     fun connectGitHub() {
         if (pollJob?.isActive == true) return
         if (!githubConfigured()) {
@@ -266,7 +296,9 @@ class AccountEngine(
                 AuthToken(
                     accessToken = tokenResult.accessToken,
                     refreshToken = tokenResult.refreshToken,
-                    expiresAtEpochMs = Clock.System.now().toEpochMilliseconds() + tokenResult.expiresInSeconds * 1000L,
+                    expiresAtEpochMs = if (tokenResult.expiresInSeconds > 0) {
+                        Clock.System.now().toEpochMilliseconds() + tokenResult.expiresInSeconds * 1000L
+                    } else Long.MAX_VALUE, // GitHub device-flow tokens are long-lived
                     scope = tokenResult.scope
                 )
             )
@@ -447,6 +479,22 @@ class AccountEngine(
     fun updateSettings(transform: (AccountSettingsData) -> AccountSettingsData) {
         _settingsData.value = transform(_settingsData.value)
         persistSettings()
+    }
+
+    // ------------------------------------------------------------
+    // Sync bookkeeping
+    // ------------------------------------------------------------
+
+    /** Record that a provider sync just completed (updates device + connection). */
+    fun recordSync(kind: ProviderKind, atEpochMs: Long = Clock.System.now().toEpochMilliseconds()) {
+        _devices.value = _devices.value.map {
+            if (it.isCurrent) it.copy(lastSyncEpochMs = atEpochMs) else it
+        }
+        _connections.value = _connections.value.map {
+            if (it.kind == kind) it.copy(lastUsedAtEpochMs = atEpochMs) else it
+        }
+        persistDevices()
+        persistConnections()
     }
 
     // ------------------------------------------------------------
