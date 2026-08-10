@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/installer/common/update-manifest.schema.json",
+  "title": "Kaiteyo Update Manifest",
+  "description": "The update feed served to the desktop app. One file per channel (stable/beta/nightly). Artifacts are integrity-verified by sha256 before any install step.",
+  "type": "object",
+  "required": ["schema_version", "channel", "published_at", "latest", "artifacts"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "channel": { "enum": ["stable", "beta", "nightly"] },
+    "published_at": { "type": "string", "format": "date-time" },
+    "latest": {
+      "type": "object",
+      "required": ["version", "version_code", "release_notes_url", "min_app_version"],
+      "properties": {
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "version_code": { "type": "integer" },
+        "release_notes_url": { "type": "string", "format": "uri" },
+        "min_app_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "description": "Keyed by canonical platform key (windows-exe, windows-msi, windows-portable, macos-arm, macos-intel, linux-appimage, linux-deb, linux-rpm).",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["url", "sha256", "size_bytes", "arch"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "size_bytes": { "type": "integer", "minimum": 0 },
+          "arch": { "enum": ["x64", "arm64", "aarch64", "universal", "amd64"] }
+        }
+      }
+    }
+  }
+}

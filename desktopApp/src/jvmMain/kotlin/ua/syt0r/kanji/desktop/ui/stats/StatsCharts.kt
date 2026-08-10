@@ -33,6 +33,12 @@ import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 import ua.syt0r.kanji.desktop.engine.history.ActivityEntry
+import ua.syt0r.kanji.presentation.common.theme.favoriteYellow
+import ua.syt0r.kanji.presentation.common.theme.semanticError
+import ua.syt0r.kanji.presentation.common.theme.semanticInfo
+import ua.syt0r.kanji.presentation.common.theme.semanticNew
+import ua.syt0r.kanji.presentation.common.theme.semanticSuccess
+import ua.syt0r.kanji.presentation.common.theme.semanticWarning
 import ua.syt0r.kanji.desktop.engine.history.ActivityFormatters
 import ua.syt0r.kanji.desktop.engine.stats.BreakdownRow
 import ua.syt0r.kanji.desktop.engine.stats.DailyRatingSeries
@@ -50,10 +56,12 @@ import ua.syt0r.kanji.desktop.model.ReviewRating
 // output so it stays honest and testable.
 // ============================================
 
-private val AgainColor = Color(0xFFFF6B6B)
-private val HardColor = Color(0xFFFEAB57)
-private val GoodColor = Color(0xFF7BC8FF)
-private val EasyColor = Color(0xFFC2FC8B)
+// Rating/status colors read the shared Kaiteyo semantic palette so charts
+// always match the app's success / warning / info / danger language.
+private val AgainColor = semanticError
+private val HardColor = semanticWarning
+private val GoodColor = semanticInfo
+private val EasyColor = semanticSuccess
 
 @Composable
 fun ratingColor(rating: ReviewRating): Color = when (rating) {
@@ -338,8 +346,8 @@ private fun categoryColor(category: ActivityCategory): Color = when (category) {
     ActivityCategory.Study -> EasyColor
     ActivityCategory.Import, ActivityCategory.Export -> GoodColor.copy(alpha = 0.8f)
     ActivityCategory.Undo -> HardColor
-    ActivityCategory.Tag, ActivityCategory.Flag, ActivityCategory.Plugin -> Color(0xFFA78BFA)
-    ActivityCategory.Favorite -> Color(0xFFFFD93D)
+    ActivityCategory.Tag, ActivityCategory.Flag, ActivityCategory.Plugin -> semanticNew
+    ActivityCategory.Favorite -> favoriteYellow
     ActivityCategory.Sync -> GoodColor
     ActivityCategory.Note, ActivityCategory.Deck, ActivityCategory.Settings, ActivityCategory.Theme, ActivityCategory.System -> GoodColor.copy(alpha = 0.6f)
 }

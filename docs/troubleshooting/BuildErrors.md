@@ -1,6 +1,6 @@
 # Build Errors
 
-Use this page for failures that stop compilation, packaging, or tests. Start with the [Command Library](../Commands.md), then record the issue here.
+Use this page for failures that stop compilation, packaging, or tests. Start with the [Command Library](../development/COMMANDS.md), then record the issue here.
 
 ## GradleWrapperMain ClassNotFoundException
 

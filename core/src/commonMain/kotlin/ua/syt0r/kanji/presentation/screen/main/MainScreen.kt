@@ -1,5 +1,6 @@
 package ua.syt0r.kanji.presentation.screen.main
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -8,10 +9,14 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
@@ -21,6 +26,7 @@ import kotlinx.coroutines.flow.onEach
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
 import ua.syt0r.kanji.core.user_data.database.DatabaseMigrationState
+import ua.syt0r.kanji.presentation.common.nav.LocalNavBarBottomSpace
 import ua.syt0r.kanji.presentation.common.nav.NavShell
 import ua.syt0r.kanji.presentation.dialog.VersionChangeDialog
 import ua.syt0r.kanji.presentation.getMultiplatformViewModel
@@ -42,6 +48,11 @@ fun MainScreen(
     val migrationState = viewModel.migrationState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val dataCenter = koinInject<KaiteyoDataCenter>()
+
+    // Space the docked bottom navigation bar occupies. NavShell writes it via
+    // LocalNavBarBottomSpace; the SnackbarHost pads itself so snackbars always
+    // render above the bar instead of behind it (see NavShell.kt).
+    val navBarBottomSpace = remember { mutableStateOf(0.dp) }
 
     LaunchedEffect(Unit) { dataCenter.ensureLoaded() }
 
@@ -157,16 +168,19 @@ fun MainScreen(
         )
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState,
-                snackbar = { NotificationSnackbar(it) }
-            )
-        }
-    ) {
-        NavShell(navigationState = navigationState) {
-            MainNavigation(navigationState)
+    CompositionLocalProvider(LocalNavBarBottomSpace provides navBarBottomSpace) {
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.padding(bottom = navBarBottomSpace.value),
+                    snackbar = { NotificationSnackbar(it) }
+                )
+            }
+        ) {
+            NavShell(navigationState = navigationState) {
+                MainNavigation(navigationState)
+            }
         }
     }
 

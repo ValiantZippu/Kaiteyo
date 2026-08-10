@@ -69,7 +69,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardManager
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.DeckBrowserFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.FlagManagerScreenFull
-import ua.syt0r.kanji.presentation.screen.main.screen.decks.HeatmapV2FullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.HistoryFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.ImportExportScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.KaiteyoCard
@@ -166,16 +165,6 @@ fun KeyboardShortcutsRoute(controller: DeckFeaturesController, onClose: () -> Un
 }
 
 @Composable
-fun HeatmapRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
-    LaunchedEffect(Unit) { controller.ensureLoaded() }
-    HeatmapV2FullScreen(
-        data = controller.heatmap,
-        cards = controller.cards,
-        onClose = onClose
-    )
-}
-
-@Composable
 fun SearchRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     SearchEngineScreen(
@@ -222,7 +211,11 @@ fun CardBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
 @Composable
 fun CardManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
-    CardManager(initialCards = controller.cards)
+    CardManager(
+        initialCards = controller.cards,
+        stats = controller.stats,
+        heatmap = controller.heatmap
+    )
 }
 
 @Composable

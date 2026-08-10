@@ -1,5 +1,8 @@
 package ua.syt0r.kanji.desktop.ui.workspace
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +12,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +30,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
@@ -37,10 +45,13 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MenuOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sell
@@ -51,6 +62,7 @@ import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.ViewSidebar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,19 +78,27 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import kotlinx.coroutines.delay
 import ua.syt0r.kanji.desktop.appstate.AppState
+import ua.syt0r.kanji.desktop.appstate.CompactIconSize
+import ua.syt0r.kanji.desktop.appstate.NavIconSize
+import ua.syt0r.kanji.desktop.appstate.NavLabelMode
+import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.NavPosition
+import ua.syt0r.kanji.desktop.appstate.NavSpacing
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
-import ua.syt0r.kanji.desktop.designsystem.DsMenuDivider
 import ua.syt0r.kanji.desktop.designsystem.DsMenuItem
 import ua.syt0r.kanji.desktop.designsystem.DsMenuPanel
+import ua.syt0r.kanji.desktop.designsystem.DsMotion
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
@@ -87,9 +107,16 @@ import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import kotlin.math.roundToInt
 
 // ============================================
-// KAITEYO NAVIGATION — redesigned workspace nav
-// Adaptive dock (left/right/top/bottom), icon-only
-// collapse, position picker, and a floating launcher.
+// KAITEYO NAVIGATION — adaptive workspace dock
+// One component family for every edge:
+//   * Left / Right  → vertical rail
+//   * Top / Bottom  → horizontal bar
+// Three predefined layout states only:
+//   * Expanded (labels) · Compact (icons) · Hidden
+// Width/height animate between states; there is
+// NO free resizing and NO drag handle.
+// Compact windows get a dedicated tab bar —
+// desktop docks never shrink into it.
 // ============================================
 
 private data class NavItem(
@@ -100,10 +127,12 @@ private data class NavItem(
 private val navGroups: List<Pair<String, List<NavItem>>> = listOf(
     "Study" to listOf(
         NavItem(WorkspaceView.Dashboard, Icons.Default.SpaceDashboard),
-        NavItem(WorkspaceView.Browser, Icons.Default.GridView),
+        NavItem(WorkspaceView.Library, Icons.Default.LibraryBooks),
         NavItem(WorkspaceView.Dictionary, Icons.Default.MenuBook),
         NavItem(WorkspaceView.Review, Icons.Default.PlayArrow),
-        NavItem(WorkspaceView.Collections, Icons.Default.Folder)
+        NavItem(WorkspaceView.Writing, Icons.Default.Create),
+        NavItem(WorkspaceView.Grammar, Icons.Default.Lightbulb),
+        NavItem(WorkspaceView.Collections, Icons.Default.Bookmarks)
     ),
     "Materials" to listOf(
         NavItem(WorkspaceView.LearningBrowser, Icons.Default.TextSnippet),
@@ -124,8 +153,21 @@ private val navGroups: List<Pair<String, List<NavItem>>> = listOf(
         NavItem(WorkspaceView.Plugins, Icons.Default.Extension),
         NavItem(WorkspaceView.ThemeStudio, Icons.Default.Palette),
         NavItem(WorkspaceView.Settings, Icons.Default.Settings),
+        NavItem(WorkspaceView.Account, Icons.Default.Person),
         NavItem(WorkspaceView.Contributions, Icons.Default.Favorite)
     )
+)
+
+/** All nav items flattened (used by the compact overflow menu). */
+val allNavItems: List<Pair<WorkspaceView, ImageVector>> =
+    navGroups.flatMap { (_, items) -> items.map { it.view to it.icon } }
+
+/** The four views surfaced as primary tabs in compact windows. */
+private val compactPrimaryViews = listOf(
+    WorkspaceView.Dashboard,
+    WorkspaceView.Library,
+    WorkspaceView.Dictionary,
+    WorkspaceView.Review
 )
 
 @Composable
@@ -152,6 +194,128 @@ private fun DsLogoMark(modifier: Modifier = Modifier) {
     }
 }
 
+/** Motion duration for dock size changes, honoring the animation toggle + speed + global reduced motion. */
+private fun dockDurationMs(state: AppState): Int =
+    if (!state.navigationAnimations || state.navReducedMotion) 0
+    else (DsMotion.Normal * state.navigationAnimationSpeed).toInt()
+
+/** Dock icon size from the Sidebar setting, bumped further by the accessibility toggle. */
+@Composable
+private fun navIconSize(state: AppState): androidx.compose.ui.unit.Dp {
+    val base = when (state.navIconSize) {
+        NavIconSize.Small -> 16.dp
+        NavIconSize.Medium -> 18.dp
+        NavIconSize.Large -> 22.dp
+    }
+    return base + if (state.navigationLargerIcons) 3.dp else 0.dp
+}
+
+/** Vertical rhythm between dock items, honoring the compact-spacing setting. */
+private fun navItemSpacing(state: AppState): Dp = when (state.navSpacing) {
+    NavSpacing.Tight -> 2.dp
+    NavSpacing.Comfortable -> 8.dp
+    NavSpacing.Spacious -> 14.dp
+}
+
+/** Gap inside the mode switcher, honoring the compact-spacing setting. */
+private fun navSwitchSpacing(state: AppState): Dp = when (state.navSpacing) {
+    NavSpacing.Tight -> 4.dp
+    NavSpacing.Comfortable -> 8.dp
+    NavSpacing.Spacious -> 12.dp
+}
+
+/** Whether item labels render in the expanded dock, per the label-visibility setting. */
+private fun showNavLabel(state: AppState, expanded: Boolean, hovered: Boolean): Boolean =
+    expanded && when (state.navLabelMode) {
+        NavLabelMode.Always -> true
+        NavLabelMode.OnHover -> hovered
+        NavLabelMode.Hidden -> false
+    }
+
+/** Group section headers only make sense when labels are always visible. */
+private fun showNavGroupHeaders(state: AppState, expanded: Boolean): Boolean =
+    expanded && state.navLabelMode == NavLabelMode.Always
+
+// ============================================
+// NAV TOOLTIP (compact icon-only mode)
+// ============================================
+
+private enum class TooltipPlacement { Left, Right, Above, Below }
+
+@Composable
+private fun NavTooltipHost(
+    label: String,
+    placement: TooltipPlacement,
+    enabled: Boolean = true,
+    delayMs: Int = 450,
+    content: @Composable () -> Unit
+) {
+    val sc = surfaceColors()
+    val density = LocalDensity.current
+    var anchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    var tipVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(hovered, enabled, delayMs) {
+        if (hovered && enabled && delayMs > 0) {
+            delay(delayMs)
+            tipVisible = true
+        } else {
+            tipVisible = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .onGloballyPositioned { if (anchor != it) anchor = it }
+            .hoverable(interaction)
+    ) {
+        content()
+    }
+
+    val coords = anchor
+    if (enabled && tipVisible && coords != null) {
+        val pos = coords.positionInWindow()
+        val estW = with(density) { (label.length * 7 + 24).dp.toPx() }
+        val estH = with(density) { 30.dp.toPx() }
+        val offset = when (placement) {
+            TooltipPlacement.Right -> IntOffset(
+                pos.x.roundToInt() + coords.size.width + 8,
+                pos.y.roundToInt() + coords.size.height / 2 - (estH / 2).roundToInt()
+            )
+            TooltipPlacement.Left -> IntOffset(
+                pos.x.roundToInt() - estW.roundToInt() - 8,
+                pos.y.roundToInt() + coords.size.height / 2 - (estH / 2).roundToInt()
+            )
+            TooltipPlacement.Below -> IntOffset(
+                pos.x.roundToInt() + coords.size.width / 2 - (estW / 2).roundToInt(),
+                pos.y.roundToInt() + coords.size.height + 8
+            )
+            TooltipPlacement.Above -> IntOffset(
+                pos.x.roundToInt() + coords.size.width / 2 - (estW / 2).roundToInt(),
+                pos.y.roundToInt() - estH.roundToInt() - 8
+            )
+        }
+        Popup(offset = offset, properties = PopupProperties(focusable = false)) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(DsRadius.Sm))
+                    .background(sc.surfaceInteractive)
+                    .border(1.dp, sc.border.copy(alpha = 0.4f), RoundedCornerShape(DsRadius.Sm))
+                    .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Xs)
+            ) {
+                Text(
+                    text = label,
+                    color = sc.textPrimary,
+                    fontSize = DsType.Caption,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
 // ============================================
 // VERTICAL RAIL (left / right edge)
 // ============================================
@@ -159,19 +323,37 @@ private fun DsLogoMark(modifier: Modifier = Modifier) {
 @Composable
 fun DsNavRail(
     state: AppState,
-    collapsed: Boolean,
-    onToggleCollapsed: () -> Unit
+    onOpenPalette: () -> Unit
 ) {
     val sc = surfaceColors()
-    val ac = accent()
+    val expanded = state.navLayout == NavLayout.Expanded
+    val itemSpacing = navItemSpacing(state)
 
-    Column(
-        modifier = Modifier
-            .width(if (collapsed) 64.dp else 232.dp)
-            .fillMaxHeight()
-            .background(sc.background)
-            .padding(vertical = DsSpacing.Lg)
-    ) {
+    // The rail reads the window width so the expanded size stays within
+    // predefined widths and is capped on narrow (tablet) windows.
+    BoxWithConstraints(Modifier.fillMaxHeight()) {
+        val railWidth by animateDpAsState(
+            targetValue = if (expanded) state.effectiveExpandedWidth(maxWidth.value) else 64.dp,
+            animationSpec = tween(dockDurationMs(state), easing = FastOutSlowInEasing),
+            label = "navRailWidth"
+        )
+
+        Column(
+            modifier = Modifier
+                .width(railWidth)
+                .fillMaxHeight()
+                .background(if (state.navHighContrast) sc.surfaceElevated else sc.surface)
+                .border(1.dp, sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.4f))
+                .padding(vertical = DsSpacing.Lg)
+        ) {
+        // Exactly three mode buttons at the top of the sidebar.
+        DsNavModeSwitcher(
+            state,
+            vertical = !expanded,
+            modifier = if (expanded) Modifier.fillMaxWidth().padding(horizontal = DsSpacing.Md) else Modifier
+        )
+        Spacer(Modifier.height(DsSpacing.Md))
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -179,11 +361,11 @@ fun DsNavRail(
             verticalAlignment = Alignment.CenterVertically
         ) {
             DsLogoMark()
-            if (!collapsed) {
+            if (expanded) {
                 Spacer(Modifier.width(DsSpacing.Sm))
                 Column(Modifier.weight(1f)) {
                     Text("Kaiteyo", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.Bold)
-                    Text("Desktop", color = ac.primary, fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
+                    Text("Desktop", color = accent().primary, fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -194,11 +376,11 @@ fun DsNavRail(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+            verticalArrangement = Arrangement.spacedBy(itemSpacing)
         ) {
             navGroups.forEach { (groupLabel, items) ->
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (!collapsed) {
+                    if (showNavGroupHeaders(state, expanded)) {
                         Text(
                             text = groupLabel.uppercase(),
                             color = sc.textMuted,
@@ -209,7 +391,7 @@ fun DsNavRail(
                     } else {
                         Spacer(Modifier.height(DsSpacing.Xs))
                     }
-                    items.forEach { item -> DsNavItem(item, state, collapsed) }
+                    items.forEach { item -> DsNavItem(item, state, expanded) }
                 }
                 Spacer(Modifier.height(DsSpacing.Xs))
             }
@@ -217,20 +399,7 @@ fun DsNavRail(
 
         Spacer(Modifier.height(DsSpacing.Md))
 
-        if (collapsed) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
-            ) {
-                DsPositionPicker(state)
-                DsIconButton(
-                    icon = Icons.Default.Menu,
-                    onClick = onToggleCollapsed,
-                    contentDescription = "Expand navigation"
-                )
-            }
-        } else {
+        if (expanded) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -246,19 +415,32 @@ fun DsNavRail(
                     )
                     Text("cards due", color = sc.textMuted, fontSize = DsType.Caption)
                 }
-                DsPositionPicker(state)
+                DsNavPositionButton(state)
+                // Window controls (Restore/Minimize/Maximize/Close) reachable
+                // without the title bar.
+                DsWindowMenuButton()
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+            ) {
+                DsNavPositionButton(state)
                 DsIconButton(
                     icon = Icons.Default.MenuOpen,
-                    onClick = onToggleCollapsed,
-                    contentDescription = "Collapse navigation"
+                    onClick = { state.updateNavLayout(NavLayout.Expanded) },
+                    contentDescription = "Expand navigation"
                 )
+                DsWindowMenuButton()
             }
+        }
         }
     }
 }
 
 @Composable
-private fun DsNavItem(item: NavItem, state: AppState, collapsed: Boolean) {
+private fun DsNavItem(item: NavItem, state: AppState, expanded: Boolean) {
     val sc = surfaceColors()
     val ac = accent()
     val selected = state.currentView == item.view
@@ -270,42 +452,53 @@ private fun DsNavItem(item: NavItem, state: AppState, collapsed: Boolean) {
         hovered -> sc.surfaceInteractive.copy(alpha = 0.6f)
         else -> Color.Transparent
     }
+    val showLabel = showNavLabel(state, expanded, hovered)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(DsRadius.Md))
-            .background(bg)
-            .clickable(interactionSource = interaction, indication = null, onClick = { state.currentView = item.view })
-            .hoverable(interaction)
-            .padding(horizontal = if (collapsed) 0.dp else DsSpacing.Md, vertical = DsSpacing.Sm),
-        verticalAlignment = Alignment.CenterVertically
+    NavTooltipHost(
+        label = item.view.label,
+        enabled = !expanded,
+        placement = if (state.navPosition == NavPosition.Right) TooltipPlacement.Left else TooltipPlacement.Right,
+        delayMs = state.navigationTooltipDelayMs
     ) {
-        Spacer(
-            Modifier
-                .width(3.dp)
-                .height(16.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(if (selected) ac.primary else Color.Transparent)
-        )
-        Spacer(Modifier.width(DsSpacing.Sm))
-        Icon(
-            item.icon,
-            contentDescription = item.view.label,
-            tint = if (selected) ac.primary else sc.textSecondary,
-            modifier = Modifier.size(18.dp)
-        )
-        if (!collapsed) {
-            Spacer(Modifier.width(DsSpacing.Md))
-            Text(
-                text = item.view.label,
-                color = if (selected) ac.primary else sc.textSecondary,
-                fontSize = DsType.Body,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                modifier = Modifier.weight(1f)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(DsRadius.Md))
+                .background(bg)
+                .clickable(interactionSource = interaction, indication = null, onClick = { state.currentView = item.view })
+                .hoverable(interaction)
+                .padding(horizontal = if (expanded) DsSpacing.Md else 0.dp, vertical = DsSpacing.Sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (expanded) Arrangement.Start else Arrangement.Center
+        ) {
+            if (expanded) {
+                Spacer(
+                    Modifier
+                        .width(3.dp)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(if (selected) ac.primary else Color.Transparent)
+                )
+                Spacer(Modifier.width(DsSpacing.Sm))
+            }
+            Icon(
+                item.icon,
+                contentDescription = item.view.label,
+                tint = if (selected) ac.primary else sc.textSecondary,
+                modifier = Modifier.size(navIconSize(state))
             )
-            if (badge != null) {
-                DsBadge(text = badge, tint = if (selected) ac.primary else sc.textMuted)
+            if (showLabel) {
+                Spacer(Modifier.width(DsSpacing.Md))
+                Text(
+                    text = item.view.label,
+                    color = if (selected) ac.primary else sc.textSecondary,
+                    fontSize = DsType.Body,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    modifier = Modifier.weight(1f)
+                )
+                if (badge != null) {
+                    DsBadge(text = badge, tint = if (selected) ac.primary else sc.textMuted)
+                }
             }
         }
     }
@@ -318,28 +511,33 @@ private fun DsNavItem(item: NavItem, state: AppState, collapsed: Boolean) {
 @Composable
 fun DsNavBar(
     state: AppState,
-    collapsed: Boolean,
-    onToggleCollapsed: () -> Unit,
-    compact: Boolean = false
+    onOpenPalette: () -> Unit
 ) {
     val sc = surfaceColors()
+    val expanded = state.navLayout == NavLayout.Expanded
+    val barHeight by animateDpAsState(
+        targetValue = if (expanded) 64.dp else 52.dp,
+        animationSpec = tween(dockDurationMs(state), easing = FastOutSlowInEasing),
+        label = "navBarHeight"
+    )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (collapsed || compact) 52.dp else 64.dp)
-            .background(sc.background)
+            .height(barHeight)
+            .background(if (state.navHighContrast) sc.surfaceElevated else sc.surface)
+            .border(1.dp, sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.4f))
             .padding(horizontal = DsSpacing.Md),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (!compact) {
-            DsLogoMark()
-            if (!collapsed) {
-                Spacer(Modifier.width(DsSpacing.Sm))
-                Text("Kaiteyo", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.width(DsSpacing.Lg))
+        // Exactly three mode buttons at the start of the bar.
+        DsNavModeSwitcher(state, vertical = false, modifier = Modifier.padding(end = DsSpacing.Lg))
+        DsLogoMark()
+        if (expanded) {
+            Spacer(Modifier.width(DsSpacing.Sm))
+            Text("Kaiteyo", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.Bold)
         }
+        Spacer(Modifier.width(DsSpacing.Lg))
         Row(
             modifier = Modifier
                 .weight(1f)
@@ -349,22 +547,16 @@ fun DsNavBar(
         ) {
             navGroups.forEachIndexed { groupIndex, (_, items) ->
                 if (groupIndex > 0) NavGroupSeparator()
-                items.forEach { item -> DsNavPill(item, state, collapsed) }
+                items.forEach { item -> DsNavPill(item, state, expanded) }
             }
         }
-        if (!compact) {
-            DsPositionPicker(state)
-            DsIconButton(
-                icon = if (collapsed) Icons.Default.Menu else Icons.Default.MenuOpen,
-                onClick = onToggleCollapsed,
-                contentDescription = if (collapsed) "Expand navigation" else "Collapse navigation"
-            )
-        }
+        Spacer(Modifier.width(DsSpacing.Sm))
+        DsNavPositionButton(state)
     }
 }
 
 @Composable
-private fun DsNavPill(item: NavItem, state: AppState, collapsed: Boolean) {
+private fun DsNavPill(item: NavItem, state: AppState, expanded: Boolean) {
     val sc = surfaceColors()
     val ac = accent()
     val selected = state.currentView == item.view
@@ -376,33 +568,41 @@ private fun DsNavPill(item: NavItem, state: AppState, collapsed: Boolean) {
         hovered -> sc.surfaceInteractive.copy(alpha = 0.6f)
         else -> Color.Transparent
     }
+    val showLabel = showNavLabel(state, expanded, hovered)
 
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(DsRadius.Md))
-            .background(bg)
-            .clickable(interactionSource = interaction, indication = null, onClick = { state.currentView = item.view })
-            .hoverable(interaction)
-            .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+    NavTooltipHost(
+        label = item.view.label,
+        enabled = !expanded,
+        placement = if (state.navPosition == NavPosition.Bottom) TooltipPlacement.Above else TooltipPlacement.Below,
+        delayMs = state.navigationTooltipDelayMs
     ) {
-        Icon(
-            item.icon,
-            contentDescription = item.view.label,
-            tint = if (selected) ac.primary else sc.textSecondary,
-            modifier = Modifier.size(18.dp)
-        )
-        if (!collapsed) {
-            Text(
-                text = item.view.label,
-                color = if (selected) ac.primary else sc.textSecondary,
-                fontSize = DsType.Body,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(DsRadius.Md))
+                .background(bg)
+                .clickable(interactionSource = interaction, indication = null, onClick = { state.currentView = item.view })
+                .hoverable(interaction)
+                .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+        ) {
+            Icon(
+                item.icon,
+                contentDescription = item.view.label,
+                tint = if (selected) ac.primary else sc.textSecondary,
+                modifier = Modifier.size(navIconSize(state))
             )
-        }
-        if (badge != null && !collapsed) {
-            DsBadge(text = badge, tint = if (selected) ac.primary else sc.textMuted)
+            if (showLabel) {
+                Text(
+                    text = item.view.label,
+                    color = if (selected) ac.primary else sc.textSecondary,
+                    fontSize = DsType.Body,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                )
+            }
+            if (badge != null && showLabel) {
+                DsBadge(text = badge, tint = if (selected) ac.primary else sc.textMuted)
+            }
         }
     }
 }
@@ -420,11 +620,196 @@ private fun NavGroupSeparator() {
 }
 
 // ============================================
-// POSITION PICKER
+// COMPACT TAB BAR (compact windows only)
+// A real compact navigation: icon + label tabs
+// plus an overflow menu. Top or bottom edge.
 // ============================================
 
 @Composable
-private fun DsPositionPicker(state: AppState) {
+fun DsCompactNavBar(state: AppState) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val compactIcon = when (state.compactIconSize) {
+        CompactIconSize.Small -> 16.dp
+        CompactIconSize.Medium -> 20.dp
+        CompactIconSize.Large -> 24.dp
+    } + if (state.navigationLargerIcons) 3.dp else 0.dp
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .background(if (state.navHighContrast) sc.surfaceElevated else sc.surface)
+            .border(1.dp, sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.4f))
+            .padding(horizontal = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        compactPrimaryViews.forEach { view ->
+            val selected = state.currentView == view
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .clickable { state.currentView = view }
+                    .padding(vertical = DsSpacing.Xs),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Box(Modifier.height(2.dp)) {
+                    if (selected) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .clip(RoundedCornerShape(1.dp))
+                                .background(ac.primary)
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = iconForView(view),
+                    contentDescription = view.label,
+                    tint = if (selected) ac.primary else sc.textSecondary,
+                    modifier = Modifier.size(compactIcon)
+                )
+                Text(
+                    text = view.label,
+                    color = if (selected) ac.primary else sc.textSecondary,
+                    fontSize = DsType.Caption,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1
+                )
+            }
+        }
+        var overflowOpen by remember { mutableStateOf(false) }
+        var overflowAnchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        Box(
+            modifier = Modifier
+                .onGloballyPositioned { if (overflowAnchor != it) overflowAnchor = it }
+                .padding(2.dp)
+        ) {
+            DsIconButton(
+                icon = Icons.Default.MoreVert,
+                onClick = { overflowOpen = true },
+                contentDescription = "More views"
+            )
+        }
+        val coords = overflowAnchor
+        if (overflowOpen && coords != null) {
+            val pos = coords.positionInWindow()
+            val density = LocalDensity.current
+            val overflowItems = allNavItems.filterNot { (view, _) -> view in compactPrimaryViews }
+            // A bottom tab bar opens the overflow upward so it never clips off-screen.
+            val openUp = state.compactNavPosition == NavPosition.Bottom
+            val menuH = with(density) { minOf(440f, overflowItems.size * 36f + 16f).dp.toPx() }
+            Popup(
+                onDismissRequest = { overflowOpen = false },
+                offset = IntOffset(
+                    pos.x.roundToInt(),
+                    if (openUp) (pos.y - menuH).roundToInt() else pos.y.roundToInt() + coords.size.height
+                ),
+                properties = PopupProperties(focusable = true)
+            ) {
+                Column(
+                    Modifier
+                        .heightIn(max = 440.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    DsMenuPanel(
+                        menuItems = overflowItems
+                            .map { (view, icon) ->
+                                DsMenuItem(
+                                    label = view.label,
+                                    icon = icon,
+                                    checked = state.currentView == view,
+                                    onAction = { state.currentView = view }
+                                )
+                            },
+                        onDismiss = { overflowOpen = false }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun iconForView(view: WorkspaceView): ImageVector =
+    allNavItems.firstOrNull { it.first == view }?.second ?: Icons.Default.Apps
+
+// ============================================
+// NAV MODE SWITCHER (top of the sidebar)
+// Exactly three buttons — Expanded, Compact,
+// Bubble — switching between the three modes.
+// ============================================
+
+@Composable
+private fun DsNavModeSwitcher(state: AppState, vertical: Boolean, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val modes = listOf(
+        NavLayout.Expanded to Icons.Default.ViewSidebar,
+        NavLayout.Compact to Icons.Default.Apps,
+        NavLayout.Bubble to Icons.Default.ChatBubble
+    )
+
+    val buttons: @Composable () -> Unit = {
+        modes.forEach { (mode, icon) ->
+            val selected = state.navLayout == mode
+            val interaction = remember { MutableInteractionSource() }
+            val hovered by interaction.collectIsHoveredAsState()
+            Box(
+                modifier = Modifier
+                    .size(if (vertical) 40.dp else 36.dp)
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .background(
+                        when {
+                            selected -> ac.primary.copy(alpha = if (state.navHighContrast) 0.28f else 0.18f)
+                            hovered -> sc.surfaceInteractive
+                            else -> Color.Transparent
+                        }
+                    )
+                    .clickable(interactionSource = interaction, indication = null) {
+                        if (!selected) state.updateNavLayout(mode)
+                    }
+                    .hoverable(interaction),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = mode.label,
+                    tint = if (selected) ac.primary else sc.textSecondary,
+                    modifier = Modifier.size(navIconSize(state))
+                )
+            }
+        }
+    }
+
+    val spacing = navSwitchSpacing(state)
+    if (vertical) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing)
+        ) { buttons() }
+    } else {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(spacing)
+        ) { buttons() }
+    }
+}
+
+// ============================================
+// NAV POSITION POPUP (dock edge picker)
+// A single clean popup with icons for the four
+// dock edges. Mode switching lives in the
+// three-button switcher at the top of the dock.
+// ============================================
+
+@Composable
+private fun DsNavPositionButton(state: AppState) {
     var open by remember { mutableStateOf(false) }
     var anchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
@@ -436,7 +821,7 @@ private fun DsPositionPicker(state: AppState) {
         DsIconButton(
             icon = Icons.Default.Tune,
             onClick = { open = true },
-            contentDescription = "Navigation position",
+            contentDescription = "Sidebar position",
             tint = accent().primary
         )
     }
@@ -444,152 +829,87 @@ private fun DsPositionPicker(state: AppState) {
     val coords = anchor
     if (open && coords != null) {
         val windowPos = coords.positionInWindow()
+        val density = LocalDensity.current
+        val menuW = with(density) { 172.dp.toPx() }
+        val menuH = with(density) { 160.dp.toPx() }
+        // The button hugs the dock edge — open the popup toward the
+        // window interior so a bottom or right dock never clips it off-screen.
+        val openUp = state.navPosition != NavPosition.Top
+        val openLeft = state.navPosition == NavPosition.Right
+        val popupX = if (openLeft) windowPos.x + coords.size.width - menuW else windowPos.x
+        val popupY = if (openUp) windowPos.y - menuH else windowPos.y + coords.size.height
         Popup(
             onDismissRequest = { open = false },
-            offset = IntOffset(windowPos.x.roundToInt(), windowPos.y.roundToInt() + coords.size.height),
+            offset = IntOffset(popupX.roundToInt(), popupY.roundToInt()),
             properties = PopupProperties(focusable = true)
         ) {
-            DsMenuPanel(
-                menuItems = NavPosition.entries.map { option ->
-                    DsMenuItem(
-                        label = option.label,
-                        icon = positionIcon(option),
-                        checked = state.navPosition == option,
-                        onAction = { state.updateNavPosition(option) }
-                    )
-                },
-                onDismiss = { open = false }
-            )
-        }
-    }
-}
-
-private fun positionIcon(position: NavPosition): ImageVector = when (position) {
-    NavPosition.Left -> Icons.Default.KeyboardArrowLeft
-    NavPosition.Right -> Icons.Default.KeyboardArrowRight
-    NavPosition.Top -> Icons.Default.KeyboardArrowUp
-    NavPosition.Bottom -> Icons.Default.KeyboardArrowDown
-}
-
-// ============================================
-// FLOATING LAUNCHER
-// ============================================
-
-@Composable
-fun DsFloatingLauncher(state: AppState, onOpenPalette: () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    val sc = surfaceColors()
-    val ac = accent()
-
-    Box(Modifier.fillMaxSize()) {
-        if (expanded) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.16f))
-                    .clickable { expanded = false }
-            )
-        }
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(DsSpacing.Xl),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
-        ) {
-            if (expanded) {
-                DsFloatingMenu(state, onNavigate = { expanded = false }, onOpenPalette = onOpenPalette)
-            }
-            Box(
+            val sc = surfaceColors()
+            Column(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(ac.primary)
-                    .clickable { expanded = !expanded },
-                contentAlignment = Alignment.Center
+                    .width(172.dp)
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .background(sc.surfaceInteractive)
+                    .padding(DsSpacing.Sm),
+                verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
             ) {
-                Icon(
-                    Icons.Default.Apps,
-                    contentDescription = if (expanded) "Close launcher" else "Open launcher",
-                    tint = ac.onPrimary,
-                    modifier = Modifier.size(26.dp)
+                Text(
+                    text = "Position",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = DsSpacing.Xs)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DsFloatingMenu(state: AppState, onNavigate: () -> Unit, onOpenPalette: () -> Unit) {
-    val sc = surfaceColors()
-    val ac = accent()
-    val glass = state.settings.getBool("appearance.glass")
-    val bg = if (glass) Color.Black.copy(alpha = 0.72f) else sc.surfaceElevated
-    val shape = RoundedCornerShape(DsRadius.Xl)
-
-    Column(
-        modifier = Modifier
-            .width(288.dp)
-            .clip(shape)
-            .background(bg)
-            .border(1.dp, sc.border.copy(alpha = 0.3f), shape)
-            .padding(DsSpacing.Sm),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        navGroups.forEach { (groupLabel, items) ->
-            Text(
-                text = groupLabel.uppercase(),
-                color = sc.textMuted,
-                fontSize = DsType.Caption,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Xs)
-            )
-            items.forEach { item ->
-                val selected = state.currentView == item.view
-                val badge = navBadge(state, item.view)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(DsRadius.Sm))
-                        .background(if (selected) ac.primary.copy(alpha = 0.16f) else Color.Transparent)
-                        .clickable { state.currentView = item.view; onNavigate() }
-                        .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        item.icon,
-                        contentDescription = null,
-                        tint = if (selected) ac.primary else sc.textSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(DsSpacing.Sm))
-                    Text(
-                        text = item.view.label,
-                        color = if (selected) ac.primary else sc.textPrimary,
-                        fontSize = DsType.Body,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (badge != null) {
-                        DsBadge(text = badge, tint = if (selected) ac.primary else sc.textMuted)
-                    }
+                // Visual 2×2 icon grid — one-click switching, no text list.
+                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    PositionGridButton(state, NavPosition.Left, Icons.Default.KeyboardArrowLeft, Modifier.weight(1f)) { open = false }
+                    PositionGridButton(state, NavPosition.Right, Icons.Default.KeyboardArrowRight, Modifier.weight(1f)) { open = false }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    PositionGridButton(state, NavPosition.Top, Icons.Default.KeyboardArrowUp, Modifier.weight(1f)) { open = false }
+                    PositionGridButton(state, NavPosition.Bottom, Icons.Default.KeyboardArrowDown, Modifier.weight(1f)) { open = false }
                 }
             }
-            Spacer(Modifier.height(DsSpacing.Sm))
         }
-        DsMenuDivider()
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(DsRadius.Sm))
-                .clickable { onOpenPalette(); onNavigate() }
-                .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = sc.textSecondary, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(DsSpacing.Sm))
-            Text("Command palette", color = sc.textPrimary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
-            Text("Ctrl K", color = sc.textMuted, fontSize = DsType.Caption)
-        }
+    }
+}
+
+@Composable
+private fun PositionGridButton(
+    state: AppState,
+    position: NavPosition,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onPicked: () -> Unit = {}
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val selected = state.navPosition == position
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+
+    Box(
+        modifier = modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(DsRadius.Md))
+            .background(
+                when {
+                    selected -> ac.primary.copy(alpha = 0.2f)
+                    hovered -> sc.surfaceInteractive.copy(alpha = 0.8f)
+                    else -> Color.Transparent
+                }
+            )
+            .clickable(interactionSource = interaction, indication = null) {
+                state.updateNavPosition(position)
+                onPicked()
+            }
+            .hoverable(interaction),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = position.label,
+            tint = if (selected) ac.primary else sc.textSecondary,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }

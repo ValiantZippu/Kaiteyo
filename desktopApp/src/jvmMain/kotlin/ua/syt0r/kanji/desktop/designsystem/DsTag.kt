@@ -72,6 +72,9 @@ fun DsTagChip(
 ) {
     val color = remember(colorHex) { parseHexColor(colorHex) }
     val sc = surfaceColors()
+    val onColor = remember(color) {
+        if (color.luminance() > 0.5f) Color(0xFF1A1A1A) else Color(0xFFF0F0F0)
+    }
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val bg by animateColorAsState(
@@ -104,7 +107,7 @@ fun DsTagChip(
         )
         Text(
             text = label,
-            color = if (color.luminance() > 0.5f) Color(0xFF1A1A1A) else Color(0xFFF0F0F0),
+            color = onColor,
             fontSize = DsType.Caption,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
@@ -114,9 +117,10 @@ fun DsTagChip(
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Remove",
-                tint = Color(0xFFF0F0F0).copy(alpha = 0.6f),
+                tint = onColor.copy(alpha = 0.6f),
                 modifier = Modifier
                     .size(12.dp)
+                    .clip(RoundedCornerShape(6.dp))
                     .clickable(onClick = onRemove)
             )
         }

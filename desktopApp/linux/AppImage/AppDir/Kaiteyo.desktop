@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Kaiteyo
+Exec=Kaiteyo
+Icon=Kaiteyo
+Type=Application
+Categories=Education;
+Terminal=false
+StartupNotify=true
+NoDisplay=false

@@ -142,7 +142,7 @@ kotlin.native.ignoreDisabledTargets=true
 
 ## Next Steps
 
-1. Read `docs/00_START_HERE.md`
-2. Read `docs/AI_CONTEXT.md`
+1. Read `docs/README.md`
+2. Read `docs/development/AI_CONTEXT.md`
 3. Check `docs/planning/CURRENT_ISSUES.md`
 4. Check `docs/planning/TODO.md`

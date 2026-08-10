@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
 enum class SettingType { Boolean, Int, Float, String, Enum, List }
 
 @Serializable
-enum class SettingCategory { General, Navigation, Appearance, Review, Browser, Statistics, History, ImportExport, Sync, Plugins, Accessibility, Advanced }
+enum class SettingCategory { General, Navigation, Appearance, Review, Browser, Statistics, History, ImportExport, Sync, Updates, Plugins, Accessibility, Advanced }
 
 data class SettingDef(
     val key: String,
@@ -24,7 +24,9 @@ data class SettingDef(
     val type: SettingType,
     val defaultValue: Any,
     val options: List<String> = emptyList(),
-    val searchable: Boolean = true
+    val searchable: Boolean = true,
+    /** Optional sub-section label rendered above the setting within its category. */
+    val group: String = ""
 ) {
     val normalizedDefault: String
         get() = defaultValue.toString()
@@ -151,11 +153,49 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("general.language", "Language", "Application language", SettingCategory.General, SettingType.Enum, "system", options = listOf("system", "en", "ja")),
     SettingDef("general.confirm-before-delete", "Confirm before delete", "Ask before destructive actions", SettingCategory.General, SettingType.Boolean, true),
     SettingDef("general.startup-view", "Startup view", "Where the app opens", SettingCategory.General, SettingType.Enum, "dashboard", options = listOf("dashboard", "browser", "review", "collections")),
+    SettingDef("onboarding.completed", "Onboarding completed", "Whether the first-run wizard has finished (internal)", SettingCategory.General, SettingType.Boolean, false, searchable = false),
+    SettingDef("onboarding.version", "Onboarding version", "Version of the onboarding flow seen (internal)", SettingCategory.General, SettingType.Int, 1, searchable = false),
     SettingDef("workspace.panels", "Workspace panels", "Persisted panel layout (internal)", SettingCategory.General, SettingType.String, "", searchable = false),
 
-    SettingDef("navigation.position", "Navigation position", "Which edge the navigation dock lives on", SettingCategory.Navigation, SettingType.Enum, "left", options = listOf("left", "right", "top", "bottom")),
-    SettingDef("navigation.collapsed", "Collapse navigation", "Icon-only navigation", SettingCategory.Navigation, SettingType.Boolean, false),
-    SettingDef("navigation.mode", "Navigation mode", "Sidebar, floating launcher, or both", SettingCategory.Navigation, SettingType.Enum, "traditional", options = listOf("traditional", "floating", "both")),
+    SettingDef("navigation.layout", "Navigation mode", "Expanded, compact icons, or bubble launcher", SettingCategory.Navigation, SettingType.Enum, "expanded", options = listOf("expanded", "compact", "bubble"), group = "General"),
+    SettingDef("navigation.default-layout", "Default mode", "Mode used when launching", SettingCategory.Navigation, SettingType.Enum, "expanded", options = listOf("expanded", "compact", "bubble"), group = "General"),
+    SettingDef("navigation.remember-last", "Remember previous mode", "Restore the mode you last used on startup", SettingCategory.Navigation, SettingType.Boolean, true, group = "General"),
+    SettingDef("navigation.position", "Sidebar placement", "Which edge the sidebar dock lives on", SettingCategory.Navigation, SettingType.Enum, "left", options = listOf("left", "right", "top", "bottom"), group = "General"),
+    SettingDef("navigation.sidebar-width", "Expanded width", "Predefined expanded dock widths (presets only)", SettingCategory.Navigation, SettingType.Enum, "standard", options = listOf("narrow", "standard", "wide"), group = "General"),
+    SettingDef("navigation.compact-icon-size", "Compact icon size", "Tab bar icon scale", SettingCategory.Navigation, SettingType.Enum, "medium", options = listOf("small", "medium", "large"), group = "General"),
+    SettingDef("navigation.collapsed", "Collapse navigation", "Icon-only navigation (legacy)", SettingCategory.Navigation, SettingType.Boolean, false, searchable = false, group = "General"),
+    SettingDef("navigation.mode", "Navigation mode", "Sidebar, floating launcher, or both (legacy)", SettingCategory.Navigation, SettingType.Enum, "traditional", options = listOf("traditional", "floating", "both"), searchable = false, group = "General"),
+
+    SettingDef("navigation.icon-size", "Icon size", "Dock and switcher icon scale", SettingCategory.Navigation, SettingType.Enum, "medium", options = listOf("small", "medium", "large"), group = "Sidebar"),
+    SettingDef("navigation.label-mode", "Label visibility", "Labels in the expanded dock", SettingCategory.Navigation, SettingType.Enum, "always", options = listOf("always", "on-hover", "hidden"), group = "Sidebar"),
+    SettingDef("navigation.compact-spacing", "Compact icon spacing", "Vertical rhythm between dock items", SettingCategory.Navigation, SettingType.Enum, "comfortable", options = listOf("tight", "comfortable", "spacious"), group = "Sidebar"),
+
+    SettingDef("launcher.enabled", "Bubble mode", "Replace the sidebar with the floating launcher", SettingCategory.Navigation, SettingType.Boolean, false, group = "Bubble"),
+    SettingDef("launcher.default-position", "Default position", "Where the launcher starts", SettingCategory.Navigation, SettingType.Enum, "bottom-right", options = listOf("bottom-right", "bottom-left", "top-right", "top-left", "right", "left"), group = "Bubble"),
+    SettingDef("launcher.auto-fade", "Auto fade", "Fade the launcher after inactivity", SettingCategory.Navigation, SettingType.Boolean, true, group = "Bubble"),
+    SettingDef("launcher.fade-delay", "Fade delay (seconds)", "Inactivity before the launcher fades", SettingCategory.Navigation, SettingType.Int, 6, group = "Bubble"),
+    SettingDef("launcher.fade-opacity", "Faded opacity", "Transparency while faded (0 = invisible, 1 = solid)", SettingCategory.Navigation, SettingType.Float, 0.25f, group = "Bubble"),
+    SettingDef("launcher.fade-duration", "Fade duration (ms)", "How long the fade animation takes", SettingCategory.Navigation, SettingType.Int, 450, group = "Bubble"),
+    SettingDef("launcher.size", "Bubble size", "Bubble diameter", SettingCategory.Navigation, SettingType.Enum, "medium", options = listOf("small", "medium", "large"), group = "Bubble"),
+    SettingDef("launcher.icon-size", "Icon size", "Icon inside the bubble", SettingCategory.Navigation, SettingType.Enum, "medium", options = listOf("small", "medium", "large"), group = "Bubble"),
+    SettingDef("launcher.snap", "Snap to edges", "Snap to edges and corners when released", SettingCategory.Navigation, SettingType.Boolean, true, group = "Bubble"),
+    SettingDef("launcher.snap-sensitivity", "Snap sensitivity", "Higher values snap from farther away", SettingCategory.Navigation, SettingType.Float, 1.0f, group = "Bubble"),
+    SettingDef("launcher.animation-speed", "Animation speed", "Bubble movement and launchpad animation speed", SettingCategory.Navigation, SettingType.Float, 1.0f, group = "Bubble"),
+    SettingDef("launcher.pos-x", "Launcher X (internal)", "Remembered launcher position", SettingCategory.Navigation, SettingType.Float, 0.88f, searchable = false, group = "Bubble"),
+    SettingDef("launcher.pos-y", "Launcher Y (internal)", "Remembered launcher position", SettingCategory.Navigation, SettingType.Float, 0.86f, searchable = false, group = "Bubble"),
+    SettingDef("launcher.pos-x-phone", "Launcher X phone (internal)", "Remembered phone launcher position", SettingCategory.Navigation, SettingType.Float, 0.88f, searchable = false, group = "Bubble"),
+    SettingDef("launcher.pos-y-phone", "Launcher Y phone (internal)", "Remembered phone launcher position", SettingCategory.Navigation, SettingType.Float, 0.78f, searchable = false, group = "Bubble"),
+
+    SettingDef("navigation.compact-position", "Navigation position", "Tab bar position on phones and compact windows", SettingCategory.Navigation, SettingType.Enum, "bottom", options = listOf("top", "bottom"), group = "Compact"),
+    SettingDef("navigation.tooltip-delay", "Tooltip behavior", "Delay before hover tooltips appear", SettingCategory.Navigation, SettingType.Int, 450, group = "Compact"),
+
+    SettingDef("navigation.animations", "Enable animations", "Animate layout changes and transitions", SettingCategory.Navigation, SettingType.Boolean, true, group = "Animations"),
+    SettingDef("navigation.animation-speed", "Animation duration", "1.0 = default, 0.5 = half, 2.0 = double", SettingCategory.Navigation, SettingType.Float, 1.0f, group = "Animations"),
+    SettingDef("navigation.reduced-motion", "Reduced motion", "Disable all navigation and launcher animations", SettingCategory.Navigation, SettingType.Boolean, false, group = "Animations"),
+
+    SettingDef("navigation.larger-icons", "Larger icons", "Scale up sidebar and launcher icons", SettingCategory.Navigation, SettingType.Boolean, false, group = "Accessibility"),
+    SettingDef("navigation.larger-hitbox", "Larger hitboxes", "Easier to grab the launcher and recover it after fading", SettingCategory.Navigation, SettingType.Boolean, false, group = "Accessibility"),
+    SettingDef("navigation.high-contrast", "High contrast", "Stronger borders and surfaces for the navigation", SettingCategory.Navigation, SettingType.Boolean, false, group = "Accessibility"),
 
     SettingDef("appearance.base-mode", "Base mode", "Oled, Dark, Light or Sepia", SettingCategory.Appearance, SettingType.Enum, "oled", options = listOf("oled", "dark", "light", "sepia")),
     SettingDef("appearance.accent", "Accent color", "Accent theme", SettingCategory.Appearance, SettingType.Enum, "signature", options = listOf("signature", "cotton", "ocean", "forest", "sunset", "lavender", "mono")),
@@ -176,9 +216,20 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("browser.default-view", "Default browser view", "Grid, list or details", SettingCategory.Browser, SettingType.Enum, "grid", options = listOf("grid", "list", "details")),
     SettingDef("browser.show-preview-panel", "Show preview panel", "Side-by-side card preview", SettingCategory.Browser, SettingType.Boolean, true),
     SettingDef("browser.cards-per-page", "Cards per page", "Grid density", SettingCategory.Browser, SettingType.Int, 48),
+    // Persisted library browse state (internal — written by the deck catalog).
+    SettingDef("browser.library-sort", "Library sort (internal)", "Persisted deck catalog sort", SettingCategory.Browser, SettingType.Enum, "name", options = listOf("name", "newest", "due", "new", "favorite"), searchable = false),
+    SettingDef("browser.library-scope", "Library scope (internal)", "Persisted library rail selection", SettingCategory.Browser, SettingType.Enum, "all", options = listOf("all", "kanji", "vocabulary", "grammar", "radical", "sentence", "media", "due", "new", "favorites", "recent", "archived"), searchable = false),
+    SettingDef("browser.library-filter-jlpt", "Library JLPT filter (internal)", "Persisted JLPT filter", SettingCategory.Browser, SettingType.Int, 0, searchable = false),
+    SettingDef("browser.library-filter-difficulty", "Library difficulty filter (internal)", "Persisted difficulty filter", SettingCategory.Browser, SettingType.Int, 0, searchable = false),
+    SettingDef("browser.library-filter-favorites", "Library favorites filter (internal)", "Persisted favorites-only filter", SettingCategory.Browser, SettingType.Boolean, false, searchable = false),
 
     SettingDef("stats.default-period", "Default stats period", "Dashboard default range", SettingCategory.Statistics, SettingType.Enum, "month", options = listOf("day", "week", "month", "year", "all")),
     SettingDef("stats.show-goals", "Show goals", "Display goal progress", SettingCategory.Statistics, SettingType.Boolean, true),
+
+    SettingDef("account.profile-name", "Profile name", "Your display name", SettingCategory.General, SettingType.String, "Learner"),
+    SettingDef("account.learner-level", "Learner level", "How far along you are", SettingCategory.General, SettingType.Enum, "beginner", options = listOf("beginner", "intermediate", "advanced")),
+    SettingDef("account.joined-at", "Account created", "When this profile was created (internal)", SettingCategory.General, SettingType.String, "", searchable = false),
+    SettingDef("account.last-backup-at", "Last backup", "Timestamp of the most recent backup (internal)", SettingCategory.General, SettingType.String, "", searchable = false),
 
     SettingDef("history.max-entries", "Max activity entries", "Ring buffer size", SettingCategory.History, SettingType.Int, 2000),
 
@@ -186,6 +237,9 @@ fun defaultSettings(): List<SettingDef> = listOf(
 
     SettingDef("sync.auto", "Automatic sync", "Sync on a schedule", SettingCategory.Sync, SettingType.Boolean, false),
     SettingDef("sync.interval-minutes", "Sync interval", "Minutes between syncs", SettingCategory.Sync, SettingType.Int, 30),
+
+    SettingDef("updates.channel", "Update channel", "Which release channel to check (stable / beta / nightly)", SettingCategory.Updates, SettingType.Enum, "stable", options = listOf("stable", "beta", "nightly"), searchable = false),
+    SettingDef("updates.check-on-startup", "Check for updates on launch", "Quietly check the feed when the app starts", SettingCategory.Updates, SettingType.Boolean, false),
 
     SettingDef("plugins.enabled", "Plugins enabled", "Load plugins on start", SettingCategory.Plugins, SettingType.Boolean, true),
     SettingDef("plugins.installed", "Installed plugins", "Serialized plugin registry (internal)", SettingCategory.Plugins, SettingType.String, "", searchable = false),

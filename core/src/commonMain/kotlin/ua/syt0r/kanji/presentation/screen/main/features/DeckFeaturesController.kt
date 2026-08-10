@@ -104,8 +104,7 @@ val defaultShortcutCatalog: List<ShortcutEntry> = listOf(
     ShortcutEntry("preview", "Browser", "Preview", "P", "Preview card"),
     ShortcutEntry("retry", "Review", "Retry", "R", "Retry pronunciation"),
     ShortcutEntry("skip", "Review", "Skip", "Ctrl+Enter", "Skip card"),
-    ShortcutEntry("stats", "Navigation", "Statistics", "I", "Open statistics"),
-    ShortcutEntry("heatmap", "Navigation", "Heatmap", "H", "Open heatmap"),
+    ShortcutEntry("stats", "Navigation", "Statistics", "I", "Open statistics dashboard"),
     ShortcutEntry("history", "Navigation", "History", "Y", "Open review history"),
     ShortcutEntry("bulk-tag", "Browser", "Bulk Tag", "Shift+T", "Tag selected cards"),
     ShortcutEntry("bulk-flag", "Browser", "Bulk Flag", "Shift+F", "Flag selected cards"),
@@ -373,6 +372,9 @@ class DeckFeaturesController(
             last + srs.interval <= now
         }
         val newCount = cardList.count { it.status == CardStatus.New }
+        val flaggedCount = cardList.count { it.flag != CardFlagType.None }
+        val averageInterval = if (cardList.isNotEmpty()) cardList.map { it.interval }.average().toInt() else 0
+        val averageEase = if (cardList.isNotEmpty()) cardList.map { it.ease }.average().toFloat() else 2.5f
 
         val averageTimePerCard =
             if (todayReviews.isNotEmpty()) todayReviews.sumOf { it.duration.inWholeMilliseconds } / todayReviews.size
@@ -408,6 +410,9 @@ class DeckFeaturesController(
             cardsSuspended = suspendedCards.values.count { it },
             cardsBuried = buriedCards.values.count { it },
             cardsArchived = statusCounts[CardStatus.Archived] ?: 0,
+            flaggedCards = flaggedCount,
+            averageInterval = averageInterval,
+            averageEase = averageEase,
             retentionRate = accuracyOf(yearReviews)
         )
     }
@@ -440,7 +445,7 @@ class DeckFeaturesController(
             }
     }
 
-    private suspend fun loadBackups() {
+    suspend fun loadBackups() {
         val rows = cardDatabaseManager.getBackups(limit = 50)
         backups.clear()
         rows.forEach { row ->
@@ -878,6 +883,8 @@ class DeckFeaturesController(
         )
         appPreferences.backupConfigJson.set(historyJson.encodeToString(data))
     }
+
+    suspend fun updateBackupConfig(config: ua.syt0r.kanji.presentation.screen.main.screen.decks.BackupConfig) = saveBackupConfig(config)
 
     // ── Saved searches ──
 

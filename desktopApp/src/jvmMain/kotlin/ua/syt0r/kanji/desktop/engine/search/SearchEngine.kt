@@ -130,6 +130,8 @@ object SearchEngine {
             SearchField.Reps -> numericCompare(card.reps.toDouble())
             SearchField.Ease -> numericCompare(card.ease)
             SearchField.Due -> dueCompare(card, value, today)
+            SearchField.Kind -> card.contentKind.name.equals(value, ignoreCase = true) ||
+                card.contentKind.label.equals(value, ignoreCase = true)
         }
     }
 
@@ -309,7 +311,9 @@ object SearchEngine {
         "lapses" to SearchField.Lapses,
         "reps" to SearchField.Reps,
         "ease" to SearchField.Ease,
-        "due" to SearchField.Due
+        "due" to SearchField.Due,
+        "kind" to SearchField.Kind,
+        "type" to SearchField.Kind
     )
 }
 

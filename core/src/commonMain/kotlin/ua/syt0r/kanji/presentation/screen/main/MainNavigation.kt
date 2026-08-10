@@ -28,7 +28,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.LetterPrac
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.VocabPracticeScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.data.VocabPracticeScreenConfiguration
-import ua.syt0r.kanji.presentation.screen.main.screen.sponsor.SponsorScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.sync.SyncScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.text_analysis.TextAnalysisScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.SuggestedVocabCardData
@@ -37,7 +36,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.VocabCardScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardManager
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.DeckFeaturesHub
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.PluginManagerScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.decks.StatisticsDashboard
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.BackupManagerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.ImportExportScreen
 import ua.syt0r.kanji.presentation.screen.main.features.BackupRoute
@@ -47,7 +45,6 @@ import ua.syt0r.kanji.presentation.screen.main.features.CardStatusScreen
 import ua.syt0r.kanji.presentation.screen.main.features.DeckBrowserRoute
 import ua.syt0r.kanji.presentation.screen.main.features.DeckStatisticsScreen
 import ua.syt0r.kanji.presentation.screen.main.features.FlagManagerRoute
-import ua.syt0r.kanji.presentation.screen.main.features.HeatmapRoute
 import ua.syt0r.kanji.presentation.screen.main.features.HistoryRoute
 import ua.syt0r.kanji.presentation.screen.main.features.ImportExportRoute
 import ua.syt0r.kanji.presentation.screen.main.features.KeyboardShortcutsRoute
@@ -250,19 +247,6 @@ interface MainDestination {
                 feedbackTopic = topic,
                 mainNavigationState = state
             )
-        }
-
-    }
-
-    @Serializable
-    object Sponsor : MainDestination {
-
-        override val analyticsName: String = "sponsor"
-
-        @Composable
-        override fun Content(state: MainNavigationState) {
-            val content = koinInject<SponsorScreenContract.Content>()
-            content(state)
         }
 
     }
@@ -550,21 +534,6 @@ interface MainDestination {
     }
 
     @Serializable
-    object HeatmapView : MainDestination {
-
-        override val analyticsName: String = "heatmap"
-
-        @Composable
-        override fun Content(state: MainNavigationState) {
-            HeatmapRoute(
-                controller = koinInject(),
-                onClose = { state.navigateBack() }
-            )
-        }
-
-    }
-
-    @Serializable
     object SearchEngine : MainDestination {
 
         override val analyticsName: String = "search_engine"
@@ -699,7 +668,6 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.Backup.configuration(),
     MainDestination.About.configuration(),
     MainDestination.Credits.configuration(),
-    MainDestination.Sponsor.configuration(),
     MainDestination.DailyLimit.configuration(),
     MainDestination.Sync.configuration(),
     MainDestination.TextAnalysis.configuration(),
@@ -726,7 +694,6 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.ReviewSettings.configuration(),
     MainDestination.KeyboardShortcuts.configuration(),
     MainDestination.StudyHistory.configuration(),
-    MainDestination.HeatmapView.configuration(),
     MainDestination.SearchEngine.configuration(),
     MainDestination.BulkActions.configuration(),
     MainDestination.UndoHistory.configuration(),

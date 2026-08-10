@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Kaiteyo AppStream metadata — shared by AppImage, deb, rpm and Flatpak. -->
+<component type="desktop-application">
+  <id>io.github.syt0r.kaiteyo</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <name>Kaiteyo</name>
+  <summary>Japanese language learning app with writing exercises, flashcards and a built-in dictionary</summary>
+  <developer id="ua.syt0r">
+    <name>syt0r</name>
+  </developer>
+
+  <description>
+    <p>Learn how to write Japanese letters, memorize their meanings and readings and study supplementary vocabulary.</p>
+    <p>Features:</p>
+    <ul>
+      <li>Learn kana and kanji with writing exercises and flashcards</li>
+      <li>Follow JLPT levels or school grades</li>
+      <li>Create your own decks — more than 6000 characters are available</li>
+      <li>FSRS spaced repetition so you never forget what you learned</li>
+      <li>Built-in dictionary with search by radicals and reading</li>
+      <li>Reading environment with pop-up lookups, OCR and mining</li>
+      <li>Works offline</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.syt0r.kaiteyo.desktop</launchable>
+
+  <branding>
+    <color scheme_preference="light" type="primary">#e1e4e6</color>
+    <color scheme_preference="dark" type="primary">#201a1a</color>
+  </branding>
+
+  <content_rating type="oars-1.1" />
+
+  <url type="homepage">https://github.com/ValiantZippu/Kaiteyo</url>
+  <url type="bugtracker">https://github.com/ValiantZippu/Kaiteyo/issues</url>
+  <url type="donation">https://buymeacoffee.com/syt0r</url>
+  <url type="vcs-browser">https://github.com/ValiantZippu/Kaiteyo</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Spaced repetition keeps your reviews efficient</caption>
+      <image>https://raw.githubusercontent.com/ValiantZippu/Kaiteyo/develop/desktopApp/linux/flatpak/screenshots/1.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Learn to write kana and kanji stroke by stroke</caption>
+      <image>https://raw.githubusercontent.com/ValiantZippu/Kaiteyo/develop/desktopApp/linux/flatpak/screenshots/2.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Built-in dictionary with radical search</caption>
+      <image>https://raw.githubusercontent.com/ValiantZippu/Kaiteyo/develop/desktopApp/linux/flatpak/screenshots/3.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Pre-made decks for every level</caption>
+      <image>https://raw.githubusercontent.com/ValiantZippu/Kaiteyo/develop/desktopApp/linux/flatpak/screenshots/4.png</image>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release date="2026-08-10" version="2.2.1">
+      <description>
+        <ul>
+          <li>Premium branded installers for Windows, macOS and Linux</li>
+          <li>First-run onboarding: theme, navigation, import, dictionaries, plugins</li>
+          <li>Auto-update architecture with stable/beta/nightly channels</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <provides>
+    <binary>Kaiteyo</binary>
+  </provides>
+</component>

@@ -282,6 +282,13 @@ class AppPreferences(
         enableBackup = false
     )
 
+    override val navSettingsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "nav_settings_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
     override val reviewSettingsJson: SuspendedProperty<String> = createProperty(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_review_settings_json",

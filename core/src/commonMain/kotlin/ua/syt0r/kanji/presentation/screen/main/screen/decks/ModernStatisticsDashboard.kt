@@ -48,8 +48,7 @@ import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 
 // ============================================================
 // KAITEYO MODERN STATISTICS DASHBOARD
-// Fully data-backed analytics replacing the legacy
-// Kanji.Dojo statistics page. All numbers come from the real
+// Fully data-backed analytics. All numbers come from the real
 // StatsOverviewV2 + per-day HeatmapDataV2 exposed by
 // DeckFeaturesController.loadStats / loadHeatmap.
 // ============================================================
@@ -59,31 +58,23 @@ import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 fun StatisticsDashboardV2(
     stats: StatsOverviewV2,
     heatmap: HeatmapDataV2,
-    onClose: () -> Unit
+    onClose: (() -> Unit)? = null,
+    embedded: Boolean = false
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     var selectedDay by remember { mutableStateOf<HeatmapDayV2?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Analytics Dashboard") },
-                navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") } },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = surfaceColors.surface,
-                    titleContentColor = surfaceColors.textPrimary
-                )
-            )
-        }
-    ) { padding ->
+    // The dashboard body — reused standalone (with Scaffold + app bar) and
+    // embedded inside a parent layout (e.g. a tab pane), where an app bar
+    // would be redundant.
+    val content: @Composable () -> Unit = {
         if (selectedDay != null) {
             DayDrillDown(day = selectedDay!!, onBack = { selectedDay = null })
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -126,6 +117,11 @@ fun StatisticsDashboardV2(
 
                 SectionCard("Library Distribution", Icons.Default.CalendarMonth) {
                     DistributionList(stats)
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = "${stats.totalCards} cards total · avg interval ${stats.averageInterval}d · avg ease ${(stats.averageEase * 100).roundToInt()}%",
+                        fontSize = 11.sp, color = surfaceColors.textMuted
+                    )
                 }
 
                 if (stats.forecastNextDays.isNotEmpty()) {
@@ -138,6 +134,29 @@ fun StatisticsDashboardV2(
                     AnalyticsHeatmap(heatmap = heatmap, onDayClick = { selectedDay = it })
                 }
             }
+        }
+    }
+
+    if (embedded) {
+        content()
+    } else {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Analytics Dashboard") },
+                    navigationIcon = {
+                        if (onClose != null) {
+                            IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = surfaceColors.surface,
+                        titleContentColor = surfaceColors.textPrimary
+                    )
+                )
+            }
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) { content() }
         }
     }
 }
@@ -295,7 +314,8 @@ private fun DistributionList(stats: StatsOverviewV2) {
         Row("Relearning", stats.cardsRelearning, Color(0xFFFF6B6B)),
         Row("Suspended", stats.cardsSuspended, Color(0xFFB0B0B0)),
         Row("Buried", stats.cardsBuried, Color(0xFFB0B0B0)),
-        Row("Archived", stats.cardsArchived, Color(0xFF808080))
+        Row("Archived", stats.cardsArchived, Color(0xFF808080)),
+        Row("Flagged", stats.flaggedCards, Color(0xFFF472B6))
     )
     val max = rows.maxOf { it.value }.coerceAtLeast(1)
     rows.forEach { r ->

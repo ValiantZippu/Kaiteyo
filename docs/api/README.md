@@ -4,12 +4,10 @@ This directory documents the internal APIs and data formats used by Kaiteyo.
 
 ## Contents
 
-| File | Purpose |
-|------|---------|
-| `DATABASE.md` | Database schema, tables, queries |
-| `SETTINGS.md` | Settings/preferences system |
-| `SYNC.md` | Sync protocol and data format |
-| `IMPORT_EXPORT.md` | Import/export formats and procedures |
+This folder currently contains this index only. Individual API references
+(DATABASE, SETTINGS, SYNC, IMPORT_EXPORT) are planned; until they are written,
+see the architecture documents (`../architecture/`) and the SQLDelight schemas
+in `../core/` for the authoritative details.
 
 ## Design Principles
 

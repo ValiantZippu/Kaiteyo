@@ -75,7 +75,6 @@ private val keyboardDefaultShortcuts = listOf(
     ShortcutEntry("retry", "Review", "Retry", "R", "Retry pronunciation"),
     ShortcutEntry("skip", "Review", "Skip", "S,Alt", "Skip card (with Alt)"),
     ShortcutEntry("stats", "Navigation", "Statistics", "I", "Open statistics"),
-    ShortcutEntry("heatmap", "Navigation", "Heatmap", "H", "Open heatmap"),
     ShortcutEntry("history", "Navigation", "History", "Y", "Open review history"),
     ShortcutEntry("bulk-tag", "Browser", "Bulk Tag", "Shift+T", "Tag selected cards"),
     ShortcutEntry("bulk-flag", "Browser", "Bulk Flag", "Shift+F", "Flag selected cards"),

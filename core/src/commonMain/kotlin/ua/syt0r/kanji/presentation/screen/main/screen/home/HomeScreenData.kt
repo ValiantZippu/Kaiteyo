@@ -7,16 +7,19 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
+import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.common.resources.icon.ExtraIcons
 import ua.syt0r.kanji.presentation.common.resources.icon.HomeOutline
 import ua.syt0r.kanji.presentation.common.resources.string.StringResolveScope
 import ua.syt0r.kanji.presentation.common.textDp
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.features.DeckFeaturesController
+import ua.syt0r.kanji.presentation.screen.main.screen.decks.StatisticsDashboardV2
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.SettingsScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.stats.StatsScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.library.LibraryScreen
 
 enum class HomeScreenTab(
@@ -48,7 +51,7 @@ enum class HomeScreenTab(
         analyticsName = "stats",
         iconContent = { Icon(Icons.Default.QueryStats, null) },
         titleResolver = { home.statsTabLabel },
-        content = { StatsScreen() }
+        content = { HomeStatsTab(it) }
     ),
     Search(
         analyticsName = "search",
@@ -69,6 +72,21 @@ enum class HomeScreenTab(
         val VisibleTabs: List<HomeScreenTab> = entries
     }
 
+}
+
+/**
+ * The Stats tab renders the unified Kaiteyo analytics dashboard — the single
+ * Statistics implementation in the app.
+ */
+@Composable
+private fun HomeStatsTab(navigationState: MainNavigationState) {
+    val controller: DeckFeaturesController = koinInject()
+    LaunchedEffect(Unit) { controller.ensureLoaded() }
+    StatisticsDashboardV2(
+        stats = controller.stats,
+        heatmap = controller.heatmap,
+        onClose = null
+    )
 }
 
 data class SyncIconState(

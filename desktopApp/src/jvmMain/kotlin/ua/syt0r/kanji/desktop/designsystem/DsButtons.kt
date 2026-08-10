@@ -65,9 +65,13 @@ fun DsButton(
     val sc = surfaceColors()
     val ac = accent()
 
-    val (rest, hover) = colorsFor(kind, sc, ac)
+    val (rest, hover, pressedColor) = colorsFor(kind, sc, ac)
     val bg by animateColorAsState(
-        targetValue = if (pressed) hover else if (hovered) hover.copy(alpha = hover.alpha) else rest,
+        targetValue = when {
+            pressed -> pressedColor
+            hovered -> hover
+            else -> rest
+        },
         animationSpec = tween(160),
         label = "btnBg"
     )
@@ -112,12 +116,36 @@ fun DsButton(
 }
 
 @Composable
-private fun colorsFor(kind: DsButtonKind, sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: KaiteyoAccentScheme): Pair<Color, Color> = when (kind) {
-    DsButtonKind.Primary -> ac.primary to ac.primary.copy(alpha = 0.85f)
-    DsButtonKind.Secondary -> sc.surfaceElevated to sc.surfaceInteractive
-    DsButtonKind.Ghost -> Color.Transparent to sc.surfaceInteractive
-    DsButtonKind.Danger -> Color(0xFFFF5D5D) to Color(0xFFE04848)
-    DsButtonKind.AccentTint -> ac.primary.copy(alpha = 0.16f) to ac.primary.copy(alpha = 0.26f)
+private fun colorsFor(
+    kind: DsButtonKind,
+    sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors,
+    ac: KaiteyoAccentScheme
+): Triple<Color, Color, Color> = when (kind) {
+    DsButtonKind.Primary -> Triple(
+        ac.primary,
+        ac.primary.copy(alpha = 0.85f),
+        ac.primary.copy(alpha = 0.72f)
+    )
+    DsButtonKind.Secondary -> Triple(
+        sc.surfaceElevated,
+        sc.surfaceInteractive,
+        sc.surfaceInteractive.copy(alpha = 0.8f)
+    )
+    DsButtonKind.Ghost -> Triple(
+        Color.Transparent,
+        sc.surfaceInteractive,
+        sc.surfaceInteractive.copy(alpha = 0.8f)
+    )
+    DsButtonKind.Danger -> Triple(
+        errorColor(),
+        errorColor().copy(alpha = 0.85f),
+        errorColor().copy(alpha = 0.72f)
+    )
+    DsButtonKind.AccentTint -> Triple(
+        ac.primary.copy(alpha = 0.16f),
+        ac.primary.copy(alpha = 0.26f),
+        ac.primary.copy(alpha = 0.34f)
+    )
 }
 
 @Composable

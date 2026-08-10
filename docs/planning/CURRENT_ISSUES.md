@@ -6,8 +6,8 @@ This is a living document. Add issues as they are discovered, mark them as fixed
 
 ### Desktop Window
 
-- [ ] **Window dragging grabs the whole UI** — The entire application acts as a drag region. Buttons cannot be clicked, lists cannot be scrolled, settings cannot be used. Only the top 44dp should be draggable.
-- [ ] **Interactive components are draggable** — WindowDraggableArea is too broad, making all UI components respond to drag events.
+- [x] **Window dragging grabs the whole UI** — Addressed in `KaiteyoWindow.kt`: drag is scoped to a dedicated 44dp title-bar region only; the rest of the UI is no longer draggable. *(Pending compile + runtime verification.)*
+- [x] **Interactive components are draggable** — Addressed — `WindowDraggableArea` is scoped to the title bar only, behind the window controls. *(Pending compile + runtime verification.)*
 - [ ] **Animation stuttering** — Hover animations, theme switching, and window movement are not smooth. Target 60 FPS.
 - [ ] **Resize glitches** — Panels jump, spacing changes unexpectedly, animations break during window resize.
 - [ ] **Hover animations are inconsistent** — Some elements animate on hover, others don't. The behavior varies across components.
@@ -76,6 +76,11 @@ This is a living document. Add issues as they are discovered, mark them as fixed
 - [x] Update GitHub metadata and README
 - [x] Update about page
 - [x] Update splash screen
+- [x] Rename iOS project `KanjiDojoApp` → `KaiteyoApp` (folder, xcodeproj, pbxproj, scheme)
+- [x] Rebrand desktop packaging (AppImage, flatpak metainfo, snapcraft plug/paths, launcher)
+- [x] Fix stale Play Store changelog (`fastlane`) and editor metadata in icon SVGs
+- [x] Repo-wide branding sweep — only legal attribution and functional refs remain
+  (see `docs/branding/BRANDING.md` checklist)
 
 ## 🔵 P3 — Low (Future)
 
@@ -95,6 +100,10 @@ This is a living document. Add issues as they are discovered, mark them as fixed
 
 ## ✅ Recently Fixed
 
+- [x] **Custom window chrome** — Custom 44dp title bar with drag region, window controls, double-click maximize/restore, and right-click system menu; rounded corners flatten when maximized. (See `KaiteyoWindow.kt`.) **Note:** code written but not yet build-verified — run `:desktopApp:compileKotlinJvm` before treating as resolved.
+- [x] **iOS project fully renamed to Kaiteyo** — `KanjiDojoApp` folder, Swift entry point, `xcodeproj`, `project.pbxproj`, and shared scheme all renamed with no leftover references.
+- [x] **Docs restructured by topic** — Numbered root docs moved into topical folders; `docs/README.md` is the new index; internal links, `AGENTS.md`, `README.md`, and website `documentation.json` all updated.
+- [x] **Root directory cleanup** — Build logs, crash dumps, and scratch databases moved to gitignored `scratch/`.
 - [x] **Persisted deck archive flag** — `is_archived` columns on `letter_deck`/`vocab_deck` (previously dead, added only by migration 13) are now in the SQLDelight schema, backed by `updateDeckArchived` repository methods and a toggle in the Deck Edit save dialog. **Follow-up:** filter archived decks from the main dashboard lists and add an "Archived" section to restore them (currently archived decks stay visible everywhere).
 - [x] **Unified Library hub** — Home now has a single Library tab (replaces Kanji/Vocabulary split). Includes hub with Sections + stat summary rows and drill-down screens (Kanji Decks, Vocabulary, Word & Sentence Search). Old default-tab preference remapped.
 - [x] **Import error: `animateColorAsState`** — Fixed by importing from `androidx.compose.animation`

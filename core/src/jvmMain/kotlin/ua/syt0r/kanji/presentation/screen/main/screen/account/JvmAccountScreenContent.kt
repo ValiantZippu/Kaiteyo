@@ -124,7 +124,6 @@ fun AccountScreenUI(
             is ScreenState.Loaded -> {
                 AccountScreenSignedIn(
                     email = screenState.email,
-                    subscriptionInfo = screenState.subscriptionInfo,
                     issue = screenState.issue,
                     refresh = refresh,
                     signOut = signOut,

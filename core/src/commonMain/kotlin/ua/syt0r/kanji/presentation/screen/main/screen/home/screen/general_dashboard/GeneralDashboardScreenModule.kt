@@ -13,7 +13,8 @@ val generalDashboardScreenModule = module {
             vocabSrsManager = get(),
             preferencesRepository = get(),
             reviewHistoryRepository = get(),
-            timeUtils = get()
+            timeUtils = get(),
+            dataCenter = get()
         )
     }
 

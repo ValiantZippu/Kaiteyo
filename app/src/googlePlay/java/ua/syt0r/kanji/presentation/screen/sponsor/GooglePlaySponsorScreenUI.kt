@@ -283,7 +283,7 @@ private fun ColumnScope.ScreenStateCompleted() {
     ) {
 
         Icon(
-            painter = painterResource(id = R.drawable.judo_9219332),
+            painter = painterResource(id = R.drawable.kaiteyo_sponsor),
             contentDescription = null,
             modifier = Modifier.size(160.dp),
             tint = Color.Unspecified

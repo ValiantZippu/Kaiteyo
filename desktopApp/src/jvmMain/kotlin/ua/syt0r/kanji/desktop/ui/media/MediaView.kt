@@ -233,7 +233,7 @@ private fun SubtitleCard(state: AppState) {
             }
             val cue = media.cueAt(media.currentPositionMs)
             val cueText = cue?.text.orEmpty()
-            if (cueText.isNotBlank()) {
+            if (cue != null && cueText.isNotBlank()) {
                 Text(cueText, color = sc.textPrimary, fontSize = DsType.BodyLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), modifier = Modifier.padding(top = DsSpacing.Sm)) {
                     DsButton(

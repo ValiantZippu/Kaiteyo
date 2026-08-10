@@ -13,6 +13,9 @@ import ua.syt0r.kanji.Res
 import ua.syt0r.kanji.core.IosAppDataDatabaseProvider
 import ua.syt0r.kanji.core.IosUserDataDatabasePlatformHandler
 import ua.syt0r.kanji.core.app_data.AppDataDatabaseProvider
+import ua.syt0r.kanji.core.transfer.AnkiPackage
+import ua.syt0r.kanji.core.transfer.AnkiPackageIos
+import ua.syt0r.kanji.core.file.PlatformFile
 import ua.syt0r.kanji.core.file.IosPlatformFileHandler
 import ua.syt0r.kanji.core.file.PlatformFileHandler
 import ua.syt0r.kanji.core.getPrivateAppDataDirPath
@@ -25,11 +28,9 @@ import ua.syt0r.kanji.core.tts.Neural2BKanaVoiceData
 import ua.syt0r.kanji.core.user_data.database.UserDataDatabaseContract
 import ua.syt0r.kanji.core.user_data.preferences.DefaultUserPreferencesMigrationManager
 import ua.syt0r.kanji.presentation.IosAccountScreenContent
-import ua.syt0r.kanji.presentation.IosSponsorScreenContent
 import ua.syt0r.kanji.presentation.addAccountScreenComponents
 import ua.syt0r.kanji.presentation.backupScreenComponents
 import ua.syt0r.kanji.presentation.screen.main.screen.account.AccountScreenContract
-import ua.syt0r.kanji.presentation.screen.main.screen.sponsor.SponsorScreenContract
 
 @OptIn(ExperimentalResourceApi::class)
 actual val platformComponentsModule: Module = module {
@@ -63,6 +64,11 @@ actual val platformComponentsModule: Module = module {
         IosPlatformFileHandler()
     }
 
+    factory<PlatformFile> {
+        PlatformFile(okio.Path(getPrivateAppDataDirPath()))
+    }
+    single<AnkiPackage> { AnkiPackageIos() }
+
     factory<KanaVoiceData> {
         val voicePath = Res
             .getUri("files/${IosMainBuildConfig.kanaVoiceAssetName}")
@@ -70,7 +76,6 @@ actual val platformComponentsModule: Module = module {
         Neural2BKanaVoiceData(assetPath = voicePath)
     }
 
-    single<SponsorScreenContract.Content> { IosSponsorScreenContent }
     single<AccountScreenContract.Content> { IosAccountScreenContent }
     backupScreenComponents()
     addAccountScreenComponents()

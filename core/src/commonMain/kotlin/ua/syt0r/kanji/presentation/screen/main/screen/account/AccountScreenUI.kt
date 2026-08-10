@@ -15,7 +15,6 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.MoreVert
@@ -44,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.format
 import org.jetbrains.compose.resources.stringResource
@@ -51,12 +51,10 @@ import ua.syt0r.kanji.Res
 import ua.syt0r.kanji.account_delete
 import ua.syt0r.kanji.account_visit_website
 import ua.syt0r.kanji.core.ApiRequestIssue
-import ua.syt0r.kanji.core.SubscriptionInfo
 import ua.syt0r.kanji.core.format
 import ua.syt0r.kanji.presentation.common.AppDropdownMenu
 import ua.syt0r.kanji.presentation.common.AppDropdownMenuItem
 import ua.syt0r.kanji.presentation.common.AppListItem
-import ua.syt0r.kanji.presentation.common.CommonDateTimeFormat
 import ua.syt0r.kanji.presentation.common.InvertedButton
 import ua.syt0r.kanji.presentation.common.ScrollableScreenContainer
 import ua.syt0r.kanji.presentation.common.clickable
@@ -132,12 +130,10 @@ fun AccountScreenLoading() {
 @Composable
 fun AccountScreenSignedIn(
     email: String,
-    subscriptionInfo: SubscriptionInfo,
     issue: ApiRequestIssue?,
     refresh: () -> Unit,
     signOut: () -> Unit,
     signIn: () -> Unit,
-    showSubscriptionInfo: Boolean = true,
     openAccountWeb: (uriHandler: UriHandler) -> Unit = { it.openUri(ACCOUNT_WEB_PAGE_URL) },
     deleteAccount: (uriHandler: UriHandler) -> Unit = { it.openUri(ACCOUNT_DELETE_URL) },
     extraContent: @Composable (ColumnScope.() -> Unit)? = null
@@ -156,6 +152,9 @@ fun AccountScreenSignedIn(
         }
 
         val uriHandler = LocalUriHandler.current
+
+        // ── Profile Section ──
+        SectionHeader(title = resolveString { account.profileSection })
 
         AppListItem(
             leadingContent = { Icon(Icons.Outlined.Email, null) },
@@ -199,9 +198,67 @@ fun AccountScreenSignedIn(
             supportingContent = { Text(email) }
         )
 
-        if (showSubscriptionInfo) {
-            SubscriptionInfoListItem(subscriptionInfo)
-        }
+        // ── Application Section ──
+        SectionHeader(title = resolveString { account.applicationSection })
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.syncStatusLabel }) },
+            supportingContent = { Text(resolveString { account.syncStatusLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.localStorageUsageLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.databaseInfoLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.cacheLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.backupsLabel }) }
+        )
+
+        // ── Study Section ──
+        SectionHeader(title = resolveString { account.studySection })
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.currentStreakLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.lifetimeReviewsLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.cardsLearnedLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.totalStudyTimeLabel }) }
+        )
+
+        // ── Connected Services Section ──
+        SectionHeader(title = resolveString { account.connectedServicesSection })
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.githubServiceLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.syncServiceLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.dictionariesServiceLabel }) }
+        )
+
+        AppListItem(
+            headlineContent = { Text(resolveString { account.pluginsServiceLabel }) }
+        )
 
         extraContent?.invoke(this)
 
@@ -220,50 +277,13 @@ fun AccountScreenSignedIn(
 }
 
 @Composable
-fun SubscriptionInfoListItem(
-    subscriptionInfo: SubscriptionInfo
-) {
-    val headlineText: String
-    val supportText: String?
-
-    when (subscriptionInfo) {
-        is SubscriptionInfo.Active -> {
-            headlineText = resolveString { account.subscriptionStatusActive }
-            supportText = subscriptionInfo.due
-                ?.format(CommonDateTimeFormat)
-                ?.let { formattedTime ->
-                    resolveString {
-                        account.subscriptionValidUntilTemplate.format(formattedTime)
-                    }
-                }
-        }
-
-        is SubscriptionInfo.Expired -> {
-            headlineText = resolveString { account.subscriptionStatusExpired }
-            supportText = subscriptionInfo.due
-                ?.format(CommonDateTimeFormat)
-                ?.let { formattedTime ->
-                    resolveString {
-                        account.subscriptionValidUntilTemplate.format(formattedTime)
-                    }
-                }
-        }
-
-        SubscriptionInfo.Inactive -> {
-            headlineText = resolveString { account.subscriptionStatusInactive }
-            supportText = null
-        }
-    }
-
-    AppListItem(
-        leadingContent = { Icon(Icons.Outlined.CreditCard, null) },
-        headlineContent = { Text(resolveString { account.subscriptionTitle }) },
-        supportingContent = {
-            Column {
-                Text(headlineText)
-                supportText?.let { Text(it) }
-            }
-        }
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
     )
 }
 
@@ -314,18 +334,18 @@ private fun IssueListItem(
             action = null
         }
 
+        ApiRequestIssue.NoSubscription -> {
+            title = resolveString { account.issueNoSubscriptionTitle }
+            message = resolveString { account.issueNoSubscriptionMessage }
+            trailingIcon = null
+            action = null
+        }
+
         ApiRequestIssue.NotAuthenticated -> {
             title = resolveString { account.issueSessionExpiredTitle }
             message = resolveString { account.issueSessionExpiredMessage }
             trailingIcon = Icons.AutoMirrored.Filled.Login
             action = signIn
-        }
-
-        ApiRequestIssue.NoSubscription -> {
-            title = resolveString { account.issueSubscriptionOutdatedTitle }
-            message = resolveString { account.issueSubscriptionOutdatedMessage }
-            trailingIcon = Icons.Default.Refresh
-            action = refresh
         }
 
         is ApiRequestIssue.Other -> {

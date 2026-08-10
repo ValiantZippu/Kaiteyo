@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="57" viewBox="0 0 150 57">
+  <!-- Inno Setup small wizard image (WizardSmallImageFile). 150x57 px. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <rect width="150" height="57" rx="10" fill="url(#bg)"/>
+  <rect x="14" y="12" width="33" height="33" rx="9" fill="#ffffff"/>
+  <path d="M23 20 h6.5 v10 l9 -10 h7.5 l-10.5 12.5 10.5 13.5 h-8.5 l-8.5 -11.5 v11.5 H23 Z" fill="#312e81"/>
+  <text x="66" y="30" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#ffffff">Kaiteyo</text>
+  <text x="66" y="44" font-family="Segoe UI, Arial, sans-serif" font-size="8.5" fill="#c7d2fe">書いてよ · Installer</text>
+</svg>

@@ -65,9 +65,11 @@ import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.PageTransitionType
 import ua.syt0r.kanji.presentation.common.theme.RadiusConfig
-import ua.syt0r.kanji.presentation.common.theme.SidebarMode
-import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 import ua.syt0r.kanji.presentation.common.theme.UIDensity
+import ua.syt0r.kanji.presentation.common.nav.LocalNavigationSettings
+import ua.syt0r.kanji.presentation.common.nav.NavigationSettingsOverlay
+import ua.syt0r.kanji.presentation.common.nav.rememberFormFactor
+import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.gradientForAccent
 import ua.syt0r.kanji.presentation.common.theme.surfaceForBaseMode
 
@@ -909,6 +911,7 @@ private fun LayoutStudioTab() {
     val themeState = LocalKaiteyoThemeState.current
     val surfaceColors = LocalSurfaceColors.current
     val currentAccent = LocalKaiteyoAccent.current
+    var navSettingsOpen by remember { mutableStateOf(false) }
 
     Text(
         text = "Layout Studio",
@@ -1029,85 +1032,33 @@ private fun LayoutStudioTab() {
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    // Sidebar
+    // Sidebar — unified adaptive navigation
     Text(
-        text = "Sidebar",
+        text = "Navigation",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
     Spacer(modifier = Modifier.height(6.dp))
-
-    // Sidebar mode
     Text(
-        text = "Mode",
+        text = "Mode, placement, floating launcher and phone layout are configured in the adaptive navigation settings.",
         color = surfaceColors.textMuted,
         fontSize = 12.sp
     )
-    Spacer(modifier = Modifier.height(4.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        SidebarMode.entries.take(4).forEach { mode ->
-            val isSelected = themeState.layoutConfig.sidebarMode == mode
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(
-                        if (isSelected) currentAccent.primary.copy(alpha = 0.12f)
-                        else Color.Transparent
-                    )
-                    .clickable {
-                        themeState.layoutConfig = themeState.layoutConfig.copy(sidebarMode = mode)
-                    }
-                    .padding(vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = mode.displayName,
-                    color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
-                    fontSize = 10.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                )
-            }
-        }
-    }
-
     Spacer(modifier = Modifier.height(8.dp))
-
-    // Sidebar position
-    Text(
-        text = "Position",
-        color = surfaceColors.textMuted,
-        fontSize = 12.sp
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        SidebarPosition.entries.forEach { pos ->
-            val isSelected = themeState.layoutConfig.sidebarPosition == pos
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(
-                        if (isSelected) currentAccent.primary.copy(alpha = 0.12f)
-                        else Color.Transparent
-                    )
-                    .clickable {
-                        themeState.layoutConfig = themeState.layoutConfig.copy(sidebarPosition = pos)
-                    }
-                    .padding(vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = pos.displayName,
-                    color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
-                    fontSize = 12.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                )
-            }
+    val navSettings = LocalNavigationSettings.current
+    if (navSettings != null) {
+        Button(
+            onClick = { navSettingsOpen = true },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = currentAccent.primary,
+                contentColor = currentAccent.onPrimary
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(resolveString { nav.openNavigationSettingsLabel })
         }
     }
-
     Spacer(modifier = Modifier.height(16.dp))
 
     // Glow
@@ -1225,6 +1176,17 @@ private fun LayoutStudioTab() {
             valueRange = 0.1f..1f,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+
+    if (navSettingsOpen) {
+        val navSettingsState = LocalNavigationSettings.current
+        if (navSettingsState != null) {
+            NavigationSettingsOverlay(
+                navSettings = navSettingsState,
+                formFactor = rememberFormFactor(),
+                onDismiss = { navSettingsOpen = false }
+            )
+        }
     }
 }
 

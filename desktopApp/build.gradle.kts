@@ -23,9 +23,13 @@ kotlin {
             dependencies {
                 implementation(compose.components.resources)
                 implementation(project(":core"))
-                // Local integration API (Ktor netty server)
-                implementation("io.ktor:ktor-server-core:3.1.2")
-                implementation("io.ktor:ktor-server-netty:3.1.2")
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.netty)
+                // Native OS window dragging on Windows (WM_NCLBUTTONDOWN) and
+                // Linux (X11/EWMH). Direct coordinates (not catalog accessors)
+                // so the desktop module never depends on generated aliases.
+                implementation("net.java.dev.jna:jna:5.14.0")
+                implementation("net.java.dev.jna:jna-platform:5.14.0")
             }
         }
 

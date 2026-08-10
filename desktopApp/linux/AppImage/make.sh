@@ -15,8 +15,8 @@ fi
 ./gradlew :desktopApp:createDistributable
 
 # AppDir structure according to https://github.com/AppImage/AppImageKit/wiki/AppDir
-cp -r "desktopApp/build/compose/binaries/main/app/Kanji Dojo/" "$APP_IMAGE_DIR/AppDir/usr"
-cp "$APP_IMAGE_DIR/AppDir/usr/lib/Kanji Dojo.png" "$APP_IMAGE_DIR/AppDir/Kanji Dojo.png"
+cp -r "desktopApp/build/compose/binaries/main/app/Kaiteyo/" "$APP_IMAGE_DIR/AppDir/usr"
+cp "$APP_IMAGE_DIR/AppDir/usr/lib/Kaiteyo.png" "$APP_IMAGE_DIR/AppDir/Kaiteyo.png"
 
 cd $APP_IMAGE_DIR
 
@@ -28,4 +28,4 @@ chmod +x ./appimagetool-x86_64.AppImage
 chmod +x AppDir/AppRun
 
 ./appimagetool-x86_64.AppImage AppDir/
-chmod +x Kanji_Dojo-x86_64.AppImage
+chmod +x Kaiteyo-x86_64.AppImage

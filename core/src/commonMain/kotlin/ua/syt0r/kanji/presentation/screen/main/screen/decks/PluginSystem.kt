@@ -99,15 +99,6 @@ class PluginManager {
             icon = "📖"
         ))
         register(PluginManifest(
-            id = "builtin.heatmap",
-            name = "Study Heatmap",
-            version = "1.0.0",
-            author = "Kaiteyo",
-            description = "GitHub-style contribution heatmap for study activity",
-            extensionPoint = PluginExtensionPoint.StatisticsPanel,
-            icon = "🔥"
-        ))
-        register(PluginManifest(
             id = "builtin.tts",
             name = "Text-to-Speech",
             version = "1.0.0",

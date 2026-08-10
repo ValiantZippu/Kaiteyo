@@ -1,6 +1,8 @@
 package  ua.syt0r.kanji.presentation.screen.main.screen.home
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,7 +11,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.sync.SyncFeatureState
 import ua.syt0r.kanji.core.sync.SyncManager
@@ -23,18 +25,21 @@ class HomeViewModel(
     private val syncManager: SyncManager
 ) : HomeScreenContract.ViewModel {
 
-    override val defaultTab: HomeScreenTab = runBlocking {
-        when (appPreferences.defaultHomeTab.get()) {
-            PreferencesDefaultHomeTab.GeneralDashboard -> HomeScreenTab.GeneralDashboard
-            PreferencesDefaultHomeTab.Letters -> HomeScreenTab.Library
-            PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.Library
-        }
-    }
+    private val _defaultTab = MutableStateFlow(HomeScreenTab.GeneralDashboard)
+    override val defaultTab: StateFlow<HomeScreenTab> = _defaultTab
 
     private val _syncIconState = MutableStateFlow(SyncIconState())
     override val syncIconState: StateFlow<SyncIconState> = _syncIconState
 
     init {
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _defaultTab.value = when (appPreferences.defaultHomeTab.get()) {
+                PreferencesDefaultHomeTab.GeneralDashboard -> HomeScreenTab.GeneralDashboard
+                PreferencesDefaultHomeTab.Letters -> HomeScreenTab.Library
+                PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.Library
+            }
+        }
 
         syncManager.state
             .flatMapLatest { it.toSyncIconStateFlow() }

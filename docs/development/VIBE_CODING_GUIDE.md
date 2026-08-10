@@ -130,8 +130,8 @@ git checkout develop
 git pull
 
 # Read documentation first
-# Open docs/00_START_HERE.md
-# Open docs/AI_CONTEXT.md
+# Open docs/README.md
+# Open docs/development/AI_CONTEXT.md
 # Open docs/planning/CURRENT_ISSUES.md
 
 # Start the app
@@ -166,7 +166,7 @@ git push origin feature/my-feature
 
 ### "Unresolved reference 'X'"
 **Cause:** Missing import or wrong package.
-**Fix:** Add the correct import. Check `docs/AI_CONTEXT.md` for import rules.
+**Fix:** Add the correct import. Check `docs/development/AI_CONTEXT.md` for import rules.
 
 ### "BUILD FAILED in Xs"
 **Cause:** Compilation error. Scroll up to see the actual error (look for `e:` lines).
@@ -213,7 +213,7 @@ For production releases, you'll need your own keystore.
 1. **Always read docs first** — The `/docs` directory is the project brain
 2. **Check CURRENT_ISSUES.md** — Know what's broken before adding features
 3. **Compile after each change** — Don't make 10 changes then compile
-4. **Follow the design language** — Read `02_DESIGN_LANGUAGE.md` before UI changes
+4. **Follow the design language** — Read `../design/DESIGN_LANGUAGE.md` before UI changes
 5. **Update documentation** — If you add a feature, document it
 6. **One file at a time** — Make focused changes, not massive rewrites
 7. **Use the correct imports** — See `AI_CONTEXT.md` for import rules

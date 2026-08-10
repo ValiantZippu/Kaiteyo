@@ -551,10 +551,100 @@
   <div class="timeline" id="changelogTimeline" data-filter-scope>
     
     <section class="timeline-item is-current" data-filter-item
+             id="v2-2-1" style="scroll-margin-top: 96px">
+      <div class="timeline-header">
+        <h2>v2.2.1</h2>
+        <span class="badge badge-accent">Latest</span>
+        
+      </div>
+      
+      <div style="margin-bottom: var(--space-4)">
+        <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Added</h3>
+        <ul>
+          
+          <li>Premium installer subsystem (`installer/`) — new, fully decoupled from Gradle:</li>
+          
+          <li>Windows: branded Inno Setup 6 installer (modern dynamic dark-mode wizard, install/upgrade/repair/modify, silent install, keep-or-remove uninstaller, file associations, launch-after-install, install-dir memory) + portable zip build</li>
+          
+          <li>macOS: styled DMG with branded background artwork and drag-to-Applications; hardened-runtime signing + notarization + stapling pipeline (`entitlements.plist`)</li>
+          
+          <li>Linux: AppImage with AppStream metadata + multi-size icon theme, deb builder, rpm spec, Flathub-ready Flatpak manifest, Snap wrapper</li>
+          
+          <li>Shared: `common/version.json` single source of truth, update-feed + artifact-manifest JSON schemas, integrity verification gate, staging/bump/feed generation scripts, SVG→bmp/ico/icns/png brand asset generator</li>
+          
+          <li>Docs: `installer/docs/{ARCHITECTURE,BUILD,SIGNING,RELEASE,UPDATES,FIRST_RUN}.md`</li>
+          
+          <li>First-run onboarding — `OnboardingWizard` (8 steps, live-applied: theme, accent, scaling, font, navigation, motion) is wired into `KaiteyoDesktopSuite`, gated once by the settings key `onboarding.completed`, re-openable from Settings → “Show onboarding again”; every step skippable, crash-safe completion via `AppState.completeOnboarding()`</li>
+          
+          <li>Auto-update architecture (`desktop/engine/updates/`) — `UpdateChannel` (stable/beta/nightly), `UpdateManifest` (feed schema v1), `HttpUpdateChecker`, sha256-verified `HttpUpdateDownloader`, `UpdateInstaller` interface, `UpdateService` coordinator with `StateFlow&lt;UpdateState&gt;`, `UpdatePolicy` rollback window</li>
+          
+          <li>CI extended — `build-all.yml` now produces the Inno EXE, MSI, portable zip, styled + notarized DMGs (arm/intel), deb, rpm and AppImage; `build-release.yml` stages + verifies artifacts and generates the stable update feed</li>
+          
+          <li>Native window shell — `KaiteyoWindow.kt`, `NativeWindowDrag.kt`, `WindowActions.kt`, `WindowStateStore.kt`:</li>
+          
+          <li>44dp custom title bar: K-logo opens the system menu (double-click closes), draggable wordmark, native-style window controls with hover states</li>
+          
+          <li>Native OS dragging on Windows (`WM_NCLBUTTONDOWN`/`HTCAPTION`) and Linux (EWMH `_NET_WM_MOVERESIZE`) with a Compose fallback — 1:1 tracking, no rubber-banding</li>
+          
+          <li>8-zone invisible resize handles for the undecorated window (5dp edge strips + 10dp corners, 860×600 minimum); rounded corners flatten when maximized</li>
+          
+          <li>Custom system menu (title-bar right-click / Alt+Space / logo / dock button / launchpad strip) with full keyboard navigation (arrows, Enter, Esc) — one shared implementation</li>
+          
+          <li>Window size &amp; position persisted to `~/.kaiteyo/window.json` (screen-validated on load, throttled saves, maximized states skipped) and included in profile backups</li>
+          
+          <li>Keyboard access across the dock menus, launchpad tile grid, window-control strip, and launcher bubble chips (focus rings, arrow navigation, focus returned on dismiss)</li>
+          
+          <li>Screenshot capture pipeline — dev-only `--capture-state=&lt;shell|menu|launchpad|strip&gt;` (fixed 1200×800 window, self-exit dwell, never touches saved bounds), `scripts/capture-window-shell.sh` (per-OS window capture: xdotool/ImageMagick, screencapture, Win32), and the website&#39;s desktop screenshot gallery wired to `docs/screenshots/`</li>
+          
+          <li>Unified statistics dashboard — the card manager&#39;s Kanji.Dojo-era Stats/Heatmap tabs now render the single analytics dashboard via `embedded` mode; the legacy `StatisticsOverview` and its helpers were removed, and its unique values (Flagged count, average interval, average ease) were folded into the dashboard&#39;s Library Distribution section, computed from real data in `StatsOverviewV2`</li>
+          
+        </ul>
+      </div>
+      
+      <div style="margin-bottom: var(--space-4)">
+        <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Changed</h3>
+        <ul>
+          
+          <li>iOS project fully renamed — `iosApp/KanjiDojoApp` → `iosApp/KaiteyoApp` (folder, Swift entry point, `xcodeproj`, `pbxproj`, shared scheme, and all build references)</li>
+          
+          <li>Docs restructured by topic — flat numbered docs moved into `architecture/`, `design/`, `branding/`, `roadmap/`, `features/`, `development/`, `contributing/`, `assets/`, `releases/`, `planning/`, `screenshots/`; `docs/README.md` is the new index; all internal links, `AGENTS.md`, `README.md`, and the website `documentation.json` updated</li>
+          
+          <li>Root cleanup — AI-session build logs, crash dumps, and scratch databases moved to `scratch/` (gitignored)</li>
+          
+          <li>Desktop packaging rebranded — snapcraft plug/paths (`kaiteyo-data`, `~/.kaiteyo`), flatpak metainfo changelog + URLs, AppImage metadata, and the snap launcher (now globs the jar) all Kaiteyo</li>
+          
+          <li>Play Store changelog fixed — stale `kanji-dojo` macOS note rewritten in `fastlane`</li>
+          
+          <li>Stale editor metadata cleaned — Inkscape `export-filename` paths in icon SVGs no longer reference the old project path</li>
+          
+        </ul>
+      </div>
+      
+      <div style="margin-bottom: var(--space-4)">
+        <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Removed</h3>
+        <ul>
+          
+          <li>Legacy attribution comments — `Kanji.Dojo` references removed from stats dashboard, Home stats KDoc, and built-in deck catalog comments</li>
+          
+        </ul>
+      </div>
+      
+      <div style="margin-bottom: var(--space-4)">
+        <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Verified</h3>
+        <ul>
+          
+          <li>Rebranding audit across all platforms — Android (manifest, resources, icons, activities), iOS (bundle id, Info.plist, assets, scheme), desktop (window title, AppImage/flatpak/snap metadata), and website (pages, FAQ, wiki, config) are fully Kaiteyo. Only legal attribution (fork history, original-author copyright, upstream repo) and functional references (`kanji-dojo-data-base-v15.sql` asset, App Store URL) remain — see `docs/branding/BRANDING.md` checklist.</li>
+          
+        </ul>
+      </div>
+      
+    </section>
+    
+    <section class="timeline-item" data-filter-item
              id="v2-0-0" style="scroll-margin-top: 96px">
       <div class="timeline-header">
         <h2>v2.0.0</h2>
-        <span class="badge badge-accent">Latest</span>
+        
         
       </div>
       
@@ -571,6 +661,20 @@
           <li>Drill-down screens: Kanji Decks, Vocabulary, Word &amp; Sentence Search</li>
           
           <li>Old `LettersDashboard`/`VocabDashboard` tabs removed; default-tab preference remapped to Library</li>
+          
+          <li>Persisted deck archive — The `letter_deck.is_archived` / `vocab_deck.is_archived` columns (previously added by migration 13 but never wired) are now real:</li>
+          
+          <li>Columns declared in the SQLDelight schema so fresh databases get them too</li>
+          
+          <li>`updateLetterDeckArchived` / `updateVocabDeckArchived` queries</li>
+          
+          <li>`LetterDeck`/`VocabDeck` now carry `isArchived`</li>
+          
+          <li>`updateDeckArchived(id, isArchived)` on both repositories</li>
+          
+          <li>Archive toggle in the Deck Edit → Save dialog (Edit mode only)</li>
+          
+          <li>Follow-up (not yet implemented): hide archived decks from main lists + an &#34;Archived&#34; section to restore them</li>
           
           <li>Theme Studio v2.0 — Complete rewrite with functional color editor:</li>
           
@@ -776,7 +880,7 @@
           
           <li>Professional repository structure with folder READMEs</li>
           
-          <li>AI_CONTEXT.md for AI assistant onboarding</li>
+          <li>`../development/AI_CONTEXT.md` for AI assistant onboarding</li>
           
         </ul>
       </div>

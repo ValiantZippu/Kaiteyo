@@ -2,6 +2,11 @@ name: Build All
 
 on: [ workflow_call, workflow_dispatch ]
 
+# Version used for artifact naming only; the real source of truth is
+# installer/common/version.json (read by the staging step in build-release.yml).
+env:
+  KIT_VERSION: 2.2.1
+
 jobs:
   build-android-and-desktop-linux:
     runs-on: ubuntu-latest
@@ -16,7 +21,12 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin imagemagick rpm
+
+      - name: Build Android + desktop bundle
         env:
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -25,8 +35,14 @@ jobs:
         run: |
           chmod +x gradlew
           echo $KEYSTORE | base64 --decode > keystore.jks
-          ./gradlew app:assembleFdroidRelease
-          ./desktopApp/linux/AppImage/make.sh
+          ./gradlew app:assembleFdroidRelease :desktopApp:createDistributable
+
+      - name: Build Linux packages
+        run: |
+          bash installer/scripts/generate-assets.sh
+          bash installer/linux/appimage/build.sh
+          bash installer/linux/deb/build.sh
+          bash installer/linux/rpm/build.sh
 
       - name: Upload Android Build
         uses: actions/upload-artifact@v4
@@ -35,11 +51,14 @@ jobs:
           path: app/build/outputs/apk/fdroid/release/*.apk
           retention-days: 1
 
-      - name: Upload Desktop Build
+      - name: Upload Linux Build
         uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: desktopApp/linux/AppImage/Kanji_Dojo-x86_64.AppImage
+          path: |
+            installer/linux/appimage/out/*.AppImage
+            installer/linux/deb/out/*.deb
+            installer/linux/rpm/out/*.rpm
           retention-days: 1
 
 
@@ -56,19 +75,37 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build
-        run: ./gradlew desktopApp:packageDistributionForCurrentOS
+      - name: Install Inno Setup + ImageMagick
+        shell: bash
+        run: |
+          choco install inno-setup imagemagick --no-progress -y
+
+      - name: Build app bundle
+        shell: bash
+        run: |
+          ./gradlew :desktopApp:createDistributable
+
+      - name: Build branded installer + MSI + portable
+        shell: bash
+        run: |
+          bash installer/scripts/generate-assets.sh
+          ./gradlew :desktopApp:packageMsi
+          powershell -ExecutionPolicy Bypass -File installer/windows/build.ps1 -Version "$KIT_VERSION"
+          powershell -ExecutionPolicy Bypass -File installer/windows/portable/build-portable.ps1 -Version "$KIT_VERSION"
 
       - name: Upload Desktop Build
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: desktopApp/build/compose/binaries/main/msi/*.msi
+          path: |
+            installer/windows/build/kaiteyo-${{ env.KIT_VERSION }}/*.exe
+            installer/windows/build/kaiteyo-${{ env.KIT_VERSION }}/*.zip
+            desktopApp/build/compose/binaries/main/msi/*.msi
           retention-days: 1
 
 
   build-desktop-mac-intel:
-    runs-on: macos-15-intel
+    runs-on: macos-13
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,12 +117,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build + style DMG (Intel)
         run: |
-          ./gradlew desktopApp:packageDistributionForCurrentOS
-          DMG_PATH=$(find ./desktopApp/build/compose/binaries/main/dmg -name "*.dmg")
-          NEW_DMG_PATH=$(echo $DMG_PATH | sed 's/Kaiteyo/Kaiteyo-intel/g')
-          mv "$DMG_PATH" "$NEW_DMG_PATH"
+          bash installer/scripts/generate-assets.sh || true
+          ./gradlew :desktopApp:createDistributable
+          bash installer/macos/build-dmg.sh x64
+          bash installer/macos/notarize.sh \
+            "$(ls desktopApp/build/compose/binaries/main/dmg/*x64.dmg | head -1)"
 
       - name: Upload Desktop Build
         uses: actions/upload-artifact@v4
@@ -108,12 +149,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build + style DMG (ARM)
         run: |
-          ./gradlew desktopApp:packageDistributionForCurrentOS
-          DMG_PATH=$(find ./desktopApp/build/compose/binaries/main/dmg -name "*.dmg")
-          NEW_DMG_PATH=$(echo $DMG_PATH | sed 's/Kaiteyo/Kaiteyo-arm/g')
-          mv "$DMG_PATH" "$NEW_DMG_PATH"
+          bash installer/scripts/generate-assets.sh || true
+          ./gradlew :desktopApp:createDistributable
+          bash installer/macos/build-dmg.sh arm64
+          bash installer/macos/notarize.sh \
+            "$(ls desktopApp/build/compose/binaries/main/dmg/*arm64.dmg | head -1)"
 
       - name: Upload Desktop Build
         uses: actions/upload-artifact@v4

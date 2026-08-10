@@ -1,0 +1,52 @@
+# ============================================================================
+# Kaiteyo — Flatpak manifest (Flathub-ready)
+#
+# The app payload is the jpackage image, bundled inside the sandbox. Network
+# access is granted for update checks / dictionary downloads / sync; the
+# filesystem is untouched except the app's own data dir.
+# ============================================================================
+app-id: io.github.syt0r.kaiteyo
+runtime: org.freedesktop.Platform
+runtime-version: '22.08'
+sdk: org.freedesktop.Sdk
+command: kaiteyo.sh
+rename-desktop-file: io.github.syt0r.kaiteyo.desktop
+rename-appdata-file: io.github.syt0r.kaiteyo.metainfo.xml
+rename-icon: io.github.syt0r.kaiteyo
+
+finish-args:
+  # GUI + input
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --device=dri
+  # Network: update checks, dictionary downloads, sync
+  - --share=network
+  # App data (read/write) + file open for imports
+  - --filesystem=xdg-data/kaiteyo:create
+  - --filesystem=home:ro
+
+modules:
+  - name: kaiteyo
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 kaiteyo.sh /app/bin/kaiteyo.sh
+      - mkdir -p /app/lib/kaiteyo
+      - cp -r app/Kaiteyo/* /app/lib/kaiteyo/
+      - install -Dm644 io.github.syt0r.kaiteyo.desktop /app/share/applications/io.github.syt0r.kaiteyo.desktop
+      - install -Dm644 io.github.syt0r.kaiteyo.metainfo.xml /app/share/metainfo/io.github.syt0r.kaiteyo.metainfo.xml
+      - for s in 16 32 48 64 128 256 512; do
+          install -Dm644 kaiteyo-$s.png /app/share/icons/hicolor/${s}x${s}/apps/io.github.syt0r.kaiteyo.png;
+        done
+      - install -Dm644 kaiteyo.svg /app/share/icons/hicolor/scalable/apps/io.github.syt0r.kaiteyo.svg
+    sources:
+      - type: dir
+        path: ../../../desktopApp/build/compose/binaries/main
+      - type: file
+        path: kaiteyo.sh
+      - type: file
+        path: ../../appimage/io.github.syt0r.kaiteyo.desktop
+      - type: file
+        path: ../../appimage/io.github.syt0r.kaiteyo.metainfo.xml
+      - type: dir
+        path: ../../assets/generated/linux

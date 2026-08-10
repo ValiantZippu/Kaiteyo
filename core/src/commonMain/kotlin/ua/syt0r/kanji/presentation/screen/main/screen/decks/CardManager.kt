@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 
 // ============================================
 // KAITEYO CARD MANAGER v2.0
@@ -140,7 +139,9 @@ fun CardManager(
         KaiteyoCard(id = "card_002", character = "火", meaning = "Fire",
             reading = "ひ / カ", tagNames = mutableListOf("jlpt-n5", "fire"),
             flag = CardFlagType.Red, status = CardStatus.Learning)
-    )
+    ),
+    stats: StatsOverviewV2 = StatsOverviewV2(),
+    heatmap: HeatmapDataV2 = HeatmapDataV2()
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
@@ -273,11 +274,10 @@ fun CardManager(
                     accent = accent,
                     surfaceColors = surfaceColors
                 )
-                "Stats" -> StatisticsOverview(cards = cards)
-                "Heatmap" -> HeatmapView(
-                    data = cards.groupBy { it.lastReviewed.take(10) }
-                        .mapValues { it.value.size }
-                )
+                // One unified stats menu everywhere: the analytics dashboard
+                // (same screen as the Home Stats tab), which includes the study
+                // heatmap — the old standalone Stats/Heatmap tabs are gone.
+                "Stats" -> StatisticsDashboardV2(stats = stats, heatmap = heatmap, embedded = true)
             }
         }
 
@@ -768,8 +768,7 @@ private fun CardManagerTabs(selectedTab: String, onTabSelected: (String) -> Unit
     val accent = LocalKaiteyoAccent.current
     val tabs = listOf(
         "Browse" to Icons.Default.List,
-        "Stats" to Icons.Default.BarChart,
-        "Heatmap" to Icons.Default.GridOn
+        "Stats" to Icons.Default.BarChart
     )
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
@@ -1548,100 +1547,6 @@ fun StudyHistoryDialog(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
     )
-}
-
-// ============================================
-// STATISTICS OVERVIEW
-// ============================================
-
-@Composable
-fun StatisticsOverview(cards: List<KaiteyoCard>) {
-    val totalCards = cards.size
-    val matureCards = cards.count { it.status == CardStatus.Mature }
-    val learningCards = cards.count { it.status == CardStatus.Learning || it.status == CardStatus.Relearning }
-    val newCards = cards.count { it.status == CardStatus.New }
-    val suspendedCards = cards.count { it.isSuspended }
-    val flaggedCards = cards.count { it.flag != CardFlagType.None }
-    val avgInterval = if (cards.isNotEmpty()) cards.map { it.interval }.average().toInt() else 0
-    val avgEase: Double = if (cards.isNotEmpty()) cards.map { it.ease }.average() else 2.5
-    val retention = if (cards.isNotEmpty()) cards.map { it.accuracy }.average().toFloat() else 0f
-
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Summary cards
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            StatCard("Total", "$totalCards", Icons.Default.CollectionsBookmark, Modifier.weight(1f))
-            StatCard("Mature", "$matureCards", Icons.Default.Star, Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            StatCard("Learning", "$learningCards", Icons.Default.TrendingUp, Modifier.weight(1f))
-            StatCard("New", "$newCards", Icons.Default.FiberNew, Modifier.weight(1f))
-        }
-
-        HorizontalDivider()
-
-        // Detailed stats
-        Text("Details", style = MaterialTheme.typography.titleSmall)
-        StatRow("Suspended Cards", "$suspendedCards")
-        StatRow("Flagged Cards", "$flaggedCards")
-        StatRow("Average Interval", "${avgInterval}d")
-        StatRow("Average Ease", "${(avgEase * 100).toInt()}%")
-        StatRow("Retention Rate", "${(retention * 100).toInt()}%")
-
-        HorizontalDivider()
-
-        // Card distribution
-        Text("Card Distribution", style = MaterialTheme.typography.titleSmall)
-        val distribution = mapOf(
-            "New" to newCards.toFloat(),
-            "Learning" to learningCards.toFloat(),
-            "Mature" to matureCards.toFloat(),
-            "Suspended" to suspendedCards.toFloat()
-        )
-        distribution.forEach { (label, count) ->
-            val fraction = if (totalCards > 0) count / totalCards else 0f
-            Column {
-                Row(Modifier.fillMaxWidth()) {
-                    Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    Text("${count.toInt()}", style = MaterialTheme.typography.bodySmall)
-                }
-                Spacer(Modifier.height(2.dp))
-                LinearProgressIndicator(
-                    progress = { fraction },
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                    color = when (label) {
-                        "New" -> Color(0xFF7BC8FF)
-                        "Learning" -> Color(0xFFFF6B6B)
-                        "Mature" -> Color(0xFFC2FC8B)
-                        "Suspended" -> Color(0xFFB0B0B0)
-                        else -> MaterialTheme.colorScheme.primary
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
-    Card(modifier = modifier) {
-        Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(4.dp))
-            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun StatRow(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-    }
 }
 
 // ============================================

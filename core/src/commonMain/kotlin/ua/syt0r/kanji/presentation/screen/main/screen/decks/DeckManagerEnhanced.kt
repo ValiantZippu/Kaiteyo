@@ -49,8 +49,6 @@ enum class KaiteyoFeature(val displayName: String, val description: String, val 
         { Icon(Icons.Default.History, null) }),
     Statistics("Statistics", "Detailed analytics, charts, and per-deck stats",
         { Icon(Icons.Default.BarChart, null) }),
-    Heatmap("Heatmap", "GitHub-style contribution heatmap for study activity",
-        { Icon(Icons.Default.GridOn, null) }),
     Search("Search Engine", "Universal search across all card fields",
         { Icon(Icons.Default.Search, null) }),
     BulkActions("Bulk Actions", "Multi-select, tag, flag, delete, move, suspend, archive",
@@ -134,7 +132,6 @@ private fun KaiteyoFeature.toDestination(): MainDestination {
         KaiteyoFeature.KeyboardShortcuts -> MainDestination.KeyboardShortcuts
         KaiteyoFeature.StudyHistory -> MainDestination.StudyHistory
         KaiteyoFeature.Statistics -> MainDestination.StatisticsDashboard
-        KaiteyoFeature.Heatmap -> MainDestination.HeatmapView
         KaiteyoFeature.Search -> MainDestination.SearchEngine
         KaiteyoFeature.BulkActions -> MainDestination.BulkActions
         KaiteyoFeature.ImportExport -> MainDestination.ImportExport

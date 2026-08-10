@@ -75,7 +75,7 @@ IntelliJ IDEA is a powerful IDE (Integrated Development Environment) for Kotlin 
 
 ## First Steps
 
-1. Install Git (see `DEVELOPMENT_SETUP.md`)
+1. Install Git (see `../development/DEVELOPMENT_SETUP.md`)
 2. Install Java JDK 17
 3. Install VS Code
 4. Install VS Code extensions

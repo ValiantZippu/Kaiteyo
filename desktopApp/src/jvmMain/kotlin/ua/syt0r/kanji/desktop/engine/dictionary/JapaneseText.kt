@@ -43,10 +43,10 @@ object JapaneseText {
     ).distinctBy { it.first }
 
     /** True if a string contains any kana character. */
-    fun hasKana(text: String): Boolean = text.any { it in kanaRanges }
+    fun hasKana(text: String): Boolean = text.any { c -> kanaRanges.any { r -> c in r } }
 
     /** True if the string is pure kana (digits/punct allowed). */
-    fun isKana(text: String): Boolean = text.isNotEmpty() && text.all { !it.isLetter() || it in kanaRanges }
+    fun isKana(text: String): Boolean = text.isNotEmpty() && text.all { c -> !c.isLetter() || kanaRanges.any { r -> c in r } }
 
     /** True if a string is entirely latin (romaji) letters. */
     fun isRomaji(text: String): Boolean = text.isNotEmpty() && text.all { it.isLetter() && it.code < 128 }

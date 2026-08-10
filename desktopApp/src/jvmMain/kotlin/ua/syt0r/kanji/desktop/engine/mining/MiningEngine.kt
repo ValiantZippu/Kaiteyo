@@ -90,7 +90,7 @@ class MiningEngine(val state: AppState) {
 
     val sourceOptions: List<MiningSource> = MiningSource.entries
 
-    var draft by mutableStateOf(MiningPayload())
+    var draft by mutableStateOf(MiningPayload(headword = ""))
     var miningDialogOpen by mutableStateOf(false)
     var targetCardId by mutableStateOf<String?>(null)
 

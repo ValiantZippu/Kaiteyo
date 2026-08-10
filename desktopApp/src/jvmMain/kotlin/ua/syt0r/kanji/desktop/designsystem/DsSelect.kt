@@ -1,6 +1,9 @@
 package ua.syt0r.kanji.desktop.designsystem
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,9 +31,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.desktop.engine.settings.SettingCategory
 
@@ -52,6 +56,12 @@ fun <T> DsSelect(
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     var expanded by remember { mutableStateOf(false) }
+    // The chevron rotates smoothly when the menu opens/closes.
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f),
+        label = "selectChevron"
+    )
 
     Box(modifier = modifier) {
         Row(
@@ -59,6 +69,7 @@ fun <T> DsSelect(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(DsRadius.Sm))
                 .background(if (hovered) sc.surfaceInteractive else sc.surfaceElevated)
+                .border(1.dp, if (expanded) ac.primary.copy(alpha = 0.6f) else sc.border.copy(alpha = 0.4f), RoundedCornerShape(DsRadius.Sm))
                 .clickable(interactionSource = interaction, indication = null) { expanded = true }
                 .hoverable(interaction)
                 .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
@@ -78,8 +89,10 @@ fun <T> DsSelect(
             Icon(
                 Icons.Default.ArrowDropDown,
                 contentDescription = null,
-                tint = sc.textMuted,
-                modifier = Modifier.size(20.dp)
+                tint = if (expanded) ac.primary else sc.textMuted,
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = chevronRotation }
             )
         }
         DropdownMenu(

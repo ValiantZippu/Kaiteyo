@@ -72,8 +72,8 @@ private val bulkActionsList = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BulkActionsFullScreen(
-    cards: List<KaiteyoCard> = generateMockCards(50),
-    tags: List<CardTag> = generateMockTags(),
+    cards: List<KaiteyoCard>,
+    tags: List<CardTag>,
     onBulkOperation: (String, List<String>) -> Unit = { _, _ -> },
     onClose: () -> Unit = {}
 ) {
@@ -319,7 +319,11 @@ fun BulkActionsFullScreen(
 
     // Deck picker dialog
     if (showDeckPicker) {
+        val availableDecks = remember(cards) {
+            cards.map { it.deck }.filter { it.isNotBlank() }.distinct().sorted()
+        }
         DeckPickerDialog(
+            decks = availableDecks,
             surfaceColors = surfaceColors,
             accent = accent,
             onConfirm = { deckId ->
@@ -609,39 +613,43 @@ private fun FlagPickerDialog(
 
 @Composable
 private fun DeckPickerDialog(
+    decks: List<String>,
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val mockDecks = listOf(
-        "JLPT N5 Kanji", "JLPT N5 Vocabulary", "JLPT N4 Kanji",
-        "JLPT N4 Vocabulary", "Common Phrases", "Radicals", "Custom Deck"
-    )
-
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
         title = { Text("Select Destination Deck") },
         text = {
-            LazyColumn(Modifier.heightIn(max = 350.dp)) {
-                items(mockDecks) { deckName ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onConfirm(deckName) }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Folder,
-                            null,
-                            Modifier.size(20.dp),
-                            tint = accent.primary
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(deckName, color = surfaceColors.textPrimary)
+            if (decks.isEmpty()) {
+                Text(
+                    "No destination decks available.",
+                    color = surfaceColors.textMuted,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            } else {
+                LazyColumn(Modifier.heightIn(max = 350.dp)) {
+                    items(decks) { deckName ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onConfirm(deckName) }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Folder,
+                                null,
+                                Modifier.size(20.dp),
+                                tint = accent.primary
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(deckName, color = surfaceColors.textPrimary)
+                        }
                     }
                 }
             }

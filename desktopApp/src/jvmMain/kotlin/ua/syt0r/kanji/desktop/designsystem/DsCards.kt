@@ -16,6 +16,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,10 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — CARDS, LISTS, SKELETON
@@ -52,11 +60,19 @@ fun DsCard(
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val bg = if (elevated) sc.surfaceElevated else sc.surface
-    val border = if (onClick != null && hovered) accent().primary.copy(alpha = 0.4f) else sc.border.copy(alpha = 0.5f)
+    val shape = RoundedCornerShape(DsRadius.Lg)
+
+    // Interactive cards lift gently on hover; non-interactive stay flat.
+    val elevation by animateDpAsState(
+        targetValue = if (onClick != null && hovered) DsElevation.Raised else DsElevation.Flat,
+        animationSpec = tween(200),
+        label = "cardElevation"
+    )
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(DsRadius.Lg))
+            .shadow(elevation, shape)
+            .clip(shape)
             .background(bg)
             .then(
                 if (onClick != null) Modifier
@@ -185,6 +201,10 @@ fun DsChevron() {
 // SKELETON LOADING
 // ============================================
 
+/**
+ * Animated loading placeholder. Pulses gently between two surface tones so
+ * the UI feels alive while content loads. Honors reduced motion.
+ */
 @Composable
 fun DsSkeleton(
     modifier: Modifier = Modifier,
@@ -193,12 +213,23 @@ fun DsSkeleton(
     rounded: Boolean = true
 ) {
     val sc = surfaceColors()
+    val reducedMotion = LocalAnimationConfig.current.reducedMotion
+    val transition = rememberInfiniteTransition(label = "dsSkeleton")
+    val alpha by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (reducedMotion) 0 else 900),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dsSkeletonAlpha"
+    )
     Box(
         modifier = modifier
             .width(width)
             .height(height)
             .clip(RoundedCornerShape(if (rounded) DsRadius.Sm else DsRadius.Xs))
-            .background(sc.surfaceInteractive.copy(alpha = 0.7f))
+            .background(sc.surfaceInteractive.copy(alpha = if (reducedMotion) 0.6f else 0.35f + 0.4f * alpha))
     )
 }
 

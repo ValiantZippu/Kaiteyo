@@ -18,20 +18,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Unarchive
@@ -60,6 +66,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsPromptDialog
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
+import ua.syt0r.kanji.desktop.designsystem.DsSearchField
 import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsTagChip
@@ -67,6 +74,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsTextField
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 import ua.syt0r.kanji.desktop.model.CollectionDef
 import ua.syt0r.kanji.desktop.model.CollectionKind
 import ua.syt0r.kanji.desktop.model.SmartCollectionPresets
@@ -74,10 +82,19 @@ import ua.syt0r.kanji.desktop.model.ToastKind
 
 // ============================================
 // COLLECTIONS
-// Browse collections (manual + smart), inspect
-// contents, run reviews, pin/favorite/delete, and
-// create new collections from smart presets.
+// The library: browse collections (manual + smart,
+// nested folders), search + sort the list, run
+// reviews, pin/favorite/archive, duplicate, merge,
+// move into folders, bulk-select, and create new
+// collections from smart presets.
 // ============================================
+
+private enum class CollectionSortMode(val label: String) {
+    Name("Name"),
+    Size("Card count"),
+    Recent("Recently created"),
+    PinnedFirst("Pinned first")
+}
 
 @Composable
 fun CollectionsView(state: AppState) {
@@ -85,6 +102,13 @@ fun CollectionsView(state: AppState) {
     var createDialog by remember { mutableStateOf(false) }
     var smartDialog by remember { mutableStateOf(false) }
     var deleteId by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    var sortMode by remember { mutableStateOf(CollectionSortMode.Name) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(setOf<String>()) }
+    var mergeDialog by remember { mutableStateOf(false) }
+    var moveDialog by remember { mutableStateOf(false) }
+    var bulkDeleteConfirm by remember { mutableStateOf(false) }
 
     val selected = state.collections.collections.firstOrNull { it.id == selectedId }
 
@@ -92,7 +116,7 @@ fun CollectionsView(state: AppState) {
         // Left: list
         Column(
             modifier = Modifier
-                .width(280.dp)
+                .width(300.dp)
                 .fillMaxSize()
                 .padding(DsSpacing.Md)
         ) {
@@ -112,7 +136,105 @@ fun CollectionsView(state: AppState) {
                 DsIconButton(icon = Icons.Default.Add, onClick = { createDialog = true }, contentDescription = "New collection")
                 DsIconButton(icon = Icons.Default.Folder, onClick = { smartDialog = true }, contentDescription = "Smart preset")
             }
-            CollectionList(state, selectedId) { selectedId = it }
+            DsSearchField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = "Search collections…",
+                modifier = Modifier.padding(bottom = DsSpacing.Sm)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+            ) {
+                DsSelect(
+                    selected = sortMode,
+                    options = CollectionSortMode.entries.toList(),
+                    onSelected = { sortMode = it },
+                    labelOf = { it.label },
+                    modifier = Modifier.weight(1f)
+                )
+                DsIconButton(
+                    icon = if (selectionMode) Icons.Default.SelectAll else Icons.Default.CheckBoxOutlineBlank,
+                    onClick = {
+                        selectionMode = !selectionMode
+                        selectedIds = emptySet()
+                    },
+                    contentDescription = "Toggle selection mode",
+                    tint = if (selectionMode) accent().primary else Color.Unspecified
+                )
+            }
+            Spacer(Modifier.height(DsSpacing.Sm))
+            CollectionList(
+                state = state,
+                selectedId = selectedId,
+                onSelect = { selectedId = it },
+                searchQuery = searchQuery,
+                sortMode = sortMode,
+                selectionMode = selectionMode,
+                selectedIds = selectedIds,
+                onToggleSelect = { id ->
+                    selectedIds = if (id in selectedIds) selectedIds - id else selectedIds + id
+                }
+            )
+            if (selectionMode && selectedIds.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = DsSpacing.Sm)
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(surfaceColors().surfaceElevated)
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                ) {
+                    Text(
+                        text = "${selectedIds.size}",
+                        color = surfaceColors().textPrimary,
+                        fontSize = DsType.Label,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    DsButton(
+                        text = "Merge into…",
+                        icon = Icons.Default.MergeType,
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        onClick = { mergeDialog = true }
+                    )
+                    DsButton(
+                        text = "Move to…",
+                        icon = Icons.Default.DriveFileMove,
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        onClick = { moveDialog = true }
+                    )
+                    DsButton(
+                        text = "Archive",
+                        icon = Icons.Default.Archive,
+                        kind = DsButtonKind.Ghost,
+                        compact = true,
+                        onClick = {
+                            selectedIds.forEach { state.collections.toggleArchived(it) }
+                            state.toastHost.show("Archived ${selectedIds.size} collections", kind = ToastKind.Info)
+                            selectedIds = emptySet()
+                        }
+                    )
+                    DsButton(
+                        text = "Delete",
+                        icon = Icons.Default.Delete,
+                        kind = DsButtonKind.Danger,
+                        compact = true,
+                        onClick = { bulkDeleteConfirm = true }
+                    )
+                    DsButton(
+                        text = "Done",
+                        kind = DsButtonKind.Ghost,
+                        compact = true,
+                        onClick = { selectionMode = false; selectedIds = emptySet() }
+                    )
+                }
+            }
         }
 
         // Right: detail
@@ -129,7 +251,13 @@ fun CollectionsView(state: AppState) {
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                CollectionDetail(state, selected, onDelete = { deleteId = selected.id })
+                CollectionDetail(
+                    state = state,
+                    def = selected,
+                    onDelete = { deleteId = selected.id },
+                    onMerge = { mergeDialog = true; selectedIds = setOf(selected.id) },
+                    onMove = { moveDialog = true; selectedIds = setOf(selected.id) }
+                )
             }
         }
     }
@@ -146,7 +274,7 @@ fun CollectionsView(state: AppState) {
                 DsButton(text = "Cancel", kind = DsButtonKind.Ghost, onClick = { createDialog = false })
                 DsButton(text = "Create", enabled = name.isNotBlank(), onClick = {
                     state.collections.create(name.trim(), description.trim(), CollectionKind.Manual)
-                    state.activityLog.record(ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Deck, "Created collection $name")
+                    state.activityLog.record(ActivityCategory.Deck, "Created collection $name")
                     createDialog = false
                 })
             }
@@ -171,6 +299,22 @@ fun CollectionsView(state: AppState) {
         )
     }
 
+    if (mergeDialog) {
+        MergeDialog(
+            state = state,
+            sources = selectedIds.toList(),
+            onDismiss = { mergeDialog = false }
+        )
+    }
+
+    if (moveDialog) {
+        MoveDialog(
+            state = state,
+            targets = selectedIds.toList(),
+            onDismiss = { moveDialog = false }
+        )
+    }
+
     deleteId?.let { id ->
         val def = state.collections.collections.firstOrNull { it.id == id }
         DsConfirmDialog(
@@ -181,18 +325,164 @@ fun CollectionsView(state: AppState) {
             onConfirm = {
                 state.collections.delete(id)
                 if (selectedId == id) selectedId = null
-                state.activityLog.record(ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Deck, "Deleted collection ${def?.name}")
+                state.activityLog.record(ActivityCategory.Deck, "Deleted collection ${def?.name}")
             },
             onDismiss = { deleteId = null }
         )
     }
+
+    if (bulkDeleteConfirm) {
+        DsConfirmDialog(
+            title = "Delete ${selectedIds.size} collections?",
+            message = "Their cards are kept; only the collections are removed.",
+            confirmText = "Delete",
+            danger = true,
+            onConfirm = {
+                selectedIds.forEach { state.collections.delete(it) }
+                if (selectedId in selectedIds) selectedId = null
+                selectedIds = emptySet()
+                selectionMode = false
+                state.toastHost.show("Collections deleted", kind = ToastKind.Info)
+            },
+            onDismiss = { bulkDeleteConfirm = false }
+        )
+    }
 }
 
+// ============================================
+// MERGE DIALOG — fold one or more collections into a target
+// ============================================
+
 @Composable
-private fun CollectionList(state: AppState, selectedId: String?, onSelect: (String) -> Unit) {
+private fun MergeDialog(state: AppState, sources: List<String>, onDismiss: () -> Unit) {
+    val sc = surfaceColors()
+    val targets = state.collections.collections.filter { it.id !in sources }
+    DsDialog(title = "Merge into…", onDismiss = onDismiss) {
+        Text(
+            text = "Merge ${sources.size} collection(s) into a single target. The sources are removed after the merge.",
+            color = sc.textSecondary,
+            fontSize = DsType.Body
+        )
+        Spacer(Modifier.height(DsSpacing.Md))
+        if (targets.isEmpty()) {
+            Text("No other collections available.", color = sc.textMuted, fontSize = DsType.Body)
+        }
+        targets.forEach { target ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                    .clickable {
+                        val added = state.collections.merge(target.id, sources)
+                        state.activityLog.record(ActivityCategory.Deck, "Merged ${sources.size} collections into ${target.name}")
+                        state.toastHost.show("Merged into '${target.name}' (+$added cards)", kind = ToastKind.Success)
+                        onDismiss()
+                    }
+                    .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(target.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                DsBadge(text = target.kind.name, tint = if (target.kind == CollectionKind.Smart) Color(0xFFA78BFA) else sc.textMuted)
+            }
+        }
+    }
+}
+
+// ============================================
+// MOVE DIALOG — reparent one or more collections into a folder
+// ============================================
+
+@Composable
+private fun MoveDialog(state: AppState, targets: List<String>, onDismiss: () -> Unit) {
     val sc = surfaceColors()
     val ac = accent()
-    val roots = state.collections.childrenOf(null).filter { !it.archived }
+    val parents = state.collections.collections.filter { it.id !in targets }
+    DsDialog(title = "Move to folder…", onDismiss = onDismiss) {
+        Text(
+            text = "Move ${targets.size} collection(s) under a folder (or the root).",
+            color = sc.textSecondary,
+            fontSize = DsType.Body
+        )
+        Spacer(Modifier.height(DsSpacing.Md))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(DsRadius.Md))
+                .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                .clickable {
+                    targets.forEach { state.collections.move(it, null) }
+                    state.toastHost.show("Moved to root", kind = ToastKind.Success)
+                    onDismiss()
+                }
+                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Folder, null, tint = sc.textSecondary, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(DsSpacing.Sm))
+            Text("Root (no folder)", color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
+        }
+        parents.forEach { parent ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                    .clickable {
+                        targets.forEach { state.collections.move(it, parent.id) }
+                        state.toastHost.show("Moved under '${parent.name}'", kind = ToastKind.Success)
+                        onDismiss()
+                    }
+                    .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.DriveFileMove, null, tint = ac.primary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(DsSpacing.Sm))
+                Text(parent.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                DsBadge(text = parent.kind.name.take(5), tint = sc.textMuted)
+            }
+        }
+    }
+}
+
+// ============================================
+// COLLECTION LIST
+// ============================================
+
+@Composable
+private fun CollectionList(
+    state: AppState,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+    searchQuery: String,
+    sortMode: CollectionSortMode,
+    selectionMode: Boolean,
+    selectedIds: Set<String>,
+    onToggleSelect: (String) -> Unit
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+
+    fun matches(def: CollectionDef): Boolean =
+        searchQuery.isBlank() ||
+            def.name.contains(searchQuery, ignoreCase = true) ||
+            def.description.contains(searchQuery, ignoreCase = true)
+
+    fun sorted(defs: List<CollectionDef>): List<CollectionDef> {
+        val bySize = { def: CollectionDef -> state.collections.resolveCards(def, state.cards.toList()).size }
+        return when (sortMode) {
+            CollectionSortMode.Name -> defs.sortedBy { it.name.lowercase() }
+            CollectionSortMode.Size -> defs.sortedByDescending { bySize(it) }
+            CollectionSortMode.Recent -> defs.sortedByDescending { it.createdAt }
+            CollectionSortMode.PinnedFirst -> defs.sortedWith(
+                compareByDescending<CollectionDef> { it.pinned }
+                    .thenByDescending { it.favorite }
+                    .thenBy { it.name.lowercase() }
+            )
+        }
+    }
+
+    val roots = sorted(state.collections.childrenOf(null).filter { !it.archived && matches(it) })
     val archived = state.collections.archived()
 
     LazyColumn(
@@ -201,7 +491,7 @@ private fun CollectionList(state: AppState, selectedId: String?, onSelect: (Stri
     ) {
         items(roots.size, key = { roots[it].id }) { index ->
             val def = roots[index]
-            val children = state.collections.childrenOf(def.id).filter { !it.archived }
+            val children = state.collections.childrenOf(def.id).filter { !it.archived && matches(it) }
             val cardsIn = state.collections.resolveCards(def, state.cards.toList())
             val interaction = remember { MutableInteractionSource() }
             val hovered by interaction.collectIsHoveredAsState()
@@ -224,6 +514,10 @@ private fun CollectionList(state: AppState, selectedId: String?, onSelect: (Stri
                         .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (selectionMode) {
+                        CollectionCheckbox(def.id in selectedIds) { onToggleSelect(def.id) }
+                        Spacer(Modifier.width(DsSpacing.Xs))
+                    }
                     if (def.pinned) {
                         Icon(Icons.Default.PushPin, null, tint = ac.primary, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
@@ -253,6 +547,10 @@ private fun CollectionList(state: AppState, selectedId: String?, onSelect: (Stri
                             .padding(start = DsSpacing.Xl, end = DsSpacing.Md, top = DsSpacing.Sm, bottom = DsSpacing.Sm),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        if (selectionMode) {
+                            CollectionCheckbox(child.id in selectedIds) { onToggleSelect(child.id) }
+                            Spacer(Modifier.width(DsSpacing.Xs))
+                        }
                         Text(
                             text = "└  ${child.name}",
                             color = if (child.id == selectedId) ac.primary else sc.textSecondary,
@@ -311,7 +609,27 @@ private fun CollectionList(state: AppState, selectedId: String?, onSelect: (Stri
 }
 
 @Composable
-private fun CollectionDetail(state: AppState, def: CollectionDef, onDelete: () -> Unit) {
+private fun CollectionCheckbox(checked: Boolean, onClick: () -> Unit) {
+    val sc = surfaceColors()
+    val ac = accent()
+    Icon(
+        imageVector = if (checked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+        contentDescription = if (checked) "Selected" else "Not selected",
+        tint = if (checked) ac.primary else sc.textMuted,
+        modifier = Modifier
+            .size(18.dp)
+            .clickable(onClick = onClick)
+    )
+}
+
+@Composable
+private fun CollectionDetail(
+    state: AppState,
+    def: CollectionDef,
+    onDelete: () -> Unit,
+    onMerge: () -> Unit,
+    onMove: () -> Unit
+) {
     val sc = surfaceColors()
     val ac = accent()
     val cards = state.collections.resolveCards(def, state.cards.toList())
@@ -412,6 +730,20 @@ private fun CollectionDetail(state: AppState, def: CollectionDef, onDelete: () -
                         compact = true
                     )
                     DsButton(
+                        text = "Merge into…",
+                        icon = Icons.Default.MergeType,
+                        kind = DsButtonKind.Secondary,
+                        onClick = onMerge,
+                        compact = true
+                    )
+                    DsButton(
+                        text = "Move to…",
+                        icon = Icons.Default.DriveFileMove,
+                        kind = DsButtonKind.Secondary,
+                        onClick = onMove,
+                        compact = true
+                    )
+                    DsButton(
                         text = "Export",
                         icon = Icons.Default.FileDownload,
                         kind = DsButtonKind.Secondary,
@@ -495,7 +827,7 @@ private fun CollectionDetail(state: AppState, def: CollectionDef, onDelete: () -
                 DsButton(text = "Cancel", kind = DsButtonKind.Ghost, onClick = { editOpen = false })
                 DsButton(text = "Save", enabled = editName.isNotBlank(), onClick = {
                     state.collections.update(def.copy(name = editName.trim(), description = editDescription.trim()))
-                    state.activityLog.record(ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Deck, "Edited collection ${def.name}")
+                    state.activityLog.record(ActivityCategory.Deck, "Edited collection ${def.name}")
                     editOpen = false
                 })
             }

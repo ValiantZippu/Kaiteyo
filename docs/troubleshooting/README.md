@@ -37,7 +37,7 @@ Use a status of `Open`, `Investigating`, `Solved`, `Won't Fix`, or `Deferred` in
 - [Fresh Setup](../setup/FreshSetup.md)
 - [First Build](../setup/FirstBuild.md)
 - [Required Software](../setup/RequiredSoftware.md)
-- [Command Library](../Commands.md)
+- [Command Library](../development/COMMANDS.md)
 - [Git Guide](../guides/GIT_GUIDE.md)
 - [Build History](../maintenance/VersionHistory.md)
 - [Known Limitations](../maintenance/KnownLimitations.md)

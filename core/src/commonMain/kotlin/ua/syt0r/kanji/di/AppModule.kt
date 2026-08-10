@@ -2,6 +2,7 @@ package ua.syt0r.kanji.di
 
 import org.koin.core.module.Module
 import ua.syt0r.kanji.core.coreModule
+import ua.syt0r.kanji.core.transfer.importExportModule
 import ua.syt0r.kanji.presentation.screen.main.mainScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.about.aboutScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.daily_limit.dailyLimitScreenModule
@@ -15,7 +16,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashbo
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.letters_dashboard.lettersDashboardScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.searchScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.settingsScreenModule
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.stats.statsScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.vocabDashboardScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.letterPracticeScreenModule
@@ -31,7 +31,6 @@ private val screenModules = listOf(
     generalDashboardScreenModule,
     lettersDashboardScreenModule,
     vocabDashboardScreenModule,
-    statsScreenModule,
     searchScreenModule,
     settingsScreenModule,
     aboutScreenModule,
@@ -50,5 +49,6 @@ private val screenModules = listOf(
 
 val appModules: List<Module> = screenModules + listOf(
     coreModule,
+    importExportModule,
     platformComponentsModule
 )

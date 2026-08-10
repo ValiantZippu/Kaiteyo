@@ -179,9 +179,13 @@ fun defaultShortcuts(): List<ShortcutDef> = listOf(
     ShortcutDef("open-dashboard", "Dashboard", ShortcutCategory.Navigation, KeyChord("1", alt = true), "Open dashboard"),
     ShortcutDef("open-browser", "Browser", ShortcutCategory.Navigation, KeyChord("2", alt = true), "Open browser"),
     ShortcutDef("open-review", "Review", ShortcutCategory.Navigation, KeyChord("3", alt = true), "Open review"),
+    ShortcutDef("open-writing", "Writing Practice", ShortcutCategory.Navigation, KeyChord("5", alt = true), "Open kanji writing practice"),
+    ShortcutDef("open-grammar", "Grammar Practice", ShortcutCategory.Navigation, KeyChord("6", alt = true), "Open grammar practice"),
+    ShortcutDef("open-library", "Library", ShortcutCategory.Navigation, KeyChord("l", ctrl = true, shift = true), "Open the deck library"),
     ShortcutDef("open-stats", "Statistics", ShortcutCategory.Navigation, KeyChord("4", alt = true), "Open statistics"),
     ShortcutDef("open-settings", "Settings", ShortcutCategory.Navigation, KeyChord("comma", ctrl = true), "Open settings"),
     ShortcutDef("open-themes", "Theme Studio", ShortcutCategory.Navigation, KeyChord("t", ctrl = true), "Open theme studio"),
     ShortcutDef("open-history", "Activity Log", ShortcutCategory.Navigation, KeyChord("y", ctrl = true), "Open activity log"),
-    ShortcutDef("open-transfer", "Import / Export", ShortcutCategory.Navigation, KeyChord("i", ctrl = true), "Open import/export")
+    ShortcutDef("open-transfer", "Import / Export", ShortcutCategory.Navigation, KeyChord("i", ctrl = true), "Open import/export"),
+    ShortcutDef("toggle-nav", "Toggle Navigation", ShortcutCategory.App, KeyChord("n", ctrl = true, shift = true), "Cycle navigation through expanded / compact / bubble modes")
 )

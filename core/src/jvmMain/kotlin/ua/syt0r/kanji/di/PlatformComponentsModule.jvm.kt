@@ -7,6 +7,9 @@ import org.koin.dsl.module
 import ua.syt0r.kanji.JvmMainBuildConfig
 import ua.syt0r.kanji.core.app_data.AppDataDatabaseProvider
 import ua.syt0r.kanji.core.app_data.JvmAppDataDatabaseProvider
+import ua.syt0r.kanji.core.file.PlatformFile
+import ua.syt0r.kanji.core.transfer.AnkiPackage
+import java.io.File
 import ua.syt0r.kanji.core.backup.BackupArchiveHandler
 import ua.syt0r.kanji.core.backup.JvmBackupArchiveHandler
 import ua.syt0r.kanji.core.file.JvmPlatformFileHandler
@@ -27,8 +30,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.account.AccountScreenContr
 import ua.syt0r.kanji.presentation.screen.main.screen.account.JvmAccountScreenContent
 import ua.syt0r.kanji.presentation.screen.main.screen.account.JvmAccountScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.account.JvmAccountScreenViewModel
-import ua.syt0r.kanji.presentation.screen.main.screen.sponsor.JvmSponsorScreenContent
-import ua.syt0r.kanji.presentation.screen.main.screen.sponsor.SponsorScreenContract
 
 
 actual val platformComponentsModule: Module = module {
@@ -70,8 +71,10 @@ actual val platformComponentsModule: Module = module {
 
     factory<BackupArchiveHandler> { JvmBackupArchiveHandler() }
 
+    factory<PlatformFile> { PlatformFile(File(".")) }
+    single<AnkiPackage> { AnkiPackage() }
+
     backupScreenComponents()
-    single<SponsorScreenContract.Content> { JvmSponsorScreenContent }
     single<AccountScreenContract.Content> { JvmAccountScreenContent }
     multiplatformViewModel<JvmAccountScreenContract.ViewModel> {
         JvmAccountScreenViewModel(

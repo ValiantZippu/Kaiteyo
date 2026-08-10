@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,14 @@ fun DictionaryManagerView(state: AppState) {
     var importError by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<InstalledDictionary?>(null) }
     var showSearch by remember { mutableStateOf(false) }
+    var selectedGroup by remember { mutableStateOf<String?>(null) }
+    var filterQuery by remember { mutableStateOf("") }
+
+    // When navigated here from an entry detail page (dictionary lookup),
+    // reveal the lookup panel pre-filled with the requested term.
+    LaunchedEffect(Unit) {
+        if (state.dictionary.query.isNotBlank()) showSearch = true
+    }
 
     Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
         DsSectionHeader(

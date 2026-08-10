@@ -54,7 +54,11 @@ import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.errorColor
+import ua.syt0r.kanji.desktop.designsystem.infoColor
+import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.engine.history.ActivityFormatters
 import ua.syt0r.kanji.desktop.engine.stats.DayActivity
 import ua.syt0r.kanji.desktop.engine.stats.DayActivityEngine
@@ -349,7 +353,7 @@ fun DayDetailDialog(
                             if (collectionsHit.isEmpty()) {
                                 DsBadge(text = "No collections", tint = sc.textMuted)
                             } else {
-                                collectionsHit.forEach { name -> DsBadge(text = name, tint = Color(0xFF7BC8FF)) }
+                                collectionsHit.forEach { name -> DsBadge(text = name, tint = infoColor()) }
                             }
                         }
                     }
@@ -423,10 +427,10 @@ private fun DayStat(label: String, value: String, modifier: Modifier = Modifier)
 private fun RatingPanel(breakdown: RatingBreakdown) {
     val sc = surfaceColors()
     val ratings = listOf(
-        ReviewRating.Again to Color(0xFFFF6B6B),
-        ReviewRating.Hard to Color(0xFFFEAB57),
-        ReviewRating.Good to Color(0xFF7BC8FF),
-        ReviewRating.Easy to Color(0xFFC2FC8B)
+        ReviewRating.Again to errorColor(),
+        ReviewRating.Hard to warningColor(),
+        ReviewRating.Good to infoColor(),
+        ReviewRating.Easy to successColor()
     )
     val max = maxOf(1, breakdown.total)
     Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {

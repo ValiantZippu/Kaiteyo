@@ -51,8 +51,9 @@ object JapaneseStrings : Strings {
     override val about: AboutStrings = JapaneseAboutStrings
     override val backup: BackupStrings = JapaneseBackupStrings
     override val feedback: FeedbackStrings = JapaneseFeedbackStrings
-    override val sponsor: SponsorStrings = JapaneseSponsorStrings
+
     override val account: AccountScreenStrings = JapaneseAccountScreenStrings
+    override val credits: CreditsStrings = JapaneseCreditsStrings
     override val sync: SyncScreenStrings = JapaneseSyncScreenStrings
     override val syncDialog: SyncDialogStrings = JapaneseSyncDialogStrings
     override val syncSnackbar: SyncSnackbarStrings = JapaneseSyncSnackbarStrings
@@ -84,10 +85,49 @@ object JapaneseNavStrings : NavStrings {
     override val decksLabel: String = "デッキ"
     override val textAnalysisLabel: String = "テキスト解析"
     override val appearanceLabel: String = "外観"
-    override val sponsorLabel: String = "スポンサー"
     override val aboutLabel: String = JapaneseAboutStrings.title
+    override val accountLabel: String = "アカウント"
     override val backupLabel: String = JapaneseBackupStrings.title
     override val syncLabel: String = JapaneseSyncScreenStrings.title
+    override val creditsLabel: String = JapaneseCreditsStrings.title
+    override val modeExpandedTooltip: String = "サイドバー表示"
+    override val modeCompactTooltip: String = "コンパクト表示"
+    override val modeBubbleTooltip: String = "フローティングランチャー"
+    override val placementLabel: String = "配置"
+    override val settingsLabel: String = "ナビゲーション設定"
+    override val kanjiBrowserLabel: String = "漢字ブラウザ"
+
+    override val quickAccessLabel: String = "クイックアクセス"
+    override val homeLabel: String = "ホーム"
+    override val libraryLabel: String = JapaneseHomeStrings.libraryTabLabel
+    override val studyLabel: String = "学習"
+    override val dictionaryLabel: String = "辞書"
+    override val statisticsLabel: String = JapaneseHomeStrings.statsTabLabel
+    override val collectionsLabel: String = "コレクション"
+
+    override val generalTabLabel: String = "一般"
+    override val sidebarTabLabel: String = "サイドバー"
+    override val bubbleTabLabel: String = "バブル"
+    override val phoneTabLabel: String = "スマホ"
+    override val accessibilityTabLabel: String = "アクセシビリティ"
+
+    override val expandedWidthLabel: String = "展開時の幅"
+    override val sidebarIconSizeLabel: String = "アイコンサイズ"
+    override val compactSpacingLabel: String = "コンパクト時の間隔"
+    override val labelsVisibilityLabel: String = "ラベル表示"
+
+    override val bubbleIconSizeLabel: String = "アイコンサイズ"
+
+    override val phoneNavPositionLabel: String = "ナビゲーション位置"
+    override val phoneLauncherPositionLabel: String = "ランチャー位置"
+    override val phoneStoredSeparatelyHint: String =
+        "スマホの設定はデスクトップ・タブレットとは別に保存されます"
+
+    override val defaultModeLabel: String = "デフォルトモード"
+    override val rememberPreviousModeLabel: String = "前回のモードを記憶"
+    override val enableAnimationsLabel: String = "アニメーションを有効化"
+
+    override val openNavigationSettingsLabel: String = "ナビゲーション設定を開く"
 }
 
 object JapaneseHomeStrings : HomeStrings {
@@ -289,14 +329,46 @@ object JapaneseReminderDialogStrings : ReminderDialogStrings {
 
 object JapaneseAboutStrings : AboutStrings {
     override val title: String = "このアプリについて"
+    override val appTitle: String = "アプリケーション"
+    override val projectTitle: String = "プロジェクト"
+    override val developmentTitle: String = "開発"
+    override val legalTitle: String = "法的情報"
     override val version: (versionName: String) -> String = { "バージョン: $it" }
+    override val buildNumber: (buildNumber: String) -> String = { "ビルド: $it" }
+    override val projectDescription: String =
+        "Kaiteyoは、Compose Multiplatformで構築された、クロスプラットフォーム対応の日本語学習アプリです。"
+
+    override val philosophyTitle: String = "哲学"
+    override val philosophyText: String =
+        "デスクトップ第一、craftを重視、オフライン優先、オープンソース、ゲーミフィケーションなし"
+
+    override val missionTitle: String = "ミッション"
+    override val missionText: String =
+        "デスクトップで最も洗練された日本語学習体験を提供する。明瞭さ、レスポンシブ、滑らかなモーションに焦点を当てる。"
+
     override val githubTitle: String = "プロジェクトのGitHubページ"
+    override val githubDescription: String = "ソースコード、バグ報告、議論"
+    override val documentationTitle: String = "ドキュメント"
+    override val documentationDescription: String = "ガイド、アーキテクチャ、開発者向けドキュメント"
+    override val websiteTitle: String = "ウェブサイト"
+    override val websiteDescription: String = "プロジェクトホームページとデモ"
+
+    override val changelogTitle: String = "変更履歴"
+    override val changelogDescription: String = "リリース履歴と主な変更点"
+    override val roadmapTitle: String = "ロードマップ"
+    override val roadmapDescription: String = "今後の機能とマイルストーン"
+
+    override val creditsTitle: String = "クレジット"
+    override val creditsDescription: String = "コントリビューター、翻訳者、デザイナー、ライブラリ"
+
+    override val licenseTitle: String = "ライセンス"
+    override val licenseDescription: String = "MITライセンス"
+    override val openSourceTitle: String = "オープンソース"
+    override val openSourceDescription: String = "サードパーティライブラリとデータソース"
+
     override val versionChangesTitle: String = "変更履歴"
     override val versionChangesDescription: String = "アプリの変更履歴"
     override val versionChangesButton: String = "閉じる"
-    override val githubDescription: String = "ソースコード、バグ報告、議論"
-    override val creditsTitle: String = "クレジット"
-    override val creditsDescription: String = "使用されるライブラリとデータソース"
 }
 
 object JapaneseBackupStrings : BackupStrings {
@@ -325,7 +397,54 @@ object JapaneseFeedbackStrings : FeedbackStrings by EnglishFeedbackStrings {
     override val errorMessage: (String?) -> String = { "エラー: $it" }
 }
 
-object JapaneseSponsorStrings : SponsorStrings by EnglishSponsorStrings
+object JapaneseAccountScreenStrings : AccountScreenStrings {
+    override val title = "アカウント"
+    override val profileSection = "プロフィール"
+    override val usernameLabel = "ユーザー名"
+    override val avatarLabel = "アバター"
+    override val localProfileLabel = "ローカルプロファイル"
+    override val applicationSection = "アプリケーション"
+    override val syncStatusLabel = "同期ステータス"
+    override val localStorageUsageLabel = "ローカルストレージ"
+    override val databaseInfoLabel = "データベース"
+    override val cacheLabel = "キャッシュ"
+    override val backupsLabel = "バックアップ"
+    override val studySection = "学習"
+    override val currentStreakLabel = "現在のストリーク"
+    override val lifetimeReviewsLabel = "総復習数"
+    override val cardsLearnedLabel = "習得カード数"
+    override val totalStudyTimeLabel = "総学習時間"
+    override val connectedServicesSection = "接続サービス"
+    override val githubServiceLabel = "GitHub"
+    override val syncServiceLabel = "同期"
+    override val dictionariesServiceLabel = "辞書"
+    override val pluginsServiceLabel = "プラグイン"
+    override val loggedOutMessage = "ログインしていません"
+    override val signInButton = "ログイン"
+    override val signOutButton = "ログアウト"
+    override val emailTitle = "メールアドレス"
+    override val issueNoConnectionTitle = "接続なし"
+    override val issueNoConnectionMessage = "キャッシュされたデータを表示中"
+    override val issueNoSubscriptionTitle = "サブスクリプションが有効ではありません"
+    override val issueNoSubscriptionMessage = "同期にはサブスクリプションが必要です"
+    override val issueSessionExpiredTitle = "セッションの有効期限が切れました"
+    override val issueSessionExpiredMessage = "再ログインするにはクリックしてください"
+    override val issueOtherTitle = "エラー"
+    override val issueOtherMessageFallback = "不明なエラー"
+}
+
+object JapaneseCreditsStrings : CreditsStrings {
+    override val title: String = "クレジット"
+    override val coreDevelopmentTitle: String = "コア開発"
+    override val contributorsTitle: String = "コントリビューター"
+    override val designTitle: String = "デザイン"
+    override val translationsTitle: String = "翻訳"
+    override val openSourceLibrariesTitle: String = "オープンソースライブラリ"
+    override val specialThanksTitle: String = "スペシャルサンクス"
+    override val licenseTitle: String = "ライセンス"
+    override val licenseDescription: String = "KaiteyoはMITライセンスの下でリリースされているオープンソースソフトウェアです。"
+    override val closeButton: String = "閉じる"
+}
 
 object JapaneseDeckPickerStrings : DeckPickerStrings {
 
@@ -664,27 +783,6 @@ object JapaneseReminderNotificationStrings : ReminderNotificationStrings {
     override val message: (Int, Int) -> String = { new, due ->
         "今日は未習うカードが${new}枚、復習するカードが${due}枚あります"
     }
-}
-
-object JapaneseAccountScreenStrings : AccountScreenStrings {
-    override val title = "アカウント"
-    override val loggedOutMessage = "ログインしていません"
-    override val signInButton = "ログイン"
-    override val signOutButton = "ログアウト"
-    override val emailTitle = "メールアドレス"
-    override val subscriptionTitle = "サブスクリプション"
-    override val subscriptionStatusActive = "アクティブ"
-    override val subscriptionStatusExpired = "期限切れ"
-    override val subscriptionStatusInactive = "非アクティブ"
-    override val subscriptionValidUntilTemplate = "有効期限: %s"
-    override val issueNoConnectionTitle = "接続なし"
-    override val issueNoConnectionMessage = "キャッシュされたデータを表示中"
-    override val issueSessionExpiredTitle = "セッションの有効期限が切れました"
-    override val issueSessionExpiredMessage = "再ログインするにはクリックしてください"
-    override val issueSubscriptionOutdatedTitle = "サブスクリプションの状態が古いです"
-    override val issueSubscriptionOutdatedMessage = "更新するにはクリックしてください"
-    override val issueOtherTitle = "エラー"
-    override val issueOtherMessageFallback = "不明なエラー"
 }
 
 object JapaneseSyncScreenStrings : SyncScreenStrings {

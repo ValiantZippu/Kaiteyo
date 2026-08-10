@@ -45,6 +45,18 @@ filelist.txt
 *_build.txt
 *_build*.txt
 
+# Local agent/editor scratch files left at the project root
+compile_baseline*.txt
+core_build2.txt
+orig_theme*
+*_orig.txt
+theme_diff.txt
+check_lines.ps1
+
+# JVM crash dumps
+hs_err_pid*.log
+replay_pid*.log
+
 # Android Studio Navigation editor temp files
 .navigation/
 
@@ -114,3 +126,12 @@ lint/tmp/
 google-services.json
 app/linux/**
 .DS_Store
+# AI-session scratch artifacts (build logs, crash dumps, backups)
+scratch/
+
+# AI tooling workspace state
+.freebuff/
+
+# Python bytecode
+__pycache__/
+*.pyc

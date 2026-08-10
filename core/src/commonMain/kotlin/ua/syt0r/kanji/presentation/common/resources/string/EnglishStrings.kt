@@ -53,9 +53,9 @@ object EnglishStrings : Strings {
     override val about: AboutStrings = EnglishAboutStrings
     override val backup: BackupStrings = EnglishBackupStrings
     override val feedback: FeedbackStrings = EnglishFeedbackStrings
-    override val sponsor: SponsorStrings = EnglishSponsorStrings
 
     override val account: AccountScreenStrings = EnglishAccountScreenStrings
+    override val credits: CreditsStrings = EnglishCreditsStrings
     override val sync: SyncScreenStrings = EnglishSyncScreenStrings
     override val syncDialog: SyncDialogStrings = EnglishSyncDialogStrings
     override val syncSnackbar: SyncSnackbarStrings = EnglishSyncSnackbarStrings
@@ -87,10 +87,49 @@ object EnglishNavStrings : NavStrings {
     override val decksLabel: String = "Decks"
     override val textAnalysisLabel: String = "Text Analysis"
     override val appearanceLabel: String = "Appearance"
-    override val sponsorLabel: String = "Sponsor"
     override val aboutLabel: String = EnglishAboutStrings.title
+    override val accountLabel: String = "Account"
     override val backupLabel: String = EnglishBackupStrings.title
     override val syncLabel: String = EnglishSyncScreenStrings.title
+    override val creditsLabel: String = EnglishCreditsStrings.title
+    override val modeExpandedTooltip: String = "Full sidebar"
+    override val modeCompactTooltip: String = "Compact sidebar"
+    override val modeBubbleTooltip: String = "Floating launcher"
+    override val placementLabel: String = "Placement"
+    override val settingsLabel: String = "Navigation settings"
+    override val kanjiBrowserLabel: String = "Kanji Browser"
+
+    override val quickAccessLabel: String = "Quick Access"
+    override val homeLabel: String = "Home"
+    override val libraryLabel: String = EnglishHomeStrings.libraryTabLabel
+    override val studyLabel: String = "Study"
+    override val dictionaryLabel: String = "Dictionary"
+    override val statisticsLabel: String = EnglishHomeStrings.statsTabLabel
+    override val collectionsLabel: String = "Collections"
+
+    override val generalTabLabel: String = "General"
+    override val sidebarTabLabel: String = "Sidebar"
+    override val bubbleTabLabel: String = "Bubble"
+    override val phoneTabLabel: String = "Phone"
+    override val accessibilityTabLabel: String = "Accessibility"
+
+    override val expandedWidthLabel: String = "Expanded width"
+    override val sidebarIconSizeLabel: String = "Icon size"
+    override val compactSpacingLabel: String = "Compact item spacing"
+    override val labelsVisibilityLabel: String = "Labels"
+
+    override val bubbleIconSizeLabel: String = "Icon size"
+
+    override val phoneNavPositionLabel: String = "Navigation position"
+    override val phoneLauncherPositionLabel: String = "Launcher position"
+    override val phoneStoredSeparatelyHint: String =
+        "Phone settings are stored separately from desktop and tablet"
+
+    override val defaultModeLabel: String = "Default mode"
+    override val rememberPreviousModeLabel: String = "Remember previous mode"
+    override val enableAnimationsLabel: String = "Enable animations"
+
+    override val openNavigationSettingsLabel: String = "Open Navigation Settings"
 }
 
 object EnglishHomeStrings : HomeStrings {
@@ -297,14 +336,95 @@ object EnglishReminderDialogStrings : ReminderDialogStrings {
 
 object EnglishAboutStrings : AboutStrings {
     override val title: String = "About"
+    override val appTitle: String = "Application"
+    override val projectTitle: String = "Project"
+    override val developmentTitle: String = "Development"
+    override val legalTitle: String = "Legal"
     override val version: (versionName: String) -> String = { "Version: $it" }
+    override val buildNumber: (buildNumber: String) -> String = { "Build: $it" }
+    override val projectDescription: String =
+        "Kaiteyo is a premium, cross-platform Japanese language learning application built with Compose Multiplatform."
+
+    override val philosophyTitle: String = "Philosophy"
+    override val philosophyText: String =
+        "Desktop first, craft over features, offline by default, open source, no gamification."
+
+    override val missionTitle: String = "Mission"
+    override val missionText: String =
+        "To build the most polished and effective Japanese learning experience on desktop, with a focus on clarity, responsiveness, and smooth motion."
+
+    override val githubTitle: String = "GitHub"
+    override val githubDescription: String = "Source code, bug reports, discussions"
+    override val documentationTitle: String = "Documentation"
+    override val documentationDescription: String = "Guides, architecture, and development docs"
+    override val websiteTitle: String = "Website"
+    override val websiteDescription: String = "Project homepage and showcase"
+
+    override val changelogTitle: String = "Changelog"
+    override val changelogDescription: String = "Release history and notable changes"
+    override val roadmapTitle: String = "Roadmap"
+    override val roadmapDescription: String = "Upcoming features and milestones"
+
+    override val creditsTitle: String = "Credits"
+    override val creditsDescription: String = "Contributors, translators, designers, and libraries"
+
+    override val licenseTitle: String = "License"
+    override val licenseDescription: String = "MIT license — see full text"
+    override val openSourceTitle: String = "Open Source"
+    override val openSourceDescription: String = "Third-party libraries and data sources"
+
     override val versionChangesTitle: String = "Version Changes"
     override val versionChangesDescription: String = "App changes history"
     override val versionChangesButton: String = "Close"
-    override val githubTitle: String = "GitHub"
-    override val githubDescription: String = "Source code, bug reports, discussions"
-    override val creditsTitle: String = "Credits"
-    override val creditsDescription: String = "Used libraries and data sources"
+}
+
+object EnglishAccountScreenStrings : AccountScreenStrings {
+    override val title = "Account"
+    override val profileSection = "Profile"
+    override val usernameLabel = "Username"
+    override val avatarLabel = "Avatar"
+    override val localProfileLabel = "Local Profile"
+    override val applicationSection = "Application"
+    override val syncStatusLabel = "Sync Status"
+    override val localStorageUsageLabel = "Local Storage"
+    override val databaseInfoLabel = "Database"
+    override val cacheLabel = "Cache"
+    override val backupsLabel = "Backups"
+    override val studySection = "Study"
+    override val currentStreakLabel = "Current Streak"
+    override val lifetimeReviewsLabel = "Lifetime Reviews"
+    override val cardsLearnedLabel = "Cards Learned"
+    override val totalStudyTimeLabel = "Total Study Time"
+    override val connectedServicesSection = "Connected Services"
+    override val githubServiceLabel = "GitHub"
+    override val syncServiceLabel = "Sync"
+    override val dictionariesServiceLabel = "Dictionaries"
+    override val pluginsServiceLabel = "Plugins"
+    override val loggedOutMessage = "Signed out"
+    override val signInButton = "Sign In"
+    override val signOutButton = "Sign Out"
+    override val emailTitle = "E-mail"
+    override val issueNoConnectionTitle = "No Connection"
+    override val issueNoConnectionMessage = "Showing cached data"
+    override val issueNoSubscriptionTitle = "Subscription Not Active"
+    override val issueNoSubscriptionMessage = "Subscription is required for sync"
+    override val issueSessionExpiredTitle = "Session Expired"
+    override val issueSessionExpiredMessage = "Click to sign in again"
+    override val issueOtherTitle = "Error"
+    override val issueOtherMessageFallback = "Unknown error"
+}
+
+object EnglishCreditsStrings : CreditsStrings {
+    override val title: String = "Credits"
+    override val coreDevelopmentTitle: String = "Core Development"
+    override val contributorsTitle: String = "Contributors"
+    override val designTitle: String = "Design"
+    override val translationsTitle: String = "Translations"
+    override val openSourceLibrariesTitle: String = "Open Source Libraries"
+    override val specialThanksTitle: String = "Special Thanks"
+    override val licenseTitle: String = "License"
+    override val licenseDescription: String = "Kaiteyo is open-source software released under the MIT license."
+    override val closeButton: String = "Close"
 }
 
 object EnglishBackupStrings : BackupStrings {
@@ -342,17 +462,6 @@ object EnglishFeedbackStrings : FeedbackStrings {
     override val button: String = "Send"
     override val successMessage: String = "Feedback sent"
     override val errorMessage: (String?) -> String = { "Error: $it" }
-}
-
-object EnglishSponsorStrings : SponsorStrings {
-    override val message: String = """
-        Development of Kaiteyo started in 2021 by a single person and it remains free for all users who want to learn Japanese
-        
-        If you find the app useful please consider supporting this project financially, every contribution counts
-        
-        Financial support will allow me to focus more on development, bring extra features, add more voiced content and translations
-    """.trimIndent()
-
 }
 
 object EnglishDeckPickerStrings : DeckPickerStrings {
@@ -721,27 +830,6 @@ object EnglishReminderNotificationStrings : ReminderNotificationStrings {
     }
 }
 
-
-object EnglishAccountScreenStrings : AccountScreenStrings {
-    override val title = "Account"
-    override val loggedOutMessage = "Logged out"
-    override val signInButton = "Sign in"
-    override val signOutButton = "Sign out"
-    override val emailTitle = "E-mail"
-    override val subscriptionTitle = "Subscription"
-    override val subscriptionStatusActive = "Active"
-    override val subscriptionStatusExpired = "Expired"
-    override val subscriptionStatusInactive = "Inactive"
-    override val subscriptionValidUntilTemplate = "Valid until %s"
-    override val issueNoConnectionTitle = "No Connection"
-    override val issueNoConnectionMessage = "Showing cached data"
-    override val issueSessionExpiredTitle = "Session Expired"
-    override val issueSessionExpiredMessage = "Click to sign in again"
-    override val issueSubscriptionOutdatedTitle = "Subscription status outdated"
-    override val issueSubscriptionOutdatedMessage = "Click to refresh"
-    override val issueOtherTitle = "Error"
-    override val issueOtherMessageFallback = "Unknown error"
-}
 
 object EnglishSyncScreenStrings : SyncScreenStrings {
     override val title = "Sync (Preview)"

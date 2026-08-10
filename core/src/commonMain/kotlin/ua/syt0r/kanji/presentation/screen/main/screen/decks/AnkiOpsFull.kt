@@ -40,7 +40,7 @@ import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnkiOperationsFullScreen(
-    cards: List<KaiteyoCard> = generateMockCards(20),
+    cards: List<KaiteyoCard>,
     onOperation: (CardOperation, List<KaiteyoCard>) -> Unit = { _, _ -> },
     onClose: () -> Unit = {}
 ) {

@@ -6,17 +6,15 @@ This directory documents Kaiteyo's complete design system.
 
 | File | Purpose |
 |------|---------|
-| `DESIGN_SYSTEM.md` | Complete design system reference |
-| `COLOR_SYSTEM.md` | Color tokens, palettes, usage rules |
-| `TYPOGRAPHY.md` | Font scale, weights, line heights |
-| `SPACING.md` | 4dp grid system, layout tokens |
-| `MOTION.md` | Animation philosophy, timing, easing |
-| `ICONS.md` | Icon style, sizes, usage |
-| `LAYOUT.md` | Layout principles, responsive behavior |
-| `ACCESSIBILITY.md` | Accessibility guidelines |
-| `DESKTOP_UX.md` | Desktop-specific UX patterns |
-| `MOBILE_UX.md` | Mobile-specific UX patterns |
-| `TABLET_UX.md` | Tablet-specific UX patterns |
+| `DESIGN_SYSTEM.md` | Complete design system overview |
+| `DESIGN_LANGUAGE.md` | UI philosophy, spacing, typography, shadows |
+| `UI_SYSTEM.md` | Component specs, interaction rules |
+| `THEME_SYSTEM.md` | Theme tokens, built-in themes, custom themes |
+| `ANIMATION_SYSTEM.md` | Animation philosophy, presets, patterns |
+
+Deeper per-topic references (color system, typography, motion, icons, layout,
+accessibility, platform UX) are planned; until then the files above are the
+canonical design documentation.
 
 ## Design Principles
 
@@ -34,6 +32,6 @@ This directory documents Kaiteyo's complete design system.
 
 ## Related
 
-- `docs/02_DESIGN_LANGUAGE.md` — Design language overview
-- `docs/08_UI_GUIDELINES.md` — Component specifications
-- `docs/09_ANIMATION_GUIDELINES.md` — Animation specifications
+- `docs/design/DESIGN_LANGUAGE.md` — Design language overview
+- `docs/design/UI_SYSTEM.md` — Component specifications
+- `docs/design/ANIMATION_SYSTEM.md` — Animation specifications

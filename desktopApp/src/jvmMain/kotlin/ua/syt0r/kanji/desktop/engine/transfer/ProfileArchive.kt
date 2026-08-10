@@ -16,6 +16,8 @@ import ua.syt0r.kanji.desktop.model.ReviewLogEntry
 import ua.syt0r.kanji.desktop.model.SavedFilter
 import ua.syt0r.kanji.desktop.model.StudyDaySummary
 import ua.syt0r.kanji.desktop.model.ToastKind
+import ua.syt0r.kanji.desktopApp.SavedWindowBounds
+import ua.syt0r.kanji.desktopApp.WindowStateStore
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
@@ -44,6 +46,7 @@ data class ProfileData(
     val settings: Map<String, String> = emptyMap(),
     val themeId: String = "",
     val activity: List<ActivityEntry> = emptyList(),
+    val windowBounds: SavedWindowBounds = SavedWindowBounds(),
     val metadata: Map<String, String> = emptyMap()
 ) {
     val cardCount: Int get() = cards.size
@@ -125,6 +128,7 @@ fun AppState.capture(): ProfileData = ProfileData(
     settings = settings.snapshot(),
     themeId = activeThemeId,
     activity = activityLog.entries.asReversed(),
+    windowBounds = WindowStateStore.load(),
     metadata = mapOf(
         "cards" to cards.size.toString(),
         "reviews" to reviewLog.size.toString(),
@@ -143,6 +147,10 @@ fun AppState.restore(data: ProfileData) {
     filterStore.loadSaved(data.savedFilters)
     if (data.settings.isNotEmpty()) settings.restore(data.settings)
     if (data.themeId.isNotBlank() && ThemePresets.all.any { it.id == data.themeId }) activeThemeId = data.themeId
+    // Restore the window placement captured in the backup. It takes effect on
+    // the next launch (the running window keeps its geometry until the user
+    // moves it, which then supersedes the restored bounds).
+    if (data.windowBounds.isUsable) WindowStateStore.save(data.windowBounds)
     activityLog.load(data.activity)
     activityLog.record(ActivityCategory.Import, "Restored profile backup (${data.cards.size} cards)")
     toastHost.show("Profile restored — ${data.cards.size} cards, ${data.reviewLog.size} reviews", kind = ToastKind.Success)

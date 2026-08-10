@@ -18,8 +18,6 @@ import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 
 enum class PanelKind(val label: String) {
     Dictionary("Dictionary"),
-    KanjiBrowser("Kanji Browser"),
-    Statistics("Statistics"),
     DeckBrowser("Deck Browser"),
     ThemeStudio("Theme Studio"),
     Search("Search"),

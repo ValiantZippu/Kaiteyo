@@ -10,21 +10,21 @@ Documentation MUST be updated whenever:
 
 | Change | Documentation to Update |
 |--------|------------------------|
-| New folder created | `docs/Reference/FileStructure.md` |
-| New module added | `docs/Reference/FileStructure.md`, `docs/06_ARCHITECTURE.md` |
-| New feature added | `docs/05_FEATURES.md`, relevant feature spec in `docs/features/` |
-| Feature removed | `docs/05_FEATURES.md`, `docs/planning/CHANGELOG.md` |
+| New folder created | `docs/architecture/FILE_STRUCTURE.md` |
+| New module added | `docs/architecture/FILE_STRUCTURE.md`, `docs/architecture/OVERVIEW.md` |
+| New feature added | `docs/features/FEATURES.md`, relevant feature spec in `docs/features/` |
+| Feature removed | `docs/features/FEATURES.md`, `docs/planning/CHANGELOG.md` |
 | Feature renamed | All references to the feature name |
-| New dependency added | `docs/06_ARCHITECTURE.md`, `docs/Reference/FileStructure.md` |
-| Architecture changes | `docs/06_ARCHITECTURE.md`, `docs/Reference/FileStructure.md` |
+| New dependency added | `docs/architecture/OVERVIEW.md`, `docs/architecture/FILE_STRUCTURE.md` |
+| Architecture changes | `docs/architecture/OVERVIEW.md`, `docs/architecture/FILE_STRUCTURE.md` |
 | API changes | `docs/api/` relevant files |
-| Theme system changes | `docs/07_THEME_SYSTEM.md` |
-| UI component changes | `docs/08_UI_GUIDELINES.md` |
-| Animation changes | `docs/09_ANIMATION_GUIDELINES.md` |
+| Theme system changes | `docs/design/THEME_SYSTEM.md` |
+| UI component changes | `docs/design/UI_SYSTEM.md` |
+| Animation changes | `docs/design/ANIMATION_SYSTEM.md` |
 | Bug fixed | `docs/planning/CURRENT_ISSUES.md` (mark as fixed) |
 | Release made | `docs/planning/CHANGELOG.md`, `docs/planning/COMPLETED.md` |
-| Roadmap changed | `docs/04_ROADMAP.md` |
-| New document created | `docs/00_START_HERE.md` (update documentation map) |
+| Roadmap changed | `docs/roadmap/ROADMAP.md` |
+| New document created | `docs/README.md` (update documentation map) |
 | Build/setup/toolchain issue solved | `docs/troubleshooting/` issue entry, `docs/maintenance/VersionHistory.md` |
 | Build/setup/toolchain issue remains | `docs/maintenance/KnownLimitations.md` with a status |
 | Dependency changed | `docs/setup/UpdatingDependencies.md`, `docs/maintenance/DependencyUpdates.md` |
@@ -33,7 +33,7 @@ Documentation MUST be updated whenever:
 
 1. **Every document must have a clear purpose** — The first paragraph should explain what the document covers and who should read it.
 
-2. **Every document must be findable** — The documentation map in `docs/00_START_HERE.md` must list all documents.
+2. **Every document must be findable** — The documentation map in `docs/README.md` must list all documents.
 
 3. **Every folder must have a README.md** — Explaining the folder's purpose, contents, and how to use it.
 
@@ -67,7 +67,7 @@ When using AI assistants:
 
 Prompt template for AI:
 ```
-Read docs/AI_CONTEXT.md first.
+Read docs/development/AI_CONTEXT.md first.
 Then read docs/planning/CURRENT_ISSUES.md.
 Implement the fix for [issue].
 After implementation, update:
@@ -78,7 +78,7 @@ After implementation, update:
 
 ## File Structure Documentation
 
-`docs/Reference/FileStructure.md` is the map of the project. It must be updated whenever:
+`docs/architecture/FILE_STRUCTURE.md` is the map of the project. It must be updated whenever:
 
 - A new directory is created at the root level
 - A new module is added

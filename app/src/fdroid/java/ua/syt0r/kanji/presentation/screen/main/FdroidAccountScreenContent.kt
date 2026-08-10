@@ -103,7 +103,6 @@ fun FdroidAccountScreenUI(
             is ScreenState.SignedIn -> {
                 AccountScreenSignedIn(
                     email = screenState.email,
-                    subscriptionInfo = screenState.subscriptionInfo,
                     issue = screenState.issue,
                     refresh = refresh,
                     signOut = onSignOutClick,

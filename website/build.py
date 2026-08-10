@@ -75,7 +75,15 @@ SCREENSHOTS = {
             ],
             start=1,
         )
-    ]
+    ],
+    # Desktop screenshots generated from docs/screenshots by copy_assets();
+    # captured with scripts/capture-window-shell.sh.
+    "desktop": [
+        {"file": "window-shell.png", "caption": "Window shell — custom title bar and floating launcher"},
+        {"file": "launcher-menu.png", "caption": "Launcher quick controls"},
+        {"file": "launchpad-overlay.png", "caption": "Launchpad tile grid"},
+        {"file": "launchpad-window-strip.png", "caption": "Launchpad window controls"},
+    ],
 }
 
 
@@ -128,7 +136,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 
 
 def prettify_title(filename: str) -> str:
-    """docs/12_CODING_STANDARDS.md -> 'Coding Standards'."""
+    """docs/development/CODING_STANDARDS.md -> 'Coding Standards'."""
     stem = re.sub(r"^\d+_", "", pathlib.Path(filename).stem)
     stem = stem.replace("_", " ").replace("-", " ")
     words = [w for w in stem.split(" ") if w]
@@ -623,6 +631,14 @@ def copy_assets():
     if phone_source.is_dir():
         for png in sorted(phone_source.glob("*.png")):
             shutil.copy2(png, phone_target / png.name)
+
+    # Desktop screenshots from the repository documentation (docs/screenshots).
+    desktop_source = ROOT.parent / "docs" / "screenshots"
+    desktop_target = target / "screenshots" / "desktop"
+    desktop_target.mkdir(parents=True, exist_ok=True)
+    if desktop_source.is_dir():
+        for png in sorted(desktop_source.glob("*.png")):
+            shutil.copy2(png, desktop_target / png.name)
 
 
 def build():

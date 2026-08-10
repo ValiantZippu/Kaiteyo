@@ -22,6 +22,24 @@
     <string name="general_dashboard_header_streak_current">現在の連続記録</string>
     <string name="general_dashboard_header_streak_longest">最長連続記録</string>
     <string name="general_dashboard_header_reviews">今日の復習数</string>
+    <string name="general_dashboard_header_total_reviews">合計復習数</string>
+
+    <string name="general_dashboard_continue_studying">学習を続ける</string>
+    <string name="general_dashboard_continue_studying_subtitle">今日は%1$s枚のカードがあります</string>
+    <string name="general_dashboard_study_now">今すぐ学習</string>
+    <string name="general_dashboard_today_progress">今日の進捗</string>
+    <string name="general_dashboard_weekly_summary">直近7日間</string>
+    <string name="general_dashboard_recent_decks">最近のデッキ</string>
+    <string name="general_dashboard_recent_activity">最近のアクティビティ</string>
+    <string name="general_dashboard_quick_actions">クイックアクション</string>
+    <string name="general_dashboard_collections">コレクション</string>
+    <string name="general_dashboard_see_all">すべて見る</string>
+    <string name="general_dashboard_no_recent_activity">まだアクティビティはありません — 学習を始めましょう！</string>
+    <string name="general_dashboard_no_recent_decks">まだデッキがありません — 最初のデッキを作成しましょう</string>
+    <string name="general_dashboard_action_search">検索</string>
+    <string name="general_dashboard_action_browse_cards">カード閲覧</string>
+    <string name="general_dashboard_action_statistics">統計</string>
+    <string name="general_dashboard_action_import_export">インポート / エクスポート</string>
 
     <string name="general_dashboard_study_target_title">勉強目標</string>
     <string name="general_dashboard_study_target_edit">編集</string>

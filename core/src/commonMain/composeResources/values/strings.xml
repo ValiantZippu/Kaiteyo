@@ -22,6 +22,24 @@
     <string name="general_dashboard_header_streak_current">Current Streak</string>
     <string name="general_dashboard_header_streak_longest">Longest Streak</string>
     <string name="general_dashboard_header_reviews">Reviews Today</string>
+    <string name="general_dashboard_header_total_reviews">Total Reviews</string>
+
+    <string name="general_dashboard_continue_studying">Continue Studying</string>
+    <string name="general_dashboard_continue_studying_subtitle">%1$s cards ready for today</string>
+    <string name="general_dashboard_study_now">Study Now</string>
+    <string name="general_dashboard_today_progress">Today\'s Progress</string>
+    <string name="general_dashboard_weekly_summary">Last 7 Days</string>
+    <string name="general_dashboard_recent_decks">Recent Decks</string>
+    <string name="general_dashboard_recent_activity">Recent Activity</string>
+    <string name="general_dashboard_quick_actions">Quick Actions</string>
+    <string name="general_dashboard_collections">Collections</string>
+    <string name="general_dashboard_see_all">See all</string>
+    <string name="general_dashboard_no_recent_activity">No activity yet — start studying!</string>
+    <string name="general_dashboard_no_recent_decks">No decks yet — create your first deck</string>
+    <string name="general_dashboard_action_search">Search</string>
+    <string name="general_dashboard_action_browse_cards">Browse Cards</string>
+    <string name="general_dashboard_action_statistics">Statistics</string>
+    <string name="general_dashboard_action_import_export">Import / Export</string>
 
     <string name="general_dashboard_study_target_title">Study Targets</string>
     <string name="general_dashboard_study_target_edit">Edit</string>
@@ -139,25 +157,6 @@
 
     <string name="snackbar_sub_expired_message">Your subscription has expired</string>
     <string name="snackbar_sub_expired_action">Account</string>
-
-    <string name="sponsor_recent_donations_title">Recent Donations</string>
-    <string name="sponsor_recent_donations_error">Error: %1$s</string>
-
-    <string-array name="sponsor_recent_donations_messages">
-        <item>A generous soul donated %1$s¥! Much appreciated!</item>
-        <item>A kind user donated %1$s¥! May your kanji mastery flourish.</item>
-        <item>Someone just donated %1$s¥! More kanji knowledge for everyone!</item>
-        <item>Someone just dropped %1$s¥ into the donation box! ありがとう!</item>
-        <item>Someone contributed %1$s¥! It will help spreading kanji knowledge even more!</item>
-        <item>A generous supporter donated %1$s¥! Keeping the dojo open for all.</item>
-        <item>Thanks to a %1$s¥ donation, Kaiteyo continues to grow!</item>
-        <item>A generous donation of %1$s¥! More kanji, fewer paywalls!</item>
-        <item>Even kanji radicals appreciate radical generosity—thanks for %1$s¥!</item>
-        <item>Heroes like you keep this app free—thank you for %1$s¥!</item>
-        <item>Kaiteyo bows in gratitude for your %1$s¥ contribution!</item>
-        <item>Someone's generosity added %1$s¥ to the fund!</item>
-        <item>A diligent learner contributed %1$s¥! May your reviews always be correct.</item>
-    </string-array>
 
     <string name="info_no_data_letter">No data found for letter %1$s</string>
     <string name="info_no_data_vocab">No data found for vocab %1$s</string>

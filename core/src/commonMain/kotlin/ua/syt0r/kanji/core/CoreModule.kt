@@ -34,6 +34,11 @@ import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesManager
 import ua.syt0r.kanji.core.user_data.preferences.UserPreferencesMigrationManager
 
+/**
+ * Koin module that provides core (non-platform-specific) dependencies:
+ * analytics, app data, backup, preferences, theme, character classification,
+ * network API, feedback, and vocab card resolution.
+ */
 val coreModule = module {
 
     applySrsDefinitions()

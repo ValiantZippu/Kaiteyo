@@ -14,12 +14,14 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import ua.syt0r.kanji.core.RefreshableData
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.logger.runWithTimeLog
@@ -37,9 +39,12 @@ import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
 import ua.syt0r.kanji.core.user_data.database.StreakData
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.presentation.LifecycleState
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardDaySummary
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardDeckCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardDeckSummary
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardStats
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.StreakCalendarItem
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.StudyTarget
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.StudyTargetPracticeOptions
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.StudyTargetProgress
@@ -61,7 +66,8 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
     private val vocabSrsManager: VocabSrsManager,
     private val preferencesRepository: PreferencesContract.AppPreferences,
     private val reviewHistoryRepository: ReviewHistoryRepository,
-    private val timeUtils: TimeUtils
+    private val timeUtils: TimeUtils,
+    private val dataCenter: KaiteyoDataCenter
 ) : SubscribeOnGeneralDashboardScreenDataUseCase {
 
     override fun invoke(
@@ -80,6 +86,8 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
     private suspend fun ProducerScope<ScreenState.Loaded>.produceState() {
         Logger.d("produceState")
 
+        dataCenter.ensureLoaded()
+
         val deferredLettersDecks = async {
             runWithTimeLog("letterDecksData") { letterSrsManager.getDecks() }
         }
@@ -88,8 +96,8 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             runWithTimeLog("vocabDecksData") { vocabSrsManager.getDecks() }
         }
 
-        val deferredStreakData = async {
-            runWithTimeLog("streakData") { getStats() }
+        val deferredStats = async {
+            runWithTimeLog("statsData") { getStats() }
         }
 
         val preferencesStudyTargets = preferencesRepository.generalDashboardStudyTargets.get()
@@ -124,9 +132,23 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             }.awaitAll()
         )
 
+        val lettersDecks = deferredLettersDecks.await()
+        val vocabDecks = deferredVocabDecks.await()
+
+        val recentDecks = buildList {
+            addAll(lettersDecks.decks.map { it.toDeckSummary(DashboardDeckCategory.Letters) })
+            addAll(vocabDecks.decks.map { it.toDeckSummary(DashboardDeckCategory.Vocabulary) })
+        }.sortedWith(
+            compareByDescending<DashboardDeckSummary> { it.lastReview }
+                .thenBy { it.title }
+        ).take(RECENT_DECKS_LIMIT)
+
         val state = ScreenState.Loaded(
             studyTargets = studyTargets,
-            stats = deferredStreakData.await()
+            stats = deferredStats.await(),
+            recentDecks = recentDecks,
+            recentActivity = dataCenter.activity.take(ACTIVITY_LIMIT),
+            collections = dataCenter.collections.toList()
         )
         send(state)
 
@@ -138,6 +160,28 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             }
             .launchIn(this)
 
+    }
+
+    private fun LetterSrsDeck.toDeckSummary(category: DashboardDeckCategory): DashboardDeckSummary {
+        return DashboardDeckSummary(
+            deckId = id,
+            title = title,
+            category = category,
+            lastReview = lastReview,
+            newCount = progressMap.values.sumOf { it.dailyNew.size },
+            dueCount = progressMap.values.sumOf { it.dailyDue.size }
+        )
+    }
+
+    private fun VocabSrsDeck.toDeckSummary(category: DashboardDeckCategory): DashboardDeckSummary {
+        return DashboardDeckSummary(
+            deckId = id,
+            title = title,
+            category = category,
+            lastReview = lastReview,
+            newCount = progressMap.values.sumOf { it.dailyNew.size },
+            dueCount = progressMap.values.sumOf { it.dailyDue.size }
+        )
     }
 
     private fun CoroutineScope.getPracticeTypeProgress(
@@ -231,21 +275,6 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
         val longestStreak = streaks.maxByOrNull { it.length }
 
         val currentDate = timeUtils.getCurrentDate()
-        val streakCalendarStartDate = currentDate.minus(
-            value = STREAK_CALENDAR_DAYS - 1,
-            unit = DateTimeUnit.DAY
-        )
-
-        val displayDateRange = streakCalendarStartDate..currentDate
-        val streaksForCalendar = streaks.filter { it.end in displayDateRange }
-        val streakCalendarItems = mutableListOf<StreakCalendarItem>()
-
-        var date = streakCalendarStartDate
-        do {
-            val hasReviews = streaksForCalendar.any { it.includesDate(date) }
-            streakCalendarItems.add(StreakCalendarItem(date, hasReviews))
-            date = date.plus(1, DateTimeUnit.DAY)
-        } while (date <= currentDate)
 
         val currentStreakSearchDates = setOf(
             currentDate, currentDate.minus(1, DateTimeUnit.DAY)
@@ -254,20 +283,40 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             currentStreakSearchDates.any { streak.includesDate(it) }
         }
 
-        val reviewsToday = timeUtils.getCurrentDate()
-            .atStartOfDayIn(TimeZone.currentSystemDefault())
-            .let {
-                reviewHistoryRepository.getReviews(
-                    start = it,
-                    end = it.plus(1.days)
-                )
-            }
-            .size
+        val zone = TimeZone.currentSystemDefault()
+        val now = Clock.System.now()
+        val weekStart = now - 6.days
+        val weekReviews = reviewHistoryRepository.getReviews(weekStart, now)
+        val reviewsByDate = weekReviews
+            .groupBy { it.timestamp.toLocalDateTime(zone).date }
+            .mapValues { it.value.size }
+
+        val weeklySummary = (0L..6L).map { offset ->
+            val date = currentDate.minus(offset, DateTimeUnit.DAY)
+            DashboardDaySummary(
+                date = date,
+                count = reviewsByDate[date] ?: 0
+            )
+        }.reversed()
+
+        val startOfToday = currentDate.atStartOfDayIn(zone)
+        val reviewsToday = reviewHistoryRepository.getReviews(
+            start = startOfToday,
+            end = startOfToday.plus(1, DateTimeUnit.DAY, zone)
+        ).size
+
+        val totalReviews = reviewHistoryRepository.getTotalReviewsCount()
 
         return GeneralDashboardStats(
             currentStreak = currentStreak?.length ?: 0,
             longestStreak = longestStreak?.length ?: 0,
-            reviewsToday = reviewsToday
+            reviewsToday = reviewsToday,
+            totalReviews = totalReviews,
+            weeklySummary = weeklySummary,
+            newReviewedToday = 0,
+            dueReviewedToday = 0,
+            newLeftoverToday = 0,
+            dueLeftoverToday = 0
         )
     }
 
@@ -277,7 +326,8 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
         ?: 0f
 
     companion object {
-        private const val STREAK_CALENDAR_DAYS = 7
+        private const val RECENT_DECKS_LIMIT = 6
+        private const val ACTIVITY_LIMIT = 8
     }
 
 }

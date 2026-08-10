@@ -36,7 +36,7 @@ data class DictImportBundle(
     val entries: List<DictionaryEntry>
 )
 
-private data class IndexMeta(
+data class IndexMeta(
     val name: String,
     val revision: String,
     val author: String,
@@ -240,8 +240,8 @@ object DictionaryImporter {
                 )
             ),
             senses = senses,
-            source = sourceFor(spelling, reading, tags),
-            searchKeys = buildSearchKeys(spelling, str(reading)) + listOf(spelling.lowercase())
+            source = sourceFor(spelling, readingValue, tags),
+            searchKeys = buildSearchKeys(spelling, readingValue) + listOf(spelling.lowercase())
         )
         return listOf(entry)
     }
@@ -282,7 +282,7 @@ object DictionaryImporter {
                 spellings = listOf(spelling),
                 readings = if (readingList.isNotEmpty()) readingList else listOf(DictionaryReading(readingValue)),
                 senses = senses,
-                source = sourceFor(spelling, str(reading), emptyList()),
+                source = sourceFor(spelling, readingValue, emptyList()),
                 searchKeys = buildSearchKeys(spelling, readingValue) + listOf(spelling.lowercase())
             )
         )

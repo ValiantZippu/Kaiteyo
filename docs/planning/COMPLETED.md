@@ -2,6 +2,53 @@
 
 This document tracks completed features and milestones. When a task from TODO.md or CURRENT_ISSUES.md is completed, add it here.
 
+## v2.2.1 — Installer & First-Run Subsystem (Latest)
+
+### Windows Installer (Inno Setup 6)
+- [x] Branded modern wizard (dynamic light/dark, custom banner + small image, DPI-aware)
+- [x] Install / Upgrade / Repair / Modify / Uninstall with data preservation
+- [x] Silent install (`/VERYSILENT`), task-based components (shortcuts, file assoc, auto-update, dictionary pack)
+- [x] Install-location memory, existing-install detection, launch-after-install
+- [x] Polished uninstaller: keep-or-remove study data page, cache/temp cleanup, double confirmation
+- [x] Portable zip build with self-contained data folder
+- [x] `build.ps1`/`build.bat` wrappers with optional signtool signing
+
+### macOS
+- [x] Styled DMG (branded background, drag-to-Applications, volume icon)
+- [x] Hardened-runtime signing + JVM entitlements, notarization + stapling pipeline
+- [x] Per-arch DMGs (arm64 / x64)
+
+### Linux
+- [x] AppImage with AppStream metainfo + hicolor icon theme + AppRun
+- [x] deb builder (control, postinst icon/desktop caches)
+- [x] rpm spec + wrapper
+- [x] Flathub-ready Flatpak manifest + build script
+- [x] Snap wrapper (optional format)
+
+### Shared Tooling
+- [x] `common/version.json` single source of truth + `bump-version.sh`
+- [x] Update-feed + artifact-manifest JSON schemas, `make-update-manifest.sh`, `verify-artifacts.sh`
+- [x] `stage-artifacts.sh` canonical release dir + sha256 manifest
+- [x] `generate-assets.sh` SVG → bmp/ico/icns/png pipeline
+- [x] Release notes template, docs: ARCHITECTURE/BUILD/SIGNING/RELEASE/UPDATES/FIRST_RUN
+
+### First-Run Experience
+- [x] `OnboardingWizard` wired into `KaiteyoDesktopSuite` (shows once, crash-safe flag via settings key `onboarding.completed`)
+- [x] 8-step flow: Welcome, Theme, Accent, Scaling, Font, Navigation, Motion, Finish — every step skippable
+- [x] Live previews: selections write straight into `AppState.themeManager` / navigation state
+- [x] Re-openable from Settings → “Show onboarding again” (`AppState.requestOnboarding()`)
+- [x] `FIRST_RUN.md` documents the gating mechanism and integration points
+
+### Auto-Update Architecture (designed, not enabled)
+- [x] `UpdateChannel` stable/beta/nightly, `UpdateManifest` schema v1
+- [x] `HttpUpdateChecker`, sha256-verified `HttpUpdateDownloader`
+- [x] `UpdateInstaller` interface (per-platform apply), `UpdateService` StateFlow coordinator
+- [x] `UpdatePolicy`: version compare, min-version guard, rollback window
+
+### CI/CD
+- [x] `build-all.yml` produces EXE/MSI/portable, styled+notarized DMGs, deb/rpm/AppImage
+- [x] `build-release.yml` stages, verifies and feeds updates on tag push
+
 ## v2.0.0 — Premium Experience (Latest)
 
 ### Theme Studio v2.0

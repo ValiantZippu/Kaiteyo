@@ -247,6 +247,56 @@ class CollectionStore(
         return true
     }
 
+    /** Move a collection under another parent (null = root). Prevents cycles. */
+    fun move(id: String, newParentId: String?) {
+        if (id == newParentId) return
+        if (newParentId != null) {
+            // Reject moves that would create a cycle (child above its own subtree).
+            var cursor: String? = newParentId
+            while (cursor != null) {
+                if (cursor == id) return
+                cursor = _collections.firstOrNull { it.id == cursor }?.parentId
+            }
+        }
+        val idx = _collections.indexOfFirst { it.id == id }
+        if (idx == -1) return
+        _collections[idx] = _collections[idx].copy(parentId = newParentId)
+    }
+
+    /**
+     * Merge [sourceIds] into [targetId]: their manual card ids are folded into the
+     * target, and the sources are deleted. If the target is empty (no rule, no cards)
+     * and a single smart source exists, its rule is adopted so smart behavior survives
+     * the merge. Returns the number of card ids added to the target.
+     */
+    fun merge(targetId: String, sourceIds: List<String>): Int {
+        if (sourceIds.isEmpty()) return 0
+        val targetIdx = _collections.indexOfFirst { it.id == targetId }
+        if (targetIdx == -1) return 0
+
+        val target = _collections[targetIdx]
+        val mergedCardIds = LinkedHashSet(target.cardIds)
+        val smartSources = sourceIds.mapNotNull { id -> _collections.firstOrNull { it.id == id } }
+            .filter { it.smartRule != null }
+
+        var added = 0
+        sourceIds.mapNotNull { id -> _collections.firstOrNull { it.id == id } }.forEach { source ->
+            val before = mergedCardIds.size
+            mergedCardIds.addAll(source.cardIds)
+            added += mergedCardIds.size - before
+        }
+
+        val adoptedRule = if (target.smartRule == null && target.cardIds.isEmpty() && smartSources.size == 1) {
+            smartSources.first().smartRule
+        } else {
+            target.smartRule
+        }
+
+        sourceIds.forEach { delete(it) }
+        _collections[targetIdx] = target.copy(cardIds = mergedCardIds.toList(), smartRule = adoptedRule)
+        return added
+    }
+
     fun archived(): List<CollectionDef> = _collections.filter { it.archived }
 
     fun export(def: CollectionDef, cards: List<DesktopCard>): String {

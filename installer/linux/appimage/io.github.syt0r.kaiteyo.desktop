@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Kaiteyo
+GenericName=Japanese Language Learning
+Comment=Learn, write and review Japanese with spaced repetition and a built-in dictionary
+Exec=Kaiteyo
+Icon=io.github.syt0r.kaiteyo
+Terminal=false
+Categories=Education;Languages;
+Keywords=Japanese;Kanji;Kana;Language;Study;SRS;
+StartupNotify=true
+X-AppImage-Version=2.2.1
+X-AppImage-Name=Kaiteyo

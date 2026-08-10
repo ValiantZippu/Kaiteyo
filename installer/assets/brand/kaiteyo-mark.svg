@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Kaiteyo mark: "K" on a rounded square. Colors per BRAND_GUIDELINES. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#bg)"/>
+  <!-- K constructed from two strokes + one diagonal so it stays crisp at any size -->
+  <path d="M310 232 h118 v230 l250 -230 h150 L536 512 l294 280 H680 L414 574 v218 H310 Z"
+        fill="#ffffff"/>
+</svg>

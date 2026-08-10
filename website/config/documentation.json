@@ -7,8 +7,8 @@
       "title": "Start Here",
       "description": "Project vision and orientation for new readers.",
       "files": [
-        "00_START_HERE.md",
-        "00_PROJECT_VISION.md"
+        "README.md",
+        "roadmap/PROJECT_VISION.md"
       ]
     },
     {
@@ -16,12 +16,12 @@
       "title": "Design & Branding",
       "description": "The Kaiteyo visual identity: brand guidelines, design language, UI system, theming, and animation.",
       "files": [
-        "01_BRAND_GUIDELINES.md",
-        "02_DESIGN_LANGUAGE.md",
-        "03_BRANDING.md",
-        "03_UI_SYSTEM.md",
-        "04_THEME_SYSTEM.md",
-        "05_ANIMATION_SYSTEM.md",
+        "branding/BRAND_GUIDELINES.md",
+        "design/DESIGN_LANGUAGE.md",
+        "branding/BRANDING.md",
+        "design/UI_SYSTEM.md",
+        "design/THEME_SYSTEM.md",
+        "design/ANIMATION_SYSTEM.md",
         "branding/README.md",
         "design/README.md"
       ]
@@ -31,7 +31,7 @@
       "title": "Features",
       "description": "Detailed feature overviews and feature status.",
       "files": [
-        "10_FEATURES.md",
+        "features/FEATURES.md",
         "features/DESKTOP.md",
         "features/THEMES.md",
         "features/README.md"
@@ -42,10 +42,11 @@
       "title": "Architecture",
       "description": "How Kaiteyo is built: architecture, sync, accounts, navigation, API, and design decisions.",
       "files": [
-        "06_ARCHITECTURE.md",
-        "15_SYNC_ARCHITECTURE.md",
-        "16_ACCOUNT_STRUCTURE.md",
-        "17_NAVIGATION_SYSTEM.md",
+        "architecture/OVERVIEW.md",
+        "architecture/SYNC.md",
+        "architecture/ACCOUNT.md",
+        "architecture/NAVIGATION.md",
+        "architecture/FILE_STRUCTURE.md",
         "api/README.md"
       ]
     },
@@ -66,10 +67,10 @@
       "title": "Development",
       "description": "Development guide, coding standards, assets, releases, setup, and maintenance.",
       "files": [
-        "07_DEVELOPMENT_GUIDE.md",
-        "12_CODING_STANDARDS.md",
-        "13_ASSETS.md",
-        "14_RELEASE_PROCESS.md",
+        "development/DEVELOPER_GUIDE.md",
+        "development/CODING_STANDARDS.md",
+        "assets/ASSETS.md",
+        "releases/RELEASE_PROCESS.md",
         "setup/FirstBuild.md",
         "setup/FreshSetup.md",
         "setup/RequiredSoftware.md",
@@ -90,7 +91,7 @@
       "title": "Contributing",
       "description": "How to contribute to Kaiteyo.",
       "files": [
-        "08_CONTRIBUTING.md",
+        "contributing/CONTRIBUTING.md",
         "development/DEVELOPMENT_SETUP.md"
       ]
     },
@@ -99,7 +100,7 @@
       "title": "Planning",
       "description": "Roadmap, changelog, completed work, future ideas, and the current issue tracker.",
       "files": [
-        "09_ROADMAP.md",
+        "roadmap/ROADMAP.md",
         "planning/CHANGELOG.md",
         "planning/COMPLETED.md",
         "planning/FUTURE_IDEAS.md",
@@ -108,11 +109,10 @@
     }
   ],
   "internalOnly": [
-    "AI_CONTEXT.md",
-    "Commands.md",
-    "11_TODO.md",
-    "planning/README.md",
-    "README.md"
+    "development/AI_CONTEXT.md",
+    "development/COMMANDS.md",
+    "planning/TODO.md",
+    "planning/README.md"
   ],
   "rawLinkRoot": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/"
 }

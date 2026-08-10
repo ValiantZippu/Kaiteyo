@@ -1,5 +1,13 @@
 package ua.syt0r.kanji.desktop.ui.workspace
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -43,7 +51,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.appstate.AppState
-import ua.syt0r.kanji.desktop.appstate.NavMode
+import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.NavPosition
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
@@ -56,9 +64,10 @@ import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.model.ReviewRating
 import ua.syt0r.kanji.desktop.ui.activity.ActivityLogView
 import ua.syt0r.kanji.desktop.ui.about.ContributionsView
-import ua.syt0r.kanji.desktop.ui.browser.BrowserView
 import ua.syt0r.kanji.desktop.ui.collections.CollectionsView
 import ua.syt0r.kanji.desktop.ui.dashboard.DashboardView
+import ua.syt0r.kanji.desktop.ui.library.LibraryView
+import ua.syt0r.kanji.desktop.ui.account.AccountView
 import ua.syt0r.kanji.desktop.ui.palette.CommandPaletteOverlay
 import ua.syt0r.kanji.desktop.ui.plugins.PluginsView
 import ua.syt0r.kanji.desktop.ui.review.ReviewView
@@ -76,6 +85,9 @@ import ua.syt0r.kanji.desktop.ui.ocr.OcrView
 import ua.syt0r.kanji.desktop.ui.mining.MiningView
 import ua.syt0r.kanji.desktop.ui.mining.MiningDialog
 import ua.syt0r.kanji.desktop.ui.api.IntegrationsView
+import ua.syt0r.kanji.desktop.ui.editor.CardEditorDialog
+import ua.syt0r.kanji.desktop.ui.grammar.GrammarPracticeView
+import ua.syt0r.kanji.desktop.ui.writing.WritingPracticeView
 
 /** Shared AppState accessor for every view in the suite. */
 val LocalAppState = staticCompositionLocalOf<AppState> { error("No AppState in composition") }
@@ -84,10 +96,12 @@ val LocalAppState = staticCompositionLocalOf<AppState> { error("No AppState in c
 fun rememberAppState(): AppState = LocalAppState.current
 
 // ============================================
-// KAITEYO WORKSPACE — desktop-first shell
-// Adaptive navigation (left/right/top/bottom dock,
-// compact mode, floating launcher), global keyboard
-// dispatch, command palette and toast host.
+// KAITEYO WORKSPACE — adaptive shell
+// The navigation dock lives on any of the four
+// edges, animates between Expanded / Compact /
+// Hidden, and degrades to a dedicated tab bar in
+// compact windows. Global keyboard dispatch,
+// command palette and toast host live here.
 // ============================================
 
 @Composable
@@ -98,10 +112,14 @@ fun KaiteyoWorkspace(state: AppState) {
         val d = state.shortcutDispatcher
         d.register("command-palette") { paletteOpen = true }
         d.register("quick-switch") { paletteOpen = true }
+        d.register("toggle-nav") { state.cycleNavLayout() }
         d.register("focus-search") { state.currentView = WorkspaceView.Browser }
         d.register("open-dashboard") { state.currentView = WorkspaceView.Dashboard }
         d.register("open-browser") { state.currentView = WorkspaceView.Browser }
+        d.register("open-library") { state.currentView = WorkspaceView.Library }
         d.register("open-review") { state.currentView = WorkspaceView.Review }
+        d.register("open-writing") { state.currentView = WorkspaceView.Writing }
+        d.register("open-grammar") { state.currentView = WorkspaceView.Grammar }
         d.register("open-stats") { state.currentView = WorkspaceView.Statistics }
         d.register("open-settings") { state.currentView = WorkspaceView.Settings }
         d.register("open-themes") { state.currentView = WorkspaceView.ThemeStudio }
@@ -140,16 +158,20 @@ fun KaiteyoWorkspace(state: AppState) {
                     WorkspaceLayout(state, compact = compact, onOpenPalette = { paletteOpen = true })
                 }
 
-                if (state.navMode == NavMode.Floating || state.navMode == NavMode.Both) {
-                    DsFloatingLauncher(state, onOpenPalette = { paletteOpen = true })
-                }
-
                 if (paletteOpen) {
                     CommandPaletteOverlay(state = state, onDismiss = { paletteOpen = false })
                 }
 
                 if (state.mining.miningDialogOpen) {
                     MiningDialog(state)
+                }
+
+                if (state.editingCard != null) {
+                    CardEditorDialog(state)
+                }
+
+                if (state.launcherEnabled) {
+                    DsFloatingLauncher(state)
                 }
             }
         }
@@ -158,45 +180,88 @@ fun KaiteyoWorkspace(state: AppState) {
 
 @Composable
 private fun WorkspaceLayout(state: AppState, compact: Boolean, onOpenPalette: () -> Unit) {
-    val dockVisible = state.navMode == NavMode.Traditional || state.navMode == NavMode.Both
-    val collapse = { state.updateNavCollapsed(!state.navCollapsed) }
+    if (compact) {
+        CompactLayout(state, onOpenPalette)
+    } else {
+        DesktopLayout(state, onOpenPalette)
+    }
+}
 
-    when {
-        compact -> {
-            Column(Modifier.fillMaxSize()) {
-                if (state.navPosition == NavPosition.Top) {
-                    DsNavBar(state, collapsed = true, onToggleCollapsed = {}, compact = true)
-                }
-                ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
-                if (state.navPosition != NavPosition.Top) {
-                    DsNavBar(state, collapsed = true, onToggleCollapsed = {}, compact = true)
-                }
-            }
+/** Compact windows get a real tab bar — never a shrunk desktop dock. */
+@Composable
+private fun CompactLayout(state: AppState, onOpenPalette: () -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        if (state.compactNavPosition == NavPosition.Top) {
+            DsCompactNavBar(state)
         }
-        dockVisible && (state.navPosition == NavPosition.Left || state.navPosition == NavPosition.Right) -> {
+        ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
+        if (state.compactNavPosition != NavPosition.Top) {
+            DsCompactNavBar(state)
+        }
+    }
+}
+
+/** Desktop dock on any edge, with animated layout states. Bubble mode hides the dock entirely. */
+@Composable
+private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
+    val sc = surfaceColors()
+    // The dock is visible in Expanded and Compact modes; Bubble mode
+    // removes it entirely and hands navigation to the floating launcher.
+    val dockVisible = state.navLayout != NavLayout.Bubble
+    val position = state.navPosition
+    val motion = tween<androidx.compose.ui.unit.IntOffset>(240)
+    val fadeMotion = tween<Float>(240)
+    val rail = position == NavPosition.Left || position == NavPosition.Right
+
+    Box(Modifier.fillMaxSize().background(sc.background)) {
+        if (rail) {
             Row(Modifier.fillMaxSize()) {
-                if (state.navPosition == NavPosition.Left) {
-                    DsNavRail(state, collapsed = state.navCollapsed, onToggleCollapsed = collapse)
+                if (position == NavPosition.Left) {
+                    AnimatedVisibility(
+                        visible = dockVisible,
+                        enter = slideInHorizontally(motion) { -it } + fadeIn(fadeMotion),
+                        exit = slideOutHorizontally(motion) { -it } + fadeOut(fadeMotion),
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        DsNavRail(state, onOpenPalette)
+                    }
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxHeight())
                 } else {
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxHeight())
-                    DsNavRail(state, collapsed = state.navCollapsed, onToggleCollapsed = collapse)
+                    AnimatedVisibility(
+                        visible = dockVisible,
+                        enter = slideInHorizontally(motion) { it } + fadeIn(fadeMotion),
+                        exit = slideOutHorizontally(motion) { it } + fadeOut(fadeMotion),
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        DsNavRail(state, onOpenPalette)
+                    }
                 }
             }
-        }
-        dockVisible -> {
+        } else {
             Column(Modifier.fillMaxSize()) {
-                if (state.navPosition == NavPosition.Top) {
-                    DsNavBar(state, collapsed = state.navCollapsed, onToggleCollapsed = collapse)
-                }
-                ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
-                if (state.navPosition == NavPosition.Bottom) {
-                    DsNavBar(state, collapsed = state.navCollapsed, onToggleCollapsed = collapse)
+                if (position == NavPosition.Top) {
+                    AnimatedVisibility(
+                        visible = dockVisible,
+                        enter = slideInVertically(motion) { -it } + fadeIn(fadeMotion),
+                        exit = slideOutVertically(motion) { -it } + fadeOut(fadeMotion),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        DsNavBar(state, onOpenPalette)
+                    }
+                    ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
+                } else {
+                    ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
+                    AnimatedVisibility(
+                        visible = dockVisible,
+                        enter = slideInVertically(motion) { it } + fadeIn(fadeMotion),
+                        exit = slideOutVertically(motion) { it } + fadeOut(fadeMotion),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        DsNavBar(state, onOpenPalette)
+                    }
                 }
             }
-        }
-        else -> {
-            ContentColumn(state, onOpenPalette, Modifier.fillMaxSize())
         }
     }
 }
@@ -255,7 +320,11 @@ private fun keyName(key: Key): String = when (key) {
 private fun WorkspaceContent(state: AppState) {
     when (state.currentView) {
         WorkspaceView.Dashboard -> DashboardView(state)
-        WorkspaceView.Browser -> BrowserView(state)
+        // The Library IS the browser — universal search, browsing and
+        // editing all live there. Older entry points that navigated to
+        // the standalone Browser land here now.
+        WorkspaceView.Browser -> LibraryView(state)
+        WorkspaceView.Library -> LibraryView(state)
         WorkspaceView.Dictionary -> DictionaryManagerView(state)
         WorkspaceView.Mining -> MiningView(state)
         WorkspaceView.Media -> MediaView(state)
@@ -263,6 +332,8 @@ private fun WorkspaceContent(state: AppState) {
         WorkspaceView.Ocr -> OcrView(state)
         WorkspaceView.Integrations -> IntegrationsView(state)
         WorkspaceView.Review -> ReviewView(state)
+        WorkspaceView.Writing -> WritingPracticeView(state)
+        WorkspaceView.Grammar -> GrammarPracticeView(state)
         WorkspaceView.Collections -> CollectionsView(state)
         WorkspaceView.Tags -> TagFlagView(state)
         WorkspaceView.Statistics -> StatsView(state)
@@ -273,6 +344,7 @@ private fun WorkspaceContent(state: AppState) {
         WorkspaceView.Plugins -> PluginsView(state)
         WorkspaceView.ThemeStudio -> ThemeStudioView(state)
         WorkspaceView.Settings -> SettingsView(state)
+        WorkspaceView.Account -> AccountView(state)
         WorkspaceView.Contributions -> ContributionsView(state)
     }
 }

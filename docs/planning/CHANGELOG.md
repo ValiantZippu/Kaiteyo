@@ -1,6 +1,44 @@
 # Kaiteyo Changelog
 
-## v2.0.0 (Current) — Premium Experience
+## v2.2.1 (Current) — Platform Polish & Rebranding Completion
+
+### Added
+- **Premium installer subsystem** (`installer/`) — new, fully decoupled from Gradle:
+  - Windows: branded Inno Setup 6 installer (modern dynamic dark-mode wizard, install/upgrade/repair/modify, silent install, keep-or-remove uninstaller, file associations, launch-after-install, install-dir memory) + portable zip build
+  - macOS: styled DMG with branded background artwork and drag-to-Applications; hardened-runtime signing + notarization + stapling pipeline (`entitlements.plist`)
+  - Linux: AppImage with AppStream metadata + multi-size icon theme, deb builder, rpm spec, Flathub-ready Flatpak manifest, Snap wrapper
+  - Shared: `common/version.json` single source of truth, update-feed + artifact-manifest JSON schemas, integrity verification gate, staging/bump/feed generation scripts, SVG→bmp/ico/icns/png brand asset generator
+  - Docs: `installer/docs/{ARCHITECTURE,BUILD,SIGNING,RELEASE,UPDATES,FIRST_RUN}.md`
+- **First-run onboarding** — `OnboardingWizard` (8 steps, live-applied: theme, accent, scaling, font, navigation, motion) is wired into `KaiteyoDesktopSuite`, gated once by the settings key `onboarding.completed`, re-openable from Settings → “Show onboarding again”; every step skippable, crash-safe completion via `AppState.completeOnboarding()`
+- **Auto-update architecture** (`desktop/engine/updates/`) — `UpdateChannel` (stable/beta/nightly), `UpdateManifest` (feed schema v1), `HttpUpdateChecker`, sha256-verified `HttpUpdateDownloader`, `UpdateInstaller` interface, `UpdateService` coordinator with `StateFlow<UpdateState>`, `UpdatePolicy` rollback window
+- **CI extended** — `build-all.yml` now produces the Inno EXE, MSI, portable zip, styled + notarized DMGs (arm/intel), deb, rpm and AppImage; `build-release.yml` stages + verifies artifacts and generates the stable update feed
+
+### Added
+- **Native window shell** — `KaiteyoWindow.kt`, `NativeWindowDrag.kt`, `WindowActions.kt`, `WindowStateStore.kt`:
+  - 44dp custom title bar: K-logo opens the system menu (double-click closes), draggable wordmark, native-style window controls with hover states
+  - Native OS dragging on Windows (`WM_NCLBUTTONDOWN`/`HTCAPTION`) and Linux (EWMH `_NET_WM_MOVERESIZE`) with a Compose fallback — 1:1 tracking, no rubber-banding
+  - 8-zone invisible resize handles for the undecorated window (5dp edge strips + 10dp corners, 860×600 minimum); rounded corners flatten when maximized
+  - Custom system menu (title-bar right-click / Alt+Space / logo / dock button / launchpad strip) with full keyboard navigation (arrows, Enter, Esc) — one shared implementation
+  - Window size & position persisted to `~/.kaiteyo/window.json` (screen-validated on load, throttled saves, maximized states skipped) and included in profile backups
+  - Keyboard access across the dock menus, launchpad tile grid, window-control strip, and launcher bubble chips (focus rings, arrow navigation, focus returned on dismiss)
+- **Screenshot capture pipeline** — dev-only `--capture-state=<shell|menu|launchpad|strip>` (fixed 1200×800 window, self-exit dwell, never touches saved bounds), `scripts/capture-window-shell.sh` (per-OS window capture: xdotool/ImageMagick, screencapture, Win32), and the website's desktop screenshot gallery wired to `docs/screenshots/`
+- **Unified statistics dashboard** — the card manager's Kanji.Dojo-era Stats/Heatmap tabs now render the single analytics dashboard via `embedded` mode; the legacy `StatisticsOverview` and its helpers were removed, and its unique values (Flagged count, average interval, average ease) were folded into the dashboard's Library Distribution section, computed from real data in `StatsOverviewV2`
+
+### Changed
+- **iOS project fully renamed** — `iosApp/KanjiDojoApp` → `iosApp/KaiteyoApp` (folder, Swift entry point, `xcodeproj`, `pbxproj`, shared scheme, and all build references)
+- **Docs restructured by topic** — flat numbered docs moved into `architecture/`, `design/`, `branding/`, `roadmap/`, `features/`, `development/`, `contributing/`, `assets/`, `releases/`, `planning/`, `screenshots/`; `docs/README.md` is the new index; all internal links, `AGENTS.md`, `README.md`, and the website `documentation.json` updated
+- **Root cleanup** — AI-session build logs, crash dumps, and scratch databases moved to `scratch/` (gitignored)
+- **Desktop packaging rebranded** — snapcraft plug/paths (`kaiteyo-data`, `~/.kaiteyo`), flatpak metainfo changelog + URLs, AppImage metadata, and the snap launcher (now globs the jar) all Kaiteyo
+- **Play Store changelog fixed** — stale `kanji-dojo` macOS note rewritten in `fastlane`
+- **Stale editor metadata cleaned** — Inkscape `export-filename` paths in icon SVGs no longer reference the old project path
+
+### Removed
+- **Legacy attribution comments** — `Kanji.Dojo` references removed from stats dashboard, Home stats KDoc, and built-in deck catalog comments
+
+### Verified
+- **Rebranding audit across all platforms** — Android (manifest, resources, icons, activities), iOS (bundle id, Info.plist, assets, scheme), desktop (window title, AppImage/flatpak/snap metadata), and website (pages, FAQ, wiki, config) are fully Kaiteyo. Only legal attribution (fork history, original-author copyright, upstream repo) and functional references (`kanji-dojo-data-base-v15.sql` asset, App Store URL) remain — see `docs/branding/BRANDING.md` checklist.
+
+## v2.0.0 — Premium Experience
 
 ### Added
 - **Unified Library hub** — Replaces the old Kanji/Vocabulary split in Home:
@@ -108,7 +146,7 @@
 - Rebranded from Kanji Dojo to Kaiteyo (書いてよ)
 - Complete documentation system in `/docs/`
 - Professional repository structure with folder READMEs
-- AI_CONTEXT.md for AI assistant onboarding
+- `../development/AI_CONTEXT.md` for AI assistant onboarding
 
 ### Fixed
 - `animateColorAsState` import (now from `androidx.compose.animation`)

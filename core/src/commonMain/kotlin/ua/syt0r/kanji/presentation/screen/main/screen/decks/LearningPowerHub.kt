@@ -66,8 +66,6 @@ enum class LearningFeature(
         Icons.Default.ImportExport, Color(0xFF7BC8FF)),
     Statistics("stats", "Statistics", "Dashboard, graphs, per-deck, per-card",
         Icons.Default.BarChart, Color(0xFFFEAB57)),
-    Heatmap("heatmap", "Heatmap", "Interactive daily activity heatmap",
-        Icons.Default.CalendarMonth, Color(0xFFFF6B6B)),
     Search("search", "Search", "Universal search across all fields",
         Icons.Default.Search, Color(0xFFC2FC8B)),
     BulkActions("bulk", "Bulk Actions", "Multi-select operations on cards",
@@ -83,9 +81,9 @@ enum class LearningFeature(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LearningPowerHub(
-    initialCards: List<KaiteyoCard> = generateMockCards(30),
-    initialDecks: List<KaiteyoDeck> = generateMockDecks(),
-    initialTags: List<CardTag> = generateMockTags(),
+    initialCards: List<KaiteyoCard>,
+    initialDecks: List<KaiteyoDeck>,
+    initialTags: List<CardTag>,
     onClose: () -> Unit = {}
 ) {
     val surfaceColors = LocalSurfaceColors.current
@@ -356,12 +354,9 @@ fun LearningPowerHub(
                         onClose = { selectedFeature = null }
                     )
                     LearningFeature.ImportExport -> ImportExportScreen()
-                    LearningFeature.Statistics -> StatisticsDashboard(
-                        cards = cards,
-                        onClose = { selectedFeature = null }
-                    )
-                    LearningFeature.Heatmap -> HeatmapV2FullScreen(
-                        cards = cards,
+                    LearningFeature.Statistics -> StatisticsDashboardV2(
+                        stats = StatsOverviewV2(),
+                        heatmap = HeatmapDataV2(),
                         onClose = { selectedFeature = null }
                     )
                     LearningFeature.Search -> SearchEngineScreen(

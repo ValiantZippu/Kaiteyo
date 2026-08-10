@@ -35,8 +35,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.More
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.outlined.Handshake
+import androidx.compose.ui.text.font.FontWeight
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.theme.Dimens
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,19 +62,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import ua.syt0r.kanji.PlatformFeature
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.IndicatorCircle
-
-private val SponsorIcon: ImageVector = Icons.Outlined.Handshake
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +80,6 @@ fun HomeScreenUI(
     syncIconState: State<SyncIconState>,
     onTabSelected: (HomeScreenTab) -> Unit,
     onSyncButtonClick: () -> Unit,
-    onSponsorButtonClick: () -> Unit,
     screenTabContent: @Composable () -> Unit
 ) {
 
@@ -120,11 +120,6 @@ fun HomeScreenUI(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                if (!PlatformFeature.supported) return@Column
-                IconButton(onClick = onSponsorButtonClick) {
-                    Icon(SponsorIcon, null)
-                }
-
             }
 
             Surface(Modifier.weight(1f)) { screenTabContent.invoke() }
@@ -132,6 +127,9 @@ fun HomeScreenUI(
         }
 
     } else {
+        // Modernized compact navigation for mobile/responsive layouts
+        val isCompact = availableTabs.size > 5
+
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -151,35 +149,38 @@ fun HomeScreenUI(
                             state = syncIconState,
                             onClick = onSyncButtonClick
                         )
-                        if (!PlatformFeature.supported) return@CenterAlignedTopAppBar
-                        IconButton(onClick = onSponsorButtonClick) {
-                            Icon(SponsorIcon, null)
-                        }
                     }
                 )
             },
             bottomBar = {
-
-                Column(Modifier.shadow(10.dp)) {
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surface)
-                            .windowInsetsPadding(NavigationBarDefaults.windowInsets)
-                            .wrapContentWidth(align = Alignment.CenterHorizontally)
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        availableTabs.forEach { tab ->
-                            VerticalTabButton(
-                                tab = tab,
-                                selected = selectedTabState.value == tab,
-                                onClick = { onTabSelected(tab) }
-                            )
+                if (isCompact) {
+                    // Bottom navigation with More button for overflow tabs
+                    CompactBottomNav(
+                        availableTabs = availableTabs,
+                        selectedTabState = selectedTabState,
+                        onTabSelected = onTabSelected
+                    )
+                } else {
+                    // Standard bottom bar for desktop/phone
+                    Column(Modifier.shadow(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surface)
+                                .windowInsetsPadding(NavigationBarDefaults.windowInsets)
+                                .wrapContentWidth(align = Alignment.CenterHorizontally)
+                                .padding(horizontal = 20.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            availableTabs.forEach { tab ->
+                                VerticalTabButton(
+                                    tab = tab,
+                                    selected = selectedTabState.value == tab,
+                                    onClick = { onTabSelected(tab) }
+                                )
+                            }
                         }
                     }
                 }
-
             }
         ) {
             Box(
@@ -300,6 +301,113 @@ private fun rememberSyncIconRotation(animate: State<Boolean>): Animatable<Float,
     }
 
     return rotation
+}
+
+// Modernized compact bottom navigation for mobile/responsive layouts
+@Composable
+private fun CompactBottomNav(
+    availableTabs: List<HomeScreenTab>,
+    selectedTabState: State<HomeScreenTab>,
+    onTabSelected: (HomeScreenTab) -> Unit
+) {
+    val visibleTabs = availableTabs.take(4) // Show max 4 tabs
+    val hasOverflow = availableTabs.size > 4
+
+    Column(Modifier.shadow(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .windowInsetsPadding(NavigationBarDefaults.windowInsets)
+                .wrapContentWidth(align = Alignment.CenterHorizontally)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            visibleTabs.forEach { tab ->
+                VerticalTabButton(
+                    tab = tab,
+                    selected = selectedTabState.value == tab,
+                    onClick = { onTabSelected(tab) }
+                )
+            }
+
+            // More button for overflow tabs
+            if (hasOverflow) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(
+                            if (selectedTabState.value in availableTabs.subList(4, availableTabs.size)) {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
+                        )
+                        .clickable {
+                            // TODO: Show overflow menu with remaining tabs
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.More,
+                        contentDescription = "More tabs",
+                        tint = if (selectedTabState.value in availableTabs.subList(4, availableTabs.size)) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Modern floating launcher for compact desktop navigation
+@Composable
+private fun CompactLauncher(
+    compactPosition: String,
+    onOpenSwitcher: () -> Unit,
+    onToggleCollapse: () -> Unit
+) {
+    val accent = LocalKaiteyoAccent.current
+    val surfaceColors = LocalSurfaceColors.current
+
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(RoundedCornerShape(Dimens.RadiusXl))
+            .background(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            )
+            .shadow(elevation = 8.dp)
+            .clickable { onOpenSwitcher() }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            IconButton(
+                onClick = onOpenSwitcher,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Open workspace switcher",
+                    tint = accent.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Text(
+                text = "+",
+                style = MaterialTheme.typography.titleLarge,
+                color = accent.primary,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
 }
 
 @Composable

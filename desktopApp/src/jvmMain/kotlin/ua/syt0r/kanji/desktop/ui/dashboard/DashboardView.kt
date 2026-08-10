@@ -19,10 +19,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +42,9 @@ import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
+import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
+import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
@@ -41,13 +52,24 @@ import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsStatTile
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.dueColor
+import ua.syt0r.kanji.desktop.designsystem.errorColor
+import ua.syt0r.kanji.desktop.designsystem.infoColor
+import ua.syt0r.kanji.desktop.designsystem.newColor
+import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.engine.stats.GoalsEngine
 import ua.syt0r.kanji.desktop.engine.stats.HeatmapEngine
 import ua.syt0r.kanji.desktop.engine.stats.LearningCurveEngine
 import ua.syt0r.kanji.desktop.engine.stats.HeatmapCell
 import ua.syt0r.kanji.desktop.engine.stats.WeakSpotEngine
+import ua.syt0r.kanji.desktop.model.CollectionDef
 import ua.syt0r.kanji.desktop.model.SrsStatus
+import ua.syt0r.kanji.desktop.model.StudyMode
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 // ============================================
 // DASHBOARD
@@ -67,7 +89,14 @@ fun DashboardView(state: AppState) {
             .padding(DsSpacing.Xl),
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
     ) {
-        // Hero: start review
+        // Hero: continue studying (deck with the most due/new work) or start review
+        val continueDeck = remember(state.library.revision, state.cards.size) {
+            state.library.allDecks()
+                .map { deck -> deck to state.library.deckStats(deck, state.cards.toList()) }
+                .filter { it.second.anyDue + it.second.anyNew > 0 }
+                .maxByOrNull { it.second.anyDue + it.second.anyNew }
+                ?.first
+        }
         DsCard(elevated = true) {
             Row(
                 modifier = Modifier.padding(DsSpacing.Xl),
@@ -75,22 +104,93 @@ fun DashboardView(state: AppState) {
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Ready to study?",
+                        text = if (continueDeck != null) "Continue \"${continueDeck.name}\"" else "Ready to study?",
                         color = sc.textPrimary,
                         fontSize = DsType.Heading,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(DsSpacing.Xs))
                     Text(
-                        text = "${state.dueCount()} cards due now · ${state.newCount()} new cards available",
+                        text = if (continueDeck != null) {
+                            val s = state.library.deckStats(continueDeck, state.cards.toList())
+                            "${s.anyDue} due · ${s.anyNew} new in this deck · ${state.dueCount()} cards due across your library"
+                        } else {
+                            "${state.dueCount()} cards due now · ${state.newCount()} new cards available"
+                        },
                         color = sc.textMuted,
                         fontSize = DsType.Body
                     )
                 }
+                if (continueDeck != null) {
+                    DsButton(
+                        text = "Continue",
+                        icon = Icons.Default.PlayArrow,
+                        onClick = {
+                            val mode = StudyMode.forKind(continueDeck.kind).firstOrNull()
+                            if (mode == StudyMode.Writing) state.startLibraryWriting(continueDeck.id)
+                            else if (mode != null) state.startLibraryStudy(continueDeck.id, mode)
+                            else state.startReview()
+                        }
+                    )
+                } else {
+                    DsButton(
+                        text = "Start Review",
+                        icon = Icons.Default.PlayArrow,
+                        onClick = { state.startReview() }
+                    )
+                }
+            }
+        }
+
+        // Quick actions
+        DsCard {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Md),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Quick actions",
+                    color = surfaceColors().textMuted,
+                    fontSize = DsType.Caption,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
                 DsButton(
-                    text = "Start Review",
+                    text = "Study",
                     icon = Icons.Default.PlayArrow,
+                    compact = true,
                     onClick = { state.startReview() }
+                )
+                DsButton(
+                    text = "Writing",
+                    icon = Icons.Default.Create,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { state.startWritingPractice() }
+                )
+                DsButton(
+                    text = "Browse",
+                    icon = Icons.Default.GridView,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { state.currentView = WorkspaceView.Browser }
+                )
+                DsButton(
+                    text = "New card",
+                    icon = Icons.Default.Add,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { state.newCard() }
+                )
+                DsButton(
+                    text = "Collections",
+                    icon = Icons.Default.Folder,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { state.currentView = WorkspaceView.Collections }
                 )
             }
         }
@@ -104,7 +204,7 @@ fun DashboardView(state: AppState) {
                 label = "Due now",
                 value = state.dueCount().toString(),
                 modifier = Modifier.weight(1f),
-                delta = "+${state.dueCount()} today",
+                delta = "${state.dueCount()} review${if (state.dueCount() == 1) "" else "s"}",
                 deltaPositive = state.dueCount() >= 0
             )
             DsStatTile(
@@ -119,14 +219,43 @@ fun DashboardView(state: AppState) {
                 delta = "21d+ intervals"
             )
             DsStatTile(
-                label = "Suspended",
-                value = state.suspendedCount().toString(),
-                modifier = Modifier.weight(1f)
+                label = "Study time",
+                value = state.formatDuration(state.totalStudyTime()),
+                modifier = Modifier.weight(1f),
+                delta = "${state.totalReviews()} total reviews"
             )
             DsStatTile(
                 label = "Total cards",
                 value = cards.size.toString(),
                 modifier = Modifier.weight(1f)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            DsStatTile(
+                label = "This week",
+                value = state.weeklyReviews().toString(),
+                modifier = Modifier.weight(1f),
+                delta = "${state.studiedDaysInWeek()}/7 days active"
+            )
+            DsStatTile(
+                label = "Streak",
+                value = "${HeatmapEngine.currentStreak(state.summaries)}d",
+                modifier = Modifier.weight(1f),
+                delta = "current streak"
+            )
+            DsStatTile(
+                label = "Suspended",
+                value = state.suspendedCount().toString(),
+                modifier = Modifier.weight(1f)
+            )
+            DsStatTile(
+                label = "Recalled",
+                value = state.collections.collections.count { it.favorite }.toString(),
+                modifier = Modifier.weight(1f),
+                delta = "favorite collections"
             )
         }
 
@@ -190,7 +319,7 @@ fun DashboardView(state: AppState) {
                                 )
                                 Text(
                                     text = "${progress.achieved} / ${progress.target}",
-                                    color = if (progress.complete) Color(0xFFC2FC8B) else sc.textMuted,
+                                    color = if (progress.complete) successColor() else sc.textMuted,
                                     fontSize = DsType.Caption,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -198,7 +327,7 @@ fun DashboardView(state: AppState) {
                             Spacer(Modifier.height(4.dp))
                             DsProgressBar(
                                 fraction = progress.fraction,
-                                color = if (progress.complete) Color(0xFFC2FC8B) else Color.Unspecified
+                                color = if (progress.complete) successColor() else Color.Unspecified
                             )
                         }
                     }
@@ -300,17 +429,385 @@ fun DashboardView(state: AppState) {
                 }
             }
         }
+
+        // Study recommendations
+        StudyRecommendationsCard(state)
+
+        // Pinned decks + recent imports
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+        ) {
+            PinnedDecksCard(state, Modifier.weight(1f))
+            RecentImportsCard(state, Modifier.weight(1f))
+        }
+
+        // Recent decks + recently added cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+        ) {
+            RecentDecksCard(state, Modifier.weight(1f))
+            RecentlyAddedCard(state, Modifier.weight(1f))
+        }
+    }
+}
+
+// ============================================
+// PINNED DECKS
+// ============================================
+
+@Composable
+private fun PinnedDecksCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val pinned = remember(state.library.revision) { state.library.allDecks().filter { it.pinned } }
+
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "Pinned decks",
+                action = {
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Library }) {
+                        androidx.compose.material3.Text("Library", color = accent().primary)
+                    }
+                }
+            )
+            if (pinned.isEmpty()) {
+                Text(
+                    text = "Pin decks from the Library to keep your favourites one click away.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            }
+            pinned.forEach { deck ->
+                val stats = state.library.deckStats(deck, state.cards.toList())
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                        .clickable { state.currentView = WorkspaceView.Library }
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.Icon(
+                        Icons.Default.PushPin,
+                        contentDescription = null,
+                        tint = accent().primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    Column(Modifier.weight(1f)) {
+                        Text(deck.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
+                        Text(
+                            text = "${deck.kind.label} · ${stats.total} cards",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    if (stats.anyDue + stats.anyNew > 0) {
+                        DsBadge(text = "${stats.anyDue + stats.anyNew} ready", tint = dueColor())
+                    }
+                    DsButton(
+                        text = "Study",
+                        icon = Icons.Default.PlayArrow,
+                        compact = true,
+                        onClick = {
+                            val mode = StudyMode.forKind(deck.kind).firstOrNull()
+                            if (mode == StudyMode.Writing) state.startLibraryWriting(deck.id)
+                            else if (mode != null) state.startLibraryStudy(deck.id, mode)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// RECENT IMPORTS
+// ============================================
+
+@Composable
+private fun RecentImportsCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val imports = state.activityLog.entries.filter { it.category == ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Import }.take(5)
+
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "Recent imports",
+                action = {
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Transfer }) {
+                        androidx.compose.material3.Text("Transfer", color = accent().primary)
+                    }
+                }
+            )
+            if (imports.isEmpty()) {
+                Text(
+                    text = "No imports yet — bring content in from the Import / Export view.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            }
+            imports.forEach { entry ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(infoColor())
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    Text(
+                        text = entry.summary,
+                        color = sc.textSecondary,
+                        fontSize = DsType.Body,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1
+                    )
+                    Text(
+                        text = ua.syt0r.kanji.desktop.engine.history.ActivityFormatters.relative(entry.timestamp),
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// STUDY RECOMMENDATIONS
+// ============================================
+
+private data class Recommendation(val title: String, val detail: String, val view: WorkspaceView)
+
+@Composable
+private fun StudyRecommendationsCard(state: AppState) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
+
+    val recommendations = remember(state.cards.size, state.summaries.size, state.reviewSession != null) {
+        buildList {
+            val due = state.dueCount()
+            if (due > 0) {
+                add(Recommendation("Review $due due cards", "Keep your streak alive and clear today's queue.", WorkspaceView.Review))
+            }
+            val newCount = state.newCount()
+            if (newCount > 0 && size < 3) {
+                add(Recommendation("Learn $newCount new cards", "Fresh material is waiting — introduce it gradually.", WorkspaceView.Review))
+            }
+            val weak = WeakSpotEngine.mostDifficult(state.cards.toList(), limit = 1)
+            if (weak.isNotEmpty() && size < 3) {
+                add(
+                    Recommendation(
+                        "Retrain \"${weak.first().character}\"",
+                        "Lowest accuracy in your pool — worth a dedicated pass.",
+                        WorkspaceView.Browser
+                    )
+                )
+            }
+            val studiedToday = state.summaries.any { it.day == today && (it.newCount + it.reviewCount) > 0 }
+            if (!studiedToday && size < 3) {
+                add(Recommendation("Start today's session", "A few minutes now compounds into a long streak.", WorkspaceView.Dashboard))
+            }
+            val recent = state.cards.sortedByDescending { it.createdAt }.take(3)
+            if (recent.isNotEmpty() && size < 3) {
+                add(Recommendation("Review recent additions", "\"${recent.first().character}\" was added recently — reinforce it.", WorkspaceView.Browser))
+            }
+            if (isEmpty()) {
+                add(Recommendation("All caught up", "Nothing due right now — perfect time to explore or mine new cards.", WorkspaceView.Browser))
+            }
+        }
+    }
+
+    DsCard {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "Recommended for you",
+                subtitle = "Based on your current workload"
+            )
+            recommendations.forEach { rec ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                        .clickable { state.currentView = rec.view }
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.TrendingUp,
+                        contentDescription = null,
+                        tint = ac.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    Column(Modifier.weight(1f)) {
+                        Text(rec.title, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
+                        Text(rec.detail, color = sc.textMuted, fontSize = DsType.Caption)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// RECENT DECKS
+// ============================================
+
+@Composable
+private fun RecentDecksCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val recent = state.collections.collections
+        .filter { !it.archived }
+        .sortedWith(compareByDescending<CollectionDef> { it.pinned }.thenByDescending { it.favorite }.thenByDescending { it.createdAt })
+        .take(4)
+
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "Recent decks",
+                action = {
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Collections }) {
+                        androidx.compose.material3.Text("All", color = accent().primary)
+                    }
+                }
+            )
+            if (recent.isEmpty()) {
+                Text(
+                    text = "No collections yet — create one from the Collections view.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            }
+            recent.forEach { def ->
+                val cardCount = state.collections.resolveCards(def, state.cards.toList()).size
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                        .clickable {
+                            state.selectedCardIds.clear()
+                            state.selectedCard = null
+                            state.currentView = WorkspaceView.Collections
+                        }
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = if (def.pinned) accent().primary else sc.textMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    Column(Modifier.weight(1f)) {
+                        Text(def.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
+                        Text("$cardCount cards", color = sc.textMuted, fontSize = DsType.Caption)
+                    }
+                    DsButton(
+                        text = "Study",
+                        icon = Icons.Default.PlayArrow,
+                        compact = true,
+                        onClick = { state.startReview(collection = def) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// RECENTLY ADDED CARDS
+// ============================================
+
+@Composable
+private fun RecentlyAddedCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val recent = state.cards.sortedByDescending { it.createdAt }.take(6)
+
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "Recently added",
+                action = {
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Browser }) {
+                        androidx.compose.material3.Text("Browse", color = accent().primary)
+                    }
+                }
+            )
+            if (recent.isEmpty()) {
+                Text(
+                    text = "Nothing added yet — mine from the dictionary or use New card.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            }
+            recent.forEach { card ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                        .clickable {
+                            state.selectedCard = card
+                            state.currentView = WorkspaceView.Browser
+                        }
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = card.character.ifBlank { "—" },
+                        color = sc.textPrimary,
+                        fontSize = DsType.Title,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(44.dp)
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = card.meaning.ifBlank { "No meaning yet" },
+                            color = sc.textSecondary,
+                            fontSize = DsType.Body,
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "created ${ua.syt0r.kanji.desktop.engine.history.ActivityFormatters.relative(card.createdAt)}",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    DsBadge(text = card.status.name, tint = if (card.status == SrsStatus.New) infoColor() else accent().primary)
+                    DsIconButton(
+                        icon = Icons.Default.Edit,
+                        onClick = { state.openEditor(card) },
+                        contentDescription = "Edit card",
+                        size = 28.dp
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun categoryColor(category: ua.syt0r.kanji.desktop.engine.history.ActivityCategory): Color =
     when (category) {
-        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Review -> Color(0xFFC2FC8B)
-        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Study -> Color(0xFF7BC8FF)
-        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Undo -> Color(0xFFFEAB57)
-        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.System -> Color(0xFFA78BFA)
-        else -> Color(0xFF606060)
+        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Review -> successColor()
+        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Study -> infoColor()
+        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Undo -> warningColor()
+        ua.syt0r.kanji.desktop.engine.history.ActivityCategory.System -> newColor()
+        else -> surfaceColors().textMuted
     }
 
 // ============================================
@@ -400,7 +897,7 @@ private fun ReviewPaceChart(summaries: List<ua.syt0r.kanji.desktop.model.StudyDa
                         .fillMaxWidth()
                         .height((fraction * 100).dp)
                         .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                        .background(if (point.accuracy > 0.7f) ac.primary.copy(alpha = 0.85f) else Color(0xFFFF6B6B).copy(alpha = 0.8f))
+                        .background(if (point.accuracy > 0.7f) ac.primary.copy(alpha = 0.85f) else errorColor().copy(alpha = 0.8f))
                 )
             }
         }

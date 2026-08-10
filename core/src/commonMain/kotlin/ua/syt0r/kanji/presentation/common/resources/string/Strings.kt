@@ -65,9 +65,9 @@ interface Strings {
     val about: AboutStrings
     val backup: BackupStrings
     val feedback: FeedbackStrings
-    val sponsor: SponsorStrings
     val account: AccountScreenStrings
     val sync: SyncScreenStrings
+    val credits: CreditsStrings
 
     val syncDialog: SyncDialogStrings
     val syncSnackbar: SyncSnackbarStrings
@@ -100,32 +100,97 @@ interface NavStrings {
     val decksLabel: String
     val textAnalysisLabel: String
     val appearanceLabel: String
-    val sponsorLabel: String
     val aboutLabel: String
     val backupLabel: String
     val syncLabel: String
+    val accountLabel: String
+    val creditsLabel: String
+    val modeExpandedTooltip: String
+    val modeCompactTooltip: String
+    val modeBubbleTooltip: String
+    val placementLabel: String
+    val settingsLabel: String
+    val kanjiBrowserLabel: String
+
+    // Launchpad quick access
+    val quickAccessLabel: String
+    val homeLabel: String
+    val libraryLabel: String
+    val studyLabel: String
+    val dictionaryLabel: String
+    val statisticsLabel: String
+    val collectionsLabel: String
+
+    // Settings tabs
+    val generalTabLabel: String
+    val sidebarTabLabel: String
+    val bubbleTabLabel: String
+    val phoneTabLabel: String
+    val accessibilityTabLabel: String
+
+    // Sidebar settings
+    val expandedWidthLabel: String
+    val sidebarIconSizeLabel: String
+    val compactSpacingLabel: String
+    val labelsVisibilityLabel: String
+
+    // Bubble settings
+    val bubbleIconSizeLabel: String
+
+    // Phone settings
+    val phoneNavPositionLabel: String
+    val phoneLauncherPositionLabel: String
+    val phoneStoredSeparatelyHint: String
+
+    // General settings
+    val defaultModeLabel: String
+    val rememberPreviousModeLabel: String
+    val enableAnimationsLabel: String
+
+    // Appear Studio entry
+    val openNavigationSettingsLabel: String
+
 }
 
 interface AccountScreenStrings {
     val title: String
 
+    val profileSection: String
+    val usernameLabel: String
+    val avatarLabel: String
+    val localProfileLabel: String
+
+    val applicationSection: String
+    val syncStatusLabel: String
+    val localStorageUsageLabel: String
+    val databaseInfoLabel: String
+    val cacheLabel: String
+    val backupsLabel: String
+
+    val studySection: String
+    val currentStreakLabel: String
+    val lifetimeReviewsLabel: String
+    val cardsLearnedLabel: String
+    val totalStudyTimeLabel: String
+
+    val connectedServicesSection: String
+    val githubServiceLabel: String
+    val syncServiceLabel: String
+    val dictionariesServiceLabel: String
+    val pluginsServiceLabel: String
+
     val loggedOutMessage: String
     val signInButton: String
 
     val emailTitle: String
-    val subscriptionTitle: String
-    val subscriptionStatusInactive: String
-    val subscriptionStatusActive: String
-    val subscriptionStatusExpired: String
-    val subscriptionValidUntilTemplate: String
     val signOutButton: String
 
     val issueNoConnectionTitle: String
     val issueNoConnectionMessage: String
+    val issueNoSubscriptionTitle: String
+    val issueNoSubscriptionMessage: String
     val issueSessionExpiredTitle: String
     val issueSessionExpiredMessage: String
-    val issueSubscriptionOutdatedTitle: String
-    val issueSubscriptionOutdatedMessage: String
     val issueOtherTitle: String
     val issueOtherMessageFallback: String
 }
@@ -213,10 +278,6 @@ interface TutorialDialogStrings {
     val page4Top: String
     val page4Bottom: String
     val page5: String
-}
-
-interface SponsorStrings {
-    val message: String
 }
 
 interface FeedbackStrings {
@@ -365,14 +426,56 @@ interface ReminderDialogStrings {
 
 interface AboutStrings {
     val title: String
+    val appTitle: String
+    val projectTitle: String
+    val developmentTitle: String
+    val legalTitle: String
     val version: (versionName: String) -> String
+    val buildNumber: (buildNumber: String) -> String
+    val projectDescription: String
+
+    val philosophyTitle: String
+    val philosophyText: String
+
+    val missionTitle: String
+    val missionText: String
+
     val githubTitle: String
     val githubDescription: String
+    val documentationTitle: String
+    val documentationDescription: String
+    val websiteTitle: String
+    val websiteDescription: String
+
+    val changelogTitle: String
+    val changelogDescription: String
+    val roadmapTitle: String
+    val roadmapDescription: String
+
+    val creditsTitle: String
+    val creditsDescription: String
+
+    val licenseTitle: String
+    val licenseDescription: String
+    val openSourceTitle: String
+    val openSourceDescription: String
+
     val versionChangesTitle: String
     val versionChangesDescription: String
     val versionChangesButton: String
-    val creditsTitle: String
-    val creditsDescription: String
+}
+
+interface CreditsStrings {
+    val title: String
+    val coreDevelopmentTitle: String
+    val contributorsTitle: String
+    val designTitle: String
+    val translationsTitle: String
+    val openSourceLibrariesTitle: String
+    val specialThanksTitle: String
+    val licenseTitle: String
+    val licenseDescription: String
+    val closeButton: String
 }
 
 

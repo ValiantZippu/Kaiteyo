@@ -1,7 +1,6 @@
 package ua.syt0r.kanji.core.account
 
 import kotlinx.serialization.Serializable
-import kotlinx.datetime.Instant
 
 // ============================================
 // KAITEYO ACCOUNT & SYNC DATA MODELS v1.2
@@ -100,17 +99,6 @@ data class KaiteyoProfile(
     val storageUsed: Long = 0L,
     val storageLimit: Long = 0L,
     val deviceCount: Int = 0
-)
-
-@Serializable
-data class LocalProfile(
-    val id: String = "",
-    val name: String = "",
-    val createdAt: String = "",
-    val lastUsedAt: String = "",
-    val deckCount: Int = 0,
-    val cardCount: Int = 0,
-    val isDefault: Boolean = false
 )
 
 // --- DEVICE ---
@@ -260,24 +248,6 @@ data class SyncStatistics(
     val averageSyncDuration: Long = 0,
     val lastSyncSize: Long = 0,
     val dataSize: Long = 0
-)
-
-// --- BACKUP ---
-
-@Serializable
-data class BackupMetadata(
-    val id: String = "",
-    val name: String = "",
-    val createdAt: Long = 0L,
-    val size: Long = 0L,
-    val checksum: String = "",
-    val version: Int = 1,
-    val isEncrypted: Boolean = false,
-    val includesHistory: Boolean = true,
-    val includesSettings: Boolean = true,
-    val includesThemes: Boolean = true,
-    val profileId: String = "",
-    val deviceName: String = ""
 )
 
 // --- SETTINGS ---

@@ -2,7 +2,6 @@
 
 package ua.syt0r.kanji.presentation.screen.main.screen.decks
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +35,7 @@ import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeckBrowserFullScreen(
-    decks: List<KaiteyoDeck> = generateMockDecks(),
+    decks: List<KaiteyoDeck>,
     onDeckClick: (KaiteyoDeck) -> Unit = {},
     onFavorite: (KaiteyoDeck) -> Unit = {},
     onArchive: (KaiteyoDeck) -> Unit = {},

@@ -23,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
@@ -80,9 +79,8 @@ import ua.syt0r.kanji.desktop.designsystem.DsToolbarDivider
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
-import ua.syt0r.kanji.desktop.ui.browser.BrowserView
+import ua.syt0r.kanji.desktop.engine.media.MediaEngine
 import ua.syt0r.kanji.desktop.ui.collections.CollectionsView
-import ua.syt0r.kanji.desktop.ui.stats.StatsView
 import ua.syt0r.kanji.desktop.ui.themes.ThemeStudioView
 import kotlin.math.roundToInt
 
@@ -96,8 +94,6 @@ import kotlin.math.roundToInt
 
 fun panelKindIcon(kind: PanelKind): ImageVector = when (kind) {
     PanelKind.Dictionary -> Icons.Default.MenuBook
-    PanelKind.KanjiBrowser -> Icons.Default.GridView
-    PanelKind.Statistics -> Icons.Default.BarChart
     PanelKind.DeckBrowser -> Icons.Default.Folder
     PanelKind.ThemeStudio -> Icons.Default.Palette
     PanelKind.Search -> Icons.Default.Search
@@ -265,8 +261,6 @@ private fun DsPanelFrame(
 fun PanelContent(state: AppState, kind: PanelKind) {
     when (kind) {
         PanelKind.Dictionary -> DictionaryPanel(state)
-        PanelKind.KanjiBrowser -> BrowserView(state)
-        PanelKind.Statistics -> StatsView(state)
         PanelKind.DeckBrowser -> CollectionsView(state)
         PanelKind.ThemeStudio -> ThemeStudioView(state)
         PanelKind.Search -> SearchPanel(state)

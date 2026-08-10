@@ -1,0 +1,32 @@
+{
+  "schema": "kaiteyo-version",
+  "schema_version": 1,
+
+  "app_name": "Kaiteyo",
+  "app_id": "ua.syt0r.kaiteyo",
+  "windows_upgrade_uuid": "12c852a8-6e21-41a7-bd47-3bec9ff5c5df",
+
+  "version": "2.2.1",
+  "version_code": 2210,
+  "release_channel": "stable",
+
+  "vendor": "syt0r",
+  "homepage": "https://github.com/ValiantZippu/Kaiteyo",
+  "issues_url": "https://github.com/ValiantZippu/Kaiteyo/issues",
+  "donation_url": "https://buymeacoffee.com/syt0r",
+
+  "update_feed_base": "https://github.com/ValiantZippu/Kaiteyo/releases/download/update-feed/",
+
+  "artifact_naming": "Kaiteyo-{version}-{platform}.{ext}",
+  "expected_artifacts": {
+    "windows": ["exe", "msi", "zip"],
+    "macos": ["dmg"],
+    "linux": ["AppImage", "deb", "rpm", "flatpak"]
+  },
+
+  "minimum_system_requirements": {
+    "windows": "Windows 10 21H2 (10.0.19044) or later, 64-bit",
+    "macos": "macOS 12 (Monterey) or later, Apple Silicon or Intel",
+    "linux": "Any modern distro; see per-package docs"
+  }
+}

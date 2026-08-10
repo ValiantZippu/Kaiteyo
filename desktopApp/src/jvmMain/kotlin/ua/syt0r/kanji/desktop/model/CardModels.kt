@@ -67,7 +67,8 @@ data class DesktopCard(
     val accuracy: Float = 0.5f,
     val deckId: String = DEFAULT_DECK_ID,
     val createdAt: Instant = Instant.fromEpochMilliseconds(0),
-    val lastReviewedAt: Instant? = null
+    val lastReviewedAt: Instant? = null,
+    val contentKind: ContentKind = ContentKind.Kanji
 ) {
     val readings: List<String> get() = onReadings + kunReadings
 
@@ -79,6 +80,7 @@ data class DesktopCard(
             append(' ').append(readings.joinToString(" "))
             append(' ').append(radicals.joinToString(" "))
             append(' ').append(tags.joinToString(" "))
+            append(' ').append(contentKind.label)
         }.lowercase()
 
     companion object {

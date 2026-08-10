@@ -6,7 +6,7 @@ description: Where Kaiteyo is heading — as documented in the repository's ROAD
 <div class="prose-note">
   <svg class="icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
   Maintained in the repository at
-  <a href="{{ site.repository }}/blob/develop/docs/09_ROADMAP.md" target="_blank" rel="noopener">docs/09_ROADMAP.md</a> —
+  <a href="{{ site.repository }}/blob/develop/docs/roadmap/ROADMAP.md" target="_blank" rel="noopener">docs/roadmap/ROADMAP.md</a> —
   republished on every site build.
 </div>
 

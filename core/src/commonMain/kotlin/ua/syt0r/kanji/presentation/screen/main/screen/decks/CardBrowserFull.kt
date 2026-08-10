@@ -43,7 +43,7 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardBrowserFullScreen(
-    cards: List<KaiteyoCard> = generateMockCards(50),
+    cards: List<KaiteyoCard>,
     onFlagCard: (String, CardFlagType) -> Unit = { _, _ -> },
     onStatusChange: (String, CardStatus) -> Unit = { _, _ -> },
     onUpdateCard: (KaiteyoCard) -> Unit = {},

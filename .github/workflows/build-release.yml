@@ -13,9 +13,58 @@ jobs:
     uses: ./.github/workflows/build-all.yml
     secrets: inherit
 
-  create-release:
+  stage-and-verify:
     runs-on: ubuntu-latest
     needs: build-all
+    env:
+      KIT_VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Downloading artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Stage release (integrity gate)
+        run: |
+          VERSION="${KIT_VERSION#v}"
+          # Canonical names + sha256 manifest, scanning the downloaded artifacts
+          # (same globs as a local build). Missing required artifacts FAIL here.
+          bash installer/scripts/stage-artifacts.sh "$VERSION" \
+            "release/kaiteyo-$VERSION" \
+            --from "$GITHUB_WORKSPACE/artifacts"
+
+      - name: Verify staged release
+        run: |
+          VERSION="${KIT_VERSION#v}"
+          bash installer/scripts/verify-artifacts.sh "$VERSION"
+
+      - name: Generate update feeds
+        # All three channels are written against the channel-stable base URL
+        # (the dedicated `update-feed` release). `releases/latest` only resolves
+        # to the newest STABLE release, so it can never serve beta/nightly feeds.
+        run: |
+          VERSION="${KIT_VERSION#v}"
+          BASE="https://github.com/ValiantZippu/Kaiteyo/releases/download/update-feed"
+          for CHANNEL in stable beta nightly; do
+            bash installer/scripts/make-update-manifest.sh "$VERSION" "$CHANNEL" "$BASE"
+          done
+
+      - name: Upload staged release
+        # The update feeds are generated above (outside release/) but must reach
+        # the create-release job too — include them in this artifact.
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            release/
+            installer/common/update-*.json
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: stage-and-verify
 
     steps:
       - name: Downloading artifacts
@@ -30,4 +79,28 @@ jobs:
             **/*.apk
             **/*.dmg
             **/*.msi
+            **/*.exe
+            **/*.zip
             **/*.AppImage
+            **/*.deb
+            **/*.rpm
+            **/*.flatpak
+            **/artifact-manifest.json
+            **/update-*.json
+
+      - name: Publish update feeds (channel-stable release)
+        # The desktop app reads feeds from `releases/download/update-feed/...`.
+        # This lightweight prerelease is refreshed on every tagged release, so
+        # each channel always sees the newest feed — regardless of whether the
+        # newest version is a stable, beta or nightly. Marked prerelease so
+        # GitHub's `releases/latest` keeps pointing at the real releases.
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: update-feed
+          name: "Kaiteyo update feed"
+          body: "Channel feeds served to the desktop app. Refreshed automatically on every tagged release."
+          prerelease: true
+          files: |
+            **/update-*.json
+          fail_on_unmatched_files: false

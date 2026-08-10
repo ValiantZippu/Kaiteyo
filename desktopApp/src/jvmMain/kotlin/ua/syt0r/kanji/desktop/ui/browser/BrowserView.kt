@@ -30,7 +30,9 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.PlayArrow
@@ -63,6 +65,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsCard
 import ua.syt0r.kanji.desktop.designsystem.DsChip
 import ua.syt0r.kanji.desktop.designsystem.DsConfirmDialog
 import ua.syt0r.kanji.desktop.designsystem.DsContextMenuHost
+import ua.syt0r.kanji.desktop.designsystem.DsDialog
 import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
 import ua.syt0r.kanji.desktop.designsystem.DsFavoriteToggle
 import ua.syt0r.kanji.desktop.designsystem.DsFlagBadge
@@ -86,6 +89,7 @@ import ua.syt0r.kanji.desktop.engine.review.ReviewFilterPreset
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.SrsStatus
 import ua.syt0r.kanji.desktop.model.ToastKind
+import ua.syt0r.kanji.desktop.ui.library.DeckPickerDialog
 
 // ============================================
 // BROWSER
@@ -115,6 +119,9 @@ fun BrowserView(state: AppState) {
     var bulkTagDialog by remember { mutableStateOf(false) }
     var bulkFlagDialog by remember { mutableStateOf(false) }
     var bulkDeleteConfirm by remember { mutableStateOf(false) }
+    var activeStateFilter by remember { mutableStateOf<String?>(null) }
+    var pendingAddToDeck by remember { mutableStateOf<List<String>?>(null) }
+    var batchEditDialog by remember { mutableStateOf(false) }
 
     val selectionActive = selectionMode || state.selectedCardIds.isNotEmpty()
 
@@ -131,6 +138,10 @@ fun BrowserView(state: AppState) {
         if (activeFlag != null) {
             if (isNotBlank()) append(" ")
             append("flag:").append(activeFlag)
+        }
+        if (activeStateFilter != null) {
+            if (isNotBlank()) append(" ")
+            append("status:").append(activeStateFilter)
         }
     }
     val results = sortCards(state.searchCards(query), sortMode)
@@ -181,8 +192,8 @@ fun BrowserView(state: AppState) {
         ) {
             DsChip(
                 text = "All",
-                selected = activePreset == null && activeTag == null && activeFlag == null,
-                onClick = { activePreset = null; activeTag = null; activeFlag = null }
+                selected = activePreset == null && activeTag == null && activeFlag == null && activeStateFilter == null,
+                onClick = { activePreset = null; activeTag = null; activeFlag = null; activeStateFilter = null }
             )
             ReviewFilterPreset.entries.filter { it != ReviewFilterPreset.All }.forEach { preset ->
                 DsChip(
@@ -191,6 +202,16 @@ fun BrowserView(state: AppState) {
                     onClick = { activePreset = if (activePreset == preset) null else preset }
                 )
             }
+            DsChip(
+                text = "Suspended",
+                selected = activeStateFilter == "suspended",
+                onClick = { activeStateFilter = if (activeStateFilter == "suspended") null else "suspended" }
+            )
+            DsChip(
+                text = "Buried",
+                selected = activeStateFilter == "buried",
+                onClick = { activeStateFilter = if (activeStateFilter == "buried") null else "buried" }
+            )
             Spacer(Modifier.weight(1f))
             Text(
                 text = "${results.size} cards",
@@ -254,6 +275,14 @@ fun BrowserView(state: AppState) {
                 onClick = { state.startReview(query = query) },
                 compact = true
             )
+            DsButton(
+                text = "Edit",
+                icon = Icons.Default.Edit,
+                kind = DsButtonKind.Secondary,
+                enabled = state.selectedCard != null,
+                onClick = { state.selectedCard?.let { state.openEditor(it) } },
+                compact = true
+            )
         }
 
         if (selectionActive) {
@@ -297,11 +326,43 @@ fun BrowserView(state: AppState) {
                     onClick = { bulkSetFavorite(state, state.selectedCardIds.toList(), favorite = true) }
                 )
                 DsButton(
+                    text = "Batch edit…",
+                    icon = Icons.Default.Edit,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { batchEditDialog = true }
+                )
+                DsButton(
+                    text = "Edit",
+                    icon = Icons.Default.Edit,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = {
+                        state.selectedCardIds.firstOrNull()?.let { id ->
+                            state.cards.firstOrNull { it.id == id }?.let { state.openEditor(it) }
+                        }
+                    }
+                )
+                DsButton(
                     text = "Suspend",
                     icon = Icons.Default.Refresh,
                     kind = DsButtonKind.Secondary,
                     compact = true,
                     onClick = { bulkSuspend(state, state.selectedCardIds.toList()) }
+                )
+                DsButton(
+                    text = "Bury",
+                    icon = Icons.Default.Block,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { bulkBury(state, state.selectedCardIds.toList()) }
+                )
+                DsButton(
+                    text = "Add to deck",
+                    icon = Icons.Default.Folder,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = { pendingAddToDeck = state.selectedCardIds.toList() }
                 )
                 DsButton(
                     text = "Reset",
@@ -343,7 +404,7 @@ fun BrowserView(state: AppState) {
                         initialFraction = 0.58f,
                         modifier = Modifier.fillMaxSize(),
                         first = {
-                            BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it })
+                            BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
                         },
                         second = {
                             CardDetailPanel(state, state.selectedCard, onRequestAddTag = { tagDialogCard = it })
@@ -352,9 +413,9 @@ fun BrowserView(state: AppState) {
                 }
                 else -> {
                     when (state.browserViewMode) {
-                        BrowserViewMode.Grid -> BrowserGrid(state, results, selectionMode, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it })
-                        BrowserViewMode.List -> BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it })
-                        BrowserViewMode.Details -> BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it })
+                        BrowserViewMode.Grid -> BrowserGrid(state, results, selectionMode, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
+                        BrowserViewMode.List -> BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
+                        BrowserViewMode.Details -> BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
                     }
                 }
             }
@@ -403,6 +464,38 @@ fun BrowserView(state: AppState) {
             onDismiss = { bulkDeleteConfirm = false }
         )
     }
+    if (batchEditDialog) {
+        BatchEditDialog(
+            state = state,
+            count = state.selectedCardIds.size,
+            onApply = { status, noteAppend, tagsReplace ->
+                bulkEditFields(state, state.selectedCardIds.toList(), status, noteAppend, tagsReplace)
+            },
+            onDismiss = { batchEditDialog = false }
+        )
+    }
+    pendingAddToDeck?.let { ids ->
+        if (ids.isEmpty()) {
+            pendingAddToDeck = null
+        } else {
+            DeckPickerDialog(
+                state = state,
+                title = "Add ${ids.size} card${if (ids.size == 1) "" else "s"} to deck",
+                subtitle = "Choose a deck. Cards keep their own progress — this only changes deck membership.",
+                decks = state.library.allDecks(),
+                onPick = { deck ->
+                    state.library.addCards(deck.id, ids)
+                    state.activityLog.record(ActivityCategory.Study, "Added ${ids.size} card(s) to \"${deck.name}\"")
+                    state.toastHost.show(
+                        "Added ${ids.size} card${if (ids.size == 1) "" else "s"} to \"${deck.name}\"",
+                        kind = ToastKind.Success
+                    )
+                    pendingAddToDeck = null
+                },
+                onDismiss = { pendingAddToDeck = null }
+            )
+        }
+    }
 }
 
 // ============================================
@@ -415,7 +508,8 @@ private fun BrowserGrid(
     cards: List<DesktopCard>,
     selectionMode: Boolean,
     onRequestAddTag: (DesktopCard) -> Unit,
-    onRequestAddFlag: (DesktopCard) -> Unit
+    onRequestAddFlag: (DesktopCard) -> Unit,
+    onRequestAddToDeck: (DesktopCard) -> Unit = {}
 ) {
     val gridState = rememberLazyGridState()
     LazyVerticalGrid(
@@ -427,7 +521,7 @@ private fun BrowserGrid(
         horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
         itemsIndexed(cards, key = { _, card -> card.id }) { _, card ->
-            BrowserCell(state, card, selectionMode, onRequestAddTag, onRequestAddFlag) {
+            BrowserCell(state, card, selectionMode, onRequestAddTag, onRequestAddFlag, onRequestAddToDeck) {
                 handleCardClick(state, card, selectionMode)
             }
         }
@@ -441,12 +535,13 @@ private fun BrowserCell(
     selectionMode: Boolean,
     onRequestAddTag: (DesktopCard) -> Unit,
     onRequestAddFlag: (DesktopCard) -> Unit,
+    onRequestAddToDeck: (DesktopCard) -> Unit,
     onClick: () -> Unit
 ) {
     val sc = surfaceColors()
     val ac = accent()
     val selected = card.id in state.selectedCardIds
-    val menuItems = cardContextMenu(state, card, onRequestAddTag, onRequestAddFlag)
+    val menuItems = cardContextMenu(state, card, onRequestAddTag, onRequestAddFlag, onRequestAddToDeck)
 
     Box(
         modifier = Modifier
@@ -510,7 +605,8 @@ private fun BrowserList(
     selectionMode: Boolean,
     onSelect: (DesktopCard) -> Unit,
     onRequestAddTag: (DesktopCard) -> Unit = {},
-    onRequestAddFlag: (DesktopCard) -> Unit = {}
+    onRequestAddFlag: (DesktopCard) -> Unit = {},
+    onRequestAddToDeck: (DesktopCard) -> Unit = {}
 ) {
     val sc = surfaceColors()
     LazyColumn(
@@ -518,7 +614,7 @@ private fun BrowserList(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(DsSpacing.Md)
     ) {
         itemsIndexed(cards, key = { _, card -> card.id }) { _, card ->
-            DsContextMenuHost(menuItems = cardContextMenu(state, card, onRequestAddTag, onRequestAddFlag)) {
+            DsContextMenuHost(menuItems = cardContextMenu(state, card, onRequestAddTag, onRequestAddFlag, onRequestAddToDeck)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -778,7 +874,8 @@ private fun cardContextMenu(
     state: AppState,
     card: DesktopCard,
     onRequestAddTag: (DesktopCard) -> Unit,
-    onRequestAddFlag: (DesktopCard) -> Unit
+    onRequestAddFlag: (DesktopCard) -> Unit,
+    onRequestAddToDeck: (DesktopCard) -> Unit = {}
 ): List<DsMenuItem> = buildList {
     add(DsMenuItem(
         if (card.id in state.selectedCardIds) "Deselect" else "Select",
@@ -802,6 +899,7 @@ private fun cardContextMenu(
     add(DsMenuItem(if (card.favorite) "Unfavorite" else "Favorite", Icons.Default.Star, onAction = { toggleFavorite(state, card) }))
     add(DsMenuItem("Add tag", Icons.Default.Label, onAction = { onRequestAddTag(card) }))
     add(DsMenuItem("Add flag", Icons.Default.Flag, onAction = { onRequestAddFlag(card) }))
+    add(DsMenuItem("Add to deck…", Icons.Default.Folder, onAction = { onRequestAddToDeck(card) }))
     add(DsMenuItem("Suspend", Icons.Default.Refresh, shortcutLabel = "S", onAction = {
         val idx = state.cards.indexOfFirst { it.id == card.id }
         if (idx >= 0) state.cards[idx] = state.cards[idx].copy(status = SrsStatus.Suspended, dueAt = null)
@@ -877,6 +975,105 @@ private fun bulkSuspend(state: AppState, ids: List<String>) {
     }
     state.activityLog.record(ActivityCategory.Study, "Suspended ${ids.size} cards")
     state.toastHost.show("Suspended ${ids.size} cards", kind = ToastKind.Success)
+}
+
+private fun bulkBury(state: AppState, ids: List<String>) {
+    ids.forEach { id ->
+        val idx = state.cards.indexOfFirst { it.id == id }
+        if (idx >= 0) state.cards[idx] = state.cards[idx].copy(status = SrsStatus.Buried, dueAt = null)
+    }
+    state.activityLog.record(ActivityCategory.Study, "Buried ${ids.size} cards")
+    state.toastHost.show("Buried ${ids.size} cards", kind = ToastKind.Info)
+}
+
+@Composable
+private fun BatchEditDialog(
+    state: AppState,
+    count: Int,
+    onApply: (SrsStatus?, String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sc = surfaceColors()
+    var statusText by remember { mutableStateOf("") }
+    var noteAppend by remember { mutableStateOf("") }
+    var tagsReplace by remember { mutableStateOf("") }
+
+    DsDialog(title = "Batch edit $count cards", onDismiss = onDismiss) {
+        Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+            Text(
+                text = "Apply shared changes to all $count selected cards. Leave a field empty to keep it unchanged.",
+                color = sc.textSecondary,
+                fontSize = DsType.Body
+            )
+            DsSelect(
+                selected = statusText,
+                options = listOf("") + SrsStatus.entries.map { it.name },
+                onSelected = { statusText = it },
+                labelOf = { if (it.isEmpty()) "Keep current status" else "Set status: $it" },
+                modifier = Modifier.fillMaxWidth()
+            )
+            DsTextField(
+                value = noteAppend,
+                onValueChange = { noteAppend = it },
+                label = "Append to note",
+                placeholder = "e.g. Review this again",
+                singleLine = false
+            )
+            DsTextField(
+                value = tagsReplace,
+                onValueChange = { tagsReplace = it },
+                label = "Replace tags",
+                placeholder = "comma separated — replaces existing tags"
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)
+            ) {
+                DsButton(text = "Cancel", kind = DsButtonKind.Ghost, onClick = onDismiss)
+                DsButton(
+                    text = "Apply",
+                    enabled = statusText.isNotEmpty() || noteAppend.isNotBlank() || tagsReplace.isNotBlank(),
+                    onClick = {
+                        onApply(
+                            if (statusText.isEmpty()) null else SrsStatus.fromName(statusText),
+                            noteAppend.trim(),
+                            tagsReplace.trim()
+                        )
+                        onDismiss()
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun bulkEditFields(state: AppState, ids: List<String>, status: SrsStatus?, noteAppend: String, tagsReplace: String) {
+    if (ids.isEmpty()) return
+    ids.forEach { id ->
+        val idx = state.cards.indexOfFirst { it.id == id }
+        if (idx >= 0) {
+            var updated = state.cards[idx]
+            if (status != null) {
+                updated = updated.copy(
+                    status = status,
+                    dueAt = if (status == SrsStatus.New) null else updated.dueAt
+                )
+            }
+            if (noteAppend.isNotBlank()) {
+                updated = updated.copy(
+                    note = updated.note.let { if (it.isBlank()) noteAppend else "$it\n$noteAppend" }
+                )
+            }
+            if (tagsReplace.isNotBlank()) {
+                updated = updated.copy(
+                    tags = tagsReplace.split(',').map { it.trim() }.filter { it.isNotBlank() }.distinct()
+                )
+            }
+            state.cards[idx] = updated
+        }
+    }
+    state.activityLog.record(ActivityCategory.Study, "Batch-edited ${ids.size} cards")
+    state.toastHost.show("Batch edit applied to ${ids.size} cards", kind = ToastKind.Success)
 }
 
 private fun bulkReset(state: AppState, ids: List<String>) {

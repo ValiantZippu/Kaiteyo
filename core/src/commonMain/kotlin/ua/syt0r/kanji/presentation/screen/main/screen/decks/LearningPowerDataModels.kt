@@ -5,6 +5,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 
 // ============================================
@@ -469,6 +472,9 @@ data class StatsOverviewV2(
     val cardsSuspended: Int = 0,
     val cardsBuried: Int = 0,
     val cardsArchived: Int = 0,
+    val flaggedCards: Int = 0,
+    val averageInterval: Int = 0,
+    val averageEase: Float = 2.5f,
     val forecastNextDays: List<Int> = emptyList(),
     val retentionRate: Float = 0f,
     val predictedRetention: Float = 0f
@@ -549,6 +555,28 @@ data class LearningCurvePoint(
 )
 
 // ── Heatmap ──
+
+data class HeatmapDayV2(
+    val date: LocalDate,
+    val count: Int,
+    val cardsStudied: Int = 0,
+    val newCards: Int = 0,
+    val reviewCards: Int = 0,
+    val accuracy: Float = 0f,
+    val timeStudied: Long = 0L,
+    val mistakes: Int = 0
+)
+
+data class HeatmapDataV2(
+    val year: Int = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year,
+    val days: Map<LocalDate, HeatmapDayV2> = emptyMap(),
+    val totalReviews: Int = 0,
+    val totalCardsStudied: Int = 0,
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val averageAccuracy: Float = 0f,
+    val totalStudyTime: Long = 0L
+)
 
 data class HeatmapData(
     val dailyCounts: Map<String, Int> = emptyMap(),

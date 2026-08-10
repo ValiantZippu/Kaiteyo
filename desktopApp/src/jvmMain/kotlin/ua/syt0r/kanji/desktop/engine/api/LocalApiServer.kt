@@ -77,7 +77,7 @@ class LocalApiServer(
     var lastRequest by mutableStateOf<IntegrationCardRequest?>(null)
 
     @Volatile
-    private var server: io.ktor.server.engine.ApplicationEngine? = null
+    private var server: io.ktor.server.engine.EmbeddedServer<*, *>? = null
 
     fun start() {
         if (running) return

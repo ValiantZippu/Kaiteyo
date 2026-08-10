@@ -39,7 +39,7 @@ This directory contains brand assets and guidelines.
 | macOS | `desktopApp/mac_icon.icns` |
 | Linux | `desktopApp/src/jvmMain/composeResources/drawable/windowIcon.png` |
 | Android | `app/src/main/res/` |
-| iOS | `iosApp/KanjiDojoApp/Assets.xcassets/` |
+| iOS | `iosApp/KaiteyoApp/Assets.xcassets/` |
 
 ## Source Files
 

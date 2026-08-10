@@ -6,18 +6,15 @@ This directory is the brain of the project. It contains the living task tracker,
 
 | File | Purpose |
 |------|---------|
-| `VISION.md` | Project vision, mission, philosophy |
-| `DESIGN_LANGUAGE.md` | Complete design language reference |
-| `FEATURE_ROADMAP.md` | Feature roadmap with milestones |
-| `MILESTONES.md` | Milestone definitions and progress |
-| `FUTURE_IDEAS.md` | Ideas for future consideration |
-| `v1.1.md` | v1.1 milestone plan |
-| `v1.2.md` | v1.2 milestone plan |
-| `v2.0.md` | v2.0 milestone plan |
 | `TODO.md` | Master task list with priorities |
 | `CURRENT_ISSUES.md` | Living bug/issue tracker |
 | `CHANGELOG.md` | Human-readable release history |
 | `COMPLETED.md` | Completed features by version |
+| `FUTURE_IDEAS.md` | Ideas for future consideration |
+
+Vision, roadmap, and milestone plans live in `../roadmap/`
+(`PROJECT_VISION.md`, `ROADMAP.md`); the design language lives in
+`../design/DESIGN_LANGUAGE.md`.
 
 ## Priority Levels
 

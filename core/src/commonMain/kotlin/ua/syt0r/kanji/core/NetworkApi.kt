@@ -24,6 +24,13 @@ import kotlinx.serialization.json.JsonPrimitive
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesSyncDataInfo
 
+/**
+ * Network API for communicating with the Kaiteyo backend.
+ *
+ * Provides authenticated access to user info, sync data, feedback submission,
+ * and subscription management. All methods return [Result] to handle
+ * network and API errors gracefully.
+ */
 interface NetworkApi {
 
     suspend fun getUserInfo(): Result<ApiUserInfo>
@@ -37,8 +44,6 @@ interface NetworkApi {
     ): Result<SubscriptionResponse<Unit>>
 
     suspend fun postFeedback(data: FeedbackApiData): Result<Unit>
-    suspend fun postDonationPurchase(data: DonationPurchaseApiData): Result<Unit>
-    suspend fun getDonations(): Result<List<ApiDonation>>
     suspend fun postSubscription(purchaseJson: String): Result<Unit>
     suspend fun postTextAnalysisRequest(
         request: ApiTextAnalysisRequest
@@ -120,18 +125,6 @@ data class FeedbackApiData(
     val userData: JsonObject
 )
 
-data class DonationPurchaseApiData(
-    val email: String,
-    val message: String,
-    val purchasesJson: List<String>
-)
-
-@Serializable
-data class ApiDonation(
-    val time: Long,
-    val amountJpy: Float
-)
-
 class DefaultNetworkApi(
     private val networkClients: NetworkClients,
     private val json: Json
@@ -196,28 +189,6 @@ class DefaultNetworkApi(
             contentType(ContentType.Application.Json)
             setBody(requestBody.toString())
         }
-    }
-
-    override suspend fun postDonationPurchase(data: DonationPurchaseApiData) = safeRequestUnit {
-        val requestBody = JsonObject(
-            mapOf(
-                "email" to JsonPrimitive(data.email),
-                "message" to JsonPrimitive(data.message),
-                "paymentsJson" to JsonArray(
-                    content = data.purchasesJson.map { JsonPrimitive(it) }
-                )
-            )
-        )
-
-        networkClients.unauthenticatedClient.post(SPONSOR_URL) {
-            contentType(ContentType.Application.Json)
-            setBody(requestBody.toString())
-        }
-    }
-
-    override suspend fun getDonations(): Result<List<ApiDonation>> {
-        return safeRequest { networkClients.unauthenticatedClient.get(DONATIONS_URL) }
-            .mapCatching { json.decodeFromString(it.bodyAsText()) }
     }
 
     override suspend fun postSubscription(purchaseJson: String): Result<Unit> = safeRequestUnit {
@@ -286,8 +257,6 @@ class DefaultNetworkApi(
         const val GET_SYNC_URL = "$BASE/sync/get"
         const val UPDATE_SYNC_URL = "$BASE/sync/update"
         const val FEEDBACK_URL = "$BASE/feedback"
-        const val SPONSOR_URL = "$BASE/sponsor"
-        const val DONATIONS_URL = "$BASE/donations"
         const val SUBSCRIPTION_URL = "$BASE/play-billing-subscription"
         const val TEXT_ANALYSIS_URL = "$BASE/text-analysis"
 

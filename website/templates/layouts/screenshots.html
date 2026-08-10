@@ -19,6 +19,17 @@
     {% endfor %}
   </div>
 
+  <div class="dialog-section-title">On your desktop</div>
+  <div class="shot-grid">
+    {% for shot in screenshots.desktop %}
+    <a class="shot" href="{{ basePath }}assets/screenshots/desktop/{{ shot.file }}" data-lightbox
+       aria-label="{{ shot.caption }}">
+      <img src="{{ basePath }}assets/screenshots/desktop/{{ shot.file }}" alt="{{ shot.caption }}" loading="lazy" />
+      <span class="shot-caption">{{ shot.caption }}</span>
+    </a>
+    {% endfor %}
+  </div>
+
   <div class="prose">
     {{ content_html | safe }}
   </div>

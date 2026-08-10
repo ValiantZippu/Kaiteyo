@@ -2,7 +2,9 @@ package ua.syt0r.kanji.presentation.common.theme
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.spring
@@ -15,13 +17,16 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -73,10 +78,29 @@ data class AnimationConfig(
     val springDamping: Float = 0.6f,
     val springStiffness: Float = 300f,
     val defaultDuration: Int = 300,
-    val pageTransition: PageTransitionType = PageTransitionType.FadeThrough
+    val pageTransition: PageTransitionType = PageTransitionType.FadeThrough,
+    /** Whether accent / base-mode changes crossfade the whole UI. */
+    val themeTransitionEnabled: Boolean = true
 )
 
 val LocalAnimationConfig = compositionLocalOf { AnimationConfig() }
+
+/** Base duration (ms) of the whole-app theme color crossfade, before the
+ *  user's animation-speed multiplier is applied. */
+const val ThemeTransitionMillis = 450
+
+// ============================================
+// TYPE SCALE (live typography adjustments)
+// ============================================
+
+data class TypeScale(
+    val fontScale: Float = 1f,
+    val titleScale: Float = 1f,
+    val lineHeight: Float = 1f,
+    val letterSpacing: Float = 0f
+)
+
+val LocalTypeScale = compositionLocalOf { TypeScale() }
 
 // ============================================
 // CORNER RADIUS CONFIGURATION
@@ -91,7 +115,8 @@ enum class CornerRadiusStyle(val displayName: String, val globalMultiplier: Floa
 
 data class RadiusConfig(
     val style: CornerRadiusStyle = CornerRadiusStyle.Rounded,
-    val customRadius: Float? = null
+    val customRadius: Float? = null,
+    val buttonRadius: Float? = null
 )
 
 val LocalRadiusConfig = compositionLocalOf { RadiusConfig() }
@@ -153,7 +178,13 @@ data class LayoutConfig(
     val accentIndex: Int = -1,
     val transparencyEnabled: Boolean = false,
     val blurEnabled: Boolean = false,
-    val glassOpacity: Float = 0.8f
+    val glassOpacity: Float = 0.8f,
+    val displayScale: Float = 1f,
+    val buttonScale: Float = 1f,
+    val iconScale: Float = 1f,
+    val bubbleScale: Float = 1f,
+    val toolbarHeightScale: Float = 1f,
+    val windowPaddingScale: Float = 1f
 )
 
 val LocalLayoutConfig = compositionLocalOf { LayoutConfig() }
@@ -286,6 +317,32 @@ val MaterialTheme.extraColorScheme: ExtraColorsScheme
     @Composable
     get() = LocalExtraColors.current
 
+// --- Semantic color accessors (theme-aware, always adapt) ---
+
+val MaterialTheme.successColor: Color
+    @Composable
+    get() = LocalExtraColors.current.success
+
+val MaterialTheme.warningColor: Color
+    @Composable
+    get() = LocalExtraColors.current.due
+
+val MaterialTheme.infoColor: Color
+    @Composable
+    get() = LocalExtraColors.current.link
+
+val MaterialTheme.newColor: Color
+    @Composable
+    get() = LocalExtraColors.current.new
+
+val MaterialTheme.dangerColor: Color
+    @Composable
+    get() = semanticError
+
+val MaterialTheme.favoriteColor: Color
+    @Composable
+    get() = Color(0xFFFFD93D)
+
 // --- Convenience accessors for Kaiteyo theme ---
 
 val MaterialTheme.kaiteyoAccent: KaiteyoAccentScheme
@@ -337,31 +394,70 @@ fun AppTheme(
     radiusConfig: RadiusConfig = RadiusConfig(),
     glowConfig: GlowConfig = GlowConfig(),
     layoutConfig: LayoutConfig = LayoutConfig(),
+    customSurface: SurfaceColors? = null,
+    typography: Typography = AppTypography,
+    typeScale: TypeScale = TypeScale(),
     content: @Composable () -> Unit
 ) {
-    val surface = surfaceForBaseMode(baseMode)
+    val surface = customSurface ?: surfaceForBaseMode(baseMode)
     val isDark = baseMode != BaseMode.Light
 
-    val colors = if (isDark) {
+    // Material components (buttons, fields, chips, dialogs, menus…) inherit
+    // the Kaiteyo corner-radius system instead of Material defaults, so every
+    // rounded corner in the app comes from the same tokens and follows the
+    // user's radius configuration.
+    val radiusMultiplier =
+        radiusConfig.style.globalMultiplier * (radiusConfig.customRadius ?: 1f)
+    val shapes = Shapes(
+        extraSmall = RoundedCornerShape(Dimens.RadiusXs * radiusMultiplier),
+        small = RoundedCornerShape(Dimens.RadiusSm * radiusMultiplier),
+        medium = RoundedCornerShape(Dimens.RadiusMd * radiusMultiplier),
+        large = RoundedCornerShape(Dimens.RadiusLg * radiusMultiplier),
+        extraLarge = RoundedCornerShape(Dimens.RadiusXl * radiusMultiplier)
+    )
+
+    // A theme switch (accent, base mode, or preset) morphs every color in
+    // place through a single smooth crossfade instead of an abrupt jump.
+    // Gated by the user's "Theme transition" toggle, the animation speed
+    // setting and reduced-motion preference. State is fully preserved
+    // because the UI tree itself never leaves composition — only the
+    // colors animate toward their new targets.
+    val themeFadeDuration = tweenDuration(animationConfig, ThemeTransitionMillis)
+    val animateThemeTransition =
+        animationConfig.themeTransitionEnabled && themeFadeDuration > 0
+
+    val colors = (if (isDark) {
         createDarkColorScheme(accentScheme, surface)
     } else {
         createLightColorScheme(accentScheme, surface)
-    }
+    }).withThemeTransition(animateThemeTransition, themeFadeDuration)
 
-    val extraColors = if (isDark) DarkExtraColorScheme else LightExtraColorScheme
+    val extraColors = (if (isDark) DarkExtraColorScheme else LightExtraColorScheme)
+        .withThemeTransition(animateThemeTransition, themeFadeDuration)
+
+    // Push the same morphing back through the Kaiteyo locals so anything
+    // reading LocalSurfaceColors or the accent (e.g. the desktop design
+    // system's DsTokens) fades in lockstep with the Material scheme
+    // instead of snapping to the new values mid-transition.
+    val animatedAccent =
+        accentScheme.withThemeTransition(animateThemeTransition, themeFadeDuration)
+    val animatedSurface =
+        surface.withThemeTransition(animateThemeTransition, themeFadeDuration)
 
     CompositionLocalProvider(
-        LocalKaiteyoAccent provides accentScheme,
+        LocalKaiteyoAccent provides animatedAccent,
         LocalBaseMode provides baseMode,
-        LocalSurfaceColors provides surface,
+        LocalSurfaceColors provides animatedSurface,
         LocalAnimationConfig provides animationConfig,
         LocalRadiusConfig provides radiusConfig,
         LocalGlowConfig provides glowConfig,
-        LocalLayoutConfig provides layoutConfig
+        LocalLayoutConfig provides layoutConfig,
+        LocalTypeScale provides typeScale
     ) {
         MaterialTheme(
             colorScheme = colors,
-            typography = AppTypography,
+            typography = typography,
+            shapes = shapes,
             content = {
                 CompositionLocalProvider(
                     LocalExtraColors provides extraColors,
@@ -374,6 +470,110 @@ fun AppTheme(
             }
         )
     }
+}
+
+// ============================================
+// Theme transition — whole-app color crossfade
+// ============================================
+
+/**
+ * Animates every color in the [ColorScheme] toward its target value so a
+ * theme change (accent, base mode, preset) dissolves smoothly across the
+ * entire UI. When disabled the scheme is returned untouched, which keeps
+ * the switch instant.
+ */
+@Composable
+private fun ColorScheme.withThemeTransition(enabled: Boolean, duration: Int): ColorScheme {
+    if (!enabled) return this
+    val spec = tween<Color>(duration)
+    return copy(
+        primary = animateColorAsState(primary, animationSpec = spec, label = "themePrimary").value,
+        onPrimary = animateColorAsState(onPrimary, animationSpec = spec, label = "themeOnPrimary").value,
+        primaryContainer = animateColorAsState(primaryContainer, animationSpec = spec, label = "themePrimaryContainer").value,
+        onPrimaryContainer = animateColorAsState(onPrimaryContainer, animationSpec = spec, label = "themeOnPrimaryContainer").value,
+        secondary = animateColorAsState(secondary, animationSpec = spec, label = "themeSecondary").value,
+        onSecondary = animateColorAsState(onSecondary, animationSpec = spec, label = "themeOnSecondary").value,
+        secondaryContainer = animateColorAsState(secondaryContainer, animationSpec = spec, label = "themeSecondaryContainer").value,
+        onSecondaryContainer = animateColorAsState(onSecondaryContainer, animationSpec = spec, label = "themeOnSecondaryContainer").value,
+        tertiary = animateColorAsState(tertiary, animationSpec = spec, label = "themeTertiary").value,
+        onTertiary = animateColorAsState(onTertiary, animationSpec = spec, label = "themeOnTertiary").value,
+        tertiaryContainer = animateColorAsState(tertiaryContainer, animationSpec = spec, label = "themeTertiaryContainer").value,
+        onTertiaryContainer = animateColorAsState(onTertiaryContainer, animationSpec = spec, label = "themeOnTertiaryContainer").value,
+        error = animateColorAsState(error, animationSpec = spec, label = "themeError").value,
+        onError = animateColorAsState(onError, animationSpec = spec, label = "themeOnError").value,
+        errorContainer = animateColorAsState(errorContainer, animationSpec = spec, label = "themeErrorContainer").value,
+        onErrorContainer = animateColorAsState(onErrorContainer, animationSpec = spec, label = "themeOnErrorContainer").value,
+        background = animateColorAsState(background, animationSpec = spec, label = "themeBackground").value,
+        onBackground = animateColorAsState(onBackground, animationSpec = spec, label = "themeOnBackground").value,
+        surface = animateColorAsState(surface, animationSpec = spec, label = "themeSurface").value,
+        onSurface = animateColorAsState(onSurface, animationSpec = spec, label = "themeOnSurface").value,
+        surfaceVariant = animateColorAsState(surfaceVariant, animationSpec = spec, label = "themeSurfaceVariant").value,
+        onSurfaceVariant = animateColorAsState(onSurfaceVariant, animationSpec = spec, label = "themeOnSurfaceVariant").value,
+        surfaceContainerHigh = animateColorAsState(surfaceContainerHigh, animationSpec = spec, label = "themeSurfaceContainerHigh").value,
+        surfaceContainerHighest = animateColorAsState(surfaceContainerHighest, animationSpec = spec, label = "themeSurfaceContainerHighest").value,
+        surfaceDim = animateColorAsState(surfaceDim, animationSpec = spec, label = "themeSurfaceDim").value,
+        outline = animateColorAsState(outline, animationSpec = spec, label = "themeOutline").value,
+        outlineVariant = animateColorAsState(outlineVariant, animationSpec = spec, label = "themeOutlineVariant").value,
+        inverseOnSurface = animateColorAsState(inverseOnSurface, animationSpec = spec, label = "themeInverseOnSurface").value,
+        inverseSurface = animateColorAsState(inverseSurface, animationSpec = spec, label = "themeInverseSurface").value,
+        inversePrimary = animateColorAsState(inversePrimary, animationSpec = spec, label = "themeInversePrimary").value
+    )
+}
+
+/** Same morphing treatment for the semantic (extra) color scheme. */
+@Composable
+private fun ExtraColorsScheme.withThemeTransition(enabled: Boolean, duration: Int): ExtraColorsScheme {
+    if (!enabled) return this
+    val spec = tween<Color>(duration)
+    return ExtraColorsScheme(
+        link = animateColorAsState(link, animationSpec = spec, label = "themeExtraLink").value,
+        success = animateColorAsState(success, animationSpec = spec, label = "themeExtraSuccess").value,
+        pending = animateColorAsState(pending, animationSpec = spec, label = "themeExtraPending").value,
+        due = animateColorAsState(due, animationSpec = spec, label = "themeExtraDue").value,
+        new = animateColorAsState(new, animationSpec = spec, label = "themeExtraNew").value
+    )
+}
+
+/** Same morphing treatment for the shared surface tokens. */
+@Composable
+private fun SurfaceColors.withThemeTransition(enabled: Boolean, duration: Int): SurfaceColors {
+    if (!enabled) return this
+    val spec = tween<Color>(duration)
+    return copy(
+        background = animateColorAsState(background, animationSpec = spec, label = "surfaceBackground").value,
+        surface = animateColorAsState(surface, animationSpec = spec, label = "surfaceSurface").value,
+        surfaceElevated = animateColorAsState(surfaceElevated, animationSpec = spec, label = "surfaceElevated").value,
+        surfaceInteractive = animateColorAsState(surfaceInteractive, animationSpec = spec, label = "surfaceInteractive").value,
+        border = animateColorAsState(border, animationSpec = spec, label = "surfaceBorder").value,
+        textPrimary = animateColorAsState(textPrimary, animationSpec = spec, label = "surfaceTextPrimary").value,
+        textSecondary = animateColorAsState(textSecondary, animationSpec = spec, label = "surfaceTextSecondary").value,
+        textMuted = animateColorAsState(textMuted, animationSpec = spec, label = "surfaceTextMuted").value,
+        textInverse = animateColorAsState(textInverse, animationSpec = spec, label = "surfaceTextInverse").value
+    )
+}
+
+/** Same morphing treatment for the accent scheme (name/preview stay static). */
+@Composable
+private fun KaiteyoAccentScheme.withThemeTransition(enabled: Boolean, duration: Int): KaiteyoAccentScheme {
+    if (!enabled) return this
+    val spec = tween<Color>(duration)
+    return copy(
+        primary = animateColorAsState(primary, animationSpec = spec, label = "accentPrimary").value,
+        primaryDark = animateColorAsState(primaryDark, animationSpec = spec, label = "accentPrimaryDark").value,
+        secondary = animateColorAsState(secondary, animationSpec = spec, label = "accentSecondary").value,
+        secondaryDark = animateColorAsState(secondaryDark, animationSpec = spec, label = "accentSecondaryDark").value,
+        onPrimary = animateColorAsState(onPrimary, animationSpec = spec, label = "accentOnPrimary").value,
+        onSecondary = animateColorAsState(onSecondary, animationSpec = spec, label = "accentOnSecondary").value,
+        tertiary = tertiary?.let {
+            animateColorAsState(it, animationSpec = spec, label = "accentTertiary").value
+        },
+        gradientStart = gradientStart?.let {
+            animateColorAsState(it, animationSpec = spec, label = "accentGradientStart").value
+        },
+        gradientEnd = gradientEnd?.let {
+            animateColorAsState(it, animationSpec = spec, label = "accentGradientEnd").value
+        }
+    )
 }
 
 @Composable

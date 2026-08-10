@@ -1,3 +1,3 @@
 - Updated installers for Windows and Linux, now it's not required to have Java installed
-- Renamed executable for MacOS, please manually delete the old `kanji-dojo` app, tha app name is `Kanji Dojo` now
+- Renamed the macOS executable — if you had a previous installation, please remove the old app before installing this one
 - Fixed a sync issue with incorrectly applied timestamp after downloading data from the cloud

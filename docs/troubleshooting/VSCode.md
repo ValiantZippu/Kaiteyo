@@ -26,6 +26,6 @@ Check the selected Java runtime in VS Code's Java configuration and reload the w
 
 **Prevention:** Open the repository root, keep JDK 17 selected, and validate build changes with the wrapper rather than editor diagnostics alone.
 
-**Related Issues:** [Java](Java.md), [First Build](../setup/FirstBuild.md), [Command Library](../Commands.md), [Git Guide](../guides/GIT_GUIDE.md).
+**Related Issues:** [Java](Java.md), [First Build](../setup/FirstBuild.md), [Command Library](../development/COMMANDS.md), [Git Guide](../guides/GIT_GUIDE.md).
 
 Common links: [Troubleshooting index](README.md) | [Dependency problems](Gradle.md) | [Setup guide](../setup/FreshSetup.md) | [Git guide](../guides/GIT_GUIDE.md)

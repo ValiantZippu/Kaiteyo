@@ -90,7 +90,7 @@ fun DsStatTile(
             Spacer(Modifier.height(DsSpacing.Xs))
             Text(
                 text = delta,
-                color = if (deltaPositive) Color(0xFFC2FC8B) else Color(0xFFFF6B6B),
+                color = if (deltaPositive) successColor() else errorColor(),
                 fontSize = DsType.Caption
             )
         }

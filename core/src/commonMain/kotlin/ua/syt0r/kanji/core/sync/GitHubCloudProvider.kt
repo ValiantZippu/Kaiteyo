@@ -183,35 +183,12 @@ class GitHubCloudProvider(
 }
 
 // ============================================
-// ENCRYPTION LAYER
-// ============================================
-
-class DefaultSyncEncryption : SyncEncryption {
-    
-    override suspend fun encrypt(data: ByteArray): ByteArray {
-        // Placeholder: XOR-based encryption
-        // In production, use platform-specific encryption (KeyStore, Keychain, etc.)
-        return data.mapIndexed { i, byte -> (byte.toInt() xor 0xAA).toByte() }.toByteArray()
-    }
-    
-    override suspend fun decrypt(data: ByteArray): ByteArray {
-        // XOR decryption (symmetric with encrypt)
-        return data.mapIndexed { i, byte -> (byte.toInt() xor 0xAA).toByte() }.toByteArray()
-    }
-    
-    override suspend fun generateChecksum(data: ByteArray): String {
-        var hash = 0L
-        for (byte in data) {
-            hash = hash * 31 + byte.toLong()
-        }
-        return hash.toString(16)
-    }
-    
-    override suspend fun verifyIntegrity(data: ByteArray, checksum: String): Boolean {
-        return generateChecksum(data) == checksum
-    }
-}
-
-// ============================================
 // (WebDAV Cloud Provider placeholder - TBD)
+//
+// NOTE: the previous DefaultSyncEncryption implementation used a fixed
+// XOR mask (0xAA) and a weak 31-multiplier checksum. Neither is real
+// cryptography, so the implementation was removed rather than shipped as
+// a false sense of security. Real implementations of the SyncEncryption
+// interface should be platform-backed (Android Keystore, iOS Keychain,
+// OS credential stores) and registered via DI.
 // ============================================

@@ -76,9 +76,11 @@ import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.PageTransitionType
 import ua.syt0r.kanji.presentation.common.theme.RadiusConfig
-import ua.syt0r.kanji.presentation.common.theme.SidebarMode
-import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 import ua.syt0r.kanji.presentation.common.theme.UIDensity
+import ua.syt0r.kanji.presentation.common.nav.LocalNavigationSettings
+import ua.syt0r.kanji.presentation.common.nav.NavigationSettingsOverlay
+import ua.syt0r.kanji.presentation.common.nav.rememberFormFactor
+import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.gradientForAccent
 import ua.syt0r.kanji.presentation.common.theme.surfaceForBaseMode
 import kotlin.math.PI
@@ -712,6 +714,7 @@ private fun LayoutTab() {
     val themeState = LocalKaiteyoThemeState.current
     val surfaceColors = LocalSurfaceColors.current
     val currentAccent = LocalKaiteyoAccent.current
+    var navSettingsOpen by remember { mutableStateOf(false) }
 
     Text("Layout Studio", style = MaterialTheme.typography.titleMedium,
         color = surfaceColors.textPrimary, fontWeight = FontWeight.SemiBold)
@@ -745,15 +748,24 @@ private fun LayoutTab() {
     }
     Spacer(Modifier.height(16.dp))
 
-    Text("Sidebar", style = MaterialTheme.typography.bodyMedium, color = surfaceColors.textSecondary, fontWeight = FontWeight.Medium)
+    Text("Navigation", style = MaterialTheme.typography.bodyMedium, color = surfaceColors.textSecondary, fontWeight = FontWeight.Medium)
     Spacer(Modifier.height(6.dp))
-    Text("Mode", color = surfaceColors.textMuted, fontSize = 12.sp)
-    Spacer(Modifier.height(4.dp))
-    SidebarModeSelector(themeState.layoutConfig.sidebarMode) { themeState.layoutConfig = themeState.layoutConfig.copy(sidebarMode = it) }
+    Text("Mode, placement, floating launcher and phone layout are configured in the adaptive navigation settings.",
+        color = surfaceColors.textMuted, fontSize = 12.sp)
     Spacer(Modifier.height(8.dp))
-    Text("Position", color = surfaceColors.textMuted, fontSize = 12.sp)
-    Spacer(Modifier.height(4.dp))
-    SidebarPositionSelector(themeState.layoutConfig.sidebarPosition) { themeState.layoutConfig = themeState.layoutConfig.copy(sidebarPosition = it) }
+    val navSettings = LocalNavigationSettings.current
+    if (navSettings != null) {
+        Button(
+            onClick = { navSettingsOpen = true },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = currentAccent.primary,
+                contentColor = currentAccent.onPrimary
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(resolveString { nav.openNavigationSettingsLabel }, fontSize = 11.sp)
+        }
+    }
     Spacer(Modifier.height(16.dp))
 
     Text("Glow Effects", style = MaterialTheme.typography.bodyMedium, color = surfaceColors.textSecondary, fontWeight = FontWeight.Medium)
@@ -800,42 +812,15 @@ private fun LayoutTab() {
                 modifier = Modifier.weight(1f)) { Text(action, fontSize = 11.sp) }
         }
     }
-}
 
-// ============================================
-// SIDEBAR MODE / POSITION SELECTORS
-// ============================================
-
-@Composable
-private fun SidebarModeSelector(current: SidebarMode, onSelect: (SidebarMode) -> Unit) {
-    val surfaceColors = LocalSurfaceColors.current
-    val currentAccent = LocalKaiteyoAccent.current
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        SidebarMode.entries.forEach { mode ->
-            val isSelected = current == mode
-            Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp))
-                .background(if (isSelected) currentAccent.primary.copy(alpha = 0.12f) else Color.Transparent)
-                .clickable { onSelect(mode) }.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                Text(mode.displayName, color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
-                    fontSize = 10.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SidebarPositionSelector(current: SidebarPosition, onSelect: (SidebarPosition) -> Unit) {
-    val surfaceColors = LocalSurfaceColors.current
-    val currentAccent = LocalKaiteyoAccent.current
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        SidebarPosition.entries.forEach { pos ->
-            val isSelected = current == pos
-            Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp))
-                .background(if (isSelected) currentAccent.primary.copy(alpha = 0.12f) else Color.Transparent)
-                .clickable { onSelect(pos) }.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                Text(pos.displayName, color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
-                    fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
-            }
+    if (navSettingsOpen) {
+        val navSettingsState = LocalNavigationSettings.current
+        if (navSettingsState != null) {
+            NavigationSettingsOverlay(
+                navSettings = navSettingsState,
+                formFactor = rememberFormFactor(),
+                onDismiss = { navSettingsOpen = false }
+            )
         }
     }
 }

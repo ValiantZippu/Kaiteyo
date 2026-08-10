@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -69,6 +70,7 @@ import ua.syt0r.kanji.desktop.engine.srs.intervalDaysToDuration
 import ua.syt0r.kanji.desktop.engine.srs.toLike
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.ReviewRating
+import ua.syt0r.kanji.desktop.model.StudyMode
 
 // ============================================
 // REVIEW
@@ -237,6 +239,32 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
     val stats = session.sessionStats()
     val progress = if (session.total == 0) 0f else session.currentIndex.toFloat() / session.total
 
+    // Mode-aware presentation: each study lane asks a different question.
+    val mode = state.libraryActiveMode
+    val frontText = when (mode) {
+        StudyMode.Recognition -> card.meaning
+        StudyMode.Cloze -> "＿＿＿"
+        StudyMode.Pattern -> card.character
+        else -> card.character
+    }
+    val frontSize = when (mode) {
+        StudyMode.Recognition -> 36.sp
+        StudyMode.Cloze -> 72.sp
+        StudyMode.Pattern -> 72.sp
+        else -> 120.sp
+    }
+    val frontSubtitle = when (mode) {
+        StudyMode.Recognition -> "Which form does this meaning belong to?"
+        StudyMode.Cloze -> "Complete the pattern: ${card.meaning}"
+        StudyMode.Pattern -> "Explain this pattern in your own words, then reveal the answer."
+        else -> null
+    }
+    val revealLabel = when (mode) {
+        StudyMode.Cloze -> "Reveal pattern"
+        StudyMode.Pattern -> "Reveal explanation"
+        else -> "Show Answer"
+    }
+
     Column(Modifier.fillMaxSize()) {
         // Progress header
         Row(
@@ -274,17 +302,33 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
             ) {
-                // Card character
+                // Front of the card — varies by study mode
                 Text(
-                    text = card.character,
+                    text = frontText,
                     color = sc.textPrimary,
-                    fontSize = 120.sp,
+                    fontSize = frontSize,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
+                if (frontSubtitle != null) {
+                    Text(
+                        text = frontSubtitle,
+                        color = sc.textMuted,
+                        fontSize = DsType.Body,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                if (mode != null) {
+                    Text(
+                        text = "${mode.label} — ${mode.hint}",
+                        color = accent().primary,
+                        fontSize = DsType.Caption,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
                 if (!revealed) {
                     DsButton(
-                        text = "Show Answer",
+                        text = revealLabel,
                         icon = Icons.Default.Visibility,
                         onClick = { state.answerRevealed = true },
                         kind = DsButtonKind.Primary
@@ -295,7 +339,7 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
                         fontSize = DsType.Caption
                     )
                 } else {
-                    RevealedContent(state, card)
+                    RevealedContent(state, card, mode)
                 }
             }
         }
@@ -323,6 +367,7 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
                 SessionControl(state, "Retry", Icons.Default.Refresh, "R") { state.retryCurrent() }
                 SessionControl(state, "Forget", Icons.Default.DeleteForever, "") { state.forgetCurrent() }
                 SessionControl(state, "Reschedule", Icons.Default.Schedule, "") { rescheduleDialog = true }
+                SessionControl(state, "Edit", Icons.Default.Edit, "") { state.openEditor(card) }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -360,18 +405,48 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
 }
 
 @Composable
-private fun RevealedContent(state: AppState, card: DesktopCard) {
+private fun RevealedContent(state: AppState, card: DesktopCard, mode: StudyMode?) {
     val sc = surfaceColors()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
+        if (mode == StudyMode.Cloze) {
+            Text(
+                text = "The pattern",
+                color = sc.textMuted,
+                fontSize = DsType.Caption,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = card.character,
+                color = accent().primary,
+                fontSize = DsType.Display,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        if (mode == StudyMode.Recognition) {
+            Text(
+                text = card.character,
+                color = sc.textPrimary,
+                fontSize = DsType.Display,
+                fontWeight = FontWeight.Bold
+            )
+        }
         Text(
             text = card.meaning,
             color = sc.textPrimary,
             fontSize = DsType.Heading,
             fontWeight = FontWeight.SemiBold
         )
+        if (mode == StudyMode.Pattern && card.note.isNotBlank()) {
+            Text(
+                text = card.note,
+                color = sc.textSecondary,
+                fontSize = DsType.Body,
+                textAlign = TextAlign.Center
+            )
+        }
         if (card.onReadings.isNotEmpty()) {
             Text(
                 text = card.onReadings.joinToString("・"),

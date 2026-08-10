@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Kaiteyo
+Comment=Application for practicing writing and reading Japanese characters
+Exec=Kaiteyo
+Icon=${SNAP}/meta/gui/icon.png
+Terminal=false
+Type=Application
+Version=1.7

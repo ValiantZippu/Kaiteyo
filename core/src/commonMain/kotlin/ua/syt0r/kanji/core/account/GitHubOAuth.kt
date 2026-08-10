@@ -10,7 +10,6 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.parameters
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -162,6 +161,18 @@ class DefaultGitHubOAuthProvider(
 
 // ============================================
 // TOKEN ENCRYPTION & SECURE STORAGE
+//
+// The SecureTokenStorage interface is the seam where platform keychains
+// (Android Keystore, iOS Keychain, Windows Credential Manager, macOS
+// Keychain) plug in. Implementations must never log token material and
+// should prefer OS-backed secure storage over plain files.
+//
+// NOTE: a hardcoded XOR "encryption" implementation used to live here.
+// It was removed because it is not real encryption and only created a
+// false sense of security. The desktop suite ships a proper vault
+// (ua.syt0r.kanji.desktop.engine.account.TokenVault) that persists
+// tokens with a machine-bound key and restricted file permissions;
+// the same interface should be implemented per platform here.
 // ============================================
 
 interface SecureTokenStorage {
@@ -171,84 +182,6 @@ interface SecureTokenStorage {
     suspend fun hasToken(providerId: String): Boolean
     suspend fun listProviders(): List<String>
     suspend fun clearAllTokens()
-}
-
-private fun generateDefaultKey(): ByteArray {
-    return "KaiteyoDefaultKey2024".encodeToByteArray()
-}
-
-class DefaultSecureTokenStorage(
-    private val encryptionKey: ByteArray = generateDefaultKey()
-) : SecureTokenStorage {
-    
-    private val tokens = mutableMapOf<String, AuthToken>()
-    
-    override suspend fun saveToken(providerId: String, token: AuthToken) {
-        val encrypted = encryptToken(token)
-        tokens[providerId] = encrypted
-        persistToSecureStore(providerId, encrypted)
-    }
-    
-    override suspend fun getToken(providerId: String): AuthToken? {
-        return tokens[providerId] ?: loadFromSecureStore(providerId)
-    }
-    
-    override suspend fun deleteToken(providerId: String) {
-        tokens.remove(providerId)
-        removeFromSecureStore(providerId)
-    }
-    
-    override suspend fun hasToken(providerId: String): Boolean {
-        return providerId in tokens || checkSecureStore(providerId)
-    }
-    
-    override suspend fun listProviders(): List<String> {
-        return tokens.keys.toList()
-    }
-    
-    override suspend fun clearAllTokens() {
-        tokens.keys.toList().forEach { deleteToken(it) }
-    }
-    
-    private fun encryptToken(token: AuthToken): AuthToken {
-        // XOR-based obfuscation with platform key
-        val obfuscatedAccess = token.accessToken.mapIndexed { i, c ->
-            (c.code xor encryptionKey[i % encryptionKey.size].toInt()).toChar()
-        }.joinToString("")
-        
-        val obfuscatedRefresh = token.refreshToken.mapIndexed { i, c ->
-            (c.code xor encryptionKey[i % encryptionKey.size].toInt()).toChar()
-        }.joinToString("")
-        
-        return token.copy(accessToken = obfuscatedAccess, refreshToken = obfuscatedRefresh)
-    }
-    
-    private fun generateDefaultKey(): ByteArray {
-        val platformSpecific = System.getProperty("os.name")?.toByteArray() 
-            ?: "kaiteyo-default-key".toByteArray()
-        return platformSpecific.copyOf(32).let { 
-            it.forEachIndexed { i, _ -> if (i >= platformSpecific.size) it[i] = (i * 7).toByte() }
-            it
-        }
-    }
-    
-    private suspend fun persistToSecureStore(providerId: String, token: AuthToken) {
-        // Platform-specific secure storage (Keychain/KeyStore/CredentialManager)
-        Logger.d("SecureStorage: Persisting token for $providerId")
-    }
-    
-    private suspend fun loadFromSecureStore(providerId: String): AuthToken? {
-        Logger.d("SecureStorage: Loading token for $providerId")
-        return null
-    }
-    
-    private suspend fun removeFromSecureStore(providerId: String) {
-        Logger.d("SecureStorage: Removing token for $providerId")
-    }
-    
-    private suspend fun checkSecureStore(providerId: String): Boolean {
-        return false
-    }
 }
 
 // ============================================

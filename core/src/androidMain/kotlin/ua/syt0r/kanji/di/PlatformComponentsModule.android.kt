@@ -18,7 +18,9 @@ import ua.syt0r.kanji.core.app_data.AppDataDatabaseProvider
 import ua.syt0r.kanji.core.app_data.AndroidAppDataDatabaseProvider
 import ua.syt0r.kanji.core.backup.AndroidBackupArchiveHandler
 import ua.syt0r.kanji.core.backup.BackupArchiveHandler
-import ua.syt0r.kanji.core.file.AndroidPlatformFileHandler
+import ua.syt0r.kanji.core.transfer.AnkiPackage
+import ua.syt0r.kanji.core.transfer.AnkiPackageAndroid
+import ua.syt0r.kanji.core.file.PlatformFile
 import ua.syt0r.kanji.core.file.PlatformFileHandler
 import ua.syt0r.kanji.core.logger.LoggerConfiguration
 import ua.syt0r.kanji.core.notification.ReminderNotificationContract
@@ -83,6 +85,11 @@ actual val platformComponentsModule: Module = module {
             contentResolver = androidContext().contentResolver
         )
     }
+
+    factory<PlatformFile> {
+        PlatformFile(androidContext().filesDir)
+    }
+    single<AnkiPackage> { AnkiPackageAndroid() }
 
     single<DataStore<*>> {
         PreferenceDataStoreFactory.create(

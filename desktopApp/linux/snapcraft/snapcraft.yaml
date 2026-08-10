@@ -1,5 +1,5 @@
-name: kanji-dojo
-title: Kanji Dojo
+name: kaiteyo
+title: Kaiteyo
 icon: preview_assets/inkscape_icon.svg
 summary: Application for practicing writing and reading Japanese characters
 description: |
@@ -13,9 +13,8 @@ description: |
 
 license: GPL-3.0+
 
-source-code: https://github.com/syt0r/Kanji-Dojo
-issues: [https://github.com/syt0r/Kanji-Dojo/issues]
-contact: [shuliak.yaroslav@gmail.com]
+source-code: https://github.com/ValiantZippu/Kaiteyo
+issues: [https://github.com/ValiantZippu/Kaiteyo/issues]
 
 base: core22
 version: '1.7'
@@ -24,16 +23,17 @@ grade: stable
 confinement: strict
 
 plugs:
-  kanji-dojo-data:
+  kaiteyo-data:
     interface: personal-files
     write:
       - $HOME/.skiko
-      - $HOME/.local/share/kanji-dojo
+      - $HOME/.local/share/kaiteyo
+      - $HOME/.kaiteyo
 
 apps:
-  kanji-dojo:
-    command: ./launch-kanji-dojo.sh
-    desktop: meta/gui/kanji-dojo.desktop
+  kaiteyo:
+    command: ./launch-kaiteyo.sh
+    desktop: meta/gui/kaiteyo.desktop
     plugs:
       - desktop
       - desktop-legacy
@@ -41,7 +41,7 @@ apps:
       - opengl
       - wayland
       - x11
-      - kanji-dojo-data
+      - kaiteyo-data
 
 parts:
   jre:
@@ -59,4 +59,4 @@ parts:
     source: snapcraft/local
     override-build: |
       mkdir -p $SNAPCRAFT_PART_INSTALL/
-      cp launch-kanji-dojo.sh $SNAPCRAFT_PART_INSTALL/
+      cp launch-kaiteyo.sh $SNAPCRAFT_PART_INSTALL/

@@ -4,6 +4,12 @@
     <style name="KaiteyoBaseTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:navigationBarColor">#000</item>
+        <!-- Dark cold-start background: no white flash while Compose boots. -->
+        <item name="android:windowBackground">@color/window_background</item>
+        <!-- Android 12+ splash screen (ignored on older versions). -->
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/splash_background</item>
     </style>
 
     <style name="KaiteyoBaseTheme.AppTheme">

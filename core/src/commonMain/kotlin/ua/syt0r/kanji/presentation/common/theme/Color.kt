@@ -221,6 +221,8 @@ val semanticWarning = Color(0xFFFEAB57)
 val semanticError = Color(0xFFFF6B6B)
 val semanticInfo = Color(0xFF7BC8FF)
 val semanticNew = Color(0xFFA78BFA)
+val favoriteYellow = Color(0xFFFFD93D)
+val dueOrange = Color(0xFFFF9F43)
 
 // ============================================
 // GRADIENT SYSTEM

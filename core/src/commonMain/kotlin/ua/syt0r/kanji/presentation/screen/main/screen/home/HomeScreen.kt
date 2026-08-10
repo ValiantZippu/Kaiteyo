@@ -5,9 +5,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
@@ -26,8 +30,19 @@ fun HomeScreen(
 ) {
 
     val shellHomeNavigationState = LocalHomeNavigationState.current
+    val defaultTabState = viewModel.defaultTab.collectAsState()
     val homeNavigationState = shellHomeNavigationState
-        ?: rememberHomeNavigationState(viewModel.defaultTab)
+        ?: rememberHomeNavigationState(defaultTabState.value)
+
+    // Apply the preference-loaded default tab once, only overriding the initial
+    // default (GeneralDashboard) — rememberSaveable preserves any user-selected tab.
+    var defaultTabApplied by remember { mutableStateOf(false) }
+    if (!defaultTabApplied && defaultTabState.value != HomeScreenTab.GeneralDashboard) {
+        LaunchedEffect(defaultTabState.value) {
+            homeNavigationState.navigate(defaultTabState.value)
+            defaultTabApplied = true
+        }
+    }
 
     val tabContent = remember {
         movableContentOf { HomeNavigationContent(homeNavigationState, mainNavigationState) }
@@ -47,8 +62,7 @@ fun HomeScreen(
             onSyncButtonClick = {
                 val isSyncStarted = viewModel.trySync()
                 if (!isSyncStarted) mainNavigationState.navigate(MainDestination.Sync)
-            },
-            onSponsorButtonClick = { mainNavigationState.navigate(MainDestination.Sponsor) }
+            }
         ) {
 
             tabContent()

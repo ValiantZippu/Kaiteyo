@@ -11,4 +11,4 @@ Dependencies are centralized in `gradle/libs.versions.toml`; plugin versions are
 
 Use `--refresh-dependencies` only to diagnose cache state. Never commit generated caches or secrets.
 
-Related: [Gradle](../troubleshooting/Gradle.md), [First Build](FirstBuild.md), [Command Library](../Commands.md).
+Related: [Gradle](../troubleshooting/Gradle.md), [First Build](FirstBuild.md), [Command Library](../development/COMMANDS.md).

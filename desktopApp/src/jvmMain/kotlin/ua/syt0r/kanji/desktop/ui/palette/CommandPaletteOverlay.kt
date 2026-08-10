@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ImportExport
@@ -68,6 +70,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.ui.workspace.allNavItems
 import ua.syt0r.kanji.desktop.ui.workspace.panelKindIcon
 
 // ============================================
@@ -275,20 +278,7 @@ private fun buildCommands(state: AppState): List<PaletteCommand> = buildList {
         )
     }
 
-    nav(WorkspaceView.Dashboard, Icons.Default.SpaceDashboard)
-    nav(WorkspaceView.Browser, Icons.Default.GridView)
-    nav(WorkspaceView.Review, Icons.Default.PlayArrow)
-    nav(WorkspaceView.Collections, Icons.Default.Folder)
-    nav(WorkspaceView.Tags, Icons.Default.Sell)
-    nav(WorkspaceView.Statistics, Icons.Default.BarChart)
-    nav(WorkspaceView.History, Icons.Default.History)
-    nav(WorkspaceView.Transfer, Icons.Default.ImportExport)
-    nav(WorkspaceView.Sync, Icons.Default.Sync)
-    nav(WorkspaceView.Shortcuts, Icons.Default.Keyboard)
-    nav(WorkspaceView.Plugins, Icons.Default.Extension)
-    nav(WorkspaceView.ThemeStudio, Icons.Default.Palette)
-    nav(WorkspaceView.Settings, Icons.Default.Settings)
-    nav(WorkspaceView.Contributions, Icons.Default.Favorite)
+    allNavItems.forEach { (view, icon) -> nav(view, icon) }
 
     add(PaletteCommand("Start review (due)", "Review", Icons.Default.PlayArrow, "3",
         action = { state.startReview() }))

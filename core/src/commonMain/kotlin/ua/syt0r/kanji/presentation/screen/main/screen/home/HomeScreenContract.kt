@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface HomeScreenContract {
 
     interface ViewModel {
-        val defaultTab: HomeScreenTab
+        val defaultTab: StateFlow<HomeScreenTab>
         val syncIconState: StateFlow<SyncIconState>
         fun trySync(): Boolean
     }

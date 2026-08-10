@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <color name="primary">#fffafafa</color>
+    <!-- Cold-start window background, matching the app's default OLED theme
+         so the window never flashes white before Compose draws. -->
+    <color name="window_background">#0A0A0A</color>
+
+    <!-- Android 12+ splash screen background. -->
+    <color name="splash_background">#0A0A0A</color>
 
 </resources>

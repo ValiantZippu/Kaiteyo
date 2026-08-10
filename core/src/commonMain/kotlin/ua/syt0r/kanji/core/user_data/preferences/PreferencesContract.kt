@@ -65,6 +65,7 @@ interface PreferencesContract {
         val navFloatingOffsetX: SuspendedProperty<Int>
         val navFloatingOffsetY: SuspendedProperty<Int>
         val navAccentIndex: SuspendedProperty<Int>
+        val navSettingsJson: SuspendedProperty<String>
 
         // Kaiteyo features (serialized JSON held in string properties)
         val reviewSettingsJson: SuspendedProperty<String>

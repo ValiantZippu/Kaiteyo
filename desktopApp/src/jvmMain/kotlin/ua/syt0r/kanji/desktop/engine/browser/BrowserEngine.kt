@@ -54,8 +54,8 @@ data class BrowserHistoryEntry(
 /** A live tab. */
 data class BrowserTab(
     val id: String,
-    val title: String = "New Tab",
-    val url: String = "",
+    var title: String = "New Tab",
+    var url: String = "",
     var history: MutableList<String> = mutableListOf(),
     var historyIndex: Int = -1
 ) {

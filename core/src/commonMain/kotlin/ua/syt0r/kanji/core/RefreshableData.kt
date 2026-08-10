@@ -26,21 +26,26 @@ inline fun <reified T> refreshableDataFlow(
     dataChangeFlow: Flow<Unit>,
     lifecycleState: StateFlow<LifecycleState>,
     noinline valueProvider: suspend CoroutineScope.() -> T
-): Flow<RefreshableData<T>> = channelFlow {
+): Flow<RefreshableData<T>> {
+    var firstLoad = true
+    return channelFlow {
+        dataChangeFlow.onStart { emit(Unit) }
+            .collectLatest {
+                send(RefreshableData.Loading())
+                // The very first load must never be gated on lifecycle visibility:
+                // a screen that just opened has to render instantly. Only refreshes
+                // triggered by data changes wait for the screen to be visible again.
+                if (!firstLoad) waitForVisibility(lifecycleState)
+                firstLoad = false
 
-    dataChangeFlow.onStart { emit(Unit) }
-        .collectLatest {
-            send(RefreshableData.Loading())
-            waitForVisibility(lifecycleState)
+                val value: T
+                val loadingTime = measureTime { value = valueProvider.invoke(this) }
+                Logger.d("Loaded ${T::class.qualifiedName} data, loadingTime[$loadingTime]")
 
-            val value: T
-            val loadingTime = measureTime { value = valueProvider.invoke(this) }
-            Logger.d("Loaded ${T::class.qualifiedName} data, loadingTime[$loadingTime]")
-
-            send(RefreshableData.Loaded(value))
-        }
-
-}.distinctLoading()
+                send(RefreshableData.Loaded(value))
+            }
+    }.distinctLoading()
+}
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,17 +53,22 @@ inline fun <reified T> refreshableDataProducerFlow(
     dataChangeFlow: Flow<Unit>,
     lifecycleState: StateFlow<LifecycleState>,
     noinline producer: suspend ProducerScope<T>.() -> Unit
-): Flow<RefreshableData<T>> = dataChangeFlow
-    .onStart { emit(Unit) }
-    .flatMapLatest {
-        channelFlow<T> {
-            waitForVisibility(lifecycleState)
-            producer(this)
+): Flow<RefreshableData<T>> {
+    var firstLoad = true
+    return dataChangeFlow
+        .onStart { emit(Unit) }
+        .flatMapLatest {
+            channelFlow<T> {
+                // First load renders immediately; refreshes wait for visibility.
+                if (!firstLoad) waitForVisibility(lifecycleState)
+                firstLoad = false
+                producer(this)
+            }
+                .map<T, RefreshableData<T>> { RefreshableData.Loaded(it) }
+                .onStart { emit(RefreshableData.Loading()) }
         }
-            .map<T, RefreshableData<T>> { RefreshableData.Loaded(it) }
-            .onStart { emit(RefreshableData.Loading()) }
-    }
-    .distinctLoading()
+        .distinctLoading()
+}
 
 suspend fun waitForVisibility(lifecycleState: StateFlow<LifecycleState>) {
     lifecycleState.filter { it == LifecycleState.Visible }.first()

@@ -36,6 +36,11 @@ import ua.syt0r.kanji.desktop.designsystem.DsStatTile
 import ua.syt0r.kanji.desktop.designsystem.DsTabRow
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.errorColor
+import ua.syt0r.kanji.desktop.designsystem.infoColor
+import ua.syt0r.kanji.desktop.designsystem.newColor
+import ua.syt0r.kanji.desktop.designsystem.successColor
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.engine.stats.AnalyticsEngine
 import ua.syt0r.kanji.desktop.engine.stats.BreakdownEngine
@@ -185,10 +190,10 @@ fun StatsView(state: AppState) {
                     Spacer(Modifier.height(DsSpacing.Md))
                     ChartLegend(
                         listOf(
-                            "Again" to Color(0xFFFF6B6B),
-                            "Hard" to Color(0xFFFEAB57),
-                            "Good" to Color(0xFF7BC8FF),
-                            "Easy" to Color(0xFFC2FC8B)
+                            "Again" to errorColor(),
+                            "Hard" to warningColor(),
+                            "Good" to infoColor(),
+                            "Easy" to successColor()
                         )
                     )
                 }
@@ -371,12 +376,12 @@ private fun GoalsPanel(summaries: List<ua.syt0r.kanji.desktop.model.StudyDaySumm
                 )
                 Text(
                     text = "${progress.achieved} / ${progress.target}",
-                    color = if (progress.complete) Color(0xFFC2FC8B) else sc.textMuted,
+                    color = if (progress.complete) successColor() else sc.textMuted,
                     fontSize = DsType.Caption
                 )
             }
             Spacer(Modifier.height(4.dp))
-            DsProgressBar(fraction = progress.fraction, color = if (progress.complete) Color(0xFFC2FC8B) else Color.Unspecified)
+            DsProgressBar(fraction = progress.fraction, color = if (progress.complete) successColor() else Color.Unspecified)
         }
     }
 }
@@ -407,11 +412,11 @@ private fun StatusPanel(cards: List<ua.syt0r.kanji.desktop.model.DesktopCard>) {
 
 @Composable
 private fun statusColor(status: SrsStatus): Color = when (status) {
-    SrsStatus.New -> Color(0xFFA78BFA)
-    SrsStatus.Learning -> Color(0xFF7BC8FF)
-    SrsStatus.Review -> Color(0xFFC2FC8B)
-    SrsStatus.Relearning -> Color(0xFFFEAB57)
-    SrsStatus.Suspended, SrsStatus.Buried -> Color(0xFF606060)
+    SrsStatus.New -> newColor()
+    SrsStatus.Learning -> infoColor()
+    SrsStatus.Review -> successColor()
+    SrsStatus.Relearning -> warningColor()
+    SrsStatus.Suspended, SrsStatus.Buried -> surfaceColors().textMuted
 }
 
 private fun avgPerReview(current: ua.syt0r.kanji.desktop.engine.stats.AnalyticsSnapshot): String {

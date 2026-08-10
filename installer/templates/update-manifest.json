@@ -1,0 +1,62 @@
+{
+  "$comment": "Example stable-channel update feed. Generate the real one with scripts/make-update-manifest.sh after staging a release.",
+  "schema_version": 1,
+  "channel": "stable",
+  "published_at": "2026-08-10T12:00:00Z",
+  "latest": {
+    "version": "2.2.1",
+    "version_code": 2210,
+    "release_notes_url": "https://github.com/ValiantZippu/Kaiteyo/releases/tag/v2.2.1",
+    "min_app_version": "2.2.1"
+  },
+  "artifacts": {
+    "windows-exe": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-windows-setup.exe",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "x64"
+    },
+    "windows-msi": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-windows.msi",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "x64"
+    },
+    "windows-portable": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-windows-portable.zip",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "x64"
+    },
+    "macos-arm": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-macos-arm.dmg",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "arm64"
+    },
+    "macos-intel": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-macos-intel.dmg",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "x64"
+    },
+    "linux-appimage": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-linux.AppImage",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "x86_64"
+    },
+    "linux-deb": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-linux.deb",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "amd64"
+    },
+    "linux-rpm": {
+      "url": "https://github.com/ValiantZippu/Kaiteyo/releases/latest/download/Kaiteyo-2.2.1-linux.rpm",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size_bytes": 0,
+      "arch": "x86_64"
+    }
+  }
+}

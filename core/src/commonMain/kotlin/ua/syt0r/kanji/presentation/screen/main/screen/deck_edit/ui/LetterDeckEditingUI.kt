@@ -132,7 +132,7 @@ fun LetterDeckEditingUI(
                         when (deckEditingMode.value) {
                             LetterDeckEditingMode.Search -> onItemClick(it)
                             LetterDeckEditingMode.Removal -> toggleRemoval(it)
-                            LetterDeckEditingMode.ResetSrs -> TODO()
+                            LetterDeckEditingMode.ResetSrs -> { /* TODO: implement SRS reset */ }
                         }
                     }
                 )
@@ -162,7 +162,7 @@ private enum class LetterDeckEditingMode(
     ),
     ResetSrs(
         icon = Icons.Default.Memory,
-        titleResolver = { TODO() }
+        titleResolver = { "Reset SRS" }
     )
 }
 

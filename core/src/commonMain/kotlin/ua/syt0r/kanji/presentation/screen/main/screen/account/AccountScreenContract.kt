@@ -9,7 +9,7 @@ interface AccountScreenContract {
 
     companion object {
 
-        const val ACCOUNT_WEB_PAGE_URL = "https://kanji-dojo.com/account"
+        const val ACCOUNT_WEB_PAGE_URL = "https://valiantzippu.github.io/Kaiteyo"
         const val ACCOUNT_DELETE_URL = "$ACCOUNT_WEB_PAGE_URL?delete=true"
         const val DEEP_LINK_AUTH_URL = "$ACCOUNT_WEB_PAGE_URL?deepLinkAuth=true"
         const val DEEP_LINK_AUTH_REDIRECT_URL = "kaiteyo://signin"

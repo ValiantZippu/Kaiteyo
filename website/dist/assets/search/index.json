@@ -1,16 +1,16 @@
 [
 {
 "type": "doc",
-"title": "Kaiteyo (書いてよ) — Start Here",
-"url": "/Kaiteyo/docs/start-here/00_start_here/",
+"title": "Kaiteyo (書いてよ) — Documentation",
+"url": "/Kaiteyo/docs/start-here/readme/",
 "section": "Start Here",
-"excerpt": "Kaiteyo is a premium, cross-platform Japanese language learning application. Originally a fork of Kanji Dojo, it has been completely redesigned with a focus on desktop-first UX, beautiful craftsmanship, and a cohesive design system.",
+"excerpt": "Kaiteyo is a premium, cross-platform Japanese language learning application. Originally a fork of",
 "icon": "file"
 },
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Project Vision",
-"url": "/Kaiteyo/docs/start-here/00_project_vision/",
+"url": "/Kaiteyo/docs/start-here/project_vision/",
 "section": "Start Here",
 "excerpt": "Kaiteyo is a premium, cross-platform Japanese language learning application. Originally a fork of Kanji Dojo, Kaiteyo has been completely redesigned with a focus on desktop-first UX, beautiful craftsmanship, and a cohesive design system.",
 "icon": "file"
@@ -18,7 +18,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Brand Guidelines",
-"url": "/Kaiteyo/docs/design/01_brand_guidelines/",
+"url": "/Kaiteyo/docs/design/brand_guidelines/",
 "section": "Design & Branding",
 "excerpt": "Kaiteyo is a premium, minimalist Japanese language learning application. The brand evokes:",
 "icon": "file"
@@ -26,7 +26,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Design Language",
-"url": "/Kaiteyo/docs/design/02_design_language/",
+"url": "/Kaiteyo/docs/design/design_language/",
 "section": "Design & Branding",
 "excerpt": "Kaiteyo uses a 4dp base grid. All spacing values are multiples of 4.",
 "icon": "file"
@@ -34,7 +34,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Branding",
-"url": "/Kaiteyo/docs/design/03_branding/",
+"url": "/Kaiteyo/docs/design/branding/",
 "section": "Design & Branding",
 "excerpt": "Kaiteyo is a premium, minimalist Japanese language learning application. The brand evokes modern Japanese design aesthetics — clean, precise, purposeful.",
 "icon": "file"
@@ -42,7 +42,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — UI System",
-"url": "/Kaiteyo/docs/design/03_ui_system/",
+"url": "/Kaiteyo/docs/design/ui_system/",
 "section": "Design & Branding",
 "excerpt": "Every component in Kaiteyo follows these principles:",
 "icon": "file"
@@ -50,7 +50,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Theme System",
-"url": "/Kaiteyo/docs/design/04_theme_system/",
+"url": "/Kaiteyo/docs/design/theme_system/",
 "section": "Design & Branding",
 "excerpt": "Kaiteyo's theme system is built on a token-based architecture. Every visual property is controlled by a theme token, enabling complete customization through the Appearance Studio.",
 "icon": "file"
@@ -58,7 +58,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Animation System",
-"url": "/Kaiteyo/docs/design/05_animation_system/",
+"url": "/Kaiteyo/docs/design/animation_system/",
 "section": "Design & Branding",
 "excerpt": "Animations in Kaiteyo serve a purpose: they guide attention, provide feedback, and make the interface feel alive. Every animation should be:",
 "icon": "file"
@@ -82,7 +82,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Features",
-"url": "/Kaiteyo/docs/features/10_features/",
+"url": "/Kaiteyo/docs/features/features/",
 "section": "Features",
 "excerpt": "",
 "icon": "file"
@@ -92,7 +92,7 @@
 "title": "Kaiteyo — Desktop Experience Specification",
 "url": "/Kaiteyo/docs/features/desktop/",
 "section": "Features",
-"excerpt": "The desktop experience is the primary focus of Kaiteyo. It should feel like a premium native application comparable to Figma, Linear, Raycast, or Arc Browser.",
+"excerpt": "The desktop experience is the primary focus of Kaiteyo. It should feel like a premium",
 "icon": "file"
 },
 {
@@ -114,7 +114,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Architecture",
-"url": "/Kaiteyo/docs/architecture/06_architecture/",
+"url": "/Kaiteyo/docs/architecture/overview/",
 "section": "Architecture",
 "excerpt": "",
 "icon": "file"
@@ -122,7 +122,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo Synchronization Architecture v1.2",
-"url": "/Kaiteyo/docs/architecture/15_sync_architecture/",
+"url": "/Kaiteyo/docs/architecture/sync/",
 "section": "Architecture",
 "excerpt": "Kaiteyo's synchronization system is built on a modular, offline-first architecture. Every module is independently replaceable, allowing future cloud providers to be added without redesigning the core system.",
 "icon": "file"
@@ -130,7 +130,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo Account & Synchronization Structure v1.2",
-"url": "/Kaiteyo/docs/architecture/16_account_structure/",
+"url": "/Kaiteyo/docs/architecture/account/",
 "section": "Architecture",
 "excerpt": "This document defines the complete account structure for Kaiteyo. It is designed to be platform-agnostic — usable from the desktop app, mobile app, website, CLI, or any API consumer.",
 "icon": "file"
@@ -138,9 +138,17 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Navigation System",
-"url": "/Kaiteyo/docs/architecture/17_navigation_system/",
+"url": "/Kaiteyo/docs/architecture/navigation/",
 "section": "Architecture",
 "excerpt": "The navigation system is a unified, highly customizable desktop-OS-style shell",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Kaiteyo — Complete File Structure Reference",
+"url": "/Kaiteyo/docs/architecture/file_structure/",
+"section": "Architecture",
+"excerpt": "This document explains every file in the repository. Every file is documented with its purpose, dependencies, and whether developers should modify it.",
 "icon": "file"
 },
 {
@@ -194,7 +202,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Development Guide",
-"url": "/Kaiteyo/docs/development/07_development_guide/",
+"url": "/Kaiteyo/docs/development/developer_guide/",
 "section": "Development",
 "excerpt": "bash",
 "icon": "file"
@@ -202,7 +210,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Coding Standards",
-"url": "/Kaiteyo/docs/development/12_coding_standards/",
+"url": "/Kaiteyo/docs/development/coding_standards/",
 "section": "Development",
 "excerpt": "1. Readability over cleverness — Write code that is easy to understand",
 "icon": "file"
@@ -210,7 +218,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Assets",
-"url": "/Kaiteyo/docs/development/13_assets/",
+"url": "/Kaiteyo/docs/development/assets/",
 "section": "Development",
 "excerpt": "Kaiteyo uses system fonts exclusively:",
 "icon": "file"
@@ -218,9 +226,9 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Release Process",
-"url": "/Kaiteyo/docs/development/14_release_process/",
+"url": "/Kaiteyo/docs/development/release_process/",
 "section": "Development",
-"excerpt": "Kaiteyo follows Semantic Versioning(https://semver.org/):",
+"excerpt": "Semantic Versioning (MAJOR.MINOR.PATCH). The single source of truth is:",
 "icon": "file"
 },
 {
@@ -292,7 +300,7 @@
 "title": "Build Errors",
 "url": "/Kaiteyo/docs/troubleshooting/builderrors/",
 "section": "Troubleshooting",
-"excerpt": "Use this page for failures that stop compilation, packaging, or tests. Start with the Command Library(../Commands.md), then record the issue here.",
+"excerpt": "Use this page for failures that stop compilation, packaging, or tests. Start with the Command Library(../development/COMMANDS.md), then record the issue here.",
 "icon": "file"
 },
 {
@@ -378,7 +386,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Contributing Guide",
-"url": "/Kaiteyo/docs/contributing/08_contributing/",
+"url": "/Kaiteyo/docs/contributing/contributing/",
 "section": "Contributing",
 "excerpt": "We welcome contributions from the community. This guide explains how to contribute effectively.",
 "icon": "file"
@@ -394,7 +402,7 @@
 {
 "type": "doc",
 "title": "Kaiteyo (書いてよ) — Roadmap",
-"url": "/Kaiteyo/docs/planning/09_roadmap/",
+"url": "/Kaiteyo/docs/planning/roadmap/",
 "section": "Planning",
 "excerpt": "Sprint: v1.2 Window & Sidebar",
 "icon": "file"
@@ -745,10 +753,18 @@
 },
 {
 "type": "changelog",
+"title": "Version 2.2.1",
+"url": "/Kaiteyo/changelog/#v2-2-1",
+"section": "Changelog",
+"excerpt": "P r e W i n m a c L i n S h a D o c F i r A u t C I   N a t 4 4 d N a t 8 - z C u s W i n K e y S c r U n i i O S D o c R o o D e s P l a S t a L e g R e b",
+"icon": "history"
+},
+{
+"type": "changelog",
 "title": "Version 2.0.0",
 "url": "/Kaiteyo/changelog/#v2-0-0",
 "section": "Changelog",
-"excerpt": "U n i S i n L i b D r i O l d T h e I n t R G B 1 1   R e c A p p G r a A l l C u s F l o D r a S n a 9   d R e s D r a C l o B o r D i s B r u S t r I n p B e z V e l J i t P r e F u l S t r B r a W e l I n s C o m T h e A c c A c c A n i C o m O n b S t e S ",
+"excerpt": "U n i S i n L i b D r i O l d P e r C o l ` u p ` L e ` u p A r c F o l T h e I n t R G B 1 1   R e c A p p G r a A l l C u s F l o D r a S n a 9   d R e s D r a C l o B o r D i s B r u S t r I n p B e z V e l J i t P r e F u l S t r B r a W e l I n s C o m T ",
 "icon": "history"
 },
 {
@@ -756,7 +772,7 @@
 "title": "Version 1.1.0",
 "url": "/Kaiteyo/changelog/#v1-1-0",
 "section": "Changelog",
-"excerpt": "U n d S p r W i n R o u T h e K a i A c c G l o S u r A p p S i g R e b C o m P r o A I _ ` a n ` a n ` w i M i s D e s",
+"excerpt": "U n d S p r W i n R o u T h e K a i A c c G l o S u r A p p S i g R e b C o m P r o ` . . ` a n ` a n ` w i M i s D e s",
 "icon": "history"
 },
 {

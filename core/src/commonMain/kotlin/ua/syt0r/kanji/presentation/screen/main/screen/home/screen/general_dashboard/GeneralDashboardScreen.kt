@@ -6,10 +6,11 @@ import androidx.compose.ui.platform.LocalUriHandler
 import ua.syt0r.kanji.presentation.getMultiplatformViewModel
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.data.DeckDetailsScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerScreenConfiguration
 
 
-private const val DownloadsUrl = "https://kanji-dojo.com/"
+private const val DownloadsUrl = "https://valiantzippu.github.io/Kaiteyo"
 
 @Composable
 fun GeneralDashboardScreen(
@@ -34,6 +35,17 @@ fun GeneralDashboardScreen(
         },
         navigateToLetterPractice = { mainNavigationState.navigate(it) },
         navigateToVocabPractice = { mainNavigationState.navigate(it) },
+        navigateToDeckDetails = { deck ->
+            val configuration = when (deck.category) {
+                DashboardDeckCategory.Letters -> DeckDetailsScreenConfiguration.LetterDeck(deck.deckId)
+                DashboardDeckCategory.Vocabulary -> DeckDetailsScreenConfiguration.VocabDeck(deck.deckId)
+            }
+            mainNavigationState.navigate(MainDestination.DeckDetails(configuration))
+        },
+        navigateToSearch = { mainNavigationState.navigate(MainDestination.SearchEngine) },
+        navigateToCardBrowser = { mainNavigationState.navigate(MainDestination.CardBrowser) },
+        navigateToStatistics = { mainNavigationState.navigate(MainDestination.StatisticsDashboard) },
+        navigateToImportExport = { mainNavigationState.navigate(MainDestination.ImportExport) },
         downloadsClick = { uriHandler.openUri(DownloadsUrl) },
         socialClick = { uriHandler.openUri(it.url) },
         textAnalysisClick = { mainNavigationState.navigate(MainDestination.TextAnalysis) }

@@ -1,5 +1,6 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard
 
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
@@ -81,11 +82,50 @@ data class StreakCalendarItem(
     val anyReviews: Boolean
 )
 
+data class DashboardDaySummary(
+    val date: LocalDate,
+    val count: Int
+)
+
+enum class DashboardDeckCategory { Letters, Vocabulary }
+
+/**
+ * Lightweight deck summary shown in the "Recent decks" section.
+ * Counts are the *today* queue (daily new + daily due) for the
+ * deck, aggregated across all practice types.
+ */
+data class DashboardDeckSummary(
+    val deckId: Long,
+    val title: String,
+    val category: DashboardDeckCategory,
+    val lastReview: Instant?,
+    val newCount: Int,
+    val dueCount: Int
+)
+
 data class GeneralDashboardStats(
     val currentStreak: Int,
     val longestStreak: Int,
-    val reviewsToday: Int
-)
+    val reviewsToday: Int,
+    val totalReviews: Long,
+    val weeklySummary: List<DashboardDaySummary>,
+    val newReviewedToday: Int,
+    val dueReviewedToday: Int,
+    val newLeftoverToday: Int,
+    val dueLeftoverToday: Int
+) {
+
+    val reviewedToday: Int get() = newReviewedToday + dueReviewedToday
+    val leftoverToday: Int get() = newLeftoverToday + dueLeftoverToday
+
+    val todayProgressFraction: Float
+        get() {
+            val total = reviewedToday + leftoverToday
+            if (total == 0) return 0f
+            return reviewedToday.toFloat() / total
+        }
+
+}
 
 enum class SocialButton(
     val url: String,
@@ -98,7 +138,7 @@ enum class SocialButton(
         icon = Res.drawable.discord
     ),
     YouTube(
-        url = "https://youtube.com/@kanji-dojo",
+        url = "https://github.com/ValiantZippu/Kaiteyo",
         title = Res.string.social_youtube,
         icon = Res.drawable.youtube
     )

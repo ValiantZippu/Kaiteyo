@@ -6,17 +6,14 @@ This directory contains detailed specifications for every major feature.
 
 | File | Feature | Status |
 |------|---------|--------|
-| `FLASHCARDS.md` | Flashcard study system | ✅ Implemented |
+| `FEATURES.md` | Every feature with status | ✅ Maintained |
 | `LIBRARY.md` | Unified Library hub | ✅ Implemented |
 | `THEMES.md` | Theme system and Appearance Studio | 🚧 In Progress |
 | `DESKTOP.md` | Desktop window experience | 🚧 In Progress |
-| `MOBILE.md` | Mobile experience | 📋 Planned |
-| `SEARCH.md` | Deck and card search | 📋 Planned |
-| `STATS.md` | Learning statistics | 📋 Planned |
-| `TAG_SYSTEM.md` | Card tagging and filtering | 📋 Planned |
-| `FLAG_SYSTEM.md` | Card flagging system | 📋 Planned |
-| `ANKI_IMPORT.md` | Anki deck import | 📋 Planned |
-| `ANKI_EXPORT.md` | Anki deck export | 📋 Planned |
+
+Individual specs for flashcards, search, stats, tags, flags, Anki import/export,
+and mobile are planned; until then the files above plus `../features/FEATURES.md`
+and `../planning/TODO.md` track each feature's status.
 
 ## Specification Format
 

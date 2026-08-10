@@ -22,4 +22,4 @@ chmod +x gradlew
 
 Then follow [First Build](FirstBuild.md). Do not commit `local.properties`, signing files, or machine-specific Gradle settings.
 
-Related: [Troubleshooting](../troubleshooting/README.md), [Git Guide](../guides/GIT_GUIDE.md), [Command Library](../Commands.md).
+Related: [Troubleshooting](../troubleshooting/README.md), [Git Guide](../guides/GIT_GUIDE.md), [Command Library](../development/COMMANDS.md).

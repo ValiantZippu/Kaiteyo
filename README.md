@@ -85,9 +85,9 @@ The project includes comprehensive documentation in the `/docs` directory:
 
 | Category | Location |
 |----------|----------|
-| 📖 Start Here | `docs/00_START_HERE.md` |
-| 🤖 AI Context | `docs/AI_CONTEXT.md` |
-| 🎨 Design Language | `docs/02_DESIGN_LANGUAGE.md` |
+| 📖 Start Here | `docs/README.md` |
+| 🤖 AI Context | `docs/development/AI_CONTEXT.md` |
+| 🎨 Design Language | `docs/design/DESIGN_LANGUAGE.md` |
 | 🧠 Features | `docs/features/` |
 | 🚀 Roadmap | `docs/planning/` |
 | 🐞 Issues | `docs/planning/CURRENT_ISSUES.md` |
@@ -108,10 +108,10 @@ The project includes comprehensive documentation in the `/docs` directory:
 
 Contributions are welcome! Please read:
 
-1. `docs/08_CONTRIBUTING.md` — Contribution guidelines
-2. `docs/development/CONTRIBUTING.md` — Detailed contributing guide
+1. `docs/contributing/CONTRIBUTING.md` — Contribution guidelines
+2. `docs/contributing/CONTRIBUTING.md` — Detailed contributing guide
 3. `docs/development/DEVELOPMENT_SETUP.md` — Development environment setup
-4. `docs/12_CODING_STANDARDS.md` — Coding standards
+4. `docs/development/CODING_STANDARDS.md` — Coding standards
 
 ## License
 
