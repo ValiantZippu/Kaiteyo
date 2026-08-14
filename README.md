@@ -4,7 +4,7 @@
 
   # Kaiteyo (書いてよ)
 
-  **Write it. Practice it. Master it.**
+  **Write it. Practice. Master it.**
 
   A premium, cross-platform Japanese language learning application — offline-first,
   desktop-focused, and free.
@@ -21,18 +21,18 @@
 
 Kaiteyo (書いてよ) — *"write it!"* in Japanese — is a premium application for learning
 Japanese. It began as a fork of [Kanji Dojo](https://github.com/syt0r/Kanji-Dojo) and has
-since grown into an independently developed project with its own design language, roadmap,
-and feature set.
+since grown into an independently developed project with its own design language, branding,
+data pipeline, and feature set.
 
 Kaiteyo is **desktop-first**: the Windows/macOS/Linux app is a complete immersion
 workspace — a Yomitan-style dictionary, an ASBPlayer-style media player, sentence mining,
 OCR, and a study engine in one cohesive window. The mobile apps share the same core study
 engine (kanji, kana, vocabulary, SRS, writing practice) built on Kotlin Multiplatform.
 
-> **Project status:** actively developed. The desktop suite is the flagship; mobile
-> shares the core learning engine. See [docs/features/FEATURES.md](docs/features/FEATURES.md)
-> for a per-feature status matrix and [docs/roadmap/ROADMAP.md](docs/roadmap/ROADMAP.md)
-> for what is planned.
+> **Project status:** actively developed. The desktop suite is the flagship; mobile shares
+> the core learning engine. See [docs/features/FEATURES.md](docs/features/FEATURES.md) for a
+> per-feature status matrix and [docs/roadmap/ROADMAP.md](docs/roadmap/ROADMAP.md) for what
+> is planned.
 
 ## Why Kaiteyo?
 
@@ -49,40 +49,42 @@ compatibility, backup, and GitHub-based sync are all built in.
 
 ## Features at a glance
 
-Status legend: ✅ implemented · 🚧 partial · 📋 planned
+Status legend: ✅ implemented · 🚧 partial / experimental · 📋 planned
 
 ### Core study engine (all platforms)
 
 | Feature | Status | Notes |
 |---|---|---|
 | Kanji & kana study | ✅ | JLPT (N5–N1) and school-grade decks |
-| Vocabulary study & flashcards | ✅ | Readings, meanings, furigana |
+| Vocabulary study & flashcards | ✅ | Readings, meanings, furigana, example sentences |
 | Writing practice | ✅ | Stroke-order diagrams, drawing canvas, stroke evaluation |
-| Spaced repetition (SRS) | ✅ | FSRS-based scheduling, custom intervals |
+| Spaced repetition (SRS) | ✅ | FSRS-5 based scheduling, custom intervals, daily limits |
 | Deck management | ✅ | Create, edit, archive, duplicate, bulk actions |
 | Radical & reading search | ✅ | 6000+ characters, dictionary-backed |
 | Text analysis | ✅ | Word-by-word breakdown (Ichiran-style output) |
-| Statistics & achievements | ✅ | Heatmap, learning curves, goals, achievements |
-| Anki `.apkg` import/export | ✅ | On desktop, Android and iOS |
+| Statistics & achievements | ✅ | Heatmap, learning curves, goals, achievements, exams |
+| Anki `.apkg` import/export | ✅ | Desktop, Android and iOS |
 | Backup / restore | ✅ | Profile archives, settings, window state |
 | User accounts & sync | 🚧 | GitHub device-flow + private-gist sync (desktop) |
+| Grammar study | 🚧 | Desktop suite: explanation-first practice view with starter deck |
 
 ### Desktop suite (Windows / macOS / Linux)
 
 | Feature | Status | Notes |
 |---|---|---|
-| Yomitan-style dictionary | ✅ | Import Yomitan/EPWING-style ZIP & JSON dictionaries; JMdict, KANJIDIC, KanjiVG data |
+| Yomitan-style dictionary | ✅ | Import Yomitan-compatible ZIP/JSON dictionaries; JMdict, KANJIDIC, KanjiVG data |
 | Dictionary popup lookup | ✅ | Hover/click on any Japanese text — reading, definitions, mining, TTS |
 | Media center | ✅ | VLC / mpv / Java Sound backends; SRT/ASS/SSA/VTT subtitles |
 | Subtitle mining | ✅ | Sentence cards from subtitles with screenshot + audio + timestamp |
-| Learning browser | ✅ | Study-friendly web browsing with lookup & mining |
-| OCR | 🚧 | Tesseract-backed capture/lookup (screenshot, clipboard, region) |
+| Learning browser | ✅ | Reader-mode + JavaFX WebView rendering, lookup & mining |
+| OCR | 🚧 | Capture pipeline works; detection engine is Tesseract when available |
 | Local HTTP API | ✅ | Bearer-token protected; media, mining, player-state endpoints |
 | AnkiConnect integration | ✅ | Push mined cards to Anki; import decks from Anki |
-| Auto-update system | 🚧 | Architecture complete (channels, sha256 verification); staged rollout |
+| Auto-update system | 🚧 | Architecture complete (channels, sha256 verification); rollout staged |
 | Plugin system | 🚧 | Manifest-driven registry + marketplace scaffold; no runtime loading yet |
 | Custom theming (Theme Studio) | ✅ | Color/gradient editors, presets, live preview |
 | First-run onboarding | ✅ | 8-step wizard, theme/accent/scale/font/nav/motion |
+| Branded installer | ✅ | Inno Setup wizard, styled DMG, AppImage/deb/rpm/Flatpak/Snap |
 
 ### Mobile
 
@@ -100,7 +102,7 @@ Status legend: ✅ implemented · 🚧 partial · 📋 planned
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="380"/>
 </p>
 
-Desktop captures live in [docs/screenshots/](docs/screenshots/).
+Desktop captures live in [docs/screenshots/](docs/screenshots/README.md).
 
 ## Downloads
 
@@ -108,9 +110,9 @@ Desktop captures live in [docs/screenshots/](docs/screenshots/).
 
 | Platform | Package |
 |---|---|
-| Windows | MSI, EXE (Inno Setup) + portable ZIP — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
-| macOS | DMG (arm64 + x64, notarized) — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
-| Linux | AppImage, deb, rpm (+ Flatpak/Snap packaging in progress) — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
+| Windows | EXE (Inno Setup) + MSI + portable ZIP — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
+| macOS | DMG (arm64 + x64, signed + notarized) — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
+| Linux | AppImage, deb, rpm (+ Flatpak/Snap packaging) — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
 
 ### Android
 
@@ -171,25 +173,27 @@ documentation site:
 | Area | Location |
 |---|---|
 | 📖 Docs index | [`docs/README.md`](docs/README.md) |
-| 🏛️ Architecture | [`docs/architecture/`](docs/architecture/) |
-| 🧱 Data & attribution | [`docs/data/`](docs/data/README.md) |
-| 🔌 Integrations | [`docs/integrations/`](docs/integrations/README.md) |
-| 👤 User guide | [`docs/user-guide/`](docs/user-guide/README.md) |
-| ⚙️ Development | [`docs/development/`](docs/development/) |
-| 🎨 Design system | [`docs/design/`](docs/design/README.md) |
+| 🏛️ Architecture (+ ADRs) | [`docs/architecture/`](docs/architecture/OVERVIEW.md) |
+| 🧱 Data & attribution | [`docs/data/README.md`](docs/data/README.md) |
+| 🔌 Integrations | [`docs/integrations/README.md`](docs/integrations/README.md) |
+| 👤 User guide | [`docs/user-guide/README.md`](docs/user-guide/README.md) |
+| ⚙️ Development | [`docs/development/`](docs/development/DEVELOPER_GUIDE.md) |
+| 🎨 Design system | [`docs/design/README.md`](docs/design/README.md) |
 | 🧠 Features | [`docs/features/FEATURES.md`](docs/features/FEATURES.md) |
 | 🗺️ Roadmap | [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) |
-| 🐞 Known issues | [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) |
+| 🖥️ Platforms | [`docs/platform/README.md`](docs/platform/README.md) |
 | 🧪 Testing | [`docs/testing/README.md`](docs/testing/README.md) |
-| 📦 Releases | [`docs/releases/`](docs/releases/) |
+| 📦 Releases | [`docs/releases/RELEASE_PROCESS.md`](docs/releases/RELEASE_PROCESS.md) |
 | 🔐 Security | [`SECURITY.md`](SECURITY.md) |
 | ⚖️ Legal & attribution | [`docs/legal/README.md`](docs/legal/README.md) |
+| 📜 Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
+| 🐞 Known issues | [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) |
 
 ## Technical stack
 
-- **Language** — Kotlin Multiplatform (2.1), Compose Multiplatform 1.8
+- **Language** — Kotlin Multiplatform (2.1.20), Compose Multiplatform 1.8.2
 - **Architecture** — shared `core` (business logic + UI) with thin platform entry points; modular screen pattern with Koin DI
-- **Data** — SQLDelight (two databases: immutable dictionary + mutable user data), DataStore preferences, JSON state on desktop
+- **Data** — SQLDelight (two databases: immutable dictionary + mutable user data), DataStore preferences, JSON state on desktop; `kjd/` generates the bundled language database
 - **Networking** — Ktor client, `java.net.http` for OAuth/sync
 - **Desktop media** — VLCJ (VLC), mpv (JSON-RPC), Java Sound
 - **Build** — Gradle with version catalog (`gradle/libs.versions.toml`), JDK 17
@@ -229,8 +233,8 @@ third-party datasets remain distinct. Sources include:
 | [KANJIDIC](https://www.edrdg.org/kanjidic/kanjdicindex.html) — character info | CC BY-SA 3.0 |
 | [JMdict](https://www.edrdg.org/jmdict/j_jmdict.html) — dictionary | CC BY-SA 4.0 |
 | [JmdictFurigana](https://github.com/Doublevil/JmdictFurigana) | CC BY-SA 4.0 |
-| [Tanos JLPT lists](http://www.tanos.co.uk/jlpt/) | Free with attribution |
-| [Leeds frequency data](https://corpus.leeds.ac.uk/list.html) | Free for research/education |
+| [Tanos JLPT lists](http://www.tanos.co.uk/jlpt/) | CC BY 3.0 (per in-app credits) |
+| [Leeds frequency data](https://corpus.leeds.ac.uk/list.html) | CC BY 2.5 (per in-app credits) |
 | [yomichan-jlpt-vocab](https://github.com/stephenmk/yomichan-jlpt-vocab) | CC BY-SA 4.0 |
 
 See [docs/data/SOURCES.md](docs/data/SOURCES.md) for full provenance, redistribution

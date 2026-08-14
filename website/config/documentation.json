@@ -33,6 +33,9 @@
       "files": [
         "features/FEATURES.md",
         "features/DESKTOP.md",
+        "features/LIBRARY.md",
+        "features/MEDIA.md",
+        "features/STATISTICS.md",
         "features/THEMES.md",
         "features/README.md"
       ]
@@ -40,9 +43,10 @@
     {
       "id": "architecture",
       "title": "Architecture",
-      "description": "How Kaiteyo is built: architecture, sync, accounts, navigation, API, and design decisions.",
+      "description": "How Kaiteyo is built: architecture, sync, accounts, navigation, data platform, API, and design decisions.",
       "files": [
         "architecture/OVERVIEW.md",
+        "architecture/DATA_PLATFORM.md",
         "architecture/SYNC.md",
         "architecture/ACCOUNT.md",
         "architecture/NAVIGATION.md",
@@ -52,9 +56,44 @@
     },
     {
       "id": "decisions",
-      "title": "Design Decisions",
+      "title": "Architecture Decisions",
       "description": "Recorded architecture decision records (ADRs).",
-      "directory": "decisions"
+      "directory": "architecture/decisions"
+    },
+    {
+      "id": "data",
+      "title": "Data & Attribution",
+      "description": "Data architecture, open-source data sources, and third-party attribution.",
+      "files": [
+        "data/ARCHITECTURE.md",
+        "data/SOURCES.md",
+        "data/README.md"
+      ]
+    },
+    {
+      "id": "integrations",
+      "title": "Integrations",
+      "description": "How Kaiteyo interoperates with Anki, Yomitan dictionaries, media backends, its local API, and plugins.",
+      "files": [
+        "integrations/ANKI.md",
+        "integrations/YOMITAN_DICTIONARIES.md",
+        "integrations/MEDIA_BACKENDS.md",
+        "integrations/LOCAL_API.md",
+        "integrations/PLUGINS.md",
+        "integrations/README.md"
+      ]
+    },
+    {
+      "id": "user-guide",
+      "title": "User Guide",
+      "description": "End-user documentation: getting started, studying, the desktop suite, and customization.",
+      "files": [
+        "user-guide/GETTING_STARTED.md",
+        "user-guide/STUDYING.md",
+        "user-guide/DESKTOP_SUITE.md",
+        "user-guide/CUSTOMIZATION.md",
+        "user-guide/README.md"
+      ]
     },
     {
       "id": "guides",
@@ -65,12 +104,13 @@
     {
       "id": "development",
       "title": "Development",
-      "description": "Development guide, coding standards, assets, releases, setup, and maintenance.",
+      "description": "Development guide, coding standards, testing, assets, releases, setup, and maintenance.",
       "files": [
         "development/DEVELOPER_GUIDE.md",
         "development/CODING_STANDARDS.md",
         "assets/ASSETS.md",
         "releases/RELEASE_PROCESS.md",
+        "releases/RELEASE_CHECKLIST.md",
         "setup/FirstBuild.md",
         "setup/FreshSetup.md",
         "setup/RequiredSoftware.md",
@@ -78,6 +118,45 @@
         "maintenance/DependencyUpdates.md",
         "maintenance/VersionHistory.md",
         "maintenance/KnownLimitations.md"
+      ]
+    },
+    {
+      "id": "platform",
+      "title": "Platforms",
+      "description": "Platform support, build and packaging notes for Windows, Linux, macOS, Android, and iOS.",
+      "files": [
+        "platform/WINDOWS.md",
+        "platform/LINUX.md",
+        "platform/MACOS.md",
+        "platform/ANDROID.md",
+        "platform/IOS.md",
+        "platform/README.md"
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Security & Privacy",
+      "description": "Security model, threat considerations, and the privacy guarantees Kaiteyo actually provides.",
+      "files": [
+        "security/PRIVACY.md",
+        "security/README.md"
+      ]
+    },
+    {
+      "id": "legal",
+      "title": "Legal",
+      "description": "Licensing, third-party notices, and data attribution structure.",
+      "files": [
+        "legal/THIRD_PARTY_NOTICES.md",
+        "legal/README.md"
+      ]
+    },
+    {
+      "id": "testing",
+      "title": "Testing",
+      "description": "Test strategy: where tests live, test levels, and coverage gaps.",
+      "files": [
+        "testing/README.md"
       ]
     },
     {
@@ -98,10 +177,9 @@
     {
       "id": "planning",
       "title": "Planning",
-      "description": "Roadmap, changelog, completed work, future ideas, and the current issue tracker.",
+      "description": "Roadmap, completed work, future ideas, and the current issue tracker.",
       "files": [
         "roadmap/ROADMAP.md",
-        "planning/CHANGELOG.md",
         "planning/COMPLETED.md",
         "planning/FUTURE_IDEAS.md",
         "planning/CURRENT_ISSUES.md"

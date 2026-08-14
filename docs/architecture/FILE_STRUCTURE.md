@@ -1,275 +1,168 @@
-# Kaiteyo — Complete File Structure Reference
+# Repository File Structure Reference
 
-This document explains **every file** in the repository. Every file is documented with its purpose, dependencies, and whether developers should modify it.
+A map of the repository. Build output (`build/`), Gradle caches, `.git/`, and
+machine-local files (`local.properties`) are excluded.
 
-Total tracked files: ~500+ across 9 root modules.
-
-> **Note:** Build output directories (`build/`), Git internals (`.git/`), Gradle caches (`.gradle/`), and generated files are excluded from this listing as they are not tracked in version control.
-
-## Root Directory
+## Root
 
 ```
 Kaiteyo/
-├── README.md              ← Project overview, badges, download links
-├── CONTRIBUTING.md        ← Contribution guidelines
-├── LICENSE                ← GPL-3.0 license
-├── build.gradle.kts       ← Root build configuration
-├── settings.gradle.kts    ← Module declarations
-├── gradle.properties      ← Gradle properties
-├── gradlew / gradlew.bat  ← Gradle wrapper scripts
-├── .gitignore             ← Git ignore rules
-├── keystore.jks           ← Android debug keystore
-├── keystore.txt           ← Keystore credentials
+├── README.md                 ← project front page (status, downloads, docs map)
+├── CONTRIBUTING.md           ← contribution guide (canonical)
+├── SECURITY.md               ← security policy & vulnerability reporting
+├── CHANGELOG.md              ← release history (also rendered on the website)
+├── LICENSE                   ← GPL-3.0
+├── AGENTS.md                 ← AI-assistant operating instructions
+├── build.gradle.kts          ← root Gradle build (plugin declarations)
+├── settings.gradle.kts       ← module list: :app :iosApp :desktopApp :core :mediaGenerator :kjd
+├── gradle.properties         ← Gradle/JVM properties (daemon off, 2GB heap, native flags)
+├── gradlew / gradlew.bat     ← Gradle wrapper
+├── local.properties          ← machine-specific SDK dir (NOT committed)
 │
-├── docs/                  ← Project documentation (see below)
-│   ├── troubleshooting/   ← Searchable solved-issue knowledge base
-│   ├── setup/             ← Fresh machine and first-build guides
-│   ├── maintenance/       ← Dependency, version, and limitation records
-│   └── development/       ← Commands, standards, AI context, workflow guides
-├── app/                   ← Android application module
-├── core/                  ← Shared Kotlin Multiplatform module
-├── desktopApp/            ← Desktop application module
-├── iosApp/                ← iOS application wrapper
-├── mediaGenerator/        ← Asset generation utility
-├── buildSrc/              ← Gradle build logic
-├── gradle/                ← Gradle wrapper and version catalog
-├── fastlane/              ← Mobile app store metadata
-└── preview_assets/        ← Branding and preview assets
+├── core/                     ← shared KMP module (all platforms)
+├── desktopApp/               ← desktop app + desktop suite (JVM)
+├── app/                      ← Android entry point (flavors googlePlay / fdroid)
+├── iosApp/                   ← iOS entry point (Swift host + Compose)
+├── kjd/                      ← KJD data platform (standalone JVM module)
+├── mediaGenerator/           ← media asset generation utility
+├── installer/                ← branded installer subsystem (scripts/configs, no Gradle)
+├── website/                  ← static site (Python build; consumes ../docs)
+├── buildSrc/                 ← Gradle logic: AppVersion.kt, AppAssets.kt, prepare tasks
+├── gradle/                   ← wrapper + libs.versions.toml version catalog
+├── fastlane/                 ← mobile app store metadata (screenshots, changelogs)
+├── preview_assets/           ← branding assets (logos, banners)
+├── scripts/                  ← dev scripts (e.g. capture-window-shell.sh)
+├── .github/                  ← CI workflows (build-all, build-release) + FUNDING
+└── docs/                     ← documentation (see docs/README.md)
 ```
 
-## Module: `core/` (Shared Library)
+## Module: `core/` (shared, all platforms)
 
-**Purpose:** Contains all business logic, data models, UI components, and theme system shared across all platforms.
-
-**Dependencies:** Compose Multiplatform, Koin, SQLDelight, Ktor, DataStore
-
-**Safe to modify:** Yes — this is where most development happens
+**Dependencies:** Compose MPP, Koin, Ktor, SQLDelight, DataStore, kotlinx.*,
+AboutLibraries, Wanakana, reorderable.
 
 ```
 core/
-├── build.gradle.kts       ← Module build config
-├── consumer-rules.pro     ← Android ProGuard rules
-│
-├── src/
-│   ├── commonMain/        ← Cross-platform code (primary)
-│   │   ├── kotlin/ua/syt0r/kanji/
-│   │   │   ├── core/          ← Data layer
-│   │   │   │   ├── app_data/      ← App database (SQLDelight)
-│   │   │   │   ├── user_data/     ← User database (SQLDelight)
-│   │   │   │   ├── theme_manager/ ← Theme persistence
-│   │   │   │   └── user_data/preferences/ ← DataStore preferences
-│   │   │   │
-│   │   │   ├── di/           ← Koin dependency injection modules
-│   │   │   │
-│   │   │   └── presentation/ ← UI layer (Compose Multiplatform)
-│   │   │       ├── common/       ← Shared UI components
-│   │   │       │   ├── theme/        ← Theme system (Color, Theme, Dimens)
-│   │   │       │   ├── resources/    ← Strings, drawables
-│   │   │       │   └── ui/           ← Reusable components
-│   │   │       │
-│   │   │       └── screen/      ← Feature screens
-│   │   │           └── main/
-│   │   │               └── screen/
-│   │   │                   ├── home/     ← Home screen
-│   │   │                   ├── settings/ ← Settings/Appearance Studio
-│   │   │                   └── credits/  ← Credits screen
-│   │   │
-│   │   └── sqldelight/    ← SQLDelight schema files
-│   │
-│   ├── androidMain/       ← Android-specific implementations
-│   ├── iosMain/           ← iOS-specific implementations
-│   └── jvmMain/           ← Desktop (JVM) specific implementations
-│
-├── core/                  ← Nested core module (legacy)
-│   └── src/
-│       ├── androidMain/
-│       ├── commonMain/
-│       └── jvmMain/
-│
-└── credits/               ← Library credit data (JSON)
+├── build.gradle.kts          ← KMP targets (jvm/android/ios), SQLDelight config
+├── consumer-rules.pro        ← Android ProGuard rules
+├── credits/libraries/*.json  ← in-app data/library credits (AboutLibraries)
+└── src/
+    ├── commonMain/
+    │   ├── kotlin/ua/syt0r/kanji/
+    │   │   ├── presentation/    ← UI: KaiteyoApp, common/ (theme, ui, resources, nav),
+    │   │   │                       screen/main/ (shell + feature screens)
+    │   │   ├── core/            ← data layer: app_data, user_data, srs (fsrs),
+    │   │   │                       statistics, sync, account, transfer, backup,
+    │   │   │                       stroke_evaluator, tts, theme_manager, …
+    │   │   └── di/              ← Koin modules (AppModule, …)
+    │   ├── sqldelight_app_data/ ← AppDataDatabase schemas (Letters.sq, Vocab.sq)
+    │   └── sqldelight_user_data/← UserDataDatabase schema + migrations/ (1.sqm … 14.sqm)
+    ├── androidMain/          ← Android actuals (drivers, notifications, file access, TTS)
+    ├── jvmMain/              ← JVM actuals (desktop file/backup/transfer/TTS)
+    ├── iosMain/              ← iOS actuals (native drivers, ZIP codecs, file pickers)
+    └── commonTest/           ← shared tests (FSRS, stroke eval, statistics, transfer)
 ```
 
-### Key Files in `core/`
+## Module: `desktopApp/` (JVM — window shell + desktop suite)
 
-| File | Purpose | Modify? |
-|------|---------|---------|
-| `presentation/KaiteyoApp.kt` | Root composable, theme setup | Yes |
-| `presentation/common/theme/Color.kt` | Color definitions, accent schemes | Yes |
-| `presentation/common/theme/Theme.kt` | Theme state, composition locals | Yes |
-| `presentation/common/theme/Dimens.kt` | Spacing, sizing constants | Yes |
-| `presentation/screen/main/screen/settings/AppearanceStudio.kt` | Appearance Studio UI | Yes |
-| `di/AppModules.kt` | Koin module definitions | Yes (add new deps) |
-| `core/app_data/` | App database (dictionary data) | No (read-only data) |
-| `core/user_data/` | User database (study progress) | No (schema changes risky) |
-
-## Module: `desktopApp/` (Desktop Entry Point)
-
-**Purpose:** Thin wrapper that sets up the desktop window and launches the shared UI.
-
-**Dependencies:** core module, Compose Desktop
-
-**Safe to modify:** Yes — desktop-specific UI only
+**Dependencies:** `:core`, `:kjd` (patch apply), Ktor server (netty), JNA, VLCJ,
+Compose Desktop.
 
 ```
 desktopApp/
-├── build.gradle.kts       ← Desktop build config
-├── windows_icon.ico       ← Windows application icon
-├── mac_icon.icns          ← macOS application icon
-│
-├── src/jvmMain/
-│   └── kotlin/ua/syt0r/kanji/desktopApp/
-│       ├── Main.kt            ← Application entry point, window setup
-│       ├── KaiteyoWindow.kt   ← Custom title bar, window controls, drag region
-│       └── NativeWindowDrag.kt← Native-style window dragging
-│
-├── linux/                 ← Linux packaging configs
-└── build/                 ← Build outputs
+├── build.gradle.kts          ← Compose desktop app config (jpackage targets, icons)
+├── mac_icon.icns / windows_icon.ico
+├── linux/                    ← AppImage AppDir, flatpak metainfo, snapcraft config
+└── src/
+    └── jvmMain/
+        ├── composeResources/ ← window icon, aboutlibraries.json
+        └── kotlin/ua/syt0r/kanji/
+            ├── BuildConfig.kt
+            ├── desktopApp/   ← entry points: Main.kt (main), SuiteMain.kt
+            │                    (desktopSuiteMain), KaiteyoWindow, OnboardingWizard,
+            │                    WindowStateStore, NativeWindowDrag
+            └── desktop/      ← THE DESKTOP SUITE (JVM-only)
+                ├── appstate/     ← AppState, WorkspacePanels
+                ├── designsystem/ ← Ds* components + tokens
+                ├── engine/       ← dictionary, media, mining, ocr, browser, review, srs,
+                │                   sync, transfer, theming, updates, plugins, shortcuts,
+                │                   settings, stats, collections, account, api, cli,
+                │                   history, jdata
+                ├── ui/           ← views per domain
+                ├── model/        ← card/library/search models
+                └── data/         ← DemoData
 ```
 
-### Key Files in `desktopApp/`
-
-| File | Purpose | Modify? |
-|------|---------|---------|
-| `Main.kt` | Window setup, floating controls, drag region | Yes |
-| `KaiteyoWindow.kt` | Custom title bar, window controls, window drag | Yes |
-| `build.gradle.kts` | Desktop dependencies, packaging | Rarely |
-
-## Module: `app/` (Android Entry Point)
-
-**Purpose:** Android-specific application setup.
-
-**Dependencies:** core module, Android SDK
-
-**Safe to modify:** Yes — Android-specific code only
+## Module: `app/` (Android)
 
 ```
 app/
-├── build.gradle.kts       ← Android build config
-├── proguard-rules.pro     ← ProGuard rules
-│
-├── src/
-│   ├── main/              ← Shared Android resources
-│   │   ├── AndroidManifest.xml
-│   │   ├── java/          ← Android activity code
-│   │   └── res/           ← Android resources
-│   │
-│   ├── fdroid/            ← F-Droid build variant
-│   └── googlePlay/        ← Google Play build variant
+├── build.gradle.kts          ← flavors, signing resolution, adjustFlavorTasks()
+├── proguard-rules.pro
+└── src/
+    ├── main/                 ← shared: manifest, KaiteyoApplication, DI, resources
+    ├── googlePlay/           ← Firebase analytics/crashlytics, billing, review, sponsor
+    └── fdroid/               ← Google-free flavor (FdroidMainActivity, no Firebase)
 ```
 
-## Module: `iosApp/` (iOS Entry Point)
-
-**Purpose:** Swift/SwiftUI project that hosts the Compose Multiplatform UI.
-
-**Dependencies:** core module (via framework)
-
-**Safe to modify:** Yes — iOS-specific code only
+## Module: `iosApp/` (iOS)
 
 ```
 iosApp/
-├── build.gradle.kts       ← iOS build config
-├── KaiteyoApp/          ← Xcode project
-│   ├── KaiteyoApp.swift     ← App entry point
-│   ├── ContentView.swift      ← Main SwiftUI view
-│   ├── Info.plist             ← App metadata
-│   └── Assets.xcassets/       ← iOS assets
-└── src/iosMain/           ← Kotlin iOS source
-```
-
-## Module: `buildSrc/` (Build Logic)
-
-**Purpose:** Shared Gradle build configuration.
-
-**Dependencies:** Gradle Kotlin DSL
-
-**Safe to modify:** Yes — but affects all modules
-
-```
-buildSrc/
 ├── build.gradle.kts
-└── src/main/kotlin/
-    ├── AppVersion.kt      ← Version constants
-    ├── AppAssets.kt       ← Asset configuration
-    └── BuildTools.kt      ← Build task definitions
+├── KaiteyoApp.xcodeproj      ← Xcode project (scheme: KaiteyoApp)
+├── KaiteyoApp/               ← Swift: KaiteyoApp.swift, ContentView.swift,
+│                                Info.plist, assets, Swift backup/TTS/wanakana helpers
+└── src/iosMain/              ← Kotlin iOS actuals (app host, credits, backup base)
 ```
 
-## Module: `mediaGenerator/` (Asset Generation)
-
-**Purpose:** Utility for generating icons, screenshots, and promotional materials.
-
-**Dependencies:** Compose Desktop
-
-**Safe to modify:** Yes — utility only
-
-## Directory: `gradle/`
-
-**Purpose:** Gradle wrapper and dependency management.
+## Module: `kjd/` (KJD data platform)
 
 ```
-gradle/
-├── wrapper/
-│   ├── gradle-wrapper.jar      ← Gradle bootstrap (committed)
-│   └── gradle-wrapper.properties ← Gradle version
-│
-└── libs.versions.toml          ← Version catalog (all dependencies)
+kjd/
+├── build.gradle.kts          ← JVM application (mainClass io.kaiteyo.kjd.cli.KjdCliKt)
+├── README.md
+└── src/
+    ├── main/kotlin/io/kaiteyo/kjd/
+    │   ├── api/          ← public JapaneseDatabase API
+    │   ├── cli/          ← kjd CLI
+    │   ├── db/           ← SQLite schema, writer, migrator, index rebuild
+    │   ├── model/        ← canonical entities
+    │   ├── normalize/    ← Japanese-aware normalization
+    │   ├── parser/       ← KanjiVG, KANJIDIC, JMdict, JmdictFurigana, Tanos, Leeds, yomichan-jlpt-vocab
+    │   ├── patch/        ← database diff/patch (incremental updates)
+    │   ├── pipeline/     ← build pipeline + release manifest
+    │   ├── resolve/      ← entity resolution
+    │   ├── search/       ← FTS search
+    │   ├── source/       ← source metadata + licenses
+    │   └── validate/     ← validation
+    └── test/             ← parsers, schema migration, diff/patch, E2E pipeline
 ```
 
-**Safe to modify:** `libs.versions.toml` — add/update dependencies. Do NOT modify `gradle-wrapper.jar`.
+## Module: `installer/` (branded installer subsystem)
+
+See `installer/README.md` and `installer/docs/`. Key paths: `common/version.json`
+(single source of truth), `windows/` (Inno Setup), `macos/` (DMG + notarize),
+`linux/` (AppImage/deb/rpm/flatpak/snap), `scripts/` (stage/verify/bump/feed/asset
+generators), `templates/` (release notes + update manifest), `assets/` (brand SVGs).
 
 ## Directory: `docs/`
 
-**Purpose:** Complete project documentation, organized by topic.
+See `docs/README.md` for the full map. Top-level areas: architecture (+ decisions),
+data, design, branding, features, user-guide, integrations, platform, releases, security,
+legal, testing, api, development, contributing, setup, maintenance, planning, roadmap,
+guides, troubleshooting, screenshots.
 
-```
-docs/
-├── README.md                  ← Entry point and docs map
-├── architecture/              ← Architecture, sync, accounts, navigation, file structure
-├── design/                    ← Design language, UI system, themes, animation
-├── branding/                  ← Brand guidelines and assets
-├── roadmap/                   ← Project vision and roadmap
-├── features/                  ← Feature specifications and status
-├── development/               ← Development guides, commands, AI context, standards
-├── contributing/              ← Contribution guidelines
-├── assets/                    ← Asset inventory
-├── releases/                  ← Release process
-├── api/                       ← API documentation
-├── guides/                    ← Developer guides
-├── planning/                  ← Project planning (TODO, issues, changelog)
-├── decisions/                 ← Architecture Decision Records
-├── setup/                     ← Fresh machine and first-build guides
-├── maintenance/               ← Dependency, version, and limitation records
-├── troubleshooting/           ← Searchable solved-issue knowledge base
-└── screenshots/               ← Screen capture assets
-```
+## What breaks if removed
 
-## Directory: `preview_assets/`
-
-**Purpose:** Branding and preview assets.
-
-| File | Purpose |
-|------|---------|
-| `kaiteyo_logo.svg` | Primary logo |
-| `kaiteyo_icon_simple.svg` | Simplified icon |
-| `kaiteyo_banner.svg` | GitHub banner |
-| `kaiteyo_wordmark.svg` | Text-only logo |
-| `inkscape_icon.svg` | Editable source |
-
-## Directory: `fastlane/`
-
-**Purpose:** Mobile app store metadata (screenshots, descriptions).
-
-**Safe to modify:** Yes — update for new releases.
-
-## What Breaks If Removed
-
-| File/Folder | What Breaks |
-|-------------|-------------|
-| `core/` | Everything — all logic and UI |
-| `desktopApp/` | Desktop build |
+| Path | Effect |
+|---|---|
+| `core/` | Everything — all shared logic and UI |
+| `desktopApp/` | Desktop build + suite |
 | `app/` | Android build |
 | `iosApp/` | iOS build |
-| `buildSrc/` | Build configuration |
-| `gradle/libs.versions.toml` | All dependency resolution |
-| `gradle/wrapper/gradle-wrapper.jar` | Gradle build system |
+| `kjd/` | Bundled language database generation + desktop patch updates |
+| `installer/` | Release packaging (EXE/DMG/AppImage/…, update feeds) |
+| `buildSrc/` | Build configuration (versions, assets) |
+| `gradle/libs.versions.toml` | Dependency resolution |
 | `settings.gradle.kts` | Module discovery |
-| `keystore.jks` | Android release signing |

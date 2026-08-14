@@ -13,7 +13,7 @@ Documentation MUST be updated whenever:
 | New folder created | `docs/architecture/FILE_STRUCTURE.md` |
 | New module added | `docs/architecture/FILE_STRUCTURE.md`, `docs/architecture/OVERVIEW.md` |
 | New feature added | `docs/features/FEATURES.md`, relevant feature spec in `docs/features/` |
-| Feature removed | `docs/features/FEATURES.md`, `docs/planning/CHANGELOG.md` |
+| Feature removed | `docs/features/FEATURES.md`, `CHANGELOG.md` (repo root) |
 | Feature renamed | All references to the feature name |
 | New dependency added | `docs/architecture/OVERVIEW.md`, `docs/architecture/FILE_STRUCTURE.md` |
 | Architecture changes | `docs/architecture/OVERVIEW.md`, `docs/architecture/FILE_STRUCTURE.md` |
@@ -22,7 +22,7 @@ Documentation MUST be updated whenever:
 | UI component changes | `docs/design/UI_SYSTEM.md` |
 | Animation changes | `docs/design/ANIMATION_SYSTEM.md` |
 | Bug fixed | `docs/planning/CURRENT_ISSUES.md` (mark as fixed) |
-| Release made | `docs/planning/CHANGELOG.md`, `docs/planning/COMPLETED.md` |
+| Release made | `CHANGELOG.md` (repo root), `docs/planning/COMPLETED.md` |
 | Roadmap changed | `docs/roadmap/ROADMAP.md` |
 | New document created | `docs/README.md` (update documentation map) |
 | Build/setup/toolchain issue solved | `docs/troubleshooting/` issue entry, `docs/maintenance/VersionHistory.md` |
@@ -72,7 +72,7 @@ Then read docs/planning/CURRENT_ISSUES.md.
 Implement the fix for [issue].
 After implementation, update:
 - docs/planning/CURRENT_ISSUES.md (mark issue as fixed)
-- docs/planning/CHANGELOG.md (add entry)
+- CHANGELOG.md (repo root — add entry)
 - Any other affected documentation
 ```
 

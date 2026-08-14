@@ -1,131 +1,73 @@
 # Kaiteyo (書いてよ) — Roadmap
 
-## Development Milestones
+This roadmap is a living document. It reflects **where the project actually is** — shipped
+milestones are historical; unshipped items are labeled with their status. Priorities shift;
+the issue tracker (`docs/planning/CURRENT_ISSUES.md`) and task list
+(`docs/planning/TODO.md`) are the operational source of truth.
 
-### v1.1 — Foundation & Branding (Current)
-- [x] Build system working (Gradle, Compose Multiplatform)
-- [x] Desktop app compiles and runs
-- [x] Basic window with undecorated chrome
-- [x] Floating window controls (minimize, maximize, close)
-- [x] Window drag region
-- [x] Rounded window corners
-- [x] Signature theme with lime (#C2FC8B) and orange (#FEAB57)
-- [x] Theme system with BaseMode (Light/Dark/Oled)
-- [x] Appearance settings with theme mode and accent selection
-- [x] Documentation structure (/docs)
+## Current status
 
-### v1.2 — Window & Sidebar Experience
-- [ ] Fix window dragging — only designated drag regions, not entire app
-- [ ] Fix animation performance — 60 FPS target
-- [ ] Fix design quality — consistent spacing, intentional radius
-- [ ] Floating sidebar implementation
-  - [ ] Left, Right, Top, Bottom docking
-  - [ ] Floating mode
-  - [ ] Auto-hide
-  - [ ] Collapse/expand with spring animation
-  - [ ] Snap to dock positions (Windows 11 Snap Layouts style)
-- [ ] Sidebar drag to reposition
-- [ ] Smooth resize behavior
-- [ ] Mobile sidebar (Top, Bottom only)
+- **v2.2.1 shipped** — platform polish & rebranding completion: premium installer
+  subsystem, first-run onboarding, auto-update architecture, native window shell, unified
+  statistics dashboard. See [`CHANGELOG.md`](../../CHANGELOG.md).
+- **Desktop suite is the flagship** and is feature-complete for the core immersion loop
+  (dictionary, media, mining, OCR, browser, sync, theming).
+- **Known rough edges** (tracked in `CURRENT_ISSUES.md`): animation stutter during hover /
+  resize, inconsistent hover animations, and several "code-complete but unverified on
+  platform" items (iOS, Windows runtime checks).
 
-### v1.3 — Theme Engine & Appearance Studio
-- [ ] Complete Theme Studio
-  - [ ] Color editor (RGB, HSV, HSL, HEX)
-  - [ ] Opacity control
-  - [ ] Gradient editor with multiple stops
-  - [ ] Live preview
-- [ ] All built-in themes
-  - [ ] Signature (default)
-  - [ ] OLED Black
-  - [ ] Dark Gray
-  - [ ] Light
-  - [ ] Reading (warm paper)
-  - [ ] Cotton Candy
-  - [ ] Ocean
-  - [ ] Forest
-- [ ] Theme import/export (JSON)
-- [ ] Custom theme presets
-- [ ] Motion Studio
-  - [ ] Animation presets (None, Minimal, Standard, Smooth, Bouncy)
-  - [ ] Duration control
-  - [ ] Spring stiffness/damping
-- [ ] Layout Studio
-  - [ ] Sidebar position
-  - [ ] Panel spacing
-  - [ ] Corner radius
-  - [ ] Density modes (Compact, Comfortable, Spacious)
-  - [ ] Transparency/blur
-  - [ ] Surface elevation
+## Next release: v2.3 — Anki interoperability & persistent data
 
-### v1.4 — Dashboard & Learning Experience
-- [ ] Dashboard redesign
-- [ ] Learning analytics
-- [ ] Progress insights
-- [ ] Study statistics
-- [ ] Review calendar
-- [ ] Streak tracking (optional, user-configurable)
-- [ ] Custom study plans
+Status: in progress (much is already implemented per `docs/planning/COMPLETED.md`).
 
-### v1.5 — Polish & Performance
-- [ ] Animation polish
-  - [ ] Page transitions
-  - [ ] Shared element transitions
-  - [ ] List animations
-  - [ ] Dialog/modal animations
-- [ ] Performance optimization
-  - [ ] Lazy loading
-  - [ ] Image caching
-  - [ ] Memory optimization
-  - [ ] Startup time reduction
-- [ ] Accessibility
-  - [ ] Screen reader support
-  - [ ] Keyboard navigation
-  - [ ] Reduced motion
-  - [ ] High contrast mode
-- [ ] Internationalization
-  - [ ] Japanese UI option
-  - [ ] Other languages
+- [x] Persistent desktop card pool (`~/.kaiteyo/library/cards.json`) — imports/edits/
+      reviews survive restarts
+- [x] Real Anki `.apkg` export/import (JVM/Android/iOS) with scheduling mapping, media
+      extraction, template rendering, HTML sanitization
+- [x] Unified import/export pipeline (JSON/CSV/TSV/TXT) with preview + conflict policies
+- [ ] Filter archived decks out of the main lists + an "Archived" restore section
+- [ ] Release v2.3
 
-### v2.0 — Community & Cloud
-- [ ] User accounts
-- [ ] Cloud sync
-- [ ] Shared decks
-- [ ] Community features
-- [ ] API for third-party integrations
+## Short term (next few milestones)
 
-### v2.1 — AI Assistance
-- [ ] AI-powered learning paths
-- [ ] Intelligent review scheduling
-- [ ] Smart difficulty adjustment
-- [ ] Writing recognition
-- [ ] Pronunciation feedback
+| Area | Items | Status |
+|---|---|---|
+| Desktop polish | Animation stutter (60 FPS), resize glitches, hover consistency, spacing/radius audit | 🟡 open (`CURRENT_ISSUES.md` P0/P1) |
+| OCR | Harden Tesseract integration, failure UX, region capture polish | 🟡 partial |
+| Auto-update | Roll out update channels (stable/beta/nightly) to end users | 🟡 architecture done |
+| Mobile | Verify Android/iOS platform actuals (file pickers, APKG, backup) on-device; finish mobile sync UX | 🟡 pending platform verification |
+| Sync | Improve conflict handling and cross-device UX beyond desktop-first | 🟢 |
+| iOS | Full App Store parity for the shared engine; CI-ish verification | 🟢 |
 
-### v2.2 — Platform Expansion
-- [ ] Microsoft Store release
-- [ ] Mac App Store release
-- [ ] Linux package (Flathub, Snap)
-- [ ] Progressive Web App (PWA)
+## Mid term
 
-### v3.0 — Advanced Features
-- [ ] Plugin system
-- [ ] Custom card types
-- [ ] Advanced statistics
-- [ ] Learning groups/classes
-- [ ] Tutor mode
+- **Grammar**: expand grammar practice content beyond the starter deck; add grammar data
+  behind the KJD pipeline (needs an openly licensed grammar dataset).
+- **Plugin runtime**: implement sandboxed plugin loading (capability model, subprocess or
+  classloader sandbox) — deliberately deferred, security first (ADR-0011).
+- **Accessibility**: screen-reader support, full keyboard navigation, high-contrast,
+  reduced-motion completeness.
+- **Tablet layouts**: dedicated tablet polish on Android/iOS.
+- **KJD consolidation**: unify the two jdata implementations (desktop `engine/jdata` vs
+  standalone `kjd`) into one pipeline.
+- **Data**: Tatoeba example-sentence dataset behind the KJD pipeline; pitch-accent and
+  grammar extension datasets (see `kjd/README.md` → Future direction).
 
-## Priority Legend
+## Long term (ideas, not commitments)
 
-- 🔴 **Critical** — Must fix before next release
-- 🟡 **High** — Should be in next release
-- 🟢 **Medium** — Planned for upcoming release
-- 🔵 **Low** — Nice to have, no timeline
+From `docs/planning/FUTURE_IDEAS.md` — nothing here is scheduled:
 
-## Current Sprint Focus
+- Community features: shared decks, theme marketplace, study groups, optional leaderboards
+- AI-assisted scheduling & learning paths (as a *future enhancement* to FSRS, not a
+  replacement)
+- Handwriting recognition improvements, pitch-accent diagrams, graded reading mode
+- Web/PWA version for Chromebooks, Chrome OS, Wear OS flashcard review
+- Custom card templates (HTML/CSS), scripting API, offline TTS expansions
 
-**Sprint: v1.2 Window & Sidebar**
-1. 🔴 Fix window drag region (only top area, not entire app)
-2. 🔴 Fix animation performance (60 FPS)
-3. 🟡 Implement floating sidebar
-4. 🟡 Sidebar docking positions
-5. 🟢 Sidebar collapse/expand animations
-6. 🟢 Smooth resize behavior
+## Explicit non-goals (from `PROJECT_VISION.md`)
+
+- No gamification gimmicks (points/badges/streaks as the core loop — the app has
+  achievements, but the design treats users as capable adults)
+- Not a mobile-first app (mobile is supported; desktop is primary)
+- Not a social network
+- No Kaiteyo-hosted central service (sync is provider-based; see ADR-0009)

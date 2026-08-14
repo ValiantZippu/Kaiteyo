@@ -562,7 +562,9 @@ def build_shortcuts():
 
 
 def build_changelog():
-    source = DOCS_SOURCE / "planning" / "CHANGELOG.md"
+    # The changelog lives at the repository root (GitHub convention); the
+    # website reads it from there directly.
+    source = ROOT.parent / "CHANGELOG.md"
     if not source.is_file():
         return []
     text = source.read_text(encoding="utf-8")

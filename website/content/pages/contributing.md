@@ -37,7 +37,7 @@ description: How to help with Kaiteyo — code, design, translation, documentati
 ## Getting started
 
 1. **Fork** the repository and create a branch from `develop`.
-2. **Set up** the build — see the [Development Guide](/docs/development/) for requirements.
+2. **Set up** the build — see the [Development Guide](/docs/development/developer_guide/) for requirements.
 3. **Make your change**, keeping it focused. Small, reviewable PRs land fastest.
 4. **Open a pull request** describing the motivation and the testing you did.
 

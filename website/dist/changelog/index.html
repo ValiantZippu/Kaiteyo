@@ -564,39 +564,37 @@
           
           <li>Premium installer subsystem (`installer/`) — new, fully decoupled from Gradle:</li>
           
-          <li>Windows: branded Inno Setup 6 installer (modern dynamic dark-mode wizard, install/upgrade/repair/modify, silent install, keep-or-remove uninstaller, file associations, launch-after-install, install-dir memory) + portable zip build</li>
+          <li>Windows: branded Inno Setup 6 installer (modern dynamic dark-mode wizard,</li>
           
-          <li>macOS: styled DMG with branded background artwork and drag-to-Applications; hardened-runtime signing + notarization + stapling pipeline (`entitlements.plist`)</li>
+          <li>macOS: styled DMG with branded background artwork and drag-to-Applications;</li>
           
-          <li>Linux: AppImage with AppStream metadata + multi-size icon theme, deb builder, rpm spec, Flathub-ready Flatpak manifest, Snap wrapper</li>
+          <li>Linux: AppImage with AppStream metadata + multi-size icon theme, deb builder, rpm</li>
           
-          <li>Shared: `common/version.json` single source of truth, update-feed + artifact-manifest JSON schemas, integrity verification gate, staging/bump/feed generation scripts, SVG→bmp/ico/icns/png brand asset generator</li>
+          <li>Shared: `common/version.json` single source of truth, update-feed + artifact-manifest</li>
           
           <li>Docs: `installer/docs/{ARCHITECTURE,BUILD,SIGNING,RELEASE,UPDATES,FIRST_RUN}.md`</li>
           
-          <li>First-run onboarding — `OnboardingWizard` (8 steps, live-applied: theme, accent, scaling, font, navigation, motion) is wired into `KaiteyoDesktopSuite`, gated once by the settings key `onboarding.completed`, re-openable from Settings → “Show onboarding again”; every step skippable, crash-safe completion via `AppState.completeOnboarding()`</li>
+          <li>First-run onboarding — `OnboardingWizard` (8 steps, live-applied: theme, accent,</li>
           
-          <li>Auto-update architecture (`desktop/engine/updates/`) — `UpdateChannel` (stable/beta/nightly), `UpdateManifest` (feed schema v1), `HttpUpdateChecker`, sha256-verified `HttpUpdateDownloader`, `UpdateInstaller` interface, `UpdateService` coordinator with `StateFlow&lt;UpdateState&gt;`, `UpdatePolicy` rollback window</li>
+          <li>Auto-update architecture (`desktop/engine/updates/`) — `UpdateChannel`</li>
           
-          <li>CI extended — `build-all.yml` now produces the Inno EXE, MSI, portable zip, styled + notarized DMGs (arm/intel), deb, rpm and AppImage; `build-release.yml` stages + verifies artifacts and generates the stable update feed</li>
+          <li>CI extended — `build-all.yml` now produces the Inno EXE, MSI, portable zip, styled +</li>
           
-          <li>Native window shell — `KaiteyoWindow.kt`, `NativeWindowDrag.kt`, `WindowActions.kt`, `WindowStateStore.kt`:</li>
+          <li>Native window shell — `KaiteyoWindow.kt`, `NativeWindowDrag.kt`, `WindowActions.kt`,</li>
           
-          <li>44dp custom title bar: K-logo opens the system menu (double-click closes), draggable wordmark, native-style window controls with hover states</li>
+          <li>44dp custom title bar: K-logo system menu, draggable wordmark, native-style window</li>
           
-          <li>Native OS dragging on Windows (`WM_NCLBUTTONDOWN`/`HTCAPTION`) and Linux (EWMH `_NET_WM_MOVERESIZE`) with a Compose fallback — 1:1 tracking, no rubber-banding</li>
+          <li>Native OS dragging on Windows (`WM_NCLBUTTONDOWN`/`HTCAPTION`) and Linux (EWMH</li>
           
-          <li>8-zone invisible resize handles for the undecorated window (5dp edge strips + 10dp corners, 860×600 minimum); rounded corners flatten when maximized</li>
+          <li>8-zone invisible resize handles for the undecorated window; rounded corners flatten</li>
           
-          <li>Custom system menu (title-bar right-click / Alt+Space / logo / dock button / launchpad strip) with full keyboard navigation (arrows, Enter, Esc) — one shared implementation</li>
+          <li>Custom system menu (title-bar right-click / Alt+Space / logo / dock button) with full</li>
           
-          <li>Window size &amp; position persisted to `~/.kaiteyo/window.json` (screen-validated on load, throttled saves, maximized states skipped) and included in profile backups</li>
+          <li>Window size &amp; position persisted to `~/.kaiteyo/window.json` (screen-validated on</li>
           
-          <li>Keyboard access across the dock menus, launchpad tile grid, window-control strip, and launcher bubble chips (focus rings, arrow navigation, focus returned on dismiss)</li>
+          <li>Screenshot capture pipeline — dev-only `--capture-state` flag,</li>
           
-          <li>Screenshot capture pipeline — dev-only `--capture-state=&lt;shell|menu|launchpad|strip&gt;` (fixed 1200×800 window, self-exit dwell, never touches saved bounds), `scripts/capture-window-shell.sh` (per-OS window capture: xdotool/ImageMagick, screencapture, Win32), and the website&#39;s desktop screenshot gallery wired to `docs/screenshots/`</li>
-          
-          <li>Unified statistics dashboard — the card manager&#39;s Kanji.Dojo-era Stats/Heatmap tabs now render the single analytics dashboard via `embedded` mode; the legacy `StatisticsOverview` and its helpers were removed, and its unique values (Flagged count, average interval, average ease) were folded into the dashboard&#39;s Library Distribution section, computed from real data in `StatsOverviewV2`</li>
+          <li>Unified statistics dashboard — the card manager&#39;s stats/heatmap tabs now render the</li>
           
         </ul>
       </div>
@@ -605,17 +603,13 @@
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Changed</h3>
         <ul>
           
-          <li>iOS project fully renamed — `iosApp/KanjiDojoApp` → `iosApp/KaiteyoApp` (folder, Swift entry point, `xcodeproj`, `pbxproj`, shared scheme, and all build references)</li>
+          <li>iOS project fully renamed — `iosApp/KanjiDojoApp` → `iosApp/KaiteyoApp` (folder,</li>
           
-          <li>Docs restructured by topic — flat numbered docs moved into `architecture/`, `design/`, `branding/`, `roadmap/`, `features/`, `development/`, `contributing/`, `assets/`, `releases/`, `planning/`, `screenshots/`; `docs/README.md` is the new index; all internal links, `AGENTS.md`, `README.md`, and the website `documentation.json` updated</li>
+          <li>Docs restructured by topic — flat numbered docs moved into topic folders;</li>
           
-          <li>Root cleanup — AI-session build logs, crash dumps, and scratch databases moved to `scratch/` (gitignored)</li>
-          
-          <li>Desktop packaging rebranded — snapcraft plug/paths (`kaiteyo-data`, `~/.kaiteyo`), flatpak metainfo changelog + URLs, AppImage metadata, and the snap launcher (now globs the jar) all Kaiteyo</li>
+          <li>Desktop packaging rebranded — snapcraft plug/paths, flatpak metainfo changelog +</li>
           
           <li>Play Store changelog fixed — stale `kanji-dojo` macOS note rewritten in `fastlane`</li>
-          
-          <li>Stale editor metadata cleaned — Inkscape `export-filename` paths in icon SVGs no longer reference the old project path</li>
           
         </ul>
       </div>
@@ -624,7 +618,7 @@
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Removed</h3>
         <ul>
           
-          <li>Legacy attribution comments — `Kanji.Dojo` references removed from stats dashboard, Home stats KDoc, and built-in deck catalog comments</li>
+          <li>Legacy attribution comments — `Kanji.Dojo` references removed from the stats</li>
           
         </ul>
       </div>
@@ -633,7 +627,7 @@
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Verified</h3>
         <ul>
           
-          <li>Rebranding audit across all platforms — Android (manifest, resources, icons, activities), iOS (bundle id, Info.plist, assets, scheme), desktop (window title, AppImage/flatpak/snap metadata), and website (pages, FAQ, wiki, config) are fully Kaiteyo. Only legal attribution (fork history, original-author copyright, upstream repo) and functional references (`kanji-dojo-data-base-v15.sql` asset, App Store URL) remain — see `docs/branding/BRANDING.md` checklist.</li>
+          <li>Rebranding audit across all platforms — Android, iOS, desktop, and website are fully</li>
           
         </ul>
       </div>
@@ -652,135 +646,21 @@
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Added</h3>
         <ul>
           
-          <li>Unified Library hub — Replaces the old Kanji/Vocabulary split in Home:</li>
+          <li>Unified Library hub — single Library tab replacing the Kanji/Vocabulary split: hub</li>
           
-          <li>Single Library tab in the Home tab bar (`HomeScreenTab.Library`)</li>
+          <li>Persisted deck archive — `is_archived` columns on `letter_deck`/`vocab_deck`</li>
           
-          <li>Library hub with Sections (Stats, Study, Library, Review) and stat summary rows</li>
+          <li>Theme Studio v2.0 — complete rewrite with a functional color editor: interactive HSV</li>
           
-          <li>Drill-down screens: Kanji Decks, Vocabulary, Word &amp; Sentence Search</li>
+          <li>Floating Island Sidebar v2.0 — drag to reposition, snap-to-edge detection with</li>
           
-          <li>Old `LettersDashboard`/`VocabDashboard` tabs removed; default-tab preference remapped to Library</li>
+          <li>Brush Quality Engine — stroke smoothing (moving-average low-pass), input prediction</li>
           
-          <li>Persisted deck archive — The `letter_deck.is_archived` / `vocab_deck.is_archived` columns (previously added by migration 13 but never wired) are now real:</li>
+          <li>Branded Installer — 8-screen premium installation wizard (welcome, location,</li>
           
-          <li>Columns declared in the SQLDelight schema so fresh databases get them too</li>
+          <li>Onboarding Wizard — 8-step first-launch setup with live previews and skip-all</li>
           
-          <li>`updateLetterDeckArchived` / `updateVocabDeckArchived` queries</li>
-          
-          <li>`LetterDeck`/`VocabDeck` now carry `isArchived`</li>
-          
-          <li>`updateDeckArchived(id, isArchived)` on both repositories</li>
-          
-          <li>Archive toggle in the Deck Edit → Save dialog (Edit mode only)</li>
-          
-          <li>Follow-up (not yet implemented): hide archived decks from main lists + an &#34;Archived&#34; section to restore them</li>
-          
-          <li>Theme Studio v2.0 — Complete rewrite with functional color editor:</li>
-          
-          <li>Interactive HSV color wheel with drag-to-pick</li>
-          
-          <li>RGB/HSL/HSV/HEX editors that sync together</li>
-          
-          <li>11 color targets (Primary, Secondary, Tertiary, Background, Surface, Text, etc.)</li>
-          
-          <li>Recent &amp; saved color palette with save/clear</li>
-          
-          <li>Apply button that actually updates theme state</li>
-          
-          <li>Gradient Editor tab (Linear/Radial/Angular, multiple stops, angle, intensity, opacity)</li>
-          
-          <li>All String.format() replaced with KMP-safe custom formatting</li>
-          
-          <li>Custom Color hue/saturation/lightness computed properties (KMP-compatible)</li>
-          
-          <li>Floating Island Sidebar v2.0 — Premium redesign:</li>
-          
-          <li>Drag to reposition (pointerInput detectDragGestures)</li>
-          
-          <li>Snap-to-edge detection with spring animation</li>
-          
-          <li>9 dock states (Left, Right, Top, Bottom + 4 corners + Floating)</li>
-          
-          <li>Resizable (drag bottom-right handle in floating mode)</li>
-          
-          <li>Drag handle indicator for floating mode</li>
-          
-          <li>Close/dock button for floating mode</li>
-          
-          <li>Borderless elevated appearance with soft glow</li>
-          
-          <li>Disabled `animateIntOffsetAsState` import (unused)</li>
-          
-          <li>Brush Quality Engine — Professional stroke pipeline:</li>
-          
-          <li>Stroke smoothing (moving average low-pass filter)</li>
-          
-          <li>Input prediction (extrapolate next points from velocity + acceleration)</li>
-          
-          <li>Bezier smoothing (Catmull-Rom spline interpolation, 2-8 segments)</li>
-          
-          <li>Velocity-based adaptive smoothing (slow=more smooth, fast=responsive)</li>
-          
-          <li>Jitter reduction (tremor elimination with configurable threshold)</li>
-          
-          <li>Pressure sensitivity support with configurable width range</li>
-          
-          <li>Full `processStroke()` pipeline: jitter → smooth → velocity → predict → bezier</li>
-          
-          <li>StrokePoint data class with pressure and timestamp</li>
-          
-          <li>Branded Installer — 8-screen premium installation wizard:</li>
-          
-          <li>Welcome screen with feature showcase</li>
-          
-          <li>Installation location picker with disk space info</li>
-          
-          <li>Component selection (shortcuts, startup, file associations, auto-update)</li>
-          
-          <li>Theme preview (4 themes with mini live preview)</li>
-          
-          <li>Accent theme selector (all accent schemes)</li>
-          
-          <li>Accessibility settings (UI scale 80-200%, font size selection, high contrast toggle)</li>
-          
-          <li>Animated progress screen with step list</li>
-          
-          <li>Completion screen with launch/cleanup options</li>
-          
-          <li>Onboarding Wizard — 8-step first-launch setup:</li>
-          
-          <li>Step 1: Welcome with feature highlights</li>
-          
-          <li>Step 2: Theme selection with live mini preview</li>
-          
-          <li>Step 3: Accent theme picker with all schemes</li>
-          
-          <li>Step 4: UI scaling (80-200% with live preview)</li>
-          
-          <li>Step 5: Font size selection (Small/Medium/Large/Extra Large with sample text)</li>
-          
-          <li>Step 6: Sidebar layout (position + mode with visual preview)</li>
-          
-          <li>Step 7: Animation presets (None to Cinematic with descriptions)</li>
-          
-          <li>Step 8: Finish with quick action cards</li>
-          
-          <li>Skip All button, step progress indicator</li>
-          
-          <li>Anki-like Features (all files compile successfully):</li>
-          
-          <li>FlagManagerScreen.kt — Flag management with stats and bulk operations</li>
-          
-          <li>NoteEditorEnhanced.kt — Full markdown editor with toolbar and preview</li>
-          
-          <li>KeyboardShortcutsPage.kt — VS Code-style shortcut manager</li>
-          
-          <li>AnkiCardOperations.kt — Suspend/bury/forget/reposition/filtered decks/cram</li>
-          
-          <li>SearchEngineImpl.kt — Universal search across all fields</li>
-          
-          <li>DeckBrowserEnhanced.kt — Tree-based deck browser</li>
+          <li>Anki-like features — flag manager, enhanced note editor, keyboard shortcuts page,</li>
           
         </ul>
       </div>
@@ -789,17 +669,11 @@
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Changed</h3>
         <ul>
           
-          <li>Theme Studio: Custom Color tab now properly writes to theme state via accentScheme</li>
+          <li>Theme Studio custom-color tab now writes to theme state via `accentScheme`</li>
           
-          <li>Custom Color tab: Separated RGB/HSL/HSV/HEX into distinct editors with LaunchedEffect callbacks</li>
+          <li>Corner radius selector and sidebar mode/position selectors extracted into reusable</li>
           
-          <li>Corner radius selector extracted into reusable component</li>
-          
-          <li>Sidebar mode/position selectors extracted into reusable components</li>
-          
-          <li>SliderWithLabel component for consistent slider UX</li>
-          
-          <li>Export tab replaced by inline theme management in Layout tab</li>
+          <li>`SliderWithLabel` component for consistent slider UX</li>
           
           <li>All `String.format()` calls replaced with KMP-safe `formatFloat()`</li>
           
@@ -812,19 +686,11 @@
         <h3 style="font-size: var(--text-base); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--tracking-label)">Fixed</h3>
         <ul>
           
-          <li>Color picker now actually updates theme state (was using local remember only)</li>
+          <li>Color picker now actually updates theme state (was using local `remember` only)</li>
           
-          <li>Color wheel uses proper HSV space with correct indicator positioning</li>
+          <li>No `String.format()` / `System.currentTimeMillis()` / `Key.Digit0`-style usages (KMP</li>
           
-          <li>No `String.format()` calls — eliminates KMP compilation error</li>
-          
-          <li>No `System.currentTimeMillis()` — uses incremental counter fallback</li>
-          
-          <li>No `Key.Digit0/Quote/Backtick` — uses alternative key constants</li>
-          
-          <li>No `MutableList` assignment from `.map()` — adds `.toMutableList()`</li>
-          
-          <li>All `@OptIn(ExperimentalMaterial3Api::class)` annotations added</li>
+          <li>Missing `@OptIn(ExperimentalMaterial3Api::class)` annotations added</li>
           
           <li>No duplicate function definitions</li>
           
@@ -849,19 +715,7 @@
           
           <li>Spring-based hover animations on window controls</li>
           
-          <li>Window drag region using WindowDraggableArea</li>
-          
-          <li>Rounded corners (20dp) on window</li>
-          
-          <li>Theme system with BaseMode (Light/Dark/Oled)</li>
-          
-          <li>KaiteyoThemeState with composition locals</li>
-          
-          <li>Accent scheme selection with gradient support</li>
-          
-          <li>Glow, radius, animation, and density configuration</li>
-          
-          <li>SurfaceColors composition local</li>
+          <li>Theme system with `BaseMode` (Light/Dark/Oled), accent schemes with gradient support,</li>
           
           <li>Appearance Studio with live preview</li>
           
@@ -877,10 +731,6 @@
           <li>Rebranded from Kanji Dojo to Kaiteyo (書いてよ)</li>
           
           <li>Complete documentation system in `/docs/`</li>
-          
-          <li>Professional repository structure with folder READMEs</li>
-          
-          <li>`../development/AI_CONTEXT.md` for AI assistant onboarding</li>
           
         </ul>
       </div>
@@ -918,25 +768,13 @@
           
           <li>Forked from Kanji Dojo</li>
           
-          <li>Basic flashcard study system</li>
+          <li>Basic flashcard study system with spaced repetition algorithm</li>
           
-          <li>Spaced repetition algorithm</li>
-          
-          <li>JLPT decks (N5-N1)</li>
-          
-          <li>Stroke order diagrams</li>
-          
-          <li>Vocabulary lookup</li>
+          <li>JLPT decks (N5–N1), stroke-order diagrams, vocabulary lookup</li>
           
           <li>Cross-platform support (Desktop, Android, iOS)</li>
           
-          <li>Koin dependency injection</li>
-          
-          <li>SQLDelight database</li>
-          
-          <li>Ktor HTTP client</li>
-          
-          <li>DataStore preferences</li>
+          <li>Koin dependency injection, SQLDelight database, Ktor HTTP client, DataStore preferences</li>
           
         </ul>
       </div>

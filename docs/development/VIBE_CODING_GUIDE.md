@@ -101,7 +101,7 @@ Key commands:
 ```bash
 ./gradlew :desktopApp:run           # Run the desktop app
 ./gradlew :desktopApp:compileKotlinJvm  # Just compile (faster)
-./gradlew :core:test                # Run tests
+./gradlew :core:allTests            # Run shared-engine tests
 ./gradlew clean                     # Clean all build files
 ```
 
@@ -202,11 +202,17 @@ When you push a tag (e.g., `v1.1.0`), GitHub Actions automatically:
 
 ## How Signing Works for Android
 
-Release builds need a keystore file for signing. The project includes:
-- `keystore.jks` — Debug keystore
-- `keystore.txt` — Keystore credentials
+Release builds need a keystore for signing. **No keystore or credentials are committed to
+the repository** — they are kept out of git for security. The build resolves the keystore
+from (in order):
 
-For production releases, you'll need your own keystore.
+1. `KEYSTORE_PATH` environment variable
+2. `~/.kaiteyo/keystore.jks`
+3. Repo-root `keystore.jks` (CI decodes it from the `KEYSTORE_BASE64` secret)
+
+If none exists, the build falls back to **debug signing** so local builds still work.
+Production release secrets (keystore password, key alias, key password) come from CI
+environment variables — never commit them.
 
 ## AI Workflow Tips
 

@@ -85,18 +85,17 @@ open iosApp/KaiteyoApp.xcodeproj
 # Clean all builds
 ./gradlew clean
 
-# Run all tests
-./gradlew test
+# Run tests (shared core + desktop suite + data platform)
+./gradlew :core:allTests
+./gradlew :desktopApp:test
+./gradlew :kjd:test
 
-# Run specific module tests
-./gradlew :core:test
-
-# Check for dependency updates
-./gradlew dependencyUpdates
-
-# Generate dependency report
+# Dependency report
 ./gradlew :core:dependencies
 ```
+
+> The canonical command library is `COMMANDS.md`; module list is in
+> `settings.gradle.kts` (`:app :iosApp :desktopApp :core :mediaGenerator :kjd`).
 
 ## Debugging
 
@@ -144,14 +143,12 @@ main           — Production-ready code
 ## Testing
 
 ### Unit Tests
-- Location: `core/src/commonTest/`
-- Framework: Kotlin Test
-- Run: `./gradlew :core:test`
+- Location: `core/src/commonTest/` (shared), `desktopApp/src/jvmTest/` (desktop suite), `kjd/src/test/` (data platform)
+- Framework: Kotlin Test (JUnit Platform)
+- Run: `./gradlew :core:allTests` (or `:desktopApp:test` / `:kjd:test`)
 
-### UI Tests (Future)
-- Framework: Compose UI Test
-- Location: `core/src/commonTest/`
-- Run: `./gradlew :core:check`
+### UI Tests
+- Not yet established (see `../testing/README.md` for the strategy and gaps).
 
 ## Performance Checklist
 

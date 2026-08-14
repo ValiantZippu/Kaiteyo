@@ -1,7 +1,0 @@
-Expand-Archive : .jar is not a supported archive file format. .zip is the only supported archive file format.
-At line:1 char:1
-+ Expand-Archive -Path 'D:/Local/classes.jar' -DestinationPath 'D:/Loca ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidArgument: (.jar:String) [Expand-Archive], IOException
-    + FullyQualifiedErrorId : NotSupportedArchiveFileExtension,Expand-Archive
- 

@@ -6,14 +6,16 @@ This directory contains detailed specifications for every major feature.
 
 | File | Feature | Status |
 |------|---------|--------|
-| `FEATURES.md` | Every feature with status | ✅ Maintained |
+| `FEATURES.md` | Full feature status matrix (source of truth) | ✅ Maintained |
 | `LIBRARY.md` | Unified Library hub | ✅ Implemented |
-| `THEMES.md` | Theme system and Appearance Studio | 🚧 In Progress |
-| `DESKTOP.md` | Desktop window experience | 🚧 In Progress |
+| `THEMES.md` | Theme system and Theme Studio | ✅ Implemented |
+| `DESKTOP.md` | Desktop suite & window experience | ✅ Implemented |
+| `MEDIA.md` | Media center & subtitles | ✅ Implemented |
+| `STATISTICS.md` | Statistics & analytics | ✅ Implemented |
 
-Individual specs for flashcards, search, stats, tags, flags, Anki import/export,
-and mobile are planned; until then the files above plus `../features/FEATURES.md`
-and `../planning/TODO.md` track each feature's status.
+Individual specs for flashcards, search, tags, flags, and Anki import/export are folded
+into `FEATURES.md`; the operational status of every feature is tracked there plus in
+`../planning/TODO.md` / `../planning/CURRENT_ISSUES.md`.
 
 ## Specification Format
 

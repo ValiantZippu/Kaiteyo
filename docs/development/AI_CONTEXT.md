@@ -7,17 +7,17 @@ This document is written specifically for AI assistants. Read this first before 
 Kaiteyo is a Compose Multiplatform Japanese language learning app. It runs on Desktop (Windows/macOS/Linux), Android, and iOS. The desktop experience is the primary focus.
 
 **Tech Stack:**
-- Kotlin 2.0.21, Compose Multiplatform 1.8.2
-- Gradle with version catalog (`gradle/libs.versions.toml`)
+- Kotlin 2.1.20, Compose Multiplatform 1.8.2
+- Gradle with version catalog (`gradle/libs.versions.toml`), JDK 17
 - Koin for dependency injection
-- SQLDelight for local database
+- SQLDelight for local database (two databases: AppData + UserData)
 - Ktor for HTTP
 - DataStore for preferences
 
 ## Architecture
 
 ```
-desktopApp/  → Thin JVM wrapper, window setup, Main.kt
+desktopApp/  → Thin JVM wrapper, window setup, Main.kt + the desktop suite
 core/        → All shared code (UI, data, business logic)
   commonMain/  → Cross-platform code
   jvmMain/     → Desktop-specific implementations
@@ -25,7 +25,13 @@ core/        → All shared code (UI, data, business logic)
   iosMain/     → iOS-specific implementations
 app/         → Android entry point
 iosApp/      → iOS entry point (Swift)
+kjd/         → Standalone data platform: generates the bundled language database
+installer/   → Branded installer subsystem (scripts/configs, not a Gradle module)
 ```
+
+The **desktop suite** lives in `desktopApp/src/jvmMain/kotlin/ua/syt0r/kanji/desktop/`
+(JVM-only): `engine/`, `designsystem/` (Ds*), `ui/`, `appstate/`, `model/`, `data/`.
+It is self-contained and does not follow the core screen pattern.
 
 ## Key Files for Desktop UI
 
@@ -49,18 +55,20 @@ iosApp/      → iOS entry point (Swift)
 
 ## Current Roadmap
 
-**v1.1 (Current):** Window experience, theme system, branding
-**v1.2 (Next):** Floating sidebar, Appearance Studio, animation system
-**v1.3:** Theme Studio, Motion Studio, Layout Studio
-**v2.0:** Dashboard redesign, learning analytics
+**v2.2.1 (Current):** premium installer, onboarding, auto-update architecture, native
+window shell, unified stats, rebranding completion
+**v2.3 (Next):** Anki interoperability & persistent data (largely implemented — see
+`../planning/COMPLETED.md`)
+Then: desktop polish (animation/performance), OCR hardening, update rollout, mobile sync.
+
+See `../roadmap/ROADMAP.md` for the living roadmap.
 
 ## Current Issues (Must Fix Before New Features)
 
-1. **Window drag region** — Entire app is draggable, making UI unusable. Only top 44dp should drag.
-2. **Animation performance** — Stuttering, inconsistent hover animations
-3. **Design quality** — Inconsistent spacing, poor alignment, no visual hierarchy
-4. **Sidebar** — Feels attached, should be floating island
-5. **Settings** — Appearance options are disorganized
+The operational tracker is `../planning/CURRENT_ISSUES.md` (living document). Current
+focus areas: animation stutter (60 FPS target), resize glitches, hover animation
+inconsistency, spacing/radius consistency, and "code-complete but unverified on
+platform" items (iOS, Windows runtime checks).
 
 ## Things That Must NEVER Be Changed
 

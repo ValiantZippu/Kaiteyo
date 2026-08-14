@@ -20,8 +20,10 @@ Android, and iOS. Desktop is the primary focus.
 | `desktopApp/` | Thin JVM wrapper: window setup, Koin init, plus the standalone desktop suite (`ua.syt0r.kanji.desktop.*`) |
 | `app/` | Android entry point. Flavors: `googlePlay` (Firebase, billing, review) and `fdroid` (google tasks auto-disabled via `adjustFlavorTasks()`) |
 | `iosApp/` | iOS entry point (Swift project + Compose host) |
+| `kjd/` | **KJD** data platform — standalone JVM module that ingests open datasets and generates the bundled language database; also provides incremental patch apply for desktop |
 | `mediaGenerator/` | JVM utility module (javacv + coil) for generating media assets |
-| `website/` | Static site, **Python build** (`build.py`) — unrelated to the Kotlin build |
+| `installer/` | Branded installer subsystem — **not a Gradle module**; scripts/configs (Inno Setup, DMG, AppImage/deb/rpm, update feeds). Version source: `installer/common/version.json` + `buildSrc/AppVersion.kt` |
+| `website/` | Static site, **Python build** (`build.py`) — consumes `../docs`; unrelated to the Kotlin build |
 | `buildSrc/` | Gradle logic: `AppVersion.kt`, `AppAssets.kt`, asset download/prepare tasks |
 
 ## Essential Commands
@@ -181,10 +183,12 @@ Full detail in `docs/development/CODING_STANDARDS.md`. Highlights:
 ## Docs Map (progressive disclosure)
 
 `docs/` is organized by topic; `docs/README.md` has the full tree. Most useful:
-`architecture/OVERVIEW.md`, `development/CODING_STANDARDS.md`, `development/AI_CONTEXT.md`,
-`development/COMMANDS.md`, `planning/CURRENT_ISSUES.md` (living bug tracker — update it when you
-fix issues), `troubleshooting/README.md` (record solved issues), `development/DEVELOPMENT_SETUP.md`,
-`development/VIBE_CODING_GUIDE.md`.
+`architecture/OVERVIEW.md`, `architecture/decisions/` (ADRs), `data/SOURCES.md` (dataset
+licenses/attribution), `development/CODING_STANDARDS.md`, `development/AI_CONTEXT.md`,
+`development/COMMANDS.md`, `planning/CURRENT_ISSUES.md` (living bug tracker — update it when
+you fix issues), `planning/README.md` (status taxonomy), `troubleshooting/README.md` (record
+solved issues), `development/DEVELOPMENT_SETUP.md`, `development/VIBE_CODING_GUIDE.md`,
+`testing/README.md` (test strategy), `releases/RELEASE_PROCESS.md` (release workflow).
 
 ## Definition of Done
 
@@ -335,8 +339,10 @@ Centralized state (`ua.syt0r.kanji.desktop.appstate`):
 ## Testing & Build
 
 - JVM compilation (`:desktopApp:compileKotlinJvm`).
-- Native tests live in `core/src/commonTest` (e.g., `FsrsSchedulerTest.kt`).
-- Integration tests for dictionary import, mining, and OCR are WIP.
+- Tests: `:core:allTests` (shared engine), `:desktopApp:test` (desktop suite),
+  `:kjd:test` (data platform). See `docs/testing/README.md`.
+- Integration tests for dictionary import, mining, and OCR are WIP; UI tests are not yet
+  established.
 
 ## Future Plugin Architecture
 

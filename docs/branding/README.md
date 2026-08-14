@@ -1,19 +1,28 @@
 # 🎯 branding — Kaiteyo Brand Assets
 
-This directory contains brand assets and guidelines.
+This directory contains the brand guidelines and asset inventory. The actual asset files
+live in the locations listed below (SVG sources are committed; generated icons are
+produced by `installer/scripts/generate-assets.sh`).
 
-## Contents
+## Asset inventory
 
-| Asset | File | Usage |
-|-------|------|-------|
-| Logo (SVG) | `logo.svg` | Primary logo, README, about page |
-| Wordmark (SVG) | `wordmark.svg` | Splash screen, loading states |
-| Banner (SVG) | `banner.svg` | GitHub repository, social media |
-| Icon (SVG) | `icon.svg` | Simplified icon for small displays |
-| Favicon (SVG) | `favicon.svg` | Browser/bookmark icon |
-| Wallpaper | `wallpaper.png` | Application background placeholder |
+| Asset | Location | Usage |
+|-------|----------|-------|
+| Logo mark | `preview_assets/kaiteyo_logo.svg` | README header, website, about page |
+| Wordmark | `preview_assets/kaiteyo_wordmark.svg` | Wordmark usage |
+| GitHub banner | `preview_assets/kaiteyo_banner.svg` | Repository social preview |
+| Icon (simple) | `preview_assets/kaiteyo_icon_simple.svg` | Simplified icon |
+| Editable source | `preview_assets/inkscape_icon.svg` | Inkscape source of the icon |
+| Brand mark (installer) | `installer/assets/brand/kaiteyo-mark.svg` | Installer artwork source |
+| Desktop window icon | `desktopApp/src/jvmMain/composeResources/drawable/windowIcon.png` | App window icon (Linux) |
+| Windows icon | `desktopApp/windows_icon.ico` | Windows packaging |
+| macOS icon | `desktopApp/mac_icon.icns` | macOS packaging |
+| Android launcher | `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` | Android launcher icon |
+| iOS app icon | `iosApp/KaiteyoApp/Assets.xcassets/AppIcon.appiconset/` | iOS app icon |
+| Phone screenshots | `fastlane/metadata/android/en-US/images/phoneScreenshots/` | Store listings |
+| Generated icons (bmp/ico/icns/png) | `installer/assets/` (generated) | Installer surfaces |
 
-## Color Palette
+## Color palette
 
 | Name | Hex | Usage |
 |------|-----|-------|
@@ -22,30 +31,17 @@ This directory contains brand assets and guidelines.
 | Dark Background | `#1A1A1A` | Dark mode background |
 | Light Background | `#FAFAFA` | Light mode background |
 
-## Logo Rules
+## Logo rules
 
 1. Always maintain aspect ratio
 2. Minimum clear space: 16dp on all sides
 3. Do not stretch, distort, or rotate
 4. Do not apply effects (drop shadows, gradients) beyond original design
-5. On dark backgrounds: use full-color version
-6. On light backgrounds: use full-color version with adjusted contrast
 
-## Application Icons
+## Guidelines
 
-| Platform | File Location |
-|----------|--------------|
-| Windows | `desktopApp/windows_icon.ico` |
-| macOS | `desktopApp/mac_icon.icns` |
-| Linux | `desktopApp/src/jvmMain/composeResources/drawable/windowIcon.png` |
-| Android | `app/src/main/res/` |
-| iOS | `iosApp/KaiteyoApp/Assets.xcassets/` |
-
-## Source Files
-
-SVG source files are in `preview_assets/`:
-- `preview_assets/kaiteyo_logo.svg`
-- `preview_assets/kaiteyo_icon_simple.svg`
-- `preview_assets/kaiteyo_banner.svg`
-- `preview_assets/kaiteyo_wordmark.svg`
-- `preview_assets/inkscape_icon.svg` (editable Inkscape source)
+- [`BRAND_GUIDELINES.md`](BRAND_GUIDELINES.md) — full brand guidelines (colors, mark
+  usage, typography)
+- [`BRANDING.md`](BRANDING.md) — rebranding history and the Kaiteyo sweep checklist
+- Brand artwork must follow these guidelines on every surface, including the installer
+  (see `installer/README.md`).

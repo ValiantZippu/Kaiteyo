@@ -66,4 +66,4 @@ Installer checksums are listed next to every release asset on GitHub. On Windows
 
 ## From source
 
-You can also build Kaiteyo yourself. See the [Development Guide](/docs/development/) section of the documentation for build instructions, requirements, and the recommended toolchain.
+You can also build Kaiteyo yourself. See the [Development Guide](/docs/development/developer_guide/) section of the documentation for build instructions, requirements, and the recommended toolchain.

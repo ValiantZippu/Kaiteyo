@@ -1,153 +1,125 @@
-# Kaiteyo (書いてよ) — Architecture
+# Kaiteyo (書いてよ) — Architecture Overview
 
-## Project Structure
+Kaiteyo is a Kotlin Multiplatform (KMP) project with **one shared `core` module** and thin
+platform entry points, plus a desktop-only immersion suite and a standalone data platform.
+
+## Module map
 
 ```
-Kaiteyo/
-├── app/                    # Android application module
-│   ├── src/
-│   │   ├── fdroid/         # F-Droid build variant
-│   │   ├── googlePlay/     # Google Play build variant
-│   │   └── main/           # Shared Android resources
-│   └── build.gradle.kts
-│
-├── core/                   # Shared Kotlin Multiplatform module
-│   ├── src/
-│   │   ├── commonMain/     # Cross-platform code
-│   │   ├── androidMain/    # Android-specific implementations
-│   │   ├── iosMain/        # iOS-specific implementations
-│   │   └── jvmMain/        # Desktop (JVM) specific implementations
-│   └── build.gradle.kts
-│
-├── desktopApp/             # Desktop application module
-│   ├── src/
-│   │   └── jvmMain/        # Desktop-only code
-│   └── build.gradle.kts
-│
-├── iosApp/                 # iOS application wrapper
-│   ├── KaiteyoApp/       # Swift/SwiftUI entry point
-│   └── build.gradle.kts
-│
-├── mediaGenerator/         # Asset generation utility
-│   └── build.gradle.kts
-│
-├── buildSrc/               # Gradle build logic
-│   └── src/main/kotlin/
-│
-├── gradle/
-│   ├── libs.versions.toml  # Version catalog
-│   └── wrapper/
-│
-├── docs/                   # Project documentation
-│
-└── settings.gradle.kts
+settings.gradle.kts  →  :app  :iosApp  :desktopApp  :core  :mediaGenerator  :kjd
 ```
 
-## Module Responsibilities
+| Module | Role | Platforms |
+|---|---|---|
+| `core/` | **All shared code**: UI (Compose MPP), business logic, data layer. `commonMain` / `jvmMain` / `androidMain` / `iosMain` | all |
+| `desktopApp/` | Thin JVM wrapper: window shell, Koin init — **plus** the standalone desktop suite (`ua.syt0r.kanji.desktop.*`), JVM-only | Windows/macOS/Linux |
+| `app/` | Android entry point. Flavors: `googlePlay` (Firebase, billing, review), `fdroid` | Android |
+| `iosApp/` | iOS entry point (Swift project + Compose host) | iOS |
+| `kjd/` | **KJD** — Kaiteyo Japanese Data Platform: standalone JVM module that ingests open datasets and generates the bundled language database | build-time |
+| `mediaGenerator/` | JVM utility (javacv + coil) generating media assets | build-time |
+| `buildSrc/` | Gradle logic: `AppVersion.kt`, `AppAssets.kt`, asset prepare tasks | build-time |
+| `installer/` | Branded installer subsystem (scripts/configs, **not** a Gradle module) — wraps `:desktopApp:createDistributable` bundles | packaging |
+| `website/` | Static site, Python build — unrelated to the Kotlin build | — |
 
-### `core` (Shared Library)
-The heart of the application. Contains all business logic, data models, UI components, and theme system shared across platforms.
+## Dependency direction
 
-**Key packages:**
-- `ua.syt0r.kanji.core` — Data layer (database, preferences, network)
-- `ua.syt0r.kanji.di` — Dependency injection modules
-- `ua.syt0r.kanji.presentation` — UI layer (Compose Multiplatform)
-  - `common.theme` — Theme system, colors, typography, dimens
-  - `common.resources` — String resources, drawable resources
-  - `screen.*` — Feature screens organized by domain
-
-### `desktopApp` (Desktop Entry Point)
-Thin wrapper that sets up the desktop window, configures the JVM environment, and launches the shared UI from `core`.
-
-**Key files:**
-- `Main.kt` — Application entry point, window setup, Koin initialization
-- `Main.kt` contains: `KaiteyoWindow`, floating controls, drag region
-
-### `app` (Android Entry Point)
-Android-specific entry point with Activity, manifest, and platform configurations.
-
-### `iosApp` (iOS Entry Point)
-Swift/SwiftUI project that hosts the Compose Multiplatform UI via UIKit integration.
-
-## UI Architecture
-
-### State Management
-- **Koin** for dependency injection
-- **StateFlow** in ViewModels for reactive state
-- **Compose State** (`mutableStateOf`, `derivedStateOf`) for local UI state
-- **CompositionLocal** for theme and configuration propagation
-
-### Theme Architecture
 ```
-ThemeManager (interface)
-  └── JvmGetCreditLibrariesUseCase (desktop)
-  └── Android/Koin implementations
-
-KaiteyoThemeState (mutable state holder)
-  ├── baseMode (Light/Dark/Oled)
-  ├── accentScheme (KaiteyoAccentScheme)
-  ├── glowConfig (GlowConfig)
-  ├── radiusConfig (RadiusConfig)
-  ├── animationConfig (AnimationConfig)
-  └── densityConfig (DensityConfig)
-
-CompositionLocals
-  ├── LocalKaiteyoThemeState
-  ├── LocalKaiteyoAccent
-  ├── LocalSurfaceColors
-  └── LocalKaiteyoAccentList
+        ┌───────────────────────────────────────────────┐
+        │  desktopApp (window shell + desktop suite)     │
+        │  ├── depends on :core (engine, UI, jdata)      │
+        │  └── depends on :kjd (patch apply, DatabasePatcher) │
+        └──────────────────────┬────────────────────────┘
+                               │
+        ┌──────────────────────▼──────────────┐
+        │  app (Android)        iosApp (iOS)   │
+        │  └── depends on :core └── depends on :core │
+        └──────────────┬───────────────────────┘
+                       ▼
+                    :core  ← shared engine, UI, data layer
+                       ▲
+                       │ (build-time)
+                    :kjd  → generates AppDataDatabase asset
 ```
 
-### Screen Structure
-Each screen follows a consistent pattern:
+## Package layout (everything under `ua.syt0r.kanji` in core)
+
 ```
-screen/{feature}/
-  ├── {Feature}Screen.kt        # Screen composable
-  ├── {Feature}Contract.kt      # State + Events contracts
-  └── {Feature}ViewModel.kt     # ViewModel (if applicable)
+core/src/commonMain/kotlin/ua/syt0r/kanji/
+├── presentation/            # UI: KaiteyoApp (root), common/ (theme, resources, ui),
+│                            # screen/main/ (app shell, navigation, feature screens)
+├── core/                    # Data layer
+│   ├── app_data/            # Read-only dictionary DB (SQLDelight AppDataDatabase)
+│   ├── user_data/           # Mutable user DB (SQLDelight UserDataDatabase) + migrations
+│   ├── srs/                 # FSRS scheduling, SRS managers (fsrs/ subpackage)
+│   ├── sync/                # Sync engine + GitHub cloud provider
+│   ├── account/             # GitHub OAuth (device flow)
+│   ├── statistics/          # Statistics engine (heatmap, exams, retention, …)
+│   ├── transfer/            # Import/export pipeline (JSON/CSV/TSV/TXT + Anki .apkg)
+│   ├── backup/              # Backup/restore
+│   ├── stroke_evaluator/    # Kanji stroke evaluation
+│   ├── tts/                 # Kana TTS (Neural2B voices)
+│   └── theme_manager/       # Theme persistence
+└── di/                      # Koin modules (AppModule, PlatformComponentsModule, …)
 ```
+
+The desktop suite lives at `desktopApp/src/jvmMain/kotlin/ua/syt0r/kanji/desktop/`
+(JVM-only) with its own layers:
+
+```
+desktop/
+├── appstate/       # AppState facade, WorkspacePanels
+├── engine/         # dictionary, media, mining, ocr, browser, review, srs, sync, transfer,
+│                   # theming, updates, plugins, shortcuts, settings, stats, collections,
+│                   # account, api, cli, jdata (language data platform copy)
+├── designsystem/   # Ds* components on core theme tokens
+├── ui/             # views per domain (Dashboard, Browser, Review, Media, Mining, Ocr, …)
+├── model/          # card/library/search models
+└── data/           # DemoData (first-run seeding)
+```
+
+## UI architecture
+
+- **Compose Multiplatform** shared UI in `core`; desktop suite has its own JVM view layer
+  built on the same theme tokens.
+- **State management**: `StateFlow` in ViewModels, `mutableStateOf`/`derivedStateOf` for
+  local UI state, `CompositionLocal` for theme propagation.
+- **Screen pattern** (core): 4-file pattern per feature — Contract / ViewModel / Module /
+  Screen, registered in `di/AppModule.kt`.
+- **DI**: Koin (`appModules` + platform modules; `multiplatformViewModel` expect/actual).
 
 ## Navigation
 
-Navigation uses a simple stack-based approach:
-- `MainNavigationState` manages the navigation stack
-- Each screen registers with the navigator
-- Deep linking handled via `DeepLinkHandler`
-- Desktop uses a single-window approach with screen switching
+- Core: `MainNavigation` / `MainNavigationState` with `DeepLinkHandler`, form-factor-aware
+  shell (`NavShell`, Launchpad, BubbleLauncher).
+- Desktop suite: `WorkspaceNav` + docked/floating panels (`WorkspacePanels`,
+  `FloatingLauncher`), compact tab bar below 720dp.
 
-## Dependency Injection
+## Data flow
 
-Dependencies are provided via Koin modules:
-- `appModules` in `core` — All shared dependencies
-- `desktopAppModule` in `desktopApp` — Desktop-specific overrides
-- Platform modules in `androidMain` and `iosMain`
-
-Module loading in `main()`:
-```kotlin
-val koinModuleList = appModules.plus(desktopAppModule)
-startKoin { loadKoinModules(koinModuleList) }
+```mermaid
+flowchart LR
+    UI[Composable] --> VM[ViewModel / StateHolder]
+    VM --> UC[UseCase / Repository]
+    UC --> DB[(SQLDelight UserData)]
+    UC --> PREF[(DataStore Preferences)]
+    UC --> NET[Ktor / java.net.http — sync, OAuth]
+    DB --> UI
 ```
 
-## Data Flow
+- UI observes state from ViewModels; ViewModels call repositories/use cases; repositories
+  coordinate local (SQLDelight/DataStore) and remote (Ktor) sources.
+- The bundled `AppDataDatabase` is read-only; user data is mutable with migrations.
 
-```
-UI Component
-  └── ViewModel / StateHolder
-       └── Repository
-            └── Data Source (Database, Preferences, Network)
-```
+## Key design decisions
 
-- UI observes state from ViewModels
-- ViewModels call repositories for data operations
-- Repositories coordinate between local (SQLDelight) and remote (Ktor) sources
-- Preferences stored via DataStore
+1. **Kotlin Multiplatform + Compose MPP** — one engine, one UI across desktop/Android/iOS
+   (ADR-0003).
+2. **Koin** — lightweight DI without codegen (ADR-0004).
+3. **Two SQLDelight databases** — immutable app data / mutable user data (ADR-0005).
+4. **FSRS-5** — modern spaced repetition, offline, deterministic (ADR-0006).
+5. **KJD data platform** — reproducible, provenance-tracked language database (ADR-0007).
+6. **Desktop suite as self-contained module** (ADR-0008).
+7. **GitHub device-flow + private gist sync** — no central service (ADR-0009).
+8. **Installer decoupled from Gradle** (ADR-0010).
 
-## Key Design Decisions
-
-1. **Compose Multiplatform** — Single UI codebase for Android, Desktop, iOS
-2. **Koin** — Lightweight DI without code generation (unlike Dagger/Hilt)
-3. **SQLDelight** — Type-safe SQL for local database
-4. **DataStore** — Preferences storage (replacement for SharedPreferences)
-5. **Ktor** — HTTP client for network requests
-6. **AboutLibraries** — Open source license display
-7. **Compose Resources** — Cross-platform resource management
+See [decisions/](decisions/README.md) for the full ADR list.

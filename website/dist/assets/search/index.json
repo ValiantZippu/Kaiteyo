@@ -4,7 +4,7 @@
 "title": "Kaiteyo (書いてよ) — Documentation",
 "url": "/Kaiteyo/docs/start-here/readme/",
 "section": "Start Here",
-"excerpt": "Kaiteyo is a premium, cross-platform Japanese language learning application. Originally a fork of",
+"excerpt": "Kaiteyo is a premium, cross-platform Japanese language learning application. Originally a",
 "icon": "file"
 },
 {
@@ -68,7 +68,7 @@
 "title": "🎯 branding — Kaiteyo Brand Assets",
 "url": "/Kaiteyo/docs/design/readme/",
 "section": "Design & Branding",
-"excerpt": "This directory contains brand assets and guidelines.",
+"excerpt": "This directory contains the brand guidelines and asset inventory. The actual asset files",
 "icon": "file"
 },
 {
@@ -81,10 +81,10 @@
 },
 {
 "type": "doc",
-"title": "Kaiteyo (書いてよ) — Features",
+"title": "Kaiteyo (書いてよ) — Feature Status",
 "url": "/Kaiteyo/docs/features/features/",
 "section": "Features",
-"excerpt": "",
+"excerpt": "This matrix reflects what is actually in the codebase today (v2.2.1). Features that",
 "icon": "file"
 },
 {
@@ -93,6 +93,30 @@
 "url": "/Kaiteyo/docs/features/desktop/",
 "section": "Features",
 "excerpt": "The desktop experience is the primary focus of Kaiteyo. It should feel like a premium",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "📚 Library — Unified Content Hub",
+"url": "/Kaiteyo/docs/features/library/",
+"section": "Features",
+"excerpt": "The Library replaces the old split between \"Kanji\" (Letters) and \"Vocabulary\"",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Media — Immersion Workspace",
+"url": "/Kaiteyo/docs/features/media/",
+"section": "Features",
+"excerpt": "The Media workspace turns Kaiteyo into a full immersion environment:",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Statistics & Examination System",
+"url": "/Kaiteyo/docs/features/statistics/",
+"section": "Features",
+"excerpt": "Kaiteyo's learning analytics lives in one place: the Statistics screen",
 "icon": "file"
 },
 {
@@ -113,10 +137,18 @@
 },
 {
 "type": "doc",
-"title": "Kaiteyo (書いてよ) — Architecture",
+"title": "Kaiteyo (書いてよ) — Architecture Overview",
 "url": "/Kaiteyo/docs/architecture/overview/",
 "section": "Architecture",
-"excerpt": "",
+"excerpt": "Kaiteyo is a Kotlin Multiplatform (KMP) project with one shared core module and thin",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Japanese Language Data Platform",
+"url": "/Kaiteyo/docs/architecture/data_platform/",
+"section": "Architecture",
+"excerpt": "A reusable, source-agnostic Japanese language data layer inside the desktop",
 "icon": "file"
 },
 {
@@ -145,10 +177,10 @@
 },
 {
 "type": "doc",
-"title": "Kaiteyo — Complete File Structure Reference",
+"title": "Repository File Structure Reference",
 "url": "/Kaiteyo/docs/architecture/file_structure/",
 "section": "Architecture",
-"excerpt": "This document explains every file in the repository. Every file is documented with its purpose, dependencies, and whether developers should modify it.",
+"excerpt": "A map of the repository. Build output (build/), Gradle caches, .git/, and",
 "icon": "file"
 },
 {
@@ -163,7 +195,7 @@
 "type": "doc",
 "title": "ADR-0001: Kaiteyo Brand Identity",
 "url": "/Kaiteyo/docs/decisions/0001-brand/",
-"section": "Design Decisions",
+"section": "Architecture Decisions",
 "excerpt": "Status: Accepted",
 "icon": "file"
 },
@@ -171,8 +203,192 @@
 "type": "doc",
 "title": "ADR-0002: Theme System Architecture",
 "url": "/Kaiteyo/docs/decisions/0002-theme/",
-"section": "Design Decisions",
+"section": "Architecture Decisions",
 "excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0003: Kotlin Multiplatform + Compose Multiplatform",
+"url": "/Kaiteyo/docs/decisions/0003-kotlin-multiplatform/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0004: Shared UI with the 4-File Screen Pattern + Koin DI",
+"url": "/Kaiteyo/docs/decisions/0004-shared-ui-and-screen-pattern/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0005: Two SQLDelight Databases (immutable app data / mutable user data)",
+"url": "/Kaiteyo/docs/decisions/0005-sqldelight-two-databases/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0006: FSRS-5 for Spaced Repetition",
+"url": "/Kaiteyo/docs/decisions/0006-fsrs-srs/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0007: KJD — Standalone Data Platform for the Bundled Language Database",
+"url": "/Kaiteyo/docs/decisions/0007-kjd-data-platform/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0008: Desktop Immersion Suite as a Self-Contained Module",
+"url": "/Kaiteyo/docs/decisions/0008-desktop-suite/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0009: GitHub Device-Flow OAuth + Private-Gist Sync (No Central Service)",
+"url": "/Kaiteyo/docs/decisions/0009-github-sync-and-account/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0010: Installer Subsystem Decoupled from the Gradle Build",
+"url": "/Kaiteyo/docs/decisions/0010-installer-decoupling/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "ADR-0011: Plugin Runtime Loading Deferred (Security First)",
+"url": "/Kaiteyo/docs/decisions/0011-plugin-security-first/",
+"section": "Architecture Decisions",
+"excerpt": "Status: Accepted",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Data Architecture",
+"url": "/Kaiteyo/docs/data/architecture/",
+"section": "Data & Attribution",
+"excerpt": "This document describes where Kaiteyo's data lives, what technology stores it, how it is",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Open-Source Data Sources & Attribution",
+"url": "/Kaiteyo/docs/data/sources/",
+"section": "Data & Attribution",
+"excerpt": "Kaiteyo bundles Japanese-language data that comes from openly licensed third-party",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Data & Attribution",
+"url": "/Kaiteyo/docs/data/readme/",
+"section": "Data & Attribution",
+"excerpt": "This section documents everything about Kaiteyo's data: where it lives, how it is",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Anki Integration",
+"url": "/Kaiteyo/docs/integrations/anki/",
+"section": "Integrations",
+"excerpt": "Kaiteyo interoperates with Anki(https://apps.ankiweb.net/) in two ways:",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Yomitan-Style Dictionaries & Popup Lookup",
+"url": "/Kaiteyo/docs/integrations/yomitan_dictionaries/",
+"section": "Integrations",
+"excerpt": "Kaiteyo's desktop suite implements a Yomitan-style reading workflow: import",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Media Playback Backends",
+"url": "/Kaiteyo/docs/integrations/media_backends/",
+"section": "Integrations",
+"excerpt": "The desktop suite's Media center plays local video/audio files through pluggable backends",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Local HTTP API (desktop)",
+"url": "/Kaiteyo/docs/integrations/local_api/",
+"section": "Integrations",
+"excerpt": "The desktop app runs a small localhost HTTP server (Ktor) so external tools and",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Plugin Architecture",
+"url": "/Kaiteyo/docs/integrations/plugins/",
+"section": "Integrations",
+"excerpt": "The desktop suite ships a manifest-driven plugin registry and marketplace scaffold",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Integrations",
+"url": "/Kaiteyo/docs/integrations/readme/",
+"section": "Integrations",
+"excerpt": "This section documents how Kaiteyo interoperates with external systems: Anki, Yomitan",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Getting Started",
+"url": "/Kaiteyo/docs/user-guide/getting_started/",
+"section": "User Guide",
+"excerpt": "Grab the package for your OS from the GitHub Releases(https://github.com/ValiantZippu/Kaiteyo/releases):",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Studying with Kaiteyo",
+"url": "/Kaiteyo/docs/user-guide/studying/",
+"section": "User Guide",
+"excerpt": "This guide covers the core study engine, available on all platforms (desktop, Android,",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "The Desktop Suite (Windows / macOS / Linux)",
+"url": "/Kaiteyo/docs/user-guide/desktop_suite/",
+"section": "User Guide",
+"excerpt": "The desktop app is a complete immersion workspace: dictionary lookup, media playback,",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Customization",
+"url": "/Kaiteyo/docs/user-guide/customization/",
+"section": "User Guide",
+"excerpt": "Kaiteyo is designed to be customized — themes, layouts, and settings are all user-facing.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "User Guide",
+"url": "/Kaiteyo/docs/user-guide/readme/",
+"section": "User Guide",
+"excerpt": "End-user documentation for Kaiteyo. This guide describes what the app actually does",
 "icon": "file"
 },
 {
@@ -233,6 +449,14 @@
 },
 {
 "type": "doc",
+"title": "Release Checklist",
+"url": "/Kaiteyo/docs/development/release_checklist/",
+"section": "Development",
+"excerpt": "Companion to RELEASEPROCESS.md(RELEASEPROCESS.md). Work through this before every",
+"icon": "file"
+},
+{
+"type": "doc",
 "title": "First Build",
 "url": "/Kaiteyo/docs/development/firstbuild/",
 "section": "Development",
@@ -285,6 +509,94 @@
 "url": "/Kaiteyo/docs/development/knownlimitations/",
 "section": "Development",
 "excerpt": "Use one status per item: Open, Investigating, Solved, Won't Fix, or Deferred. Update this list whenever a limitation changes.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Windows",
+"url": "/Kaiteyo/docs/platform/windows/",
+"section": "Platforms",
+"excerpt": "✅ Supported — primary development platform. The desktop app is the flagship.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Linux",
+"url": "/Kaiteyo/docs/platform/linux/",
+"section": "Platforms",
+"excerpt": "✅ Supported — desktop app packaged for common distributions.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "macOS",
+"url": "/Kaiteyo/docs/platform/macos/",
+"section": "Platforms",
+"excerpt": "✅ Supported — desktop app built and packaged for both architectures.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Android",
+"url": "/Kaiteyo/docs/platform/android/",
+"section": "Platforms",
+"excerpt": "✅ Supported — two flavors distributed via Google Play and F-Droid.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "iOS",
+"url": "/Kaiteyo/docs/platform/ios/",
+"section": "Platforms",
+"excerpt": "🚧 Partial — the shared engine and app shell exist and are published to the App",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Platform Documentation",
+"url": "/Kaiteyo/docs/platform/readme/",
+"section": "Platforms",
+"excerpt": "Kaiteyo targets five platforms from one Kotlin Multiplatform codebase. This section",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Privacy",
+"url": "/Kaiteyo/docs/security/privacy/",
+"section": "Security & Privacy",
+"excerpt": "This document states what Kaiteyo actually stores and transmits, based on the code.",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Security",
+"url": "/Kaiteyo/docs/security/readme/",
+"section": "Security & Privacy",
+"excerpt": "The canonical security policy is the repository-root",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Third-Party Notices",
+"url": "/Kaiteyo/docs/legal/third_party_notices/",
+"section": "Legal",
+"excerpt": "This page summarizes the third-party data and libraries bundled with (or integrated into)",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Legal & Licensing",
+"url": "/Kaiteyo/docs/legal/readme/",
+"section": "Legal",
+"excerpt": "Kaiteyo is free software under the GNU General Public License v3.0 (or, at your",
+"icon": "file"
+},
+{
+"type": "doc",
+"title": "Testing Strategy",
+"url": "/Kaiteyo/docs/testing/readme/",
+"section": "Testing",
+"excerpt": "Tests use kotlin.test with JUnit Platform (useJUnitPlatform() in the module build",
 "icon": "file"
 },
 {
@@ -385,10 +697,10 @@
 },
 {
 "type": "doc",
-"title": "Kaiteyo (書いてよ) — Contributing Guide",
+"title": "Contributing to Kaiteyo",
 "url": "/Kaiteyo/docs/contributing/contributing/",
 "section": "Contributing",
-"excerpt": "We welcome contributions from the community. This guide explains how to contribute effectively.",
+"excerpt": "The canonical contributing guide lives at the repository root:",
 "icon": "file"
 },
 {
@@ -404,15 +716,7 @@
 "title": "Kaiteyo (書いてよ) — Roadmap",
 "url": "/Kaiteyo/docs/planning/roadmap/",
 "section": "Planning",
-"excerpt": "Sprint: v1.2 Window & Sidebar",
-"icon": "file"
-},
-{
-"type": "doc",
-"title": "Kaiteyo Changelog",
-"url": "/Kaiteyo/docs/planning/changelog/",
-"section": "Planning",
-"excerpt": "",
+"excerpt": "This roadmap is a living document. It reflects where the project actually is — shipped",
 "icon": "file"
 },
 {
@@ -436,7 +740,7 @@
 "title": "Kaiteyo — Current Issues",
 "url": "/Kaiteyo/docs/planning/current_issues/",
 "section": "Planning",
-"excerpt": "This is a living document. Add issues as they are discovered, mark them as fixed when resolved.",
+"excerpt": "Living issue tracker. Categories (see README.md(README.md)): BUG (reproducible",
 "icon": "file"
 },
 {
@@ -460,7 +764,7 @@
 "title": "Can I build Kaiteyo myself from source?",
 "url": "/Kaiteyo/faq/#faq-build-source",
 "section": "Platforms",
-"excerpt": "Yes. The project is a standard Gradle Kotlin Multiplatform build. Requirements and step-by-step instructions are in the Development Guide(/docs/development/) section of the documentation. Building from source is the best way to test unreleased fixes from the d",
+"excerpt": "Yes. The project is a standard Gradle Kotlin Multiplatform build. Requirements and step-by-step instructions are in the Development Guide(/docs/development/developerguide/) section of the documentation. Building from source is the best way to test unreleased f",
 "icon": "help"
 },
 {
@@ -756,7 +1060,7 @@
 "title": "Version 2.2.1",
 "url": "/Kaiteyo/changelog/#v2-2-1",
 "section": "Changelog",
-"excerpt": "P r e W i n m a c L i n S h a D o c F i r A u t C I   N a t 4 4 d N a t 8 - z C u s W i n K e y S c r U n i i O S D o c R o o D e s P l a S t a L e g R e b",
+"excerpt": "P r e W i n m a c L i n S h a D o c F i r A u t C I   N a t 4 4 d N a t 8 - z C u s W i n S c r U n i i O S D o c D e s P l a L e g R e b",
 "icon": "history"
 },
 {
@@ -764,7 +1068,7 @@
 "title": "Version 2.0.0",
 "url": "/Kaiteyo/changelog/#v2-0-0",
 "section": "Changelog",
-"excerpt": "U n i S i n L i b D r i O l d P e r C o l ` u p ` L e ` u p A r c F o l T h e I n t R G B 1 1   R e c A p p G r a A l l C u s F l o D r a S n a 9   d R e s D r a C l o B o r D i s B r u S t r I n p B e z V e l J i t P r e F u l S t r B r a W e l I n s C o m T ",
+"excerpt": "U n i P e r T h e F l o B r u B r a O n b A n k T h e C o r ` S l A l l A l l C o l N o   M i s N o  ",
 "icon": "history"
 },
 {
@@ -772,7 +1076,7 @@
 "title": "Version 1.1.0",
 "url": "/Kaiteyo/changelog/#v1-1-0",
 "section": "Changelog",
-"excerpt": "U n d S p r W i n R o u T h e K a i A c c G l o S u r A p p S i g R e b C o m P r o ` . . ` a n ` a n ` w i M i s D e s",
+"excerpt": "U n d S p r T h e A p p S i g R e b C o m ` a n ` a n ` w i M i s D e s",
 "icon": "history"
 },
 {
@@ -780,7 +1084,7 @@
 "title": "Version 1.0.0",
 "url": "/Kaiteyo/changelog/#v1-0-0",
 "section": "Changelog",
-"excerpt": "F o r B a s S p a J L P S t r V o c C r o K o i S Q L K t o D a t",
+"excerpt": "F o r B a s J L P C r o K o i",
 "icon": "history"
 },
 {

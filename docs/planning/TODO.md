@@ -1,202 +1,118 @@
 # Kaiteyo (書いてよ) — Master TODO
 
-## Priority Legend
-- 🔴 **P0 (Critical)** — Blocks all other work
-- 🟡 **P1 (High)** — Required for next release
-- 🟢 **P2 (Medium)** — Planned for upcoming release
-- 🔵 **P3 (Low)** — Nice to have
+> **Status taxonomy** (see [`README.md`](README.md)): `TODO` (task with a clear definition
+> of done) · `FEATURE` (specified new capability) · `RESEARCH` (needs investigation) ·
+> `TECHNICAL DEBT` (deliberate paydown) · `BLOCKED` (waiting on something external) ·
+> `DONE` (see `COMPLETED.md` / `CHANGELOG.md`).
+>
+> **Priority legend** — 🔴 P0 critical · 🟡 P1 high · 🟢 P2 medium · 🔵 P3 low.
 
 ---
 
-## 🔴 P0 — Critical (Must Fix Now)
+## TODO — open tasks (priority-ordered)
 
-### Window Experience
-- [ ] Fix window drag region — only top 44dp should be draggable, NOT the entire application
-- [ ] Ensure interactive UI components (buttons, lists, settings) are NEVER draggable
-- [ ] Fix animation performance — target 60 FPS, no stuttering
-- [ ] Fix theme switching smoothness
-- [ ] Fix hover animation consistency
-- [ ] Fix resize behavior — no panel jumping, no spacing changes, no broken animations
+### 🔴 P0 — Desktop polish (KNOWN ISSUE track, fix before new features)
 
-### Design Quality
-- [ ] Fix inconsistent spacing throughout UI
-- [ ] Ensure rounded panels feel intentional
-- [ ] Fix component alignment
-- [ ] Establish clear visual hierarchy
-- [x] Make sidebar feel like an elevated floating object, not attached to window (dock floats as an island: 8dp edge ring, 16dp corners, elevated surface, accent-tinted shadow — `WorkspaceShell.kt` + `WorkspaceNav.kt`)
+- [ ] Animation stutter — hover animations, theme switching, and window movement are not
+      smooth. Target 60 FPS.
+- [ ] Resize glitches — panels jump, spacing changes, animations break during window
+      resize.
+- [ ] Hover animation inconsistency — some elements animate, others don't.
+- [ ] Spacing/alignment consistency — some components don't follow the 4dp grid; visual
+      hierarchy between primary/secondary/tertiary content is weak; corner radius
+      strategy inconsistent.
 
-### Settings
-- [ ] Reorganize Appearance settings into professional Appearance Studio
-- [ ] Remove randomly placed appearance options
+### 🟡 P1 — High
 
----
+- [ ] **Archived decks still visible everywhere** — `is_archived` is persisted and
+      toggleable, but the main dashboard lists don't filter archived decks and there is no
+      "Archived" section to restore them (explicit follow-up from v2.0). `FEATURE`
+- [ ] **Mobile navigation snap** — mobile nav is top/bottom only; add snap behavior
+      consistent with desktop.
+- [ ] **Sync indicator / sponsor button** in the shell chrome (currently only on portrait
+      chrome).
+- [ ] **Settings cleanup** — remove remaining randomly placed appearance options; route
+      everything through the Settings Center categories.
 
-## 🟡 P1 — High (Next Release: v1.2)
+### 🟢 P2 — Medium
 
-### Floating Sidebar
-- [ ] Snap to valid dock positions (Windows 11 Snap Layouts style)
-- [ ] Mobile: Top, Bottom only with snap
-- [ ] Sync indicator / sponsor button surfaced in shell chrome (currently only
-      on portrait chrome)
+- [ ] **OCR hardening** — Tesseract integration edge cases, missing-engine UX, region
+      capture polish (desktop).
+- [ ] **Auto-update rollout** — enable update channels (stable/beta/nightly) for end
+      users; update-feed wiring is architecture-complete.
+- [ ] **Grammar content** — expand the desktop grammar starter deck; add grammar data
+      behind the KJD pipeline once an openly licensed grammar dataset is identified
+      (`RESEARCH` until then).
+- [ ] **Tablet layouts** — dedicated Android/iOS tablet polish (form-factor nav exists).
 
-### Theme System
-- [ ] Implement all 8 built-in themes:
-  - [ ] Signature (default) — Lime + Orange
-  - [ ] OLED Black — True black
-  - [ ] Dark Gray — Softer dark
-  - [ ] Light — Clean light mode
-  - [ ] Reading — Warm paper tones
-  - [ ] Cotton Candy — Pastel
-  - [ ] Ocean — Cool blue
-  - [ ] Forest — Earthy green
-- [ ] Signature theme MUST use BOTH lime (#C2FC8B) and orange (#FEAB57) distributed intelligently
-- [ ] Reading theme: warm paper colors, cream backgrounds, low eye strain, ink-like text
+### 🔵 P3 — Low
 
----
-
-## 🟢 P2 — Medium (v1.3)
-
-### Theme Studio
-- [ ] "+" button opens Theme Studio
-- [ ] Start from any built-in theme as base
-- [ ] Color editor with multiple color wheels (RGB, HSV, HSL, HEX)
-- [ ] Opacity control
-- [ ] Gradient editor with multiple stops
-- [ ] Live preview showing: sidebar, cards, buttons, lists, dialogs, navigation
-- [ ] Theme import/export as JSON
-- [ ] Custom theme presets saved locally
-
-### Motion Studio
-- [ ] Animation presets: No Animation, Minimal, Standard, Smooth, Bouncy
-- [ ] Each preset changes: duration, spring stiffness, bounce, fade timing, hover animations
-- [ ] Preview animations before applying
-
-### Layout Studio
-- [ ] Panel spacing adjustment
-- [ ] Corner radius control
-- [ ] Density modes: Compact, Comfortable, Spacious
-- [ ] Transparency/blur control
-- [ ] Surface elevation control
+- [ ] Accessibility completeness: full keyboard navigation, screen-reader support,
+      high-contrast mode, reduced-motion completeness.
+- [ ] Performance: lazy loading for large lists, image caching, memory optimization,
+      startup-time reduction, Compose compiler metrics.
 
 ---
 
-## 🔵 P3 — Low (Future)
+## FEATURE — specified but not yet scheduled
 
-### Polish
-- [ ] Page transitions with shared element animations
-- [ ] Dialog/modal entrance/exit animations
-- [ ] List item animations
-- [ ] Native window shadows
-- [ ] Glass morphism effects
-- [ ] Parallax scrolling
+- Community features: shared decks, theme marketplace, study groups, optional
+  leaderboards (from `FUTURE_IDEAS.md`).
+- Pitch-accent diagrams, graded reading mode, handwriting-recognition improvements.
+- Custom card templates (HTML/CSS), scripting API.
+- Web/PWA version; Chrome OS / Wear OS review surface.
+- KJD: Tatoeba example-sentence adapter, compact binary export, pitch/grammar extension
+  datasets (see `kjd/README.md` → Future direction).
 
-### Accessibility
-- [ ] Keyboard navigation (Tab, Shift+Tab, Enter, Escape, Arrow keys)
-- [ ] Screen reader support
-- [ ] Reduced motion option
-- [ ] High contrast mode
-- [ ] Font size adjustment
+## RESEARCH — needs investigation before scheduling
 
-### Internationalization
-- [ ] Japanese UI option
-- [ ] Community-contributed translations
+- AI-assisted review scheduling (how it would coexist with FSRS-5; likely a future
+  enhancement, not a replacement).
+- Openly licensed grammar and example-sentence datasets for the KJD pipeline.
+- Plugin runtime sandboxing design (capability model, subprocess vs classloader) — see
+  ADR-0011.
 
-### Performance
-- [ ] Lazy loading for large lists
-- [ ] Image caching
-- [ ] Memory optimization
-- [ ] Startup time reduction
-- [ ] Compose compiler metrics
+## TECHNICAL DEBT — deliberate paydowns
 
----
+- **Two jdata implementations** — `kjd/` (standalone) and the desktop suite's
+  `engine/jdata` platform evolved separately; consolidate into one pipeline (ADR-0007).
+- **No UI tests** — Compose UI testing harness not established (see `../testing/README.md`).
+- **Platform actuals under-verified** — several Android/iOS/Windows paths are
+  "code-complete, runtime-unverified" (tracked in `CURRENT_ISSUES.md` → BLOCKED).
+- **Website `dist/` is committed** — regenerate it on every docs change (the site build
+  is a manual step; consider CI).
+- **Scattered status tracking** — features historically tracked across FEATURES.md /
+  TODO.md / COMPLETED.md; FEATURES.md is now the single source of truth.
 
-## Completed ✅
+## BLOCKED — waiting on something external
 
-- [x] Build system working (Gradle, Compose Multiplatform)
-- [x] Desktop app compiles and runs
-- [x] Basic window with undecorated chrome
-- [x] Floating window controls (minimize, maximize, close)
-- [x] Window drag region (basic implementation)
-- [x] Rounded window corners (20dp)
-- [x] Signature theme with lime (#C2FC8B) and orange (#FEAB57)
-- [x] Theme system with BaseMode (Light/Dark/Oled)
-- [x] Appearance settings with theme mode and accent selection
-- [x] Documentation structure (/docs with 11+ files)
-- [x] Hover animations (scale, glow, color)
-- [x] Spring-based physics for animations
-- [x] Unified NavShell (common) with Expanded / Compact / IconsOnly /
-      FloatingIsland / Docked / AutoHide modes
-- [x] Nav positions: Left, Right, Top, Bottom
-- [x] Auto-hide with edge reveal strip and Ctrl+B toggle
-- [x] Floating island: drag reposition (clamped to window), accent-tinted
-      shadow, glass transparency
-- [x] Dock mode: centered, spring scale on hover
-- [x] Resizable docked strips (5dp drag strip) and floating island
-- [x] Layout persistence via DataStore (NavLayoutManager)
-- [x] NavShell layout doc (docs/architecture/NAVIGATION.md)
+- iOS runtime verification (APKG import/export, file pickers) — needs a macOS build +
+  device/simulator.
+- Windows runtime verification (media keys, native drag, tray notifications) — needs a
+  Windows machine.
+- Android SAF picker verification (import/export, re-import grant) — needs an Android
+  build + device.
+- AnkiConnect import end-to-end — needs a live Anki + AnkiConnect instance.
+- Flathub / Snap publishing — needs maintainer accounts + CI wiring.
 
 ---
 
-## Navigation & Workflow Redesign (delivered, compiled)
+## DONE — delivered (historical, summarized)
 
-The desktop suite's navigation was reworked around desktop productivity. All of
-this is wired into settings, the command palette, keyboard shortcuts and toasts,
-and `:desktopApp:compileKotlinJvm` is green.
+Everything below is **shipped**. Details in `COMPLETED.md` and `CHANGELOG.md`.
 
-- **Adaptive edge navigation** — sidebar is a real edge layout, not a rotated
-  bar. `navigation.position` (left/right/top/bottom) and `navigation.collapsed`
-  persist in settings. A `DsPositionPicker` (icon popup) moves the rail between
-  edges; a collapse button toggles 232dp ⇄ 64dp rail.
-- **Compact tab bar** — below 720dp width the app switches to `DsCompactNavBar`
-  (a real bottom-tab bar with four primary tabs + an overflow menu, top or
-  bottom edge per `navigation.compactPosition`). Desktop docks never shrink
-  into compact mode.
-- **Predefined layout states** — `navigation.layout` (expanded / compact /
-  hidden) with animated width/height transitions. No free resizing, no drag
-  handle. The `DsNavControlsButton` popup offers the three layouts (icons) and
-  the four dock edges (arrows); `Ctrl+Shift+N` cycles layouts; a slim peek tab
-  restores the dock when hidden. The old floating launcher (`DsFloatingLauncher`)
-  and drag/resize `FloatingSidebar` were removed.
-- **Persistent workspace panels** — `PanelKind` (Dictionary, Kanji Browser,
-  Statistics, Deck Browser, Theme Studio, Search) open as a 360dp right dock
-  (`DsDockColumn`) or as draggable/resizable floating windows
-  (`DsFloatingPanelWindow`). Layout (kind, placement, x/y/size) persists as JSON
-  under the `workspace.panels` setting key and survives restarts. Opened via the
-  panel menu button or palette commands ("Toggle … panel").
-- **Deck action surface** — `CollectionsView` details gained a full action rail:
-  Study, Browse (up to 200 cards), Edit (dialog), Statistics, Duplicate, Export
-  (JSON to clipboard), Archive/Restore, and Delete (danger). Archived decks sink
-  to an "ARCHIVED" section with one-click restore. Backed by new
-  `CollectionStore` ops: `rename`, `duplicate`, `toggleArchived`, `archived`,
-  `export`.
-- **Browser upgrades** — selection mode (checkboxes in grid/list), select-all,
-  bulk toolbar (Tag, Flag, Favorite, Suspend, Reset, Delete), sort menu
-  (Default/Character/Meaning/Status/Interval/Due/Tags), and "Review these N"
-  which starts a review from the exact query.
-
-## Desktop Suite Prototype (self-contained, compiled)
-
-A standalone desktop-first study suite lives in
-`desktopApp/src/jvmMain/kotlin/ua/syt0r/kanji/desktop/` — own engines, design
-system and full view layer, independent of the Koin app. Launch via
-`desktopSuiteMain()` in `desktopApp/SuiteMain.kt`; it reuses the borderless
-`KaiteyoWindow` shell around `KaiteyoDesktopSuite`.
-
-- **Engines** (`engine/`): SRS scheduler (FSRS/SM-2 hybrid), review queue
-  (bury/suspend/undo/retry/forget/reschedule), search, saved filters, smart
-  collections, statistics (heatmap/goals/weak spots), activity log, sync
-  (provider abstraction + memory transport), themes (JSON studio), transfer
-  (JSON/CSV/TSV/TXT import-export), plugins, shortcuts, settings.
-- **Design system** (`designsystem/`): `Ds*` components reading core theme
-  locals (`LocalSurfaceColors`, `LocalKaiteyoAccent`, `DsSpacing/Radius/Type`).
-- **Views** (`ui/`): Dashboard, Browser, Review, Collections, Tags/Flags,
-  Statistics, Activity Log, Import/Export, Sync, Shortcuts, Plugins, Theme
-  Studio, Settings — wired by `KaiteyoWorkspace` (sidebar + top bar + global
-  shortcuts + command palette + toasts).
-- **State**: single `AppState` facade; `DemoData` seeds ~74 curated kanji with
-  realistic SRS spread + 180 days of summaries.
-
-Status: compiles clean (`:desktopApp:compileKotlinJvm`). The navigation/workflow
-redesign above is implemented and integrated. Remaining polish: deprecation
-warnings for non-AutoMirrored icons (cosmetic), and any runtime behavior checks
-via `desktopSuiteMain()`.
+- **Window experience** — custom 44dp title bar, scoped drag region, 8-zone resize,
+  system menu, window-state persistence, rounded corners (v2.2.1).
+- **Theme system** — BaseMode Light/Dark/OLED; accent schemes; **17 built-in presets**
+  (Signature, OLED, Dark Gray, Light, Reading, Solarized, Nord, Catppuccin, Gruvbox,
+  Tokyo Night, Dracula, Nothing OS, Material, Glass, Cotton Candy, Ocean, Forest);
+  Theme Studio (color wheel, gradients, motion, layout, JSON import/export) (v2.0/v2.2).
+- **Navigation** — floating dock island (4 edges), expanded/compact/hidden layouts,
+  compact tab bar <720dp, persistent workspace panels, command palette (v2.2).
+- **Study engine** — JLPT + grade decks, vocab/flashcards, writing + stroke evaluation,
+  FSRS-5 SRS, deck archive, unified Library hub, text analysis, statistics + exams +
+  achievements (v2.0+).
+- **Installer & first-run** — branded installers (Inno/DMG/AppImage/deb/rpm),
+  onboarding wizard, auto-update architecture (v2.2.1).
+- **Anki interop & persistence** — `.apkg` import/export, JSON/CSV/TSV/TXT pipeline,
+  persistent card pool (v2.3 in progress).
