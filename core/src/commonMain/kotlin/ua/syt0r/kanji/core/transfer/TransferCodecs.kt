@@ -17,34 +17,34 @@ enum class TransferFormat { Json, Csv, Tsv, Txt }
 
 @Serializable
 data class TransferCard(
-    val id: String,
-    val character: String,
-    val meaning: String,
-    val reading: String,
-    val deck: String,
-    val deckId: Long,
-    val tags: List<String>,
-    val flag: String,
-    val notes: String,
-    val status: String,
-    val difficulty: String,
-    val priority: Int,
-    val isSuspended: Boolean,
-    val isBuried: Boolean,
-    val isArchived: Boolean,
-    val isFavorite: Boolean,
-    val customFields: Map<String, String>,
-    val aliases: List<String>,
-    val relatedCards: List<String>,
-    val createdAt: String,
-    val modifiedAt: String,
-    val lastReviewed: String,
-    val reviewCount: Int,
-    val interval: Int,
-    val ease: Float,
-    val lapses: Int,
-    val accuracy: Float,
-    val totalTimeStudied: Long
+    val id: String = "",
+    val character: String = "",
+    val meaning: String = "",
+    val reading: String = "",
+    val deck: String = "",
+    val deckId: Long = 0L,
+    val tags: List<String> = emptyList(),
+    val flag: String = "None",
+    val notes: String = "",
+    val status: String = "New",
+    val difficulty: String = "Good",
+    val priority: Int = 0,
+    val isSuspended: Boolean = false,
+    val isBuried: Boolean = false,
+    val isArchived: Boolean = false,
+    val isFavorite: Boolean = false,
+    val customFields: Map<String, String> = emptyMap(),
+    val aliases: List<String> = emptyList(),
+    val relatedCards: List<String> = emptyList(),
+    val createdAt: String = "",
+    val modifiedAt: String = "",
+    val lastReviewed: String = "",
+    val reviewCount: Int = 0,
+    val interval: Int = 0,
+    val ease: Float = 2.5f,
+    val lapses: Int = 0,
+    val accuracy: Float = 0.5f,
+    val totalTimeStudied: Long = 0L
 ) {
     companion object {
         fun fromKaiteyoCard(card: KaiteyoCard): TransferCard {
@@ -82,7 +82,9 @@ data class TransferCard(
 
         fun toKaiteyoCard(transfer: TransferCard): KaiteyoCard {
             return KaiteyoCard(
-                id = transfer.id,
+                // Sparse imports (e.g. a pasted "character, meaning" JSON row)
+                // carry no id — derive a stable one so cards stay deduplicable.
+                id = transfer.id.ifBlank { "imported-${transfer.character.hashCode().toString(16)}" },
                 character = transfer.character,
                 meaning = transfer.meaning,
                 reading = transfer.reading,

@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.desktop.engine.account
 
 import kotlinx.serialization.Serializable
+import ua.syt0r.kanji.desktop.engine.sync.ConflictResolution
 
 // ============================================
 // KAITEYO DESKTOP ACCOUNT MODELS
@@ -83,6 +84,8 @@ data class AccountSettingsData(
     val autoSync: Boolean = false,
     val syncIntervalMinutes: Int = 30,
     val syncOnStart: Boolean = false,
+    /** How to resolve blobs changed on both sides during a sync. */
+    val conflictResolution: ConflictResolution = ConflictResolution.Skip,
     val encryptLocalData: Boolean = true,
     val notifySyncCompleted: Boolean = true,
     val notifySyncFailed: Boolean = true,

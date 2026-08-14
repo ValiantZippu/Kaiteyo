@@ -47,24 +47,32 @@ class DeckDetailsViewModel(
     override val lifecycleState: MutableStateFlow<LifecycleState> =
         MutableStateFlow(LifecycleState.Hidden)
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     override fun loadData(configuration: DeckDetailsScreenConfiguration) {
         if (::configuration.isInitialized) return
         this.configuration = configuration
+        subscribeToData()
+    }
 
-        when (configuration) {
-            is DeckDetailsScreenConfiguration.LetterDeck -> {
-                subscribeOnLettersDataUseCase(configuration, lifecycleState)
+    override fun retryLoad() {
+        if (::configuration.isInitialized) subscribeToData()
+    }
+
+    private fun subscribeToData() {
+        loadJob?.cancel()
+        val config = configuration
+        loadJob = when (config) {
+            is DeckDetailsScreenConfiguration.LetterDeck ->
+                subscribeOnLettersDataUseCase(config, lifecycleState)
                     .onEach { it.applyToState() }
                     .launchIn(viewModelScope)
-            }
 
-            is DeckDetailsScreenConfiguration.VocabDeck -> {
-                subscribeOnVocabDataUseCase(configuration, lifecycleState)
+            is DeckDetailsScreenConfiguration.VocabDeck ->
+                subscribeOnVocabDataUseCase(config, lifecycleState)
                     .onEach { it.applyToState() }
                     .launchIn(viewModelScope)
-            }
         }
-
     }
 
     override fun getPracticeConfiguration(group: DeckDetailsListItem.Group): MainDestination.LetterPractice {
@@ -150,6 +158,10 @@ class DeckDetailsViewModel(
         when (this) {
             is RefreshableData.Loading -> {
                 _state.value = ScreenState.Loading
+            }
+
+            is RefreshableData.Failed -> {
+                _state.value = ScreenState.Error(error?.message)
             }
 
             is RefreshableData.Loaded -> {

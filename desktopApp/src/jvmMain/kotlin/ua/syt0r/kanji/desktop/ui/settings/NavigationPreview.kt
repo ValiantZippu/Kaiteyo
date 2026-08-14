@@ -37,7 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.appstate.AppState
-import ua.syt0r.kanji.desktop.appstate.LauncherAnchor
+import ua.syt0r.kanji.desktop.appstate.LauncherSnapPoint
+import ua.syt0r.kanji.desktop.appstate.NavExpansion
 import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.NavPosition
 import ua.syt0r.kanji.desktop.designsystem.DsCard
@@ -60,7 +61,7 @@ import kotlin.math.roundToInt
 fun NavigationPreviewCard(state: AppState) {
     val sc = surfaceColors()
     var phonePreview by remember { mutableStateOf(false) }
-    var bubbleSpot by remember { mutableStateOf(LauncherAnchor.BottomRight) }
+    var bubbleSpot by remember { mutableStateOf(LauncherSnapPoint.BottomRight) }
 
     DsCard {
         Column(
@@ -134,16 +135,16 @@ private fun PreviewChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 private fun configLine(state: AppState, phone: Boolean): String {
-    if (state.navLayout == NavLayout.Bubble) {
+    if (state.navLayout == NavLayout.Floating) {
         val where = if (phone) "phone layout" else "desktop"
-        return "Bubble mode · bubble in $where · snap to ${state.launcherDefaultPosition.label.lowercase()} · tap the mock to test snapping"
+        return "Floating mode · bubble in $where · snap to ${state.launcherSnapPoint.label.lowercase()} · tap the mock to test snapping"
     }
-    val mode = state.navLayout.label.lowercase()
+    val expansion = if (state.navExpansion == NavExpansion.Expanded) "expanded" else "compact"
     val edge = state.navPosition.label.lowercase()
     return if (phone) {
-        "Phone · ${mode} · tab bar at ${state.compactNavPosition.label.lowercase()}"
+        "Phone · sidebar · $expansion · tab bar at ${state.compactNavPosition.label.lowercase()}"
     } else {
-        "$mode sidebar on the $edge · ${state.sidebarWidth.label.lowercase()} width"
+        "Sidebar · $expansion on the $edge · ${state.sidebarWidth.label.lowercase()} width"
     }
 }
 
@@ -154,17 +155,17 @@ private fun configLine(state: AppState, phone: Boolean): String {
 @Composable
 private fun BoxScope.DesktopMock(
     state: AppState,
-    bubbleSpot: LauncherAnchor,
+    bubbleSpot: LauncherSnapPoint,
     mockW: Float,
     mockH: Float,
-    onBubble: (LauncherAnchor) -> Unit
+    onBubble: (LauncherSnapPoint) -> Unit
 ) {
-    if (state.navLayout == NavLayout.Bubble) {
+    if (state.navLayout == NavLayout.Floating) {
         BubbleMock(bubbleSpot, onBubble, topInset = 0f, bottomInset = 0f, mockW = mockW, mockH = mockH)
         return
     }
     val rail = state.navPosition == NavPosition.Left || state.navPosition == NavPosition.Right
-    val expanded = state.navLayout == NavLayout.Expanded
+    val expanded = state.navExpansion == NavExpansion.Expanded
     val dock = @Composable { MiniDock(vertical = rail, expanded = expanded) }
     if (rail) {
         Row(Modifier.fillMaxSize()) {
@@ -192,12 +193,12 @@ private fun BoxScope.DesktopMock(
 @Composable
 private fun BoxScope.PhoneMock(
     state: AppState,
-    bubbleSpot: LauncherAnchor,
+    bubbleSpot: LauncherSnapPoint,
     mockW: Float,
     mockH: Float,
-    onBubble: (LauncherAnchor) -> Unit
+    onBubble: (LauncherSnapPoint) -> Unit
 ) {
-    if (state.navLayout == NavLayout.Bubble) {
+    if (state.navLayout == NavLayout.Floating) {
         BubbleMock(bubbleSpot, onBubble, topInset = 34f, bottomInset = 34f, mockW = mockW, mockH = mockH)
         return
     }
@@ -214,8 +215,8 @@ private fun BoxScope.PhoneMock(
 
 @Composable
 private fun BoxScope.BubbleMock(
-    bubbleSpot: LauncherAnchor,
-    onBubble: (LauncherAnchor) -> Unit,
+    bubbleSpot: LauncherSnapPoint,
+    onBubble: (LauncherSnapPoint) -> Unit,
     topInset: Float,
     bottomInset: Float,
     mockW: Float,
@@ -234,8 +235,8 @@ private fun BoxScope.BubbleMock(
                 }
             }
     ) {
-        // Snap anchor dots.
-        LauncherAnchor.entries.forEach { anchor ->
+        // Snap anchor dots — all 12, three per screen edge.
+        LauncherSnapPoint.entries.forEach { anchor ->
             val p = previewAnchor(anchor, mockW, mockH, topInset, bottomInset, 18f)
             Box(
                 Modifier
@@ -263,21 +264,22 @@ private fun BoxScope.BubbleMock(
 
 /** Top-left position (px) of a bubble of [sizePx] for an anchor inside a [w]×[h] mock. */
 private fun previewAnchor(
-    anchor: LauncherAnchor,
+    anchor: LauncherSnapPoint,
     w: Float,
     h: Float,
     topInset: Float,
     bottomInset: Float,
     sizePx: Float
 ): Offset {
-    val usableH = (h - topInset - bottomInset).coerceAtLeast(0f)
     return when (anchor) {
-        LauncherAnchor.Left -> Offset(0f, topInset + usableH / 2f - sizePx / 2f)
-        LauncherAnchor.Right -> Offset(w - sizePx, topInset + usableH / 2f - sizePx / 2f)
-        LauncherAnchor.TopLeft -> Offset(0f, topInset)
-        LauncherAnchor.TopRight -> Offset(w - sizePx, topInset)
-        LauncherAnchor.BottomLeft -> Offset(0f, h - bottomInset - sizePx)
-        LauncherAnchor.BottomRight -> Offset(w - sizePx, h - bottomInset - sizePx)
+        LauncherSnapPoint.TopLeft, LauncherSnapPoint.LeftTop -> Offset(0f, topInset)
+        LauncherSnapPoint.TopCenter -> Offset((w - sizePx) / 2f, topInset)
+        LauncherSnapPoint.TopRight, LauncherSnapPoint.RightTop -> Offset(w - sizePx, topInset)
+        LauncherSnapPoint.BottomLeft, LauncherSnapPoint.LeftBottom -> Offset(0f, h - bottomInset - sizePx)
+        LauncherSnapPoint.BottomCenter -> Offset((w - sizePx) / 2f, h - bottomInset - sizePx)
+        LauncherSnapPoint.BottomRight, LauncherSnapPoint.RightBottom -> Offset(w - sizePx, h - bottomInset - sizePx)
+        LauncherSnapPoint.LeftCenter -> Offset(0f, (h - sizePx) / 2f)
+        LauncherSnapPoint.RightCenter -> Offset(w - sizePx, (h - sizePx) / 2f)
     }
 }
 
@@ -288,21 +290,13 @@ private fun nearestPreviewAnchor(
     h: Float,
     topInset: Float,
     bottomInset: Float
-): LauncherAnchor {
-    val usableH = (h - topInset - bottomInset).coerceAtLeast(0f)
-    val centers = mapOf(
-        LauncherAnchor.Left to Offset(0f, topInset + usableH / 2f),
-        LauncherAnchor.Right to Offset(w, topInset + usableH / 2f),
-        LauncherAnchor.TopLeft to Offset(0f, topInset),
-        LauncherAnchor.TopRight to Offset(w, topInset),
-        LauncherAnchor.BottomLeft to Offset(0f, h - bottomInset),
-        LauncherAnchor.BottomRight to Offset(w, h - bottomInset)
-    )
-    return centers.minByOrNull { (_, c) ->
+): LauncherSnapPoint {
+    return LauncherSnapPoint.entries.minByOrNull { anchor ->
+        val c = previewAnchor(anchor, w, h, topInset, bottomInset, 0f)
         val dx = tap.x - c.x
         val dy = tap.y - c.y
         dx * dx + dy * dy
-    }!!.key
+    } ?: LauncherSnapPoint.BottomRight
 }
 
 // ============================================

@@ -65,7 +65,9 @@ class DefaultGetVocabPracticeWritingDataUseCase(
                         character = character,
                         strokeEvaluator = strokeEvaluator,
                         strokes = parseKanjiStrokes(strokes),
-                        configuration = CharacterWriterConfiguration.CharacterInput
+                        configuration = CharacterWriterConfiguration.CharacterInput(
+                            evaluationConfig = descriptor.evaluationConfig
+                        )
                     )
                 }
                 character to characterWriterData

@@ -59,6 +59,7 @@ import ua.syt0r.kanji.desktop.designsystem.newColor
 import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.designsystem.warningColor
+import ua.syt0r.kanji.desktop.engine.media.MediaEngine
 import ua.syt0r.kanji.desktop.engine.stats.GoalsEngine
 import ua.syt0r.kanji.desktop.engine.stats.HeatmapEngine
 import ua.syt0r.kanji.desktop.engine.stats.LearningCurveEngine
@@ -68,7 +69,9 @@ import ua.syt0r.kanji.desktop.model.CollectionDef
 import ua.syt0r.kanji.desktop.model.SrsStatus
 import ua.syt0r.kanji.desktop.model.StudyMode
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 
 // ============================================
@@ -257,6 +260,65 @@ fun DashboardView(state: AppState) {
                 modifier = Modifier.weight(1f),
                 delta = "favorite collections"
             )
+        }
+
+        // Immersion: media activity today
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Immersion",
+                    subtitle = "Media activity today",
+                    action = {
+                        DsButton(
+                            text = "Open Media",
+                            icon = Icons.Default.PlayArrow,
+                            kind = DsButtonKind.Secondary,
+                            compact = true,
+                            onClick = { state.currentView = WorkspaceView.Media }
+                        )
+                    }
+                )
+                Spacer(Modifier.height(DsSpacing.Md))
+                val mediaStats = state.media.statistics
+                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                val todayStat = mediaStats.day(today)
+                val last7 = today.minus(6, DateTimeUnit.DAY)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    ImmersionStat(
+                        label = "Watched today",
+                        value = MediaEngine.formatTime(todayStat.watchMs),
+                        detail = "${mediaStats.watchMsBetween(last7, today) / 3600000}h in the last 7 days",
+                        modifier = Modifier.weight(1f)
+                    )
+                    ImmersionStat(
+                        label = "Media study",
+                        value = MediaEngine.formatTime(todayStat.studyMs),
+                        detail = if (todayStat.studyMs > 0) "counts toward study time" else "enable study mode in the player",
+                        modifier = Modifier.weight(1f)
+                    )
+                    ImmersionStat(
+                        label = "Mined today",
+                        value = todayStat.mined.toString(),
+                        detail = "${mediaStats.minedBetween(last7, today)} in the last 7 days",
+                        modifier = Modifier.weight(1f)
+                    )
+                    ImmersionStat(
+                        label = "Lookups today",
+                        value = todayStat.lookups.toString(),
+                        detail = "dictionary lookups",
+                        modifier = Modifier.weight(1f)
+                    )
+                    ImmersionStat(
+                        label = "Mined all (7d)",
+                        value = state.miningStatistics.minedBetween(last7, today).toString(),
+                        detail = "dictionary · media · OCR · browser",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
 
         // Heatmap + curve row
@@ -809,6 +871,46 @@ private fun categoryColor(category: ua.syt0r.kanji.desktop.engine.history.Activi
         ua.syt0r.kanji.desktop.engine.history.ActivityCategory.System -> newColor()
         else -> surfaceColors().textMuted
     }
+
+// ============================================
+// IMMERSION STAT
+// ============================================
+
+@Composable
+private fun ImmersionStat(
+    label: String,
+    value: String,
+    detail: String,
+    modifier: Modifier = Modifier
+) {
+    val sc = surfaceColors()
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(DsRadius.Lg))
+            .background(sc.surfaceInteractive.copy(alpha = 0.5f))
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = label.uppercase(),
+            color = sc.textMuted,
+            fontSize = DsType.Caption,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            color = sc.textPrimary,
+            fontSize = DsType.Title,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = detail,
+            color = sc.textMuted,
+            fontSize = DsType.Caption,
+            maxLines = 1
+        )
+    }
+}
 
 // ============================================
 // HEATMAP CHART

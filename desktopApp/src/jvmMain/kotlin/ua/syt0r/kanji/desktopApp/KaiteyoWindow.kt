@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -49,8 +50,11 @@ import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.PointerType
+import java.awt.Cursor
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -131,7 +135,7 @@ fun FrameWindowScope.KaiteyoWindow(
                 .distinctUntilChanged()
                 .collect { (placement, size, position) ->
                     if (placement != WindowPlacement.Floating) return@collect
-                    if (position.x == Int.MIN_VALUE || position.y == Int.MIN_VALUE) return@collect
+                    if (position == WindowPosition.PlatformDefault) return@collect
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt < 250) return@collect
                     lastSavedAt = now
@@ -140,8 +144,8 @@ fun FrameWindowScope.KaiteyoWindow(
                             SavedWindowBounds(
                                 width = size.width.roundToPx(),
                                 height = size.height.roundToPx(),
-                                x = position.x,
-                                y = position.y
+                                x = position.x.roundToPx(),
+                                y = position.y.roundToPx()
                             )
                         )
                     }
@@ -284,6 +288,7 @@ fun FrameWindowScope.KaiteyoWindow(
 // TITLE BAR — app title + window controls
 // ============================================
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun FrameWindowScope.KaiteyoTitleBar(
     isMaximized: Boolean,
@@ -345,10 +350,13 @@ private fun FrameWindowScope.KaiteyoTitleBar(
                 // Right-click anywhere on the title bar opens the system menu,
                 // like a native title bar.
                 .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        if (down.type == PointerType.Mouse && down.buttons.isSecondaryPressed) {
-                            onOpenSystemMenu(IntOffset(down.position.x.roundToInt(), down.position.y.roundToInt()))
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            if (event.type == PointerEventType.Press && event.button == PointerButton.Secondary) {
+                                val pos = event.changes.first().position
+                                onOpenSystemMenu(IntOffset(pos.x.roundToInt(), pos.y.roundToInt()))
+                            }
                         }
                     }
                 }
@@ -561,14 +569,14 @@ private enum class ResizeZone(
     val north: Boolean = false,
     val south: Boolean = false
 ) {
-    NorthWest(PointerIcon.NwseResize, west = true, north = true),
-    North(PointerIcon.NsResize, north = true),
-    NorthEast(PointerIcon.NeswResize, east = true, north = true),
-    East(PointerIcon.EwResize, east = true),
-    SouthEast(PointerIcon.NwseResize, east = true, south = true),
-    South(PointerIcon.NsResize, south = true),
-    SouthWest(PointerIcon.NeswResize, west = true, south = true),
-    West(PointerIcon.EwResize, west = true)
+    NorthWest(PointerIcon(Cursor.getPredefinedCursor(Cursor.NW_RESIZE_CURSOR)), west = true, north = true),
+    North(PointerIcon(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR)), north = true),
+    NorthEast(PointerIcon(Cursor.getPredefinedCursor(Cursor.NE_RESIZE_CURSOR)), east = true, north = true),
+    East(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)), east = true),
+    SouthEast(PointerIcon(Cursor.getPredefinedCursor(Cursor.SE_RESIZE_CURSOR)), east = true, south = true),
+    South(PointerIcon(Cursor.getPredefinedCursor(Cursor.S_RESIZE_CURSOR)), south = true),
+    SouthWest(PointerIcon(Cursor.getPredefinedCursor(Cursor.SW_RESIZE_CURSOR)), west = true, south = true),
+    West(PointerIcon(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR)), west = true)
 }
 
 private data class ResizeStart(val size: DpSize, val position: WindowPosition)
@@ -593,7 +601,7 @@ private fun Modifier.windowResizeZone(
         .pointerInput(zone) {
             detectDragGestures(
                 onDragStart = {
-                    start = ResizeStart(windowState.size.value, windowState.position.value)
+                    start = ResizeStart(windowState.size, windowState.position)
                 },
                 onDragEnd = { start = null },
                 onDragCancel = { start = null },
@@ -612,14 +620,14 @@ private fun Modifier.windowResizeZone(
 
                     if (zone.west) {
                         w = (startW - dx).coerceAtLeast(minWidthPx)
-                        x = s.position.x + (startW - w)
+                        x = s.position.x + (startW - w).dp
                     }
                     if (zone.east) {
                         w = (startW + dx).coerceAtLeast(minWidthPx)
                     }
                     if (zone.north) {
                         h = (startH - dy).coerceAtLeast(minHeightPx)
-                        y = s.position.y + (startH - h)
+                        y = s.position.y + (startH - h).dp
                     }
                     if (zone.south) {
                         h = (startH + dy).coerceAtLeast(minHeightPx)

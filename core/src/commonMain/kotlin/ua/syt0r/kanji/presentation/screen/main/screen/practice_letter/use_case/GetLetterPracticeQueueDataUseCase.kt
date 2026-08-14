@@ -84,6 +84,7 @@ class DefaultGetLetterPracticeQueueDataUseCase(
                             layoutConfiguration = layout,
                             inputMode = configuration.inputMode.value,
                             evaluator = evaluator,
+                            evaluationConfig = configuration.strictness.value.evaluationConfig,
                             shouldStudy = shouldStudy
                         )
                     }

@@ -231,7 +231,12 @@ class AccountEngine(
             ?: error("GitHub is not connected")
         if (stored.accessToken.isBlank()) error("GitHub credentials are missing")
 
-        if (stored.isExpired && stored.refreshToken.isNotBlank()) {
+        if (stored.isExpired) {
+            // GitHub device-flow tokens are long-lived, so an expired marker
+            // means the token genuinely needs a refresh.
+            if (stored.refreshToken.isBlank()) {
+                error("GitHub session expired — reconnect the account")
+            }
             val clientId = _settingsData.value.githubClientId.ifBlank {
                 error("GitHub OAuth is not configured")
             }

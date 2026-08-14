@@ -138,3 +138,9 @@ getKanjiStrokeCounts:
 SELECT character, COUNT(*) AS stroke_count
 FROM character_stroke
 GROUP BY character;
+
+getRadicalsForCharacters:
+SELECT kanji, group_concat(DISTINCT radical, '|') AS radicals
+FROM kanji_radical
+WHERE kanji IN :characters
+GROUP BY kanji;

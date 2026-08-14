@@ -2,6 +2,32 @@
 
 This document tracks completed features and milestones. When a task from TODO.md or CURRENT_ISSUES.md is completed, add it here.
 
+## v2.3 — Anki Interoperability & Persistent Data (Latest)
+
+### Data Persistence (Desktop Suite)
+- [x] Card pool persisted to `~/.kaiteyo/library/cards.json`; restored on launch before any UI is built
+- [x] Demo seeding is first-run only — imports/edits/reviews survive every restart
+- [x] Every mutation path persists: reviews, writing, suspend/forget/reschedule, editor, mining, imports, profile restore, stress dataset
+
+### Anki Compatibility (`.apkg`)
+- [x] Export: real SQLite `collection.anki2` + media manifest, schema v11, correct `sfld`/`csum`, deterministic GUIDs, decks from Kaiteyo decks
+- [x] Import: deck hierarchy preserved (`Japanese::N5::Kanji`), notes→cards with `ord`, tags, scheduling (type/queue→SRS, interval, ease, reps, lapses, due), media extracted + references repaired
+- [x] Templates: `{{Field}}`, `{{text:}}`, `{{cloze:N:}}`, `{{FrontSide}}` rendered; unknown directives dropped safely
+- [x] HTML sanitized (scripts/styles/event-handlers/javascript: URIs stripped) — imported content is never executed
+- [x] Corrupt packages fail with useful messages (not a ZIP / no `collection.anki2`); rollback-safe (temp files only)
+- [x] **Honest compatibility limits:** exact template styling, typing-mode cards, and cram scheduling are not reproduced — imported content is rendered to safe plain text with the sanitized HTML kept in the note field
+
+### Core Import/Export Pipeline
+- [x] Single `ConflictPolicy` (`KeepExisting`/`OverwriteExisting`/`Skip`/`KeepNewest`) + `ImportPreview`/`ImportResult` in `core.transfer`
+- [x] JSON/CSV/TSV/TXT codecs with Japanese-safe UTF-8 handling, CSV quoting/escaping, duplicate detection, validation with severity
+- [x] Imports merge into the kanji catalog (FSRS scheduling, flags, tags, notes) and are recorded in the study-history audit log
+- [x] Import/Export screen fully wired (file pick/save, paste import, preview, conflict policy, export to file/clipboard)
+- [x] Tests: `TransferCodecsTest` (JSON/CSV/TSV/TXT round trips), `ImportPipelineTest` (preview/duplicates/policies), `AnkiPackageJvmTest` (round trip, GUID stability, malformed input, status/checksum mapping)
+
+### Cleanup
+- [x] Dead `BackupContract`/`BackupViewModel` removed; screen-local duplicate transfer types removed
+- [x] `TransferFileAccess` expect/actual added (JVM `JFileChooser`; Android/iOS degrade gracefully with clear UI messaging)
+
 ## v2.2.1 — Installer & First-Run Subsystem (Latest)
 
 ### Windows Installer (Inno Setup 6)

@@ -2,6 +2,8 @@ package ua.syt0r.kanji.desktop.ui.workspace
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -66,6 +68,7 @@ import androidx.compose.material.icons.filled.ViewSidebar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,7 +76,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -88,6 +93,7 @@ import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.delay
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.CompactIconSize
+import ua.syt0r.kanji.desktop.appstate.NavExpansion
 import ua.syt0r.kanji.desktop.appstate.NavIconSize
 import ua.syt0r.kanji.desktop.appstate.NavLabelMode
 import ua.syt0r.kanji.desktop.appstate.NavLayout
@@ -95,6 +101,7 @@ import ua.syt0r.kanji.desktop.appstate.NavPosition
 import ua.syt0r.kanji.desktop.appstate.NavSpacing
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
+import ua.syt0r.kanji.desktop.designsystem.DsElevation
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsMenuItem
 import ua.syt0r.kanji.desktop.designsystem.DsMenuPanel
@@ -259,7 +266,7 @@ private fun NavTooltipHost(
 
     LaunchedEffect(hovered, enabled, delayMs) {
         if (hovered && enabled && delayMs > 0) {
-            delay(delayMs)
+            delay(delayMs.toLong())
             tipVisible = true
         } else {
             tipVisible = false
@@ -326,7 +333,7 @@ fun DsNavRail(
     onOpenPalette: () -> Unit
 ) {
     val sc = surfaceColors()
-    val expanded = state.navLayout == NavLayout.Expanded
+    val expanded = state.navExpansion == NavExpansion.Expanded
     val itemSpacing = navItemSpacing(state)
 
     // The rail reads the window width so the expanded size stays within
@@ -338,12 +345,27 @@ fun DsNavRail(
             label = "navRailWidth"
         )
 
+        // Floating island: rounded, elevated and softly bordered so the
+        // dock reads as a surface floating above the window background
+        // (the shell wraps it in an 8dp ring — see DsDockIsland).
+        val dockShape = RoundedCornerShape(DsRadius.Lg)
         Column(
             modifier = Modifier
                 .width(railWidth)
                 .fillMaxHeight()
-                .background(if (state.navHighContrast) sc.surfaceElevated else sc.surface)
-                .border(1.dp, sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.4f))
+                .shadow(
+                    elevation = DsElevation.Floating,
+                    shape = dockShape,
+                    ambientColor = accent().primary.copy(alpha = 0.22f),
+                    spotColor = accent().primary.copy(alpha = 0.22f)
+                )
+                .clip(dockShape)
+                .background(sc.surfaceElevated)
+                .border(
+                    1.dp,
+                    sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.3f),
+                    dockShape
+                )
                 .padding(vertical = DsSpacing.Lg)
         ) {
         // Exactly three mode buttons at the top of the sidebar.
@@ -429,7 +451,7 @@ fun DsNavRail(
                 DsNavPositionButton(state)
                 DsIconButton(
                     icon = Icons.Default.MenuOpen,
-                    onClick = { state.updateNavLayout(NavLayout.Expanded) },
+                    onClick = { state.updateNavExpansion(NavExpansion.Expanded) },
                     contentDescription = "Expand navigation"
                 )
                 DsWindowMenuButton()
@@ -514,19 +536,32 @@ fun DsNavBar(
     onOpenPalette: () -> Unit
 ) {
     val sc = surfaceColors()
-    val expanded = state.navLayout == NavLayout.Expanded
+    val expanded = state.navExpansion == NavExpansion.Expanded
     val barHeight by animateDpAsState(
         targetValue = if (expanded) 64.dp else 52.dp,
         animationSpec = tween(dockDurationMs(state), easing = FastOutSlowInEasing),
         label = "navBarHeight"
     )
 
+    // Floating island — same treatment as the rail (see DsDockIsland).
+    val dockShape = RoundedCornerShape(DsRadius.Lg)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(barHeight)
-            .background(if (state.navHighContrast) sc.surfaceElevated else sc.surface)
-            .border(1.dp, sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.4f))
+            .shadow(
+                elevation = DsElevation.Floating,
+                shape = dockShape,
+                ambientColor = accent().primary.copy(alpha = 0.22f),
+                spotColor = accent().primary.copy(alpha = 0.22f)
+            )
+            .clip(dockShape)
+            .background(sc.surfaceElevated)
+            .border(
+                1.dp,
+                sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.3f),
+                dockShape
+            )
             .padding(horizontal = DsSpacing.Md),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -635,12 +670,25 @@ fun DsCompactNavBar(state: AppState) {
         CompactIconSize.Large -> 24.dp
     } + if (state.navigationLargerIcons) 3.dp else 0.dp
 
+    // Floating island — same treatment as the desktop dock (see DsDockIsland).
+    val dockShape = RoundedCornerShape(DsRadius.Lg)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .background(if (state.navHighContrast) sc.surfaceElevated else sc.surface)
-            .border(1.dp, sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.4f))
+            .shadow(
+                elevation = DsElevation.Floating,
+                shape = dockShape,
+                ambientColor = accent().primary.copy(alpha = 0.22f),
+                spotColor = accent().primary.copy(alpha = 0.22f)
+            )
+            .clip(dockShape)
+            .background(sc.surfaceElevated)
+            .border(
+                1.dp,
+                sc.border.copy(alpha = if (state.navHighContrast) 0.8f else 0.3f),
+                dockShape
+            )
             .padding(horizontal = DsSpacing.Sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -740,21 +788,22 @@ private fun iconForView(view: WorkspaceView): ImageVector =
 
 // ============================================
 // NAV MODE SWITCHER (top of the sidebar)
-// Exactly three buttons — Expanded, Compact,
-// Bubble — switching between the three modes.
+// Two modes — Sidebar and Floating — plus the
+// sidebar layout toggle (Expanded ↔ Compact).
 // ============================================
 
 @Composable
 private fun DsNavModeSwitcher(state: AppState, vertical: Boolean, modifier: Modifier = Modifier) {
     val sc = surfaceColors()
     val ac = accent()
+    val expanded = state.navExpansion == NavExpansion.Expanded
+    val spacing = navSwitchSpacing(state)
     val modes = listOf(
-        NavLayout.Expanded to Icons.Default.ViewSidebar,
-        NavLayout.Compact to Icons.Default.Apps,
-        NavLayout.Bubble to Icons.Default.ChatBubble
+        NavLayout.Sidebar to Icons.Default.ViewSidebar,
+        NavLayout.Floating to Icons.Default.ChatBubble
     )
 
-    val buttons: @Composable () -> Unit = {
+    val modeButtons: @Composable () -> Unit = {
         modes.forEach { (mode, icon) ->
             val selected = state.navLayout == mode
             val interaction = remember { MutableInteractionSource() }
@@ -786,18 +835,57 @@ private fun DsNavModeSwitcher(state: AppState, vertical: Boolean, modifier: Modi
         }
     }
 
-    val spacing = navSwitchSpacing(state)
+    // Expanded ↔ Compact switch for the sidebar layout.
+    val expansionToggle: @Composable () -> Unit = {
+        val interaction = remember { MutableInteractionSource() }
+        val hovered by interaction.collectIsHoveredAsState()
+        Box(
+            modifier = Modifier
+                .size(if (vertical) 40.dp else 36.dp)
+                .clip(RoundedCornerShape(DsRadius.Md))
+                .background(if (hovered) sc.surfaceInteractive else Color.Transparent)
+                .clickable(interactionSource = interaction, indication = null) {
+                    state.updateNavExpansion(
+                        if (expanded) NavExpansion.Compact else NavExpansion.Expanded
+                    )
+                }
+                .hoverable(interaction),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.ViewSidebar,
+                contentDescription = if (expanded) "Collapse sidebar" else "Expand sidebar",
+                tint = if (expanded) ac.primary else sc.textSecondary,
+                modifier = Modifier.size(navIconSize(state))
+            )
+        }
+    }
+
     if (vertical) {
         Column(
             modifier = modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing)
-        ) { buttons() }
+        ) {
+            modeButtons()
+            expansionToggle()
+        }
     } else {
         Row(
             modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(spacing)
-        ) { buttons() }
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            modeButtons()
+            Box(
+                Modifier
+                    .padding(horizontal = DsSpacing.Sm)
+                    .width(1.dp)
+                    .height(20.dp)
+                    .background(sc.border.copy(alpha = 0.5f))
+            )
+            expansionToggle()
+        }
     }
 }
 
@@ -830,8 +918,8 @@ private fun DsNavPositionButton(state: AppState) {
     if (open && coords != null) {
         val windowPos = coords.positionInWindow()
         val density = LocalDensity.current
-        val menuW = with(density) { 172.dp.toPx() }
-        val menuH = with(density) { 160.dp.toPx() }
+        val menuW = with(density) { 196.dp.toPx() }
+        val menuH = with(density) { 210.dp.toPx() }
         // The button hugs the dock edge — open the popup toward the
         // window interior so a bottom or right dock never clips it off-screen.
         val openUp = state.navPosition != NavPosition.Top
@@ -843,10 +931,29 @@ private fun DsNavPositionButton(state: AppState) {
             offset = IntOffset(popupX.roundToInt(), popupY.roundToInt()),
             properties = PopupProperties(focusable = true)
         ) {
+            // Smooth expand: the picker scales out from the button with a fade.
+            var shown by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { shown = true }
+            val scale by animateFloatAsState(
+                targetValue = if (shown) 1f else 0.82f,
+                animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+                label = "positionScale"
+            )
+            val alpha by animateFloatAsState(
+                targetValue = if (shown) 1f else 0f,
+                animationSpec = tween(150),
+                label = "positionAlpha"
+            )
             val sc = surfaceColors()
             Column(
                 modifier = Modifier
-                    .width(172.dp)
+                    .width(196.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    }
+                    .shadow(18.dp, RoundedCornerShape(DsRadius.Md))
                     .clip(RoundedCornerShape(DsRadius.Md))
                     .background(sc.surfaceInteractive)
                     .padding(DsSpacing.Sm),
@@ -859,7 +966,8 @@ private fun DsNavPositionButton(state: AppState) {
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(horizontal = DsSpacing.Xs)
                 )
-                // Visual 2×2 icon grid — one-click switching, no text list.
+                // Visual 2×2 icon grid with a mini window preview on each
+                // option — one-click switching, no text list.
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                     PositionGridButton(state, NavPosition.Left, Icons.Default.KeyboardArrowLeft, Modifier.weight(1f)) { open = false }
                     PositionGridButton(state, NavPosition.Right, Icons.Default.KeyboardArrowRight, Modifier.weight(1f)) { open = false }
@@ -868,7 +976,47 @@ private fun DsNavPositionButton(state: AppState) {
                     PositionGridButton(state, NavPosition.Top, Icons.Default.KeyboardArrowUp, Modifier.weight(1f)) { open = false }
                     PositionGridButton(state, NavPosition.Bottom, Icons.Default.KeyboardArrowDown, Modifier.weight(1f)) { open = false }
                 }
+                // Miniature window with the dock drawn on the selected edge.
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = DsSpacing.Xs),
+                    contentAlignment = Alignment.Center
+                ) {
+                    MiniPositionPreview(state)
+                }
             }
+        }
+    }
+}
+
+/** Tiny window mock with the dock drawn on the current edge. */
+@Composable
+private fun MiniPositionPreview(state: AppState) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val edge = state.navPosition
+    val barColor = ac.primary.copy(alpha = 0.7f)
+    Box(
+        modifier = Modifier
+            .size(width = 64.dp, height = 40.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(sc.surface.copy(alpha = 0.6f))
+            .border(1.dp, sc.border.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+    ) {
+        when (edge) {
+            NavPosition.Left -> Box(
+                Modifier.align(Alignment.CenterStart).fillMaxHeight().width(12.dp).background(barColor)
+            )
+            NavPosition.Right -> Box(
+                Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(12.dp).background(barColor)
+            )
+            NavPosition.Top -> Box(
+                Modifier.align(Alignment.TopCenter).fillMaxWidth().height(10.dp).background(barColor)
+            )
+            NavPosition.Bottom -> Box(
+                Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(10.dp).background(barColor)
+            )
         }
     }
 }

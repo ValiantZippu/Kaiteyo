@@ -1,0 +1,19 @@
+Compiled from "PointerEvent.kt"
+public final class androidx.compose.ui.input.pointer.PointerEventKt {
+  public static final boolean changedToDown(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean changedToDownIgnoreConsumed(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean changedToUp(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean changedToUpIgnoreConsumed(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean positionChanged(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean positionChangedIgnoreConsumed(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final long positionChange(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final long positionChangeIgnoreConsumed(androidx.compose.ui.input.pointer.PointerInputChange);
+  static long positionChangeInternal$default(androidx.compose.ui.input.pointer.PointerInputChange, boolean, int, java.lang.Object);
+  public static final boolean positionChangeConsumed(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean anyChangeConsumed(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final void consumeDownChange(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final void consumePositionChange(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final void consumeAllChanges(androidx.compose.ui.input.pointer.PointerInputChange);
+  public static final boolean isOutOfBounds-O0kMr_c(androidx.compose.ui.input.pointer.PointerInputChange, long);
+  public static final boolean isOutOfBounds-jwHxaWs(androidx.compose.ui.input.pointer.PointerInputChange, long, long);
+}

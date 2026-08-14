@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -35,9 +36,13 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.serialization.Serializable
 import ua.syt0r.kanji.presentation.common.resources.string.LocalStrings
 import ua.syt0r.kanji.presentation.common.resources.string.getStrings
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
@@ -58,6 +63,7 @@ val LocalSurfaceColors = compositionLocalOf { surfaceForBaseMode(BaseMode.Oled) 
 // ANIMATION CONFIGURATION
 // ============================================
 
+@Serializable
 enum class PageTransitionType(val displayName: String) {
     Crossfade("Crossfade"),
     Slide("Slide"),
@@ -65,6 +71,7 @@ enum class PageTransitionType(val displayName: String) {
     Scale("Scale")
 }
 
+@Serializable
 enum class AnimationSpeed(val displayName: String, val multiplier: Float) {
     Slow("Slow", 1.5f),
     Normal("Normal", 1.0f),
@@ -106,6 +113,7 @@ val LocalTypeScale = compositionLocalOf { TypeScale() }
 // CORNER RADIUS CONFIGURATION
 // ============================================
 
+@Serializable
 enum class CornerRadiusStyle(val displayName: String, val globalMultiplier: Float) {
     Square("Square", 0.5f),
     Rounded("Rounded", 1.0f),
@@ -137,6 +145,7 @@ val LocalGlowConfig = compositionLocalOf { GlowConfig() }
 // DENSITY & LAYOUT CONFIGURATION
 // ============================================
 
+@Serializable
 enum class UIDensity(val displayName: String, val spacingMultiplier: Float) {
     Compact("Compact", 0.7f),
     Comfortable("Comfortable", 1.0f),
@@ -199,7 +208,8 @@ class KaiteyoThemeState(
     initialAnimationConfig: AnimationConfig = AnimationConfig(),
     initialRadiusConfig: RadiusConfig = RadiusConfig(),
     initialGlowConfig: GlowConfig = GlowConfig(),
-    initialLayoutConfig: LayoutConfig = LayoutConfig()
+    initialLayoutConfig: LayoutConfig = LayoutConfig(),
+    initialTypeScale: TypeScale = TypeScale()
 ) {
     var baseMode by mutableStateOf(initialBaseMode)
     var accentScheme by mutableStateOf(initialAccentScheme)
@@ -207,6 +217,7 @@ class KaiteyoThemeState(
     var radiusConfig by mutableStateOf(initialRadiusConfig)
     var glowConfig by mutableStateOf(initialGlowConfig)
     var layoutConfig by mutableStateOf(initialLayoutConfig)
+    var typeScale by mutableStateOf(initialTypeScale)
 }
 
 val LocalKaiteyoThemeState = compositionLocalOf { KaiteyoThemeState() }
@@ -432,6 +443,10 @@ fun AppTheme(
         createLightColorScheme(accentScheme, surface)
     }).withThemeTransition(animateThemeTransition, themeFadeDuration)
 
+    // Live typography adjustments: the user-controlled type scale multiplies
+    // font sizes and line heights so settings changes are visible immediately.
+    val effectiveTypography = typography.scaledBy(typeScale)
+
     val extraColors = (if (isDark) DarkExtraColorScheme else LightExtraColorScheme)
         .withThemeTransition(animateThemeTransition, themeFadeDuration)
 
@@ -456,7 +471,7 @@ fun AppTheme(
     ) {
         MaterialTheme(
             colorScheme = colors,
-            typography = typography,
+            typography = effectiveTypography,
             shapes = shapes,
             content = {
                 CompositionLocalProvider(
@@ -475,6 +490,52 @@ fun AppTheme(
 // ============================================
 // Theme transition — whole-app color crossfade
 // ============================================
+
+// ============================================
+// LIVE TYPOGRAPHY SCALING
+// ============================================
+
+/**
+ * Applies the user's [TypeScale] to a Material [Typography]: title-level
+ * styles (display/headline/title) use [TypeScale.titleScale], everything
+ * else uses [TypeScale.fontScale]; line heights follow [TypeScale.lineHeight]
+ * and [TypeScale.letterSpacing] is added to every style.
+ */
+private fun Typography.scaledBy(scale: TypeScale): Typography {
+    if (scale == TypeScale()) return this
+    return copy(
+        displayLarge = displayLarge.scaled(scale, useTitleScale = true),
+        displayMedium = displayMedium.scaled(scale, useTitleScale = true),
+        displaySmall = displaySmall.scaled(scale, useTitleScale = true),
+        headlineLarge = headlineLarge.scaled(scale, useTitleScale = true),
+        headlineMedium = headlineMedium.scaled(scale, useTitleScale = true),
+        headlineSmall = headlineSmall.scaled(scale, useTitleScale = true),
+        titleLarge = titleLarge.scaled(scale, useTitleScale = true),
+        titleMedium = titleMedium.scaled(scale, useTitleScale = true),
+        titleSmall = titleSmall.scaled(scale, useTitleScale = true),
+        bodyLarge = bodyLarge.scaled(scale),
+        bodyMedium = bodyMedium.scaled(scale),
+        bodySmall = bodySmall.scaled(scale),
+        labelLarge = labelLarge.scaled(scale),
+        labelMedium = labelMedium.scaled(scale),
+        labelSmall = labelSmall.scaled(scale)
+    )
+}
+
+private fun TextStyle.scaled(scale: TypeScale, useTitleScale: Boolean = false): TextStyle {
+    val sizeFactor = if (useTitleScale) scale.titleScale else scale.fontScale
+    return copy(
+        fontSize = fontSize.multiplyBy(sizeFactor),
+        lineHeight = lineHeight.multiplyBy(scale.lineHeight),
+        letterSpacing = letterSpacing.plusSp(scale.letterSpacing)
+    )
+}
+
+private fun TextUnit.multiplyBy(factor: Float): TextUnit =
+    if (factor == 1f) this else (value * factor).sp
+
+private fun TextUnit.plusSp(amount: Float): TextUnit =
+    if (amount == 0f) this else (value + amount).sp
 
 /**
  * Animates every color in the [ColorScheme] toward its target value so a

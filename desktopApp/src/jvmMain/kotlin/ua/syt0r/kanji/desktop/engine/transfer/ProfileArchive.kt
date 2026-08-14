@@ -139,6 +139,7 @@ fun AppState.capture(): ProfileData = ProfileData(
 fun AppState.restore(data: ProfileData) {
     cards.clear()
     cards.addAll(data.cards)
+    library.saveCards(data.cards)
     reviewLog.clear()
     reviewLog.addAll(data.reviewLog)
     summaries.clear()
@@ -146,7 +147,7 @@ fun AppState.restore(data: ProfileData) {
     collections.load(data.collections)
     filterStore.loadSaved(data.savedFilters)
     if (data.settings.isNotEmpty()) settings.restore(data.settings)
-    if (data.themeId.isNotBlank() && ThemePresets.all.any { it.id == data.themeId }) activeThemeId = data.themeId
+    if (data.themeId.isNotBlank() && ThemePresets.all.any { it.id == data.themeId }) applyTheme(data.themeId)
     // Restore the window placement captured in the backup. It takes effect on
     // the next launch (the running window keeps its geometry until the user
     // moves it, which then supersedes the restored bounds).

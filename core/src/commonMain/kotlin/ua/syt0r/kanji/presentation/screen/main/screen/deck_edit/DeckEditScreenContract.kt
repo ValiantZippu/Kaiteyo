@@ -15,6 +15,7 @@ interface DeckEditScreenContract {
         fun searchCharacters(input: String)
         fun dismissSearchResult()
         fun toggleRemoval(item: DeckEditListItem)
+        fun resetSrs(item: DeckEditListItem)
         fun saveDeck()
         fun deleteDeck()
         fun toggleArchive()

@@ -70,10 +70,10 @@ import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 // and persisted as JSON.
 // ============================================
 
-private enum class SettingsTab(val labelResolver: StringResolveScope<String>) {
+enum class SettingsTab(val labelResolver: StringResolveScope<String>) {
     General({ nav.generalTabLabel }),
     Sidebar({ nav.sidebarTabLabel }),
-    Bubble({ nav.bubbleTabLabel }),
+    Floating({ nav.floatingTabLabel }),
     Phone({ nav.phoneTabLabel }),
     Accessibility({ nav.accessibilityTabLabel })
 }
@@ -255,7 +255,7 @@ private fun SettingsTabRow(
 }
 
 @Composable
-private fun SettingsTabContent(
+internal fun SettingsTabContent(
     navSettings: NavigationSettingsState,
     formFactor: FormFactor,
     tab: SettingsTab
@@ -263,7 +263,7 @@ private fun SettingsTabContent(
     when (tab) {
         SettingsTab.General -> GeneralSection(navSettings, formFactor)
         SettingsTab.Sidebar -> SidebarSection(navSettings)
-        SettingsTab.Bubble -> BubbleSection(navSettings, formFactor)
+        SettingsTab.Floating -> FloatingSection(navSettings, formFactor)
         SettingsTab.Phone -> PhoneSection(navSettings)
         SettingsTab.Accessibility -> AccessibilitySection(navSettings)
     }
@@ -274,7 +274,7 @@ private fun SettingsTabContent(
 // ============================================
 
 @Composable
-private fun SettingsPreviewPanel(
+internal fun SettingsPreviewPanel(
     settings: NavigationSettings,
     formFactor: FormFactor,
     modifier: Modifier = Modifier
@@ -301,6 +301,70 @@ private fun SettingsPreviewPanel(
             color = surfaceColors.textMuted,
             modifier = Modifier.padding(top = Dimens.Space2)
         )
+    }
+}
+
+// ============================================
+// NAVIGATION SETTINGS PAGE
+// Embeddable page (used by the Settings Center)
+// with tab row, live preview and tab content.
+// ============================================
+
+@Composable
+fun NavigationSettingsPage(
+    navSettings: NavigationSettingsState,
+    formFactor: FormFactor,
+    modifier: Modifier = Modifier,
+    initialTab: SettingsTab = SettingsTab.General
+) {
+    var selectedTab by remember { mutableStateOf(initialTab) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimens.Space2)
+    ) {
+        SettingsTabRow(
+            selected = selectedTab,
+            onSelect = { selectedTab = it },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (formFactor.isPhone) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Dimens.Space2)
+            ) {
+                SettingsPreviewPanel(navSettings.settings, formFactor)
+                SettingsTabContent(navSettings, formFactor, selectedTab)
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.Space3),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.Space2)
+                ) {
+                    SettingsTabContent(navSettings, formFactor, selectedTab)
+                }
+                Box(
+                    Modifier
+                        .width(320.dp)
+                ) {
+                    SettingsPreviewPanel(
+                        navSettings.settings,
+                        formFactor,
+                        Modifier.align(Alignment.TopCenter)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -377,6 +441,21 @@ private fun GeneralSection(navSettings: NavigationSettingsState, formFactor: For
 private fun SidebarSection(navSettings: NavigationSettingsState) {
     val settings = navSettings.settings
     SettingsSection(title = resolveString { nav.sidebarTabLabel }) {
+        // Resolve in composable context — optionLabel itself is a plain lambda.
+        val expandedLabel = resolveString { nav.sidebarExpandedLabel }
+        val compactLabel = resolveString { nav.sidebarCompactLabel }
+        ChoiceRow(
+            label = resolveString { nav.sidebarLayoutLabel },
+            options = SidebarExpansion.entries,
+            optionLabel = {
+                when (it) {
+                    SidebarExpansion.Expanded -> expandedLabel
+                    SidebarExpansion.Compact -> compactLabel
+                }
+            },
+            selected = settings.sidebarExpansion,
+            onSelect = { navSettings.update { current -> current.copy(sidebarExpansion = it) } }
+        )
         ChoiceRow(
             label = resolveString { nav.expandedWidthLabel },
             options = ExpandedWidthOptions,
@@ -446,16 +525,11 @@ private fun PhoneSection(navSettings: NavigationSettingsState) {
             modifier = Modifier.padding(top = Dimens.Space2, bottom = Dimens.Space1)
         )
         SnapAnchorPicker(
-            current = settings.phone.bubbleAnchor,
-            edges = listOf(
-                BubbleAnchor.TopLeft,
-                BubbleAnchor.TopRight,
-                BubbleAnchor.BottomLeft,
-                BubbleAnchor.BottomRight
-            ),
-            onSelect = { anchor ->
+            current = settings.phone.snapPoint,
+            edges = BubbleSnapPoint.PickerOrder,
+            onSelect = { snap ->
                 navSettings.update { current ->
-                    current.copy(phone = current.phone.copy(bubbleAnchor = anchor))
+                    current.copy(phone = current.phone.copy(snapPoint = snap))
                 }
             }
         )
@@ -463,20 +537,20 @@ private fun PhoneSection(navSettings: NavigationSettingsState) {
 }
 
 // ============================================
-// BUBBLE
+// FLOATING (bubble)
 // ============================================
 
 @Composable
-private fun BubbleSection(navSettings: NavigationSettingsState, formFactor: FormFactor) {
+private fun FloatingSection(navSettings: NavigationSettingsState, formFactor: FormFactor) {
     val settings = navSettings.settings
     val bubble = settings.bubble
-    val bubbleModeOn = settings.mode == NavigationMode.Bubble
-    SettingsSection(title = resolveString { nav.bubbleTabLabel }) {
+    val floatingModeOn = settings.mode == NavigationMode.Floating
+    SettingsSection(title = resolveString { nav.floatingTabLabel }) {
         ToggleRow(
-            label = "Enable bubble mode",
-            checked = bubbleModeOn,
+            label = "Enable floating mode",
+            checked = floatingModeOn,
             onChange = { enabled ->
-                if (enabled) navSettings.setMode(NavigationMode.Bubble)
+                if (enabled) navSettings.setMode(NavigationMode.Floating)
                 else navSettings.setMode(settings.lastMode ?: settings.defaultMode)
             }
         )
@@ -501,11 +575,16 @@ private fun BubbleSection(navSettings: NavigationSettingsState, formFactor: Form
         )
         if (bubble.autoFade) {
             SliderRow(
-                label = "Fade delay",
-                value = bubble.fadeDelayMs.toFloat(),
-                range = 1000f..10000f,
+                label = "Idle timeout",
+                value = bubble.idleTimeoutMs.toFloat(),
+                range = 2000f..20000f,
                 valueLabel = { "${(it / 1000).toInt()}s" },
-                onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(fadeDelayMs = it.toLong())) } }
+                onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(idleTimeoutMs = it.toLong())) } }
+            )
+            ToggleRow(
+                label = "Hover reveal",
+                checked = bubble.hoverReveal,
+                onChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(hoverReveal = it)) } }
             )
             SliderRow(
                 label = "Idle opacity",
@@ -515,28 +594,33 @@ private fun BubbleSection(navSettings: NavigationSettingsState, formFactor: Form
                 onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(fadeOpacity = it)) } }
             )
         }
+        SliderRow(
+            label = "Bubble elevation",
+            value = bubble.elevation.toFloat(),
+            range = 4f..28f,
+            valueLabel = { "${it.toInt()} dp" },
+            onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(elevation = it.toInt())) } }
+        )
+        SliderRow(
+            label = "Snap distance",
+            value = bubble.snapDistance.toFloat(),
+            range = 40f..300f,
+            valueLabel = { "${it.toInt()} dp" },
+            onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(snapDistance = it.toInt())) } }
+        )
         Text(
-            text = "Snap position",
+            text = resolveString { nav.snapPositionLabel },
             style = MaterialTheme.typography.bodyMedium,
             color = LocalSurfaceColors.current.textPrimary,
             modifier = Modifier.padding(bottom = Dimens.Space1)
         )
         SnapAnchorPicker(
-            current = settings.bubbleAnchorFor(formFactor),
-            edges = if (formFactor.isPhone) {
-                listOf(
-                    BubbleAnchor.TopLeft,
-                    BubbleAnchor.TopRight,
-                    BubbleAnchor.BottomLeft,
-                    BubbleAnchor.BottomRight
-                )
-            } else {
-                BubbleAnchor.entries
-            },
-            onSelect = { anchor ->
+            current = settings.snapPointFor(formFactor),
+            edges = BubbleSnapPoint.PickerOrder,
+            onSelect = { snap ->
                 navSettings.update { current ->
-                    if (formFactor.isPhone) current.copy(phone = current.phone.copy(bubbleAnchor = anchor))
-                    else current.copy(bubbleAnchor = anchor)
+                    if (formFactor.isPhone) current.copy(phone = current.phone.copy(snapPoint = snap))
+                    else current.copy(snapPoint = snap)
                 }
             }
         )
@@ -553,6 +637,44 @@ private fun BubbleSection(navSettings: NavigationSettingsState, formFactor: Form
             range = 0.5f..2f,
             valueLabel = { "${it}x" },
             onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(animationSpeed = it)) } }
+        )
+    }
+
+    // ============ LAUNCHPAD ============
+    SettingsSection(title = "Launchpad") {
+        val launchpad = settings.launchpad
+        SliderRow(
+            label = "Launchpad scale",
+            value = launchpad.scale,
+            range = 0.7f..1.2f,
+            valueLabel = { "${(it * 100).toInt()}%" },
+            onValueChange = { navSettings.update { current -> current.copy(launchpad = current.launchpad.copy(scale = it)) } }
+        )
+        SliderRow(
+            label = "Tile spacing",
+            value = launchpad.spacing,
+            range = 0.7f..1.5f,
+            valueLabel = { "${(it * 100).toInt()}%" },
+            onValueChange = { navSettings.update { current -> current.copy(launchpad = current.launchpad.copy(spacing = it)) } }
+        )
+        ChoiceRow(
+            label = "Expand direction",
+            options = LaunchpadDirection.entries,
+            optionLabel = { it.name },
+            selected = launchpad.direction,
+            onSelect = { navSettings.update { current -> current.copy(launchpad = current.launchpad.copy(direction = it)) } }
+        )
+        SliderRow(
+            label = "Panel opacity",
+            value = launchpad.opacity,
+            range = 0.6f..1f,
+            valueLabel = { "${(it * 100).toInt()}%" },
+            onValueChange = { navSettings.update { current -> current.copy(launchpad = current.launchpad.copy(opacity = it)) } }
+        )
+        ToggleRow(
+            label = "Staggered tile reveal",
+            checked = launchpad.staggeredReveal,
+            onChange = { navSettings.update { current -> current.copy(launchpad = current.launchpad.copy(staggeredReveal = it)) } }
         )
     }
 }
@@ -591,37 +713,47 @@ private fun AccessibilitySection(navSettings: NavigationSettingsState) {
 }
 
 // ============================================
-// SNAP ANCHOR PICKER — visual 3x2 grid
+// SNAP ANCHOR PICKER — visual 12-point grid
+// Rows mirror the screen edges: top edge, left /
+// right edges, bottom edge — 3 snap points each.
 // ============================================
 
 @Composable
 private fun SnapAnchorPicker(
-    current: BubbleAnchor,
-    edges: List<BubbleAnchor>,
-    onSelect: (BubbleAnchor) -> Unit
+    current: BubbleSnapPoint,
+    edges: List<BubbleSnapPoint>,
+    onSelect: (BubbleSnapPoint) -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
 
-    val options = edges
+    // Visual rows mirroring the edges; the two middle columns hold the
+    // left/right edge points with the center intentionally empty.
+    val gridRows = listOf(
+        listOf(BubbleSnapPoint.TopLeft, BubbleSnapPoint.TopCenter, BubbleSnapPoint.TopRight),
+        listOf(BubbleSnapPoint.LeftTop, BubbleSnapPoint.RightTop),
+        listOf(BubbleSnapPoint.LeftCenter, BubbleSnapPoint.RightCenter),
+        listOf(BubbleSnapPoint.LeftBottom, BubbleSnapPoint.RightBottom),
+        listOf(BubbleSnapPoint.BottomLeft, BubbleSnapPoint.BottomCenter, BubbleSnapPoint.BottomRight)
+    ).map { row -> row.filter { it in edges } }
+        .filter { it.isNotEmpty() }
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Four corner options lay out as a 2×2 grid; larger sets use 3 per row.
-        options.chunked(if (options.size <= 4) 2 else 3).forEach { rowOptions ->
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+        gridRows.forEach { rowOptions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                rowOptions.forEach { anchor ->
-                    val selected = current == anchor
+                rowOptions.forEach { snap ->
+                    val selected = current == snap
                     val interactionSource = remember { MutableInteractionSource() }
                     val isHovered by interactionSource.collectIsHoveredAsState()
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(1f)
                             .height(34.dp)
                             .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusSm)))
                             .background(
@@ -637,11 +769,11 @@ private fun SnapAnchorPicker(
                                 else surfaceColors.border.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(scaledRadius(Dimens.RadiusSm))
                             )
-                            .clickable(interactionSource = interactionSource, indication = null) { onSelect(anchor) }
+                            .clickable(interactionSource = interactionSource, indication = null) { onSelect(snap) }
                             .hoverable(interactionSource),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Miniature window with the bubble dot at the anchor position.
+                        // Miniature window with the bubble dot at the snap position.
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(0.5f)
@@ -654,7 +786,7 @@ private fun SnapAnchorPicker(
                                     .size(6.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(if (selected) accent.primary else surfaceColors.border)
-                                    .align(dotAlignment(anchor))
+                                    .align(dotAlignment(snap))
                             )
                         }
                     }
@@ -664,14 +796,16 @@ private fun SnapAnchorPicker(
     }
 }
 
-private fun dotAlignment(anchor: BubbleAnchor): Alignment {
-    return when (anchor) {
-        BubbleAnchor.Left -> Alignment.CenterStart
-        BubbleAnchor.Right -> Alignment.CenterEnd
-        BubbleAnchor.TopLeft -> Alignment.TopStart
-        BubbleAnchor.TopRight -> Alignment.TopEnd
-        BubbleAnchor.BottomLeft -> Alignment.BottomStart
-        BubbleAnchor.BottomRight -> Alignment.BottomEnd
+private fun dotAlignment(snap: BubbleSnapPoint): Alignment {
+    return when (snap) {
+        BubbleSnapPoint.TopLeft, BubbleSnapPoint.LeftTop -> Alignment.TopStart
+        BubbleSnapPoint.TopCenter -> Alignment.TopCenter
+        BubbleSnapPoint.TopRight, BubbleSnapPoint.RightTop -> Alignment.TopEnd
+        BubbleSnapPoint.BottomLeft, BubbleSnapPoint.LeftBottom -> Alignment.BottomStart
+        BubbleSnapPoint.BottomCenter -> Alignment.BottomCenter
+        BubbleSnapPoint.BottomRight, BubbleSnapPoint.RightBottom -> Alignment.BottomEnd
+        BubbleSnapPoint.LeftCenter -> Alignment.CenterStart
+        BubbleSnapPoint.RightCenter -> Alignment.CenterEnd
     }
 }
 
@@ -874,6 +1008,10 @@ private fun ModePicker(
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
+    val modes = listOf(
+        NavigationMode.Floating to resolveString { nav.modeFloatingLabel },
+        NavigationMode.Sidebar to resolveString { nav.modeSidebarLabel }
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -882,7 +1020,7 @@ private fun ModePicker(
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        NavigationMode.entries.forEach { mode ->
+        modes.forEach { (mode, label) ->
             val isSelected = current == mode
             val interactionSource = remember { MutableInteractionSource() }
             val isHovered by interactionSource.collectIsHoveredAsState()
@@ -903,7 +1041,7 @@ private fun ModePicker(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = mode.name,
+                    text = label,
                     style = MaterialTheme.typography.labelMedium,
                     color = if (isSelected) accent.primary else surfaceColors.textSecondary,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal

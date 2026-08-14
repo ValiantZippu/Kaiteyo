@@ -9,6 +9,7 @@ import kotlinx.coroutines.async
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
 import ua.syt0r.kanji.core.srs.SrsCardRepository
 import ua.syt0r.kanji.core.srs.SrsScheduler
+import ua.syt0r.kanji.core.statistics.StatisticsRecorder
 import ua.syt0r.kanji.core.time.TimeUtils
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BasePracticeQueue
@@ -38,12 +39,14 @@ class DefaultVocabPracticeQueue(
     private val getWritingReviewStateUseCase: GetVocabPracticeWritingDataUseCase,
     private val getSummaryItemUseCase: GetVocabPracticeSummaryItemUseCase,
     reviewHistoryRepository: ReviewHistoryRepository,
+    statisticsRecorder: StatisticsRecorder,
     analyticsManager: AnalyticsManager
 ) : BaseVocabPracticeQueue(
     practiceScope = coroutineScope,
     timeUtils = timeUtils,
     srsCardRepository = srsCardRepository,
     reviewHistoryRepository = reviewHistoryRepository,
+    statisticsRecorder = statisticsRecorder,
     srsScheduler = srsScheduler,
     analyticsManager = analyticsManager
 ), VocabPracticeQueue {

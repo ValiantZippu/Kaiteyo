@@ -29,6 +29,7 @@ interface DeckDashboardItem {
     val deckId: Long
     val title: String
     val position: Int
+    val isArchived: Boolean
     val elapsedSinceLastReview: Duration?
     val studyProgress: Map<ScreenPracticeType, DeckStudyProgress<out Any>>
 }
@@ -37,6 +38,7 @@ data class LetterDeckDashboardItem(
     override val deckId: Long,
     override val title: String,
     override val position: Int,
+    override val isArchived: Boolean,
     override val elapsedSinceLastReview: Duration?,
     val writingProgress: LetterDeckStudyProgress,
     val readingProgress: LetterDeckStudyProgress
@@ -53,6 +55,7 @@ data class VocabDeckDashboardItem(
     override val deckId: Long,
     override val title: String,
     override val position: Int,
+    override val isArchived: Boolean,
     override val elapsedSinceLastReview: Duration?,
     override val studyProgress: Map<ScreenPracticeType, VocabDeckStudyProgress>,
 ) : DeckDashboardItem

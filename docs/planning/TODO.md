@@ -23,7 +23,7 @@
 - [ ] Ensure rounded panels feel intentional
 - [ ] Fix component alignment
 - [ ] Establish clear visual hierarchy
-- [ ] Make sidebar feel like an elevated floating object, not attached to window
+- [x] Make sidebar feel like an elevated floating object, not attached to window (dock floats as an island: 8dp edge ring, 16dp corners, elevated surface, accent-tinted shadow — `WorkspaceShell.kt` + `WorkspaceNav.kt`)
 
 ### Settings
 - [ ] Reorganize Appearance settings into professional Appearance Studio

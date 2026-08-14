@@ -23,6 +23,7 @@ data class VocabSrsDeck(
     override val id: Long,
     override val title: String,
     override val position: Int,
+    override val isArchived: Boolean,
     override val items: List<Long>,
     override val lastReview: Instant?,
     override val progressMap: Map<VocabPracticeType, VocabSrsDeckProgress>
@@ -88,6 +89,7 @@ class DefaultVocabSrsManager(
                 id = it.id,
                 title = it.title,
                 position = it.position,
+                isArchived = it.isArchived,
                 lastReview = historyStats
                     .flatMap { it.value.practiceTypeToDataMap.values }
                     .maxOfOrNull { it.lastReview },
@@ -130,6 +132,7 @@ class DefaultVocabSrsManager(
             id = deckDescriptor.id,
             title = deckDescriptor.title,
             position = deckDescriptor.position,
+            isArchived = deckDescriptor.isArchived,
             lastReview = deckDescriptor.lastReview,
             items = deckDescriptor.items,
             progressMap = deckDescriptor.itemsData.mapValues { (practiceType, deckData) ->

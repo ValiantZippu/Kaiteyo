@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.mergeSharedFlows
+import ua.syt0r.kanji.core.user_data.db.UserDataDatabase
 import ua.syt0r.kanji.core.userdata.db.UserDataQueries
 import kotlin.time.measureTime
 
@@ -37,6 +38,12 @@ open class ObservableUserDataRepository(
 
     override suspend fun <T> writeTransaction(block: UserDataQueries.() -> T): T =
         databaseManager.writeTransaction(block).also { _changesFlow.emit(Unit) }
+
+    override suspend fun <T> readDatabaseTransaction(block: UserDataDatabase.() -> T): T =
+        databaseManager.readDatabaseTransaction(block)
+
+    override suspend fun <T> writeDatabaseTransaction(block: UserDataDatabase.() -> T): T =
+        databaseManager.writeDatabaseTransaction(block).also { _changesFlow.emit(Unit) }
 
 }
 

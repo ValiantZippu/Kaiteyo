@@ -142,6 +142,7 @@ import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoActivity
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoActivityType
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreenContract.ScreenState
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DashboardErrorState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.ui.TutorialDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCard
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeScreenConfiguration
@@ -172,9 +173,11 @@ fun GeneralDashboardScreenUI(
     navigateToCardBrowser: () -> Unit,
     navigateToStatistics: () -> Unit,
     navigateToImportExport: () -> Unit,
+    navigateToCollections: () -> Unit,
     downloadsClick: () -> Unit,
     socialClick: (SocialButton) -> Unit,
-    textAnalysisClick: () -> Unit
+    textAnalysisClick: () -> Unit,
+    retryLoad: () -> Unit
 ) {
 
     var showTutorialDialog by remember { mutableStateOf(false) }
@@ -182,7 +185,7 @@ fun GeneralDashboardScreenUI(
         TutorialDialog { showTutorialDialog = false }
     }
 
-    ScreenLayout(state) { screenState, snackbarHostState ->
+    ScreenLayout(state, onRetry = retryLoad) { screenState, snackbarHostState ->
 
         val coroutineScope = rememberCoroutineScope()
         var showStudyTargetsEditDialog by rememberSaveable { mutableStateOf(false) }
@@ -252,7 +255,10 @@ fun GeneralDashboardScreenUI(
 
         ScreenDivider()
 
-        CollectionsSection(screenState.collections)
+        CollectionsSection(
+            collections = screenState.collections,
+            onCollectionClick = navigateToCollections
+        )
 
         ScreenDivider()
 
@@ -1376,7 +1382,8 @@ private fun QuickActionCard(
 
 @Composable
 private fun CollectionsSection(
-    collections: List<ua.syt0r.kanji.presentation.screen.main.features.KaiteyoCollection>
+    collections: List<ua.syt0r.kanji.presentation.screen.main.features.KaiteyoCollection>,
+    onCollectionClick: () -> Unit
 ) {
 
     Column(
@@ -1412,7 +1419,7 @@ private fun CollectionsSection(
                     modifier = Modifier
                         .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surface)
-                        .clickable(onClick = {})
+                        .clickable(onClick = onCollectionClick)
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1437,6 +1444,7 @@ private fun CollectionsSection(
 @Composable
 private fun ScreenLayout(
     state: State<ScreenState>,
+    onRetry: () -> Unit,
     content: @Composable ColumnScope.(ScreenState.Loaded, SnackbarHostState) -> Unit
 ) {
 
@@ -1451,6 +1459,13 @@ private fun ScreenLayout(
             when (screenState) {
                 ScreenState.Loading -> {
                     FancyLoading(Modifier.fillMaxSize().wrapContentSize())
+                }
+
+                is ScreenState.Error -> {
+                    DashboardErrorState(
+                        message = screenState.message,
+                        onRetry = onRetry
+                    )
                 }
 
                 is ScreenState.Loaded -> Column(

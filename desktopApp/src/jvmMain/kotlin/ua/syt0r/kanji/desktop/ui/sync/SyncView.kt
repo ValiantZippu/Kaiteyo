@@ -104,7 +104,7 @@ fun SyncView(state: AppState) {
                 DsEmptyState(
                     title = "No cloud account connected",
                     message = "Connect a GitHub account in Account → Connected accounts to sync your " +
-                        "cards, review history and daily summaries across devices.",
+                        "cards, review history, decks, collections, saved filters and settings across devices.",
                     action = {
                         DsButton(
                             text = "Open Account",
@@ -163,11 +163,23 @@ fun SyncView(state: AppState) {
 
         // ── Payload ──
         if (connected) {
-            val manifest = remember(state.cards.size, state.reviewLog.size, state.summaries.size) {
+            val manifest = remember(
+                state.cards.size,
+                state.reviewLog.size,
+                state.summaries.size,
+                state.library.decks.size,
+                state.collections.collections.size,
+                state.filterStore.saved.size
+            ) {
                 codec.manifest(
                     cards = state.cards.toList(),
                     reviewLog = state.reviewLog.toList(),
-                    summaries = state.summaries.toList()
+                    summaries = state.summaries.toList(),
+                    lastSeen = null,
+                    decks = state.library.decks.toList(),
+                    collections = state.collections.collections,
+                    savedFilters = state.filterStore.saved,
+                    settings = state.cloudSync.portableSettings()
                 )
             }
             DsCard {
@@ -178,7 +190,10 @@ fun SyncView(state: AppState) {
                     DsSectionHeader(
                         title = "Payload",
                         subtitle = "${state.cards.size} cards · ${state.reviewLog.size} reviews · " +
-                            "${state.summaries.size} daily summaries"
+                            "${state.summaries.size} summaries · ${state.library.decks.size} decks · " +
+                            "${state.collections.collections.size} collections · " +
+                            "${state.filterStore.saved.size} saved filters · " +
+                            "${state.cloudSync.portableSettings().size} settings"
                     )
                     manifest.blobs.forEach { blob ->
                         BlobRow(blob)
@@ -230,8 +245,10 @@ fun SyncView(state: AppState) {
                     )
                     Spacer(Modifier.width(DsSpacing.Sm))
                     Text(
-                        text = if (connected) "Ready to sync — blobs are versioned and conflicts resolve last-write-wins"
-                        else "Connect a GitHub account to enable syncing",
+                        text = if (connected)
+                            "Ready to sync — blobs are versioned · conflicts: ${settingsData.conflictResolution.label}"
+                        else
+                            "Connect a GitHub account to enable syncing",
                         color = sc.textMuted,
                         fontSize = DsType.Caption
                     )

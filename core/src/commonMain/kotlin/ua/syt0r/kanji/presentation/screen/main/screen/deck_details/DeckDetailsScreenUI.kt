@@ -76,6 +76,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.ui.DeckDetail
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.ui.DeckDetailsSortDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.ui.DeckDetailsToolbar
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.ui.DeckDetailsVocabUI
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DashboardErrorState
 
 @Composable
 fun DeckDetailsScreenUI(
@@ -86,24 +87,30 @@ fun DeckDetailsScreenUI(
     navigateToCardDetails: (DeckDetailsListItem.Vocab) -> Unit,
     startGroupReview: (DeckDetailsListItem.Group) -> Unit,
     startMultiselectReview: () -> Unit,
+    retryLoad: () -> Unit,
 ) {
 
     var shouldShowVisibilityDialog by remember { mutableStateOf(false) }
     if (shouldShowVisibilityDialog) {
-        val loadedState = state.value.let { it as ScreenState.Loaded.Letters }
-        val configuration = loadedState.configuration.value
-        DeckDetailsLayoutDialog(
-            layout = configuration.layout,
-            kanaGroups = configuration.kanaGroups,
-            onDismissRequest = { shouldShowVisibilityDialog = false },
-            onApplyConfiguration = { layout, kanaGroups ->
-                shouldShowVisibilityDialog = false
-                loadedState.configuration.value = configuration.copy(
-                    layout = layout,
-                    kanaGroups = kanaGroups
-                )
-            }
-        )
+        val loadedState = state.value as? ScreenState.Loaded.Letters
+        if (loadedState != null) {
+            val configuration = loadedState.configuration.value
+            DeckDetailsLayoutDialog(
+                layout = configuration.layout,
+                kanaGroups = configuration.kanaGroups,
+                onDismissRequest = { shouldShowVisibilityDialog = false },
+                onApplyConfiguration = { layout, kanaGroups ->
+                    shouldShowVisibilityDialog = false
+                    loadedState.configuration.value = configuration.copy(
+                        layout = layout,
+                        kanaGroups = kanaGroups
+                    )
+                }
+            )
+        } else {
+            // State not loaded (anymore) — nothing to configure.
+            shouldShowVisibilityDialog = false
+        }
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -164,6 +171,7 @@ fun DeckDetailsScreenUI(
                         )
                     }
                 },
+                retryLoad = retryLoad,
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
             )
 
@@ -181,6 +189,7 @@ private fun ScreenContent(
     showGroupSheet: () -> Unit,
     startMultiselectReview: () -> Unit,
     showNoSelectionMessage: () -> Unit,
+    retryLoad: () -> Unit,
     modifier: Modifier,
 ) {
 
@@ -196,6 +205,13 @@ private fun ScreenContent(
         when (screenState) {
             ScreenState.Loading -> {
                 FancyLoading(Modifier.fillMaxSize().wrapContentSize())
+            }
+
+            is ScreenState.Error -> {
+                DashboardErrorState(
+                    message = screenState.message,
+                    onRetry = retryLoad
+                )
             }
 
             is ScreenState.Loaded -> {

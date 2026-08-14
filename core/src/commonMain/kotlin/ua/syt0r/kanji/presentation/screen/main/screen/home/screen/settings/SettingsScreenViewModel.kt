@@ -8,8 +8,8 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.Setti
 
 class SettingsScreenViewModel(
     coroutineScope: CoroutineScope,
-    defaultSettingItems: List<SettingsScreenContract.ListItem>,
-    customSettingItems: List<SettingsScreenContract.ListItem>,
+    defaultCategories: List<SettingsScreenContract.Category>,
+    customCategories: List<SettingsScreenContract.Category>,
 ) : SettingsScreenContract.ViewModel {
 
     private val _state = MutableStateFlow<ScreenState>(ScreenState.Loading)
@@ -17,16 +17,10 @@ class SettingsScreenViewModel(
 
     init {
         coroutineScope.launch {
-
-            val combinedItems = customSettingItems.plus(defaultSettingItems)
-
-            combinedItems.filterIsInstance<SettingsScreenContract.ConfigurableListItem>()
-                .forEach { it.prepare(coroutineScope) }
-
-            _state.value = ScreenState.Loaded(combinedItems)
-
+            // Platform-specific categories (Android reminder, Google Play
+            // analytics) come first so they surface next to the common ones.
+            _state.value = ScreenState.Loaded(customCategories + defaultCategories)
         }
     }
 
 }
-

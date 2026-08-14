@@ -91,6 +91,13 @@ class KaiteyoDataCenter(
         load()
     }
 
+    /** Re-attempt a failed load. No-op while a load is already in progress. */
+    suspend fun retryLoad() {
+        if (isLoading) return
+        loaded = false
+        ensureLoaded()
+    }
+
     private suspend fun load() {
         isLoading = true
         loadError = false

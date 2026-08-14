@@ -2,7 +2,6 @@ package ua.syt0r.kanji.presentation.common.nav
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -39,8 +38,8 @@ import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 // NAVIGATION LIVE PREVIEW
 // Miniature application mockup that mirrors the
 // real navigation settings in real time: mode,
-// edge placement, widths, bubble anchor and snap
-// points. Every change animates immediately.
+// edge placement, widths, bubble snap points.
+// Every change animates immediately.
 // ============================================
 
 private val PreviewWidth = 300.dp
@@ -71,7 +70,7 @@ fun NavigationPreview(
                 )
                 .materialShadow(10.dp, RoundedCornerShape(18.dp))
         ) {
-            if (mode == NavigationMode.Bubble) {
+            if (mode == NavigationMode.Floating) {
                 PreviewContent(edge = null)
                 PreviewBubble(
                     settings = settings,
@@ -81,7 +80,7 @@ fun NavigationPreview(
                     surfaceColors = surfaceColors
                 )
             } else {
-                val expanded = mode == NavigationMode.Expanded
+                val expanded = settings.expansionFor(formFactor) == SidebarExpansion.Expanded
                 val vertical = edge == SidebarPosition.Left || edge == SidebarPosition.Right
                 PreviewContent(edge = edge)
                 PreviewDockedNavigation(
@@ -309,21 +308,11 @@ private fun PreviewBubble(
     accent: Color,
     surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 ) {
-    val anchor = settings.bubbleAnchorFor(formFactor)
+    val snap = settings.snapPointFor(formFactor)
     val bubbleSize = 30.dp
     val bubbleRadius = bubbleSize / 2
 
-    // All candidate snap points for the current form factor.
-    val anchors = BubbleAnchor.entries.filter { entry ->
-        !formFactor.isPhone || entry in listOf(
-            BubbleAnchor.TopLeft,
-            BubbleAnchor.TopRight,
-            BubbleAnchor.BottomLeft,
-            BubbleAnchor.BottomRight
-        )
-    }
-
-    val target = anchorPositionInPreview(anchor, bubbleRadius)
+    val target = anchorPositionInPreview(snap, bubbleRadius)
 
     val animatedX by animateDpAsState(
         targetValue = target.first,
@@ -337,10 +326,10 @@ private fun PreviewBubble(
     )
 
     Box(Modifier.fillMaxSize()) {
-        // Snap point markers
-        anchors.forEach { entry ->
+        // All 12 snap point markers, arranged as the screen edges.
+        BubbleSnapPoint.PickerOrder.forEach { entry ->
             val pos = anchorPositionInPreview(entry, bubbleRadius)
-            val active = entry == anchor
+            val active = entry == snap
             val markerColor by animateColorAsState(
                 targetValue = if (active) accent.copy(alpha = 0.85f)
                 else surfaceColors.border.copy(alpha = 0.5f),
@@ -369,16 +358,22 @@ private fun PreviewBubble(
     }
 }
 
-private fun anchorPositionInPreview(anchor: BubbleAnchor, radius: Dp): Pair<Dp, Dp> {
+private fun anchorPositionInPreview(snap: BubbleSnapPoint, radius: Dp): Pair<Dp, Dp> {
     val margin = 12.dp
     val cx = PreviewWidth / 2
     val cy = PreviewHeight / 2
-    return when (anchor) {
-        BubbleAnchor.Left -> cx to margin + radius
-        BubbleAnchor.Right -> cx to PreviewHeight - margin - radius
-        BubbleAnchor.TopLeft -> margin + radius to margin + radius
-        BubbleAnchor.TopRight -> PreviewWidth - margin - radius to margin + radius
-        BubbleAnchor.BottomLeft -> margin + radius to PreviewHeight - margin - radius
-        BubbleAnchor.BottomRight -> PreviewWidth - margin - radius to PreviewHeight - margin - radius
+    val top = margin + radius
+    val bottom = PreviewHeight - margin - radius
+    val left = margin + radius
+    val right = PreviewWidth - margin - radius
+    return when (snap) {
+        BubbleSnapPoint.TopLeft, BubbleSnapPoint.LeftTop -> left to top
+        BubbleSnapPoint.TopCenter -> cx to top
+        BubbleSnapPoint.TopRight, BubbleSnapPoint.RightTop -> right to top
+        BubbleSnapPoint.BottomLeft, BubbleSnapPoint.LeftBottom -> left to bottom
+        BubbleSnapPoint.BottomCenter -> cx to bottom
+        BubbleSnapPoint.BottomRight, BubbleSnapPoint.RightBottom -> right to bottom
+        BubbleSnapPoint.LeftCenter -> left to cy
+        BubbleSnapPoint.RightCenter -> right to cy
     }
 }

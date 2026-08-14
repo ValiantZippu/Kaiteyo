@@ -1,8 +1,12 @@
 package ua.syt0r.kanji.presentation.common.nav
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,6 +17,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,20 +29,19 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -86,6 +90,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow as materialShadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -179,18 +185,17 @@ val LocalWindowPlacement = compositionLocalOf<DesktopWindowPlacement?> { null }
  * importantly the root SnackbarHost in MainScreen — can pad themselves and
  * always render in front of it.
  *
- * Covers the docked bottom navigation bar, and in bubble mode a
- * bottom-anchored floating launcher (so bottom snackbars never cover it).
- * Zero when nothing sits at the bottom edge: side/top placement, bubble mode
- * with a non-bottom launcher anchor, or any non-phone layout without a
- * bottom-docked bar.
+ * Covers the docked bottom navigation bar, and in floating mode a
+ * bottom-anchored launcher bubble (so bottom snackbars never cover it).
+ * Zero when nothing sits at the bottom edge: side/top placement, or floating
+ * mode with a non-bottom bubble snap.
  */
 val LocalNavBarBottomSpace = compositionLocalOf<MutableState<Dp>> { mutableStateOf(0.dp) }
 
 // ============================================
 // NAV SHELL — unified adaptive navigation
-// Expanded · Compact · Bubble across desktop,
-// tablet and phone.
+// Two modes — Floating and Sidebar — across
+// desktop, tablet and phone.
 // ============================================
 
 @Composable
@@ -233,45 +238,87 @@ private fun AdaptiveNavigation(
     val edge = settings.edgeFor(formFactor)
     val vertical = edge == SidebarPosition.Left || edge == SidebarPosition.Right
     val animations = settings.animationsEnabled && !settings.accessibility.reducedMotion
+    val expanded = settings.expansionFor(formFactor) == SidebarExpansion.Expanded
 
-    // Publish the space the bottom bar occupies so overlays (the root
-    // SnackbarHost) can clear it. The bar surface is always at its full target
-    // size, so the target — not the animated spring value — is the right amount.
-    val expanded = settings.mode == NavigationMode.Expanded
+    // Publish the space the bottom bar / bottom-anchored bubble occupies so
+    // overlays (the root SnackbarHost) can clear it.
     val sidebarSize = dockedBarSize(settings, formFactor, expanded, vertical)
     val bottomInset = if (edge == SidebarPosition.Bottom) horizontalBarInsetDp(edge) else 0.dp
-    // Bubble mode has no docked bar, but a bottom-anchored launcher floats at a
-    // corner where bottom-aligned snackbars could overlap it. Publish its
-    // clearance too (scaled bubble size + the shared BubbleEdgeMargin the
-    // launcher snaps to), so snackbars always stay clear. This tracks the
-    // snap-anchor position; a bubble deliberately dragged well off-anchor is
-    // not fully tracked (acceptable — it re-snaps on the next interaction).
-    val bubbleBottomSpace = if (mode == NavigationMode.Bubble) {
-        val anchor = settings.bubbleAnchorFor(formFactor)
-        if (anchor == BubbleAnchor.BottomLeft || anchor == BubbleAnchor.BottomRight) {
+    val bubbleBottomSpace = if (mode == NavigationMode.Floating) {
+        val snap = settings.snapPointFor(formFactor)
+        if (snap.name.startsWith("Bottom") || snap.name.endsWith("Bottom")) {
             settings.accessibility.scaledHitbox(settings.bubble.size).dp + BubbleEdgeMargin
         } else 0.dp
     } else 0.dp
     val navBarBottomSpace = LocalNavBarBottomSpace.current
     SideEffect {
         navBarBottomSpace.value = when {
-            mode != NavigationMode.Bubble && edge == SidebarPosition.Bottom -> sidebarSize + bottomInset
-            mode == NavigationMode.Bubble -> bubbleBottomSpace
+            mode == NavigationMode.Sidebar && edge == SidebarPosition.Bottom -> sidebarSize + bottomInset
+            mode == NavigationMode.Floating -> bubbleBottomSpace
             else -> 0.dp
         }
     }
 
     val sections = buildNavSections(navigationState, homeNavState)
 
+    // The docked bar reserves space in sidebar mode only; in floating mode the
+    // content owns the whole surface. The reserve animates across the switch
+    // so the mode transition feels like one continuous layout.
+    val horizontalInset = if (vertical) 0.dp else horizontalBarInsetDp(edge)
+    val dockedReserve = if (mode == NavigationMode.Sidebar) sidebarSize + horizontalInset else 0.dp
+    val animatedReserve by animateDpAsState(
+        targetValue = dockedReserve,
+        animationSpec = navAnimSpec(animations),
+        label = "contentReserve"
+    )
+
+    val transitionMs = settings.effectiveDurationMs(animations)
+    val enterSpring: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
+        spring(dampingRatio = 0.7f, stiffness = 300f)
+    val fadeInSpec: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
+        if (animations) tween(transitionMs) else snap()
+    val fadeOutSpec: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
+        if (animations) tween(transitionMs) else snap()
+
+    // Where the floating bubble sits (from the persisted snap point) and where
+    // the sidebar sits (from the current edge) — these drive the transform
+    // origins so one mode visibly grows out of the other.
+    val snapOrigin = snapPointTransformOrigin(settings.snapPointFor(formFactor))
+    val edgeOrigin = edgeTransformOrigin(edge)
+
+    val floatingEnter: EnterTransition = fadeIn(fadeInSpec) + scaleIn(
+        initialScale = 0.86f,
+        transformOrigin = edgeOrigin,
+        animationSpec = enterSpring
+    )
+    val floatingExit: ExitTransition = fadeOut(fadeOutSpec) + scaleOut(
+        targetScale = 0.86f,
+        transformOrigin = edgeOrigin,
+        animationSpec = if (animations) tween(transitionMs) else snap()
+    )
+    val sidebarEnter: EnterTransition = fadeIn(fadeInSpec) + scaleIn(
+        initialScale = 0.9f,
+        transformOrigin = snapOrigin,
+        animationSpec = enterSpring
+    )
+    val sidebarExit: ExitTransition = fadeOut(fadeOutSpec) + scaleOut(
+        targetScale = 0.9f,
+        transformOrigin = snapOrigin,
+        animationSpec = if (animations) tween(transitionMs) else snap()
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown &&
-                    event.isCtrlPressed && event.key == Key.B
-                ) {
+                if (event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.B) {
                     navSettings.update { current ->
-                        current.copy(mode = if (current.mode == NavigationMode.Expanded) NavigationMode.Compact else NavigationMode.Expanded)
+                        if (current.mode == NavigationMode.Floating) current.copy(mode = NavigationMode.Sidebar)
+                        else current.copy(
+                            sidebarExpansion = if (current.sidebarExpansion == SidebarExpansion.Expanded)
+                                SidebarExpansion.Compact
+                            else SidebarExpansion.Expanded
+                        )
                     }
                     true
                 } else {
@@ -279,9 +326,29 @@ private fun AdaptiveNavigation(
                 }
             }
     ) {
-        if (mode == NavigationMode.Bubble) {
-            // Content gets the whole window; navigation floats on top.
-            Box(Modifier.fillMaxSize()) { content() }
+        // Content — reserved space follows the active mode.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .then(
+                    when (edge) {
+                        SidebarPosition.Left -> Modifier.padding(start = animatedReserve)
+                        SidebarPosition.Right -> Modifier.padding(end = animatedReserve)
+                        SidebarPosition.Top -> Modifier.padding(top = animatedReserve)
+                        else -> Modifier.padding(bottom = animatedReserve)
+                    }
+                )
+        ) {
+            content()
+        }
+
+        // Floating mode chrome — the draggable launcher bubble.
+        AnimatedVisibility(
+            visible = mode == NavigationMode.Floating,
+            modifier = Modifier.fillMaxSize(),
+            enter = floatingEnter,
+            exit = floatingExit
+        ) {
             BubbleLauncher(
                 navigationState = navigationState,
                 homeNavState = homeNavState,
@@ -290,7 +357,15 @@ private fun AdaptiveNavigation(
                 sections = sections,
                 modifier = Modifier.fillMaxSize()
             )
-        } else {
+        }
+
+        // Sidebar mode chrome — the docked navigation on the selected edge.
+        AnimatedVisibility(
+            visible = mode == NavigationMode.Sidebar,
+            modifier = Modifier.fillMaxSize(),
+            enter = sidebarEnter,
+            exit = sidebarExit
+        ) {
             DockedNavigation(
                 sections = sections,
                 navigationState = navigationState,
@@ -299,16 +374,14 @@ private fun AdaptiveNavigation(
                 formFactor = formFactor,
                 edge = edge,
                 vertical = vertical,
-                animations = animations,
-                modifier = Modifier.fillMaxSize(),
-                content = content
+                animations = animations
             )
         }
     }
 }
 
 // ============================================
-// DOCKED NAVIGATION — Expanded / Compact
+// DOCKED NAVIGATION — Sidebar mode
 // ============================================
 
 @Composable
@@ -320,52 +393,45 @@ private fun DockedNavigation(
     formFactor: FormFactor,
     edge: SidebarPosition,
     vertical: Boolean,
-    animations: Boolean,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    animations: Boolean
 ) {
-    val settings = navSettings.settings
-    val expanded = settings.mode == NavigationMode.Expanded
-    // Shared with AdaptiveNavigation so the published bottom-bar space always
-    // matches the reserved content space — they can't drift.
-    val sidebarSize = dockedBarSize(settings, formFactor, expanded, vertical)
-
-    val animatedSize by animateDpAsState(
-        targetValue = sidebarSize,
-        animationSpec = navAnimSpec(animations),
-        label = "navSize"
-    )
-
-    // Phone top/bottom bars must clear the system UI: the status bar above a
-    // top bar and the system navigation bar / gesture pill below a bottom bar.
-    // Desktop and tablet report zero insets, so this is a no-op there.
-    val horizontalInsetDp = horizontalBarInsetDp(edge)
-
-    Box(modifier) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .let { base ->
-                    when (edge) {
-                        SidebarPosition.Left -> base.padding(start = animatedSize)
-                        SidebarPosition.Right -> base.padding(end = animatedSize)
-                        SidebarPosition.Top -> base.padding(top = animatedSize + horizontalInsetDp)
-                        else -> base.padding(bottom = animatedSize + horizontalInsetDp)
-                    }
-                }
-        ) {
-            content()
-        }
-
+    // Switching edges reflows the sidebar — the old dock slides away while the
+    // new one enters from its edge, so the sidebar never teleports.
+    AnimatedContent(
+        targetState = edge,
+        transitionSpec = {
+            val forward = SidebarPosition.entries.indexOf(targetState) > SidebarPosition.entries.indexOf(initialState)
+            // Slides animate in pixel space; a Dp spec is meaningless here.
+            val spec: androidx.compose.animation.core.FiniteAnimationSpec<IntOffset> =
+                if (animations) spring(dampingRatio = 0.7f, stiffness = 300f)
+                else androidx.compose.animation.core.snap()
+            val enterSlide = when (targetState) {
+                SidebarPosition.Left -> slideInHorizontally(spec) { -it }
+                SidebarPosition.Right -> slideInHorizontally(spec) { it }
+                SidebarPosition.Top -> slideInVertically(spec) { -it }
+                else -> slideInVertically(spec) { it }
+            }
+            val exitSlide = when (initialState) {
+                SidebarPosition.Left -> slideOutHorizontally(spec) { -it / 3 }
+                SidebarPosition.Right -> slideOutHorizontally(spec) { it / 3 }
+                SidebarPosition.Top -> slideOutVertically(spec) { -it / 3 }
+                else -> slideOutVertically(spec) { it / 3 }
+            }
+            val fade: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
+                if (animations) tween(180) else snap()
+            (enterSlide + fadeIn(fade)) togetherWith (exitSlide + fadeOut(fade))
+        },
+        label = "navEdge"
+    ) { targetEdge ->
+        val targetVertical = targetEdge == SidebarPosition.Left || targetEdge == SidebarPosition.Right
         DockedSidebar(
             sections = sections,
             navigationState = navigationState,
             homeNavState = homeNavState,
             navSettings = navSettings,
             formFactor = formFactor,
-            edge = edge,
-            vertical = vertical,
-            sidebarSize = sidebarSize,
+            edge = targetEdge,
+            vertical = targetVertical,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -380,11 +446,10 @@ private fun DockedSidebar(
     formFactor: FormFactor,
     edge: SidebarPosition,
     vertical: Boolean,
-    sidebarSize: Dp,
     modifier: Modifier = Modifier
 ) {
     val settings = navSettings.settings
-    val expanded = settings.mode == NavigationMode.Expanded
+    val expanded = settings.expansionFor(formFactor) == SidebarExpansion.Expanded
     val themeState = LocalKaiteyoThemeState.current
     val densityMultiplier = themeState.layoutConfig.density.spacingMultiplier
     val radius = scaledRadius(NavTokens.SidebarRadius)
@@ -397,8 +462,8 @@ private fun DockedSidebar(
 
     // The horizontal bar must be exactly as tall as the reserved content
     // space (sidebarSize + system inset) so it never overlaps the content.
-    // Same inset as DockedNavigation via the shared helper — they can't drift.
     val barInsetDp = if (vertical) 0.dp else horizontalBarInsetDp(edge)
+    val barSize = dockedBarSize(settings, formFactor, expanded, vertical)
 
     Box(modifier) {
         Surface(
@@ -408,7 +473,7 @@ private fun DockedSidebar(
                     when {
                         vertical -> Modifier.fillMaxHeight().widthIn(min = margin)
                             .padding(vertical = margin)
-                        else -> Modifier.fillMaxWidth().height(sidebarSize + barInsetDp)
+                        else -> Modifier.fillMaxWidth().height(barSize + barInsetDp)
                             .padding(horizontal = margin)
                     }
                 )
@@ -427,7 +492,7 @@ private fun DockedSidebar(
         ) {
             if (vertical) {
                 Column(Modifier.fillMaxSize()) {
-                    SidebarModeControls(
+                    SidebarHeaderControls(
                         navSettings = navSettings,
                         vertical = true,
                         formFactor = formFactor,
@@ -449,17 +514,17 @@ private fun DockedSidebar(
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
                     )
-                    SidebarBottomControls(
-                        navSettings = navSettings,
-                        vertical = true,
-                        formFactor = formFactor,
-                        accent = accent,
-                        surfaceColors = surfaceColors,
-                        modifier = Modifier.padding(
-                            horizontal = Dimens.Space2 * densityMultiplier,
-                            vertical = Dimens.Space2 * densityMultiplier
+                    if (expanded) {
+                        Spacer(Modifier.height(Dimens.Space2 * densityMultiplier))
+                        SidebarFooter(
+                            accent = accent,
+                            surfaceColors = surfaceColors,
+                            modifier = Modifier.padding(
+                                horizontal = Dimens.Space3 * densityMultiplier,
+                                vertical = Dimens.Space2 * densityMultiplier
+                            )
                         )
-                    )
+                    }
                 }
             } else {
                 // Keep the bar clear of the system status bar / gesture area.
@@ -476,7 +541,7 @@ private fun DockedSidebar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.Space1)
                 ) {
-                    SidebarModeControls(
+                    SidebarHeaderControls(
                         navSettings = navSettings,
                         vertical = false,
                         formFactor = formFactor,
@@ -506,23 +571,11 @@ private fun DockedSidebar(
                             .height(24.dp)
                             .background(surfaceColors.border.copy(alpha = 0.5f))
                     )
-                    if (formFactor.isPhone) {
-                        // Phone bars get a compact settings gear instead of the
-                        // desktop placement/settings cluster.
-                        PhoneBarSettingsButton(
-                            navSettings = navSettings,
-                            formFactor = formFactor
-                        )
-                    } else {
-                        SidebarBottomControls(
-                            navSettings = navSettings,
-                            vertical = false,
-                            formFactor = formFactor,
-                            accent = accent,
-                            surfaceColors = surfaceColors,
-                            modifier = Modifier.padding(vertical = Dimens.Space1)
-                        )
-                    }
+                    SidebarHeaderTrailing(
+                        navSettings = navSettings,
+                        formFactor = formFactor,
+                        modifier = Modifier.padding(vertical = Dimens.Space1)
+                    )
                 }
             }
         }
@@ -530,11 +583,12 @@ private fun DockedSidebar(
 }
 
 // ============================================
-// MODE CONTROLS — Expanded · Compact · Bubble
+// SIDEBAR HEADER — mode control, compact toggle,
+// position picker and settings
 // ============================================
 
 @Composable
-private fun SidebarModeControls(
+private fun SidebarHeaderControls(
     navSettings: NavigationSettingsState,
     vertical: Boolean,
     formFactor: FormFactor,
@@ -542,45 +596,147 @@ private fun SidebarModeControls(
     controlSize: Dp = NavTokens.ModeControlSize
 ) {
     val surfaceColors = LocalSurfaceColors.current
-    val accent = LocalKaiteyoAccent.current
-    val current = navSettings.settings.mode
+    val themeState = LocalKaiteyoThemeState.current
+    val densityMultiplier = themeState.layoutConfig.density.spacingMultiplier
+    val expanded = navSettings.settings.expansionFor(formFactor) == SidebarExpansion.Expanded
 
-    val items = listOf(
-        Triple(NavigationMode.Expanded, Icons.AutoMirrored.Filled.ViewSidebar, resolveString { nav.modeExpandedTooltip }),
-        Triple(NavigationMode.Compact, Icons.Default.ViewModule, resolveString { nav.modeCompactTooltip }),
-        Triple(NavigationMode.Bubble, Icons.Default.Apps, resolveString { nav.modeBubbleTooltip })
-    )
-
-    val content: @Composable (Modifier) -> Unit = { rowModifier ->
+    val iconRow: @Composable (Modifier) -> Unit = { rowModifier ->
         Row(
             modifier = rowModifier,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items.forEach { (mode, icon, label) ->
-                val selected = current == mode
-                ModeControlButton(
-                    icon = icon,
-                    label = label,
-                    selected = selected,
-                    size = controlSize,
-                    onClick = { navSettings.update { it.copy(mode = mode) } }
-                )
-            }
+            NavCompactToggle(navSettings, formFactor, size = controlSize)
+            NavPlacementButton(navSettings, formFactor, size = controlSize)
+            NavSettingsButton(size = controlSize)
         }
     }
 
     if (vertical) {
-        content(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
-                .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
-                .padding(4.dp)
-        )
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Space1 * densityMultiplier)
+        ) {
+            ModeSegmentedControl(
+                navSettings = navSettings,
+                showLabels = expanded,
+                controlSize = controlSize,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
+                    .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
+                    .padding(4.dp)
+            )
+            iconRow(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
+                    .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
+                    .padding(4.dp)
+            )
+        }
     } else {
-        content(Modifier)
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ModeSegmentedControl(
+                navSettings = navSettings,
+                showLabels = false,
+                controlSize = controlSize
+            )
+            Box(
+                Modifier
+                    .width(1.dp)
+                    .height(24.dp)
+                    .background(surfaceColors.border.copy(alpha = 0.5f))
+            )
+            iconRow(Modifier)
+        }
     }
+}
+
+/** Trailing cluster for horizontal bars (position + settings). */
+@Composable
+private fun SidebarHeaderTrailing(
+    navSettings: NavigationSettingsState,
+    formFactor: FormFactor,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        NavCompactToggle(navSettings, formFactor, size = NavTokens.ModeControlSize)
+        NavPlacementButton(navSettings, formFactor, size = NavTokens.ModeControlSize)
+        NavSettingsButton(size = NavTokens.ModeControlSize)
+    }
+}
+
+/**
+ * Segmented two-mode control: Sidebar | Floating. In the sidebar this is the
+ * primary way back to Floating mode.
+ */
+@Composable
+private fun ModeSegmentedControl(
+    navSettings: NavigationSettingsState,
+    showLabels: Boolean,
+    controlSize: Dp,
+    modifier: Modifier = Modifier
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val current = navSettings.settings.mode
+
+    val options = listOf(
+        Triple(NavigationMode.Sidebar, Icons.AutoMirrored.Filled.ViewSidebar, resolveString { nav.modeSidebarLabel }),
+        Triple(NavigationMode.Floating, Icons.Default.Apps, resolveString { nav.modeFloatingLabel })
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        options.forEach { (mode, icon, label) ->
+            val selected = current == mode
+            ModeControlButton(
+                icon = icon,
+                label = label,
+                selected = selected,
+                onClick = { if (!selected) navSettings.setMode(mode) },
+                size = controlSize,
+                showLabel = showLabels,
+                modifier = Modifier.weight(if (showLabels) 1f else 0f)
+            )
+        }
+    }
+}
+
+/** Expanded ↔ Compact switch for the sidebar layout. */
+@Composable
+private fun NavCompactToggle(
+    navSettings: NavigationSettingsState,
+    formFactor: FormFactor,
+    size: Dp = NavTokens.ModeControlSize
+) {
+    val expanded = navSettings.settings.expansionFor(formFactor) == SidebarExpansion.Expanded
+    ModeControlButton(
+        icon = if (expanded) Icons.Default.ViewModule else Icons.AutoMirrored.Filled.ViewSidebar,
+        label = resolveString { if (expanded) nav.collapseTooltip else nav.expandTooltip },
+        selected = false,
+        onClick = {
+            navSettings.update { current ->
+                current.copy(
+                    sidebarExpansion = if (current.sidebarExpansion == SidebarExpansion.Expanded)
+                        SidebarExpansion.Compact
+                    else SidebarExpansion.Expanded
+                )
+            }
+        },
+        size = size
+    )
 }
 
 @Composable
@@ -589,16 +745,18 @@ private fun ModeControlButton(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
-    size: Dp = NavTokens.ModeControlSize
+    size: Dp = NavTokens.ModeControlSize,
+    showLabel: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    Box(
-        modifier = Modifier
-            .size(size)
+    Row(
+        modifier = modifier
+            .then(if (showLabel) Modifier.height(size + 8.dp) else Modifier.size(size))
             .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusSm)))
             .background(
                 when {
@@ -609,15 +767,26 @@ private fun ModeControlButton(
             )
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .hoverable(interactionSource),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            tint = if (selected) accent.primary else surfaceColors.textMuted,
-            modifier = Modifier.size(18.dp)
-        )
-    }
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (showLabel) Arrangement.spacedBy(6.dp) else Arrangement.Center,
+        content = {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = if (selected) accent.primary else surfaceColors.textMuted,
+                modifier = Modifier.size(18.dp)
+            )
+            if (showLabel) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (selected) accent.primary else surfaceColors.textSecondary,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1
+                )
+            }
+        }
+    )
 }
 
 // ============================================
@@ -895,46 +1064,63 @@ private fun NavTooltip(
 }
 
 // ============================================
-// SIDEBAR BOTTOM CONTROLS — placement + settings
+// SIDEBAR FOOTER (expanded)
 // ============================================
 
 @Composable
-private fun SidebarBottomControls(
-    navSettings: NavigationSettingsState,
-    vertical: Boolean,
-    formFactor: FormFactor,
+private fun SidebarFooter(
     accent: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme,
     surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors,
     modifier: Modifier = Modifier
 ) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Kaiteyo",
+            style = MaterialTheme.typography.labelMedium,
+            color = surfaceColors.textMuted,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            Icons.Default.Apps,
+            contentDescription = null,
+            tint = accent.primary.copy(alpha = 0.7f),
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
+private fun NavSettingsButton(size: Dp = NavTokens.BottomControlSize) {
+    val accent = LocalKaiteyoAccent.current
+    val surfaceColors = LocalSurfaceColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
     var settingsOpen by remember { mutableStateOf(false) }
 
-    val content: @Composable (Modifier) -> Unit = { rowModifier ->
-        Row(
-            modifier = rowModifier,
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            NavPlacementButton(navSettings, formFactor)
-            NavSettingsButton(onClick = { settingsOpen = true })
-        }
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusSm)))
+            .background(if (isHovered) surfaceColors.surfaceInteractive else Color.Transparent)
+            .clickable(interactionSource = interactionSource, indication = null) { settingsOpen = true }
+            .hoverable(interactionSource),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Default.Settings,
+            contentDescription = resolveString { nav.settingsLabel },
+            tint = surfaceColors.textMuted,
+            modifier = Modifier.size(18.dp)
+        )
     }
 
-    if (vertical) {
-        Box(modifier.fillMaxWidth()) {
-            content(
-                Modifier
-                    .align(Alignment.Center)
-                    .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
-                    .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
-                    .padding(4.dp)
-            )
-        }
-    } else {
-        content(modifier)
-    }
-
+    val navSettings = LocalNavigationSettings.current ?: return
     if (settingsOpen) {
+        val formFactor = rememberFormFactor()
         NavigationSettingsOverlay(
             navSettings = navSettings,
             formFactor = formFactor,
@@ -943,10 +1129,23 @@ private fun SidebarBottomControls(
     }
 }
 
+private fun placementEdgeIcon(edge: SidebarPosition): ImageVector = when (edge) {
+    SidebarPosition.Left -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
+    SidebarPosition.Right -> Icons.AutoMirrored.Filled.KeyboardArrowRight
+    SidebarPosition.Top -> Icons.Default.KeyboardArrowUp
+    SidebarPosition.Bottom -> Icons.Default.KeyboardArrowDown
+}
+
+// ============================================
+// PLACEMENT PICKER — smoothly expanding visual
+// position control with a live mini preview
+// ============================================
+
 @Composable
 private fun NavPlacementButton(
     navSettings: NavigationSettingsState,
-    formFactor: FormFactor
+    formFactor: FormFactor,
+    size: Dp = NavTokens.BottomControlSize
 ) {
     val accent = LocalKaiteyoAccent.current
     val surfaceColors = LocalSurfaceColors.current
@@ -958,7 +1157,7 @@ private fun NavPlacementButton(
     Box {
         Box(
             modifier = Modifier
-                .size(NavTokens.BottomControlSize)
+                .size(size)
                 .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusSm)))
                 .background(if (isHovered) surfaceColors.surfaceInteractive else Color.Transparent)
                 .clickable(interactionSource = interactionSource, indication = null) { open = true }
@@ -981,82 +1180,20 @@ private fun NavPlacementButton(
                         if (formFactor.isPhone) current.copy(phone = current.phone.copy(edge = edge))
                         else current.copy(desktopEdge = edge)
                     }
+                    open = false
                 },
-                onDismiss = { open = false },
-                anchor = IntOffset.Zero
+                onDismiss = { open = false }
             )
         }
     }
 }
 
 @Composable
-private fun NavSettingsButton(onClick: () -> Unit) {
-    val accent = LocalKaiteyoAccent.current
-    val surfaceColors = LocalSurfaceColors.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-
-    Box(
-        modifier = Modifier
-            .size(NavTokens.BottomControlSize)
-            .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusSm)))
-            .background(if (isHovered) surfaceColors.surfaceInteractive else Color.Transparent)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .hoverable(interactionSource),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            Icons.Default.Settings,
-            contentDescription = resolveString { nav.settingsLabel },
-            tint = surfaceColors.textMuted,
-            modifier = Modifier.size(18.dp)
-        )
-    }
-}
-
-// ============================================
-// PHONE BAR SETTINGS BUTTON
-// Top/bottom bars keep a single gear that opens
-// the navigation settings dialog (mode, placement,
-// bubble and phone layout all live there).
-// ============================================
-
-@Composable
-private fun PhoneBarSettingsButton(
-    navSettings: NavigationSettingsState,
-    formFactor: FormFactor
-) {
-    var settingsOpen by remember { mutableStateOf(false) }
-
-    NavSettingsButton(onClick = { settingsOpen = true })
-
-    if (settingsOpen) {
-        NavigationSettingsOverlay(
-            navSettings = navSettings,
-            formFactor = formFactor,
-            onDismiss = { settingsOpen = false }
-        )
-    }
-}
-
-private fun placementEdgeIcon(edge: SidebarPosition): ImageVector = when (edge) {
-    SidebarPosition.Left -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
-    SidebarPosition.Right -> Icons.AutoMirrored.Filled.KeyboardArrowRight
-    SidebarPosition.Top -> Icons.Default.KeyboardArrowUp
-    SidebarPosition.Bottom -> Icons.Default.KeyboardArrowDown
-}
-
-// ============================================
-// PLACEMENT SELECTOR — visual icon buttons
-// ============================================
-
-@Composable
 private fun NavigationPlacementSelector(
     current: SidebarPosition,
     formFactor: FormFactor,
     onSelect: (SidebarPosition) -> Unit,
-    onDismiss: () -> Unit,
-    anchor: IntOffset
+    onDismiss: () -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
@@ -1067,32 +1204,53 @@ private fun NavigationPlacementSelector(
         SidebarPosition.entries
     }
 
+    // Smooth expand: the picker scales out from its anchor with a soft fade.
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val scale by animateFloatAsState(
+        targetValue = if (shown) 1f else 0.82f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 380f),
+        label = "placementScale"
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(160),
+        label = "placementAlpha"
+    )
+
     Popup(
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true)
     ) {
         Column(
             modifier = Modifier
-                .widthIn(min = 172.dp)
+                .widthIn(min = 200.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                }
                 .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusLg)))
                 .background(surfaceColors.surfaceElevated)
                 .shadow(16.dp, RoundedCornerShape(scaledRadius(Dimens.RadiusLg)))
-                .padding(Dimens.Space3)
+                .padding(Dimens.Space3),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Space2)
         ) {
             Text(
                 text = resolveString { nav.placementLabel },
                 style = MaterialTheme.typography.labelMedium,
                 color = surfaceColors.textMuted,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = Dimens.Space1, bottom = Dimens.Space2)
+                modifier = Modifier.padding(start = Dimens.Space1)
             )
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.Space2)) {
                 edges.forEach { edge ->
                     val selected = current == edge
-                    Box(
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val isHovered by interactionSource.collectIsHoveredAsState()
+                    Column(
                         modifier = Modifier
                             .weight(1f)
-                            .size(44.dp)
                             .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
                             .background(
                                 if (selected) accent.primary.copy(alpha = 0.16f)
@@ -1103,8 +1261,11 @@ private fun NavigationPlacementSelector(
                                 color = if (selected) accent.primary else surfaceColors.border.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(scaledRadius(Dimens.RadiusMd))
                             )
-                            .clickable { onSelect(edge) },
-                        contentAlignment = Alignment.Center
+                            .clickable(interactionSource = interactionSource, indication = null) { onSelect(edge) }
+                            .hoverable(interactionSource)
+                            .padding(vertical = Dimens.Space2),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(Dimens.Space1)
                     ) {
                         Icon(
                             placementEdgeIcon(edge),
@@ -1112,9 +1273,70 @@ private fun NavigationPlacementSelector(
                             tint = if (selected) accent.primary else surfaceColors.textSecondary,
                             modifier = Modifier.size(20.dp)
                         )
+                        // Miniature window preview showing the sidebar on the
+                        // selected edge — position meaning is instant.
+                        MiniEdgePreview(
+                            edge = edge,
+                            selected = selected,
+                            accent = accent.primary,
+                            surfaceColors = surfaceColors
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+/** Tiny window mock with the dock drawn on [edge]. */
+@Composable
+private fun MiniEdgePreview(
+    edge: SidebarPosition,
+    selected: Boolean,
+    accent: Color,
+    surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+) {
+    Box(
+        modifier = Modifier
+            .size(width = 40.dp, height = 26.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(surfaceColors.surface.copy(alpha = 0.6f))
+            .border(
+                1.dp,
+                if (selected) accent.copy(alpha = 0.6f) else surfaceColors.border.copy(alpha = 0.4f),
+                RoundedCornerShape(4.dp)
+            )
+    ) {
+        val barColor = if (selected) accent.copy(alpha = 0.7f) else surfaceColors.border.copy(alpha = 0.55f)
+        when (edge) {
+            SidebarPosition.Left -> Box(
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxHeight()
+                    .width(8.dp)
+                    .background(barColor)
+            )
+            SidebarPosition.Right -> Box(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(8.dp)
+                    .background(barColor)
+            )
+            SidebarPosition.Top -> Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .background(barColor)
+            )
+            SidebarPosition.Bottom -> Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .background(barColor)
+            )
         }
     }
 }
@@ -1329,9 +1551,9 @@ private fun defaultHomeTab(appPreferences: PreferencesContract.AppPreferences): 
 }
 
 /**
- * Size of a docked navigation bar for the current mode and form factor.
- * Shared by the content reservation, the bar surface and the published
- * bottom-bar space so they always agree.
+ * Size of a docked navigation bar for the current sidebar layout and form
+ * factor. Shared by the content reservation, the bar surface and the
+ * published bottom-bar space so they always agree.
  */
 private fun dockedBarSize(
     settings: NavigationSettings,
@@ -1375,6 +1597,26 @@ private fun sidebarAlignment(position: SidebarPosition): Alignment {
 private fun navAnimSpec(animations: Boolean): androidx.compose.animation.core.FiniteAnimationSpec<Dp> {
     return if (animations) spring(dampingRatio = 0.7f, stiffness = 280f)
     else androidx.compose.animation.core.snap()
+}
+
+/** Where the floating bubble sits, as a fraction for scale origins. */
+private fun snapPointTransformOrigin(snap: BubbleSnapPoint): TransformOrigin = when (snap) {
+    BubbleSnapPoint.TopLeft, BubbleSnapPoint.LeftTop -> TransformOrigin(0f, 0f)
+    BubbleSnapPoint.TopCenter -> TransformOrigin(0.5f, 0f)
+    BubbleSnapPoint.TopRight, BubbleSnapPoint.RightTop -> TransformOrigin(1f, 0f)
+    BubbleSnapPoint.BottomLeft, BubbleSnapPoint.LeftBottom -> TransformOrigin(0f, 1f)
+    BubbleSnapPoint.BottomCenter -> TransformOrigin(0.5f, 1f)
+    BubbleSnapPoint.BottomRight, BubbleSnapPoint.RightBottom -> TransformOrigin(1f, 1f)
+    BubbleSnapPoint.LeftCenter -> TransformOrigin(0f, 0.5f)
+    BubbleSnapPoint.RightCenter -> TransformOrigin(1f, 0.5f)
+}
+
+/** Where the sidebar edge sits, as a fraction for scale origins. */
+private fun edgeTransformOrigin(edge: SidebarPosition): TransformOrigin = when (edge) {
+    SidebarPosition.Left -> TransformOrigin(0f, 0.5f)
+    SidebarPosition.Right -> TransformOrigin(1f, 0.5f)
+    SidebarPosition.Top -> TransformOrigin(0.5f, 0f)
+    SidebarPosition.Bottom -> TransformOrigin(0.5f, 1f)
 }
 
 @Composable

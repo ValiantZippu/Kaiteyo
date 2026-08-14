@@ -85,7 +85,7 @@ fun State<LetterPracticeReviewState.Writing>.asInfoSectionState(
             val revealCharacter = writerState.progress.value !is CharacterWritingProgress.Writing
 
             when (val configuration = writerState.configuration) {
-                CharacterWriterConfiguration.CharacterInput -> {
+                is CharacterWriterConfiguration.CharacterInput -> {
                     WritingPracticeInfoSectionData(
                         characterData = currentState.itemData,
                         isStudyMode = false,

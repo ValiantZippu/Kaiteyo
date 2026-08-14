@@ -60,6 +60,18 @@ class PracticePreferences(
         initialValue = { PreferencesLetterPracticeWritingInputMode.Stroke }
     )
 
+    override val letterWritingStrictness = createProperty(
+        type = enumSuspendedPropertyType<PreferencesWritingStrictness>(),
+        key = "letter_writing_strictness",
+        initialValue = { PreferencesWritingStrictness.Normal }
+    )
+
+    override val vocabWritingStrictness = createProperty(
+        type = enumSuspendedPropertyType<PreferencesWritingStrictness>(),
+        key = "vocab_writing_strictness",
+        initialValue = { PreferencesWritingStrictness.Normal }
+    )
+
     override val writingRomajiInsteadOfKanaWords: SuspendedProperty<Boolean> = createProperty(
         type = BooleanSuspendedPropertyType,
         key = "writing_kana_words_romaji",

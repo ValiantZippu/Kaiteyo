@@ -19,7 +19,6 @@ import ua.syt0r.kanji.core.app_data.AndroidAppDataDatabaseProvider
 import ua.syt0r.kanji.core.backup.AndroidBackupArchiveHandler
 import ua.syt0r.kanji.core.backup.BackupArchiveHandler
 import ua.syt0r.kanji.core.transfer.AnkiPackage
-import ua.syt0r.kanji.core.transfer.AnkiPackageAndroid
 import ua.syt0r.kanji.core.file.PlatformFile
 import ua.syt0r.kanji.core.file.PlatformFileHandler
 import ua.syt0r.kanji.core.logger.LoggerConfiguration
@@ -37,7 +36,7 @@ import ua.syt0r.kanji.core.user_data.AndroidUserDataDatabasePlatformHandler
 import ua.syt0r.kanji.core.user_data.database.UserDataDatabaseContract
 import ua.syt0r.kanji.core.user_data.preferences.DefaultUserPreferencesMigrationManager
 import ua.syt0r.kanji.presentation.backupScreenComponents
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.AndroidReminderSettingListItem
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.AndroidReminderSettingsCategory
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.settingItemsQualifier
 
 actual val platformComponentsModule: Module = module {
@@ -89,7 +88,7 @@ actual val platformComponentsModule: Module = module {
     factory<PlatformFile> {
         PlatformFile(androidContext().filesDir)
     }
-    single<AnkiPackage> { AnkiPackageAndroid() }
+    single<AnkiPackage> { AnkiPackage(androidContext()) }
 
     single<DataStore<*>> {
         PreferenceDataStoreFactory.create(
@@ -133,7 +132,7 @@ actual val platformComponentsModule: Module = module {
     }
 
     factory {
-        AndroidReminderSettingListItem(
+        AndroidReminderSettingsCategory(
             appPreferences = get(),
             reminderScheduler = get(),
             analyticsManager = get()
@@ -142,7 +141,7 @@ actual val platformComponentsModule: Module = module {
 
     factory(settingItemsQualifier) {
         listOf(
-            get<AndroidReminderSettingListItem>()
+            get<AndroidReminderSettingsCategory>()
         )
     }
 

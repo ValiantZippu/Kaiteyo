@@ -1,5 +1,7 @@
 package ua.syt0r.kanji.desktop.engine.settings
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -14,7 +16,7 @@ import kotlinx.serialization.json.Json
 enum class SettingType { Boolean, Int, Float, String, Enum, List }
 
 @Serializable
-enum class SettingCategory { General, Navigation, Appearance, Review, Browser, Statistics, History, ImportExport, Sync, Updates, Plugins, Accessibility, Advanced }
+enum class SettingCategory { General, Navigation, Appearance, Review, Browser, Statistics, History, ImportExport, Sync, Updates, Plugins, Accessibility, Advanced, Media }
 
 data class SettingDef(
     val key: String,
@@ -38,16 +40,57 @@ data class SettingsSnapshot(
     val updatedAt: String = kotlinx.datetime.Clock.System.now().toString()
 )
 
-/** Typed settings store with change notification and validation. */
-class SettingsEngine(defs: List<SettingDef> = defaultSettings()) {
+/**
+ * Typed settings store with change notification and validation.
+ *
+ * By default the store is in-memory only (suits previews/tests). Pass a
+ * [persistFile] (e.g. ~/.kaiteyo/settings.json) to make every change survive
+ * restarts — the desktop app does this, so media key / integration / local
+ * API configuration is real persisted state, never a session-only mirror.
+ */
+class SettingsEngine(
+    defs: List<SettingDef> = defaultSettings(),
+    private val persistFile: java.io.File? = null
+) {
 
     private val definitions = LinkedHashMap<String, SettingDef>()
     private val values = mutableMapOf<String, String>()
     private val listeners = mutableListOf<(String, String, String) -> Unit>()
 
+    /** When the last user change was applied — used as the settings blob's LWW timestamp. */
+    private var lastModifiedAtValue: Instant = Clock.System.now()
+
+    /** Timestamp of the most recent [set] call (unchanged values don't bump it). */
+    fun lastModifiedAt(): Instant = lastModifiedAtValue
+
     init {
         defs.forEach { definitions[it.key] = it }
-        resetAll()
+        applyDefaults()
+        persistFile?.let { loadFromDisk(it) }
+    }
+
+    // ------------------------------------------------------------
+    // Optional on-disk persistence (~/.kaiteyo/settings.json)
+    // ------------------------------------------------------------
+
+    private fun loadFromDisk(file: java.io.File) {
+        if (!file.exists()) return
+        runCatching {
+            val json = Json { ignoreUnknownKeys = true }
+            val snapshot = json.decodeFromString<SettingsSnapshot>(file.readText())
+            snapshot.values.forEach { (key, value) ->
+                if (key in definitions) values[key] = value
+            }
+        }
+    }
+
+    private fun saveToDisk() {
+        val file = persistFile ?: return
+        runCatching {
+            file.parentFile?.mkdirs()
+            val json = Json { prettyPrint = true; encodeDefaults = true }
+            file.writeText(json.encodeToString(SettingsSnapshot(values.toMap())))
+        }
     }
 
     val defs: List<SettingDef> get() = definitions.values.toList()
@@ -71,7 +114,7 @@ class SettingsEngine(defs: List<SettingDef> = defaultSettings()) {
 
     fun get(key: String): String = values[key] ?: definitions[key]?.normalizedDefault ?: ""
 
-    fun getBool(key: String): Boolean = get(key).toBooleanStrictOrNull() ?: false
+    fun getBool(key: String, default: Boolean = false): Boolean = get(key).toBooleanStrictOrNull() ?: default
 
     fun getInt(key: String, default: Int = 0): Int = get(key).toIntOrNull() ?: default
 
@@ -85,7 +128,9 @@ class SettingsEngine(defs: List<SettingDef> = defaultSettings()) {
         if (values[key] == normalized) return
         val old = values[key]
         values[key] = normalized
+        lastModifiedAtValue = Clock.System.now()
         listeners.forEach { it(key, old ?: "", normalized) }
+        saveToDisk()
     }
 
     fun setBool(key: String, value: Boolean) = set(key, value)
@@ -106,11 +151,18 @@ class SettingsEngine(defs: List<SettingDef> = defaultSettings()) {
     }
 
     fun resetAll() {
-        definitions.values.forEach { values[it.key] = it.normalizedDefault }
+        applyDefaults()
+        saveToDisk()
     }
 
     fun resetCategory(category: SettingCategory) {
         definitions.values.filter { it.category == category }.forEach { values[it.key] = it.normalizedDefault }
+        saveToDisk()
+    }
+
+    /** Write the catalog defaults into the value map (no disk write). */
+    private fun applyDefaults() {
+        definitions.values.forEach { values[it.key] = it.normalizedDefault }
     }
 
     fun observe(listener: (String, String, String) -> Unit) {
@@ -136,13 +188,27 @@ class SettingsEngine(defs: List<SettingDef> = defaultSettings()) {
                 applied++
             }
         }
+        saveToDisk()
         applied
     }
 
     fun snapshot(): Map<String, String> = values.toMap()
 
+    /**
+     * Apply a snapshot, notifying listeners for keys that actually changed so
+     * live UI mirrors (navigation, launcher, appearance) update immediately.
+     * The modification timestamp is NOT bumped — applying remote state is not
+     * a user change.
+     */
     fun restore(snapshot: Map<String, String>) {
-        snapshot.forEach { (key, value) -> if (key in definitions) values[key] = value }
+        snapshot.forEach { (key, value) ->
+            if (key in definitions && values[key] != value) {
+                val old = values[key]
+                values[key] = value
+                listeners.forEach { it(key, old ?: "", value) }
+            }
+        }
+        saveToDisk()
     }
 
     fun has(key: String): Boolean = key in definitions
@@ -241,6 +307,13 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("updates.channel", "Update channel", "Which release channel to check (stable / beta / nightly)", SettingCategory.Updates, SettingType.Enum, "stable", options = listOf("stable", "beta", "nightly"), searchable = false),
     SettingDef("updates.check-on-startup", "Check for updates on launch", "Quietly check the feed when the app starts", SettingCategory.Updates, SettingType.Boolean, false),
 
+    // ---- KJD language database patches ------------------------------
+    SettingDef("updates.kjd-check-on-startup", "Update language database on launch", "Download and apply KJD data patches when the app starts", SettingCategory.Updates, SettingType.Boolean, true, group = "Language data"),
+    SettingDef("updates.kjd-channel", "Language data channel", "Which KJD patch feed to check (stable / beta / nightly)", SettingCategory.Updates, SettingType.Enum, "stable", options = listOf("stable", "beta", "nightly"), group = "Language data"),
+    SettingDef("updates.kjd-last-checked", "Last data check (internal)", "When the KJD feed was last checked", SettingCategory.Updates, SettingType.String, "", searchable = false, group = "Language data"),
+    SettingDef("updates.kjd-applied-version", "Applied data version (internal)", "Database version the bundled language data is at", SettingCategory.Updates, SettingType.String, "", searchable = false, group = "Language data"),
+    SettingDef("updates.kjd-applied-fingerprint", "Applied data fingerprint (internal)", "Fingerprint of the current bundled language database", SettingCategory.Updates, SettingType.String, "", searchable = false, group = "Language data"),
+
     SettingDef("plugins.enabled", "Plugins enabled", "Load plugins on start", SettingCategory.Plugins, SettingType.Boolean, true),
     SettingDef("plugins.installed", "Installed plugins", "Serialized plugin registry (internal)", SettingCategory.Plugins, SettingType.String, "", searchable = false),
 
@@ -248,5 +321,65 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("accessibility.font-scale", "Font scale", "1.0 = default", SettingCategory.Accessibility, SettingType.Float, 1.0f),
 
     SettingDef("advanced.dev-mode", "Developer mode", "Show advanced diagnostics", SettingCategory.Advanced, SettingType.Boolean, false),
-    SettingDef("advanced.telemetry", "Anonymous telemetry", "Send anonymous usage stats", SettingCategory.Advanced, SettingType.Boolean, false)
+    SettingDef("advanced.telemetry", "Anonymous telemetry", "Send anonymous usage stats", SettingCategory.Advanced, SettingType.Boolean, false),
+
+    // ---- Media workspace -------------------------------------------
+    SettingDef("media.default-speed", "Default playback speed", "Speed applied when media opens", SettingCategory.Media, SettingType.Float, 1.0f, group = "Playback"),
+    SettingDef("media.resume-playback", "Resume playback", "Continue from the last position", SettingCategory.Media, SettingType.Boolean, true, group = "Playback"),
+    SettingDef("media.seek-amount-ms", "Arrow seek amount (ms)", "How far ← / → jump", SettingCategory.Media, SettingType.Int, 5000, group = "Playback"),
+    SettingDef("media.condensed-playback", "Condensed playback", "Skip unsubtitled sections", SettingCategory.Media, SettingType.Boolean, false, group = "Playback"),
+    SettingDef("media.condensed-gap-ms", "Condensed gap threshold (ms)", "Skip gaps longer than this", SettingCategory.Media, SettingType.Int, 4000, group = "Playback"),
+    SettingDef("media.auto-pause", "Auto-pause", "Pause automatically around cues", SettingCategory.Media, SettingType.Enum, "off", options = listOf("off", "at-cue-start", "at-cue-end", "before-cue"), group = "Playback"),
+
+    SettingDef("media.subtitle-font-size", "Subtitle font size", "Overlay subtitle size (pt)", SettingCategory.Media, SettingType.Int, 20, group = "Subtitles"),
+    SettingDef("media.subtitle-outline", "Subtitle outline", "Readable outline behind text", SettingCategory.Media, SettingType.Boolean, true, group = "Subtitles"),
+    SettingDef("media.subtitle-position", "Subtitle position", "Where the overlay sits", SettingCategory.Media, SettingType.Enum, "bottom", options = listOf("bottom", "top"), group = "Subtitles"),
+    SettingDef("media.subtitle-annotation", "Annotation mode", "Token annotation style", SettingCategory.Media, SettingType.Enum, "status", options = listOf("off", "reading", "status", "frequency"), group = "Subtitles"),
+    SettingDef("media.subtitle-theme", "Subtitle theme", "Classic / Minimal / Cinema / High contrast / Custom", SettingCategory.Media, SettingType.Enum, "classic", options = listOf("classic", "minimal", "cinema", "high-contrast", "custom"), group = "Subtitles"),
+    SettingDef("media.subtitle-opacity", "Subtitle background opacity", "Backdrop strength when the theme is Custom", SettingCategory.Media, SettingType.Float, 0.55f, group = "Subtitles"),
+    SettingDef("media.subtitle-weight", "Subtitle weight", "Text weight when the theme is Custom", SettingCategory.Media, SettingType.Enum, "bold", options = listOf("normal", "medium", "semibold", "bold"), group = "Subtitles"),
+    SettingDef("media.dual-subtitles", "Dual subtitles", "Show a second subtitle track", SettingCategory.Media, SettingType.Boolean, false, group = "Subtitles"),
+
+    SettingDef("media.mine-screenshot", "Capture screenshot on mine", "Attach a frame to mined cards", SettingCategory.Media, SettingType.Boolean, true, group = "Mining"),
+    SettingDef("media.mine-audio", "Capture audio on mine", "Attach an audio clip to mined cards", SettingCategory.Media, SettingType.Boolean, true, group = "Mining"),
+    SettingDef("media.mine-video", "Capture video clip on mine", "Attach an MP4 clip of the cue range (needs ffmpeg)", SettingCategory.Media, SettingType.Boolean, false, group = "Mining"),
+    SettingDef("media.audio-padding-ms", "Audio clip padding (ms)", "Extra audio before/after a cue", SettingCategory.Media, SettingType.Int, 200, group = "Mining"),
+    SettingDef("media.mine-deck", "Default mining deck", "Deck used for media cards", SettingCategory.Media, SettingType.String, "default", group = "Mining"),
+    SettingDef("media.mine-duplicate-policy", "Duplicate policy", "What to do with a repeated sentence+word", SettingCategory.Media, SettingType.Enum, "create", options = listOf("create", "skip", "update"), group = "Mining"),
+
+    SettingDef("media.mining-mode", "Mining destination", "Where mined cards are sent", SettingCategory.Media, SettingType.Enum, "kaiteyo", options = listOf("kaiteyo", "forward", "both"), group = "Integrations"),
+    SettingDef("media.gsm.host", "GameSentenceMiner host", "Local GSM server address", SettingCategory.Media, SettingType.String, "127.0.0.1", group = "Integrations"),
+    SettingDef("media.gsm.port", "GameSentenceMiner port", "Local GSM server port", SettingCategory.Media, SettingType.Int, 9000, group = "Integrations"),
+    SettingDef("media.gsm.path", "GameSentenceMiner path", "Card submission endpoint", SettingCategory.Media, SettingType.String, "/api/save", group = "Integrations"),
+    SettingDef("media.gsm.token", "GameSentenceMiner token", "Optional bearer token", SettingCategory.Media, SettingType.String, "", group = "Integrations"),
+
+    SettingDef("media.study-mode-default", "Study mode by default", "Count watch time as study time", SettingCategory.Media, SettingType.Boolean, false, group = "Study"),
+    SettingDef("media.hotkeys", "Media hotkeys", "Space, ←→, A mine, D dictionary, F transcript", SettingCategory.Media, SettingType.Boolean, true, group = "Study", searchable = false),
+
+    SettingDef("media.resume-prompt", "Ask before resuming", "Offer Resume / Start over when reopening media", SettingCategory.Media, SettingType.Boolean, true, group = "Playback"),
+    SettingDef("media.perf-profile", "Performance profile", "Battery / Balanced / Quality backend presets", SettingCategory.Media, SettingType.Enum, "balanced", options = listOf("battery", "balanced", "quality"), group = "Playback"),
+    SettingDef("media.replay-count", "Replay count", "How many times R replays a subtitle", SettingCategory.Media, SettingType.Int, 1, group = "Playback"),
+    SettingDef("media.mini-player", "Persistent mini player", "Keep playing in a compact player while browsing", SettingCategory.Media, SettingType.Boolean, false, group = "Playback"),
+    SettingDef("media.auto-advance", "Auto-advance episodes", "Play the next episode (or queued item) when one finishes", SettingCategory.Media, SettingType.Boolean, false, group = "Playback"),
+    SettingDef("media.watch-folders", "Watch library folders", "Auto-add new media that appears in watched folders", SettingCategory.Media, SettingType.Boolean, false, group = "Playback"),
+    SettingDef("media.system-media-keys", "System media keys", "Control playback with global media keys (Play/Pause, Next, Previous, Stop) while the app is in the background", SettingCategory.Media, SettingType.Boolean, true, group = "Playback"),
+    SettingDef("media.notifications", "Playback notifications", "Show desktop notifications when playback starts, pauses or finishes", SettingCategory.Media, SettingType.Boolean, true, group = "Playback"),
+    SettingDef("media.mpv-shader", "mpv shader file", "Optional GLSL shader path (e.g. an Anime4K pipeline) passed to mpv", SettingCategory.Media, SettingType.String, "", group = "Playback"),
+
+    SettingDef("media.text-hook.enabled", "Text hook server", "Accept Japanese text lines over TCP (texthookers, scripts)", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
+    SettingDef("media.text-hook.port", "Text hook port", "TCP port the text hook listens on", SettingCategory.Media, SettingType.Int, 8766, group = "Integrations"),
+    SettingDef("media.ws.enabled", "Player WebSocket", "Broadcast live player state + accept commands", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
+    SettingDef("media.ws.port", "WebSocket port", "ws://127.0.0.1:<port>", SettingCategory.Media, SettingType.Int, 8765, group = "Integrations"),
+
+    SettingDef("media.api.enabled", "Local integration API", "Start the local HTTP API on launch (browser connector / scripts)", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
+    SettingDef("media.api.port", "Local API port", "Port the local integration HTTP server binds to", SettingCategory.Media, SettingType.Int, 48201, group = "Integrations"),
+    SettingDef("media.api.token", "Local API token (internal)", "Auto-generated bearer token protecting the local API", SettingCategory.Media, SettingType.String, "", searchable = false, group = "Integrations"),
+
+    SettingDef("media.anki.enabled", "AnkiConnect", "Show AnkiConnect as an available integration", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
+    SettingDef("media.anki.send-mined", "Forward mined cards to Anki", "Send every completed mine to AnkiConnect as well as Kaiteyo", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
+    SettingDef("media.anki.host", "AnkiConnect host", "AnkiConnect server address", SettingCategory.Media, SettingType.String, "127.0.0.1", group = "Integrations"),
+    SettingDef("media.anki.port", "AnkiConnect port", "AnkiConnect server port", SettingCategory.Media, SettingType.Int, 8765, group = "Integrations"),
+    SettingDef("media.anki.key", "AnkiConnect API key", "Optional API key (AnkiConnect 2.1.55+) for a locked server", SettingCategory.Media, SettingType.String, "", group = "Integrations"),
+
+    SettingDef("media.condensed-fast-forward", "Fast-forward unsubtitled gaps", "With condensed playback, advance quickly through gaps instead of jumping straight to the next subtitle", SettingCategory.Media, SettingType.Boolean, false, group = "Playback")
 )

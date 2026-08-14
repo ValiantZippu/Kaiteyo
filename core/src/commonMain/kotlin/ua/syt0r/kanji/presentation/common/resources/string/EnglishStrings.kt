@@ -76,6 +76,226 @@ object EnglishStrings : Strings {
 
     override val nav: NavStrings = EnglishNavStrings
 
+    override val center: SettingsCenterStrings = EnglishSettingsCenterStrings
+
+}
+
+object EnglishSettingsCenterStrings : SettingsCenterStrings {
+
+    override val searchPlaceholder: String = "Search settings"
+    override val searchNoResults: String = "No settings found"
+    override val searchNoResultsHint: String =
+        "Try a different keyword — for example \"sidebar\", \"font\" or \"bubble\"."
+    override val livePreviewLabel: String = "Live preview"
+    override val changesApplyInstantly: String =
+        "Changes apply immediately and are saved automatically"
+    override val resetToDefaults: String = "Reset to defaults"
+    override val resetConfirmTitle: (category: String) -> String =
+        { "Reset $it settings?" }
+    override val resetConfirmMessage: (category: String) -> String = {
+        "All $it settings will be restored to their default values."
+    }
+    override val cancel: String = "Cancel"
+    override val confirm: String = "Reset"
+
+    override val categoryGeneral: String = "General"
+    override val categoryGeneralSubtitle: String = "Startup behavior, schedule and app defaults"
+    override val categoryAppearance: String = "Appearance"
+    override val categoryAppearanceSubtitle: String = "Theme, colors, typography and density"
+    override val categoryNavigation: String = "Navigation"
+    override val categoryNavigationSubtitle: String =
+        "Sidebar, floating launcher and phone layout"
+    override val categoryStudy: String = "Study"
+    override val categoryStudySubtitle: String = "Session behavior and practice defaults"
+    override val categoryWriting: String = "Writing"
+    override val categoryWritingSubtitle: String = "Stroke evaluation and input mode"
+    override val categoryFlashcards: String = "Flashcards"
+    override val categoryFlashcardsSubtitle: String = "Card layout and answer behavior"
+    override val categoryNotifications: String = "Notifications"
+    override val categoryNotificationsSubtitle: String = "Daily study reminders"
+    override val categoryData: String = "Data & Sync"
+    override val categoryDataSubtitle: String = "Backup, restore, sync and account"
+    override val categoryShortcuts: String = "Keyboard & Shortcuts"
+    override val categoryShortcutsSubtitle: String = "Global and review shortcuts"
+    override val categoryAbout: String = "About"
+    override val categoryAboutSubtitle: String = "App info, credits and feedback"
+    override val categoryAccessibility: String = "Accessibility"
+    override val categoryAccessibilitySubtitle: String =
+        "Text scaling, contrast, motion and touch targets"
+
+    override val groupStartup: String = "Startup"
+    override val groupSchedule: String = "Schedule"
+    override val groupStudy: String = "Study"
+    override val groupApplication: String = "Application"
+    override val groupAppearance: String = "Appearance"
+    override val groupTheme: String = "Theme"
+    override val groupTypography: String = "Typography"
+    override val groupMotion: String = "Motion"
+    override val groupInput: String = "Input method"
+    override val groupStroke: String = "Stroke evaluation"
+    override val groupFlashcard: String = "Flashcards"
+    override val groupRelated: String = "Related"
+    override val groupLayout: String = "Layout & scaling"
+    override val groupAdvanced: String = "Advanced"
+    override val groupDisplay: String = "Display"
+    override val groupInteraction: String = "Interaction"
+
+    override val defaultTab: String = "Default tab"
+    override val defaultTabDescription: String = "Tab shown when the app opens"
+    override val dailyResetTime: String = "Daily reset time"
+    override val dailyResetTimeDescription: String =
+        "When new cards and daily limits reset"
+    override val dailyLimit: String = "Daily limit"
+    override val dailyLimitDescription: String =
+        "Limit new cards and reviews per day"
+    override val language: String = "Language"
+    override val languageDescription: String =
+        "Interface language — follows the system"
+
+    override val themeMode: String = "Theme mode"
+    override val themeModeDescription: String = "Light, dark, system or AMOLED"
+    override val accentColor: String = "Accent color"
+    override val accentColorDescription: String =
+        "Primary color used across the interface"
+    override val cornerRadius: String = "Corner radius"
+    override val cornerRadiusDescription: String =
+        "Rounding of cards, buttons and panels"
+    override val density: String = "Interface density"
+    override val densityDescription: String =
+        "Spacing and sizing of interface elements"
+    override val animationSpeed: String = "Animation speed"
+    override val animationSpeedDescription: String =
+        "How fast interface animations play"
+    override val reducedMotion: String = "Reduce motion"
+    override val reducedMotionDescription: String =
+        "Disable most interface animations"
+    override val fontScale: String = "Font size"
+    override val fontScaleDescription: String =
+        "Scales text across the application"
+    override val titleScale: String = "Heading size"
+    override val titleScaleDescription: String =
+        "Scales titles, headings and navigation labels"
+    override val lineHeight: String = "Line height"
+    override val lineHeightDescription: String =
+        "Vertical rhythm of body text"
+    override val letterSpacing: String = "Letter spacing"
+    override val letterSpacingDescription: String =
+        "Extra tracking between characters"
+    override val pageTransition: String = "Page transition"
+    override val pageTransitionDescription: String =
+        "How screens transition when you navigate"
+    override val themeTransition: String = "Theme transition"
+    override val themeTransitionDescription: String =
+        "Crossfade colors smoothly when the theme changes"
+    override val displayScale: String = "Display scale"
+    override val displayScaleDescription: String =
+        "Scales the whole interface (zoom)"
+    override val buttonScale: String = "Button scale"
+    override val buttonScaleDescription: String =
+        "Scales buttons and touch controls"
+    override val iconScale: String = "Icon scale"
+    override val iconScaleDescription: String =
+        "Scales icons across the interface"
+    override val openThemeStudio: String = "Open Theme Studio"
+    override val openThemeStudioDescription: String =
+        "Deep theme editor — colors, gradients, motion and layout"
+
+    override val a11yTextScale: String = "Text scale"
+    override val a11yTextScaleDescription: String =
+        "Scales text across the whole application"
+    override val a11yLargeIcons: String = "Larger navigation icons"
+    override val a11yLargeIconsDescription: String =
+        "Enlarge icons in the sidebar and floating launcher"
+    override val a11yLargeHitboxes: String = "Larger touch targets"
+    override val a11yLargeHitboxesDescription: String =
+        "Expand the clickable area of navigation controls"
+    override val a11yHighContrast: String = "High contrast"
+    override val a11yHighContrastDescription: String =
+        "Stronger contrast for the navigation surfaces"
+    override val a11yReduceMotion: String = "Reduce navigation motion"
+    override val a11yReduceMotionDescription: String =
+        "Disable navigation and launcher animations"
+    override val a11yKeyboardNav: String = "Keyboard navigation"
+    override val a11yKeyboardNavDescription: String =
+        "Move between destinations with arrow keys and shortcuts"
+
+    override val resetAllLabel: String = "Reset all settings"
+    override val resetAllDescription: String =
+        "Restore every category to its default values"
+    override val resetAllConfirmTitle: String = "Reset all settings?"
+    override val resetAllConfirmMessage: String =
+        "All settings in every category will be restored to their defaults. This cannot be undone."
+
+    override val speedOff: String = "Off"
+    override val speedFast: String = "Fast"
+    override val speedNormal: String = "Normal"
+    override val speedSlow: String = "Slow"
+    override val densityCompact: String = "Compact"
+    override val densityComfortable: String = "Comfortable"
+    override val densitySpacious: String = "Spacious"
+    override val radiusSquare: String = "Sharp"
+    override val radiusRounded: String = "Rounded"
+    override val radiusVeryRounded: String = "Very rounded"
+    override val radiusSoft: String = "Soft"
+    override val newCardsFirst: String = "First"
+    override val newCardsLast: String = "Last"
+    override val newCardsMixed: String = "Mixed"
+
+    override val shuffle: String = "Shuffle order"
+    override val shuffleDescription: String =
+        "Randomize the order of items in practice sessions"
+    override val newCardsOrder: String = "New cards order"
+    override val newCardsOrderDescription: String =
+        "Where new cards appear in a session"
+    override val highlightRadicals: String = "Highlight radicals"
+    override val highlightRadicalsDescription: String =
+        "Show the radical breakdown of letters during writing"
+    override val kanaAutoPlay: String = "Kana audio autoplay"
+    override val kanaAutoPlayDescription: String =
+        "Play the kana reading automatically in practice"
+    override val letterPracticeType: String = "Letter practice type"
+    override val letterPracticeTypeDescription: String =
+        "Practice mode used from the Letters dashboard"
+    override val vocabPracticeType: String = "Vocab practice type"
+    override val vocabPracticeTypeDescription: String =
+        "Practice mode used from the Vocab dashboard"
+
+    override val vocabStrictness: String = "Vocab stroke strictness"
+    override val vocabStrictnessDescription: String =
+        "Tighter tolerances for stroke recognition of words"
+
+    override val romajiFurigana: String = "Romaji furigana"
+    override val romajiFuriganaDescription: String =
+        "Show romaji above kana words in reading practice"
+
+    override val notificationsHint: String =
+        "Daily study reminders are available on Android"
+
+    override val importExport: String = "Import / Export"
+    override val importExportDescription: String =
+        "Anki packages and other transfers"
+    override val shortcutsLink: String = "Keyboard shortcuts"
+    override val shortcutsLinkDescription: String =
+        "View and customize review and navigation shortcuts"
+    override val creditsLink: String = "Credits"
+    override val creditsLinkDescription: String =
+        "Contributors, translators and open-source libraries"
+    override val feedbackLink: String = "Send feedback"
+    override val feedbackLinkDescription: String =
+        "Report issues or suggest improvements"
+    override val aboutLink: String = "About Kaiteyo"
+    override val aboutLinkDescription: String =
+        "Version, project info and documentation"
+    override val accountLink: String = "Account"
+    override val accountLinkDescription: String =
+        "Profile, subscription and sign-in"
+    override val syncLink: String = "Sync"
+    override val syncLinkDescription: String =
+        "Synchronize your progress across devices"
+    override val backupLink: String = "Backup & Restore"
+    override val backupLinkDescription: String =
+        "Create and restore database backups"
+    override val themeStudioTarget: String = "Theme Studio"
 }
 
 object EnglishNavStrings : NavStrings {
@@ -92,9 +312,11 @@ object EnglishNavStrings : NavStrings {
     override val backupLabel: String = EnglishBackupStrings.title
     override val syncLabel: String = EnglishSyncScreenStrings.title
     override val creditsLabel: String = EnglishCreditsStrings.title
-    override val modeExpandedTooltip: String = "Full sidebar"
-    override val modeCompactTooltip: String = "Compact sidebar"
-    override val modeBubbleTooltip: String = "Floating launcher"
+    override val modeFloatingLabel: String = "Floating"
+    override val modeSidebarLabel: String = "Sidebar"
+    override val modeSwitchTitle: String = "Navigation mode"
+    override val sidebarExpandedLabel: String = "Expanded"
+    override val sidebarCompactLabel: String = "Compact"
     override val placementLabel: String = "Placement"
     override val settingsLabel: String = "Navigation settings"
     override val kanjiBrowserLabel: String = "Kanji Browser"
@@ -109,7 +331,7 @@ object EnglishNavStrings : NavStrings {
 
     override val generalTabLabel: String = "General"
     override val sidebarTabLabel: String = "Sidebar"
-    override val bubbleTabLabel: String = "Bubble"
+    override val floatingTabLabel: String = "Floating"
     override val phoneTabLabel: String = "Phone"
     override val accessibilityTabLabel: String = "Accessibility"
 
@@ -119,6 +341,8 @@ object EnglishNavStrings : NavStrings {
     override val labelsVisibilityLabel: String = "Labels"
 
     override val bubbleIconSizeLabel: String = "Icon size"
+    override val snapPositionLabel: String = "Snap position"
+    override val sidebarLayoutLabel: String = "Sidebar layout"
 
     override val phoneNavPositionLabel: String = "Navigation position"
     override val phoneLauncherPositionLabel: String = "Launcher position"
@@ -144,6 +368,9 @@ object EnglishHomeStrings : HomeStrings {
 }
 
 object EnglishCommonDashboardStrings : CommonDashboardStrings {
+
+    override val loadFailedTitle: String = "Couldn't load your decks"
+    override val retryButton: String = "Retry"
 
     override val emptyScreenMessage: (inlineIconId: String) -> AnnotatedString = { inlineIconId ->
         buildAnnotatedString {
@@ -173,6 +400,10 @@ object EnglishCommonDashboardStrings : CommonDashboardStrings {
     override val sortAcceptButton: String = "Apply"
     override val sortTitle: String = "Change decks order"
     override val sortByTimeTitle: String = "Sort by last review time"
+
+    override val archiveButton: String = "Archive"
+    override val restoreButton: String = "Restore"
+    override val archivedSectionTitle: (Int) -> String = { "Archived ($it)" }
 
     override val itemTimeMessage: (Duration?) -> String = {
         "Last review: " + when {
@@ -700,6 +931,18 @@ object EnglishCommonPracticeStrings : CommonPracticeStrings {
         "Navigate to the summary, your current progress is already saved"
     override val earlyFinishDialogCancelButton: String = "Cancel"
     override val earlyFinishDialogAcceptButton: String = "Finish"
+
+    override val writingStrokeCorrect: String = "Correct"
+    override val writingStrokeAlmost: String = "Almost"
+    override val writingStrokeIncorrect: String = "Try again"
+
+    override val sequenceIssueWrongOrder: String = "Wrong stroke order"
+    override val sequenceIssueMissingStroke: String = "Missing stroke"
+    override val sequenceIssueExtraStroke: String = "Extra stroke"
+
+    override val writingStrokeAccuracyTitle: String = "Stroke Accuracy"
+    override val writingStrokeAccuracy: (Int) -> String = { "Stroke accuracy: $it%" }
+    override val writingWrongOrder: (Int) -> String = { "Wrong order: $it" }
 }
 
 object EnglishLetterPracticeStrings : LetterPracticeStrings {
@@ -714,6 +957,12 @@ object EnglishLetterPracticeStrings : LetterPracticeStrings {
         "Choose whether to validate each stroke or the entire letter"
     override val inputModeStroke: String = "Stroke"
     override val inputModeCharacter: String = "Letter"
+    override val evaluationStrictnessTitle: String = "Stroke Strictness"
+    override val evaluationStrictnessMessage: String =
+        "Tighter tolerances for stroke recognition — Exam is the strictest"
+    override val evaluationStrictnessNormal: String = "Normal"
+    override val evaluationStrictnessHard: String = "Hard"
+    override val evaluationStrictnessExam: String = "Exam"
     override val kanaRomajiTitle: String = "Show romaji in kana practice"
     override val kanaRomajiMessage: String =
         "When reviewing kana show romaji expressions instead of kana"

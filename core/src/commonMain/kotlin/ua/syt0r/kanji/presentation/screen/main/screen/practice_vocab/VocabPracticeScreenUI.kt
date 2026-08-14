@@ -2,10 +2,13 @@ package ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
@@ -24,8 +27,10 @@ import ua.syt0r.kanji.presentation.common.ui.FancyLoading
 import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationContainer
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationEnumSelector
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationItemsSelector
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationOption
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingStrictness
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeEarlyFinishDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeSummaryContainer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeSummaryEmptyList
@@ -187,11 +192,19 @@ private fun ScreenConfiguration(
 
             ScreenVocabPracticeType.Writing -> {
                 var showKanaReading by screenState.writing.showKanaReading
+                var selectedStrictness by screenState.writing.strictness
                 PracticeConfigurationOption(
                     title = resolveString { vocabPractice.writingKanaReadingConfigurationTitle },
                     subtitle = resolveString { vocabPractice.writingKanaReadingConfigurationMessage },
                     checked = showKanaReading,
                     onChange = { showKanaReading = it }
+                )
+                PracticeConfigurationEnumSelector(
+                    title = resolveString { letterPractice.evaluationStrictnessTitle },
+                    subtitle = resolveString { letterPractice.evaluationStrictnessMessage },
+                    values = WritingStrictness.entries,
+                    selected = selectedStrictness,
+                    onSelected = { selectedStrictness = it }
                 )
             }
         }
@@ -269,10 +282,26 @@ private fun ScreenSummary(
                 PracticeSummaryItem(
                     index = index,
                     header = {
-                        FuriganaText(
-                            furiganaString = item.reading,
-                            modifier = Modifier
-                        )
+                        Column {
+                            FuriganaText(
+                                furiganaString = item.reading,
+                                modifier = Modifier
+                            )
+                            val strokeAccuracy = item.strokeAccuracyPercent
+                            if (strokeAccuracy != null) {
+                                val details = buildList {
+                                    add(resolveString { commonPractice.writingStrokeAccuracy(strokeAccuracy) })
+                                    if (item.wrongOrderCount > 0) {
+                                        add(resolveString { commonPractice.writingWrongOrder(item.wrongOrderCount) })
+                                    }
+                                }
+                                Text(
+                                    text = details.joinToString(" · "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     },
                     totalReviews = item.totalReviews,
                     nextInterval = item.nextInterval,

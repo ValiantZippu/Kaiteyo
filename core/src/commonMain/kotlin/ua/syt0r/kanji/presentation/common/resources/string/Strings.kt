@@ -88,6 +88,7 @@ interface Strings {
     val reminderNotification: ReminderNotificationStrings
 
     val nav: NavStrings
+    val center: SettingsCenterStrings
 
 }
 
@@ -105,9 +106,14 @@ interface NavStrings {
     val syncLabel: String
     val accountLabel: String
     val creditsLabel: String
-    val modeExpandedTooltip: String
-    val modeCompactTooltip: String
-    val modeBubbleTooltip: String
+
+    // Modes
+    val modeFloatingLabel: String
+    val modeSidebarLabel: String
+    val modeSwitchTitle: String
+    val sidebarExpandedLabel: String
+    val sidebarCompactLabel: String
+
     val placementLabel: String
     val settingsLabel: String
     val kanjiBrowserLabel: String
@@ -124,7 +130,7 @@ interface NavStrings {
     // Settings tabs
     val generalTabLabel: String
     val sidebarTabLabel: String
-    val bubbleTabLabel: String
+    val floatingTabLabel: String
     val phoneTabLabel: String
     val accessibilityTabLabel: String
 
@@ -134,8 +140,10 @@ interface NavStrings {
     val compactSpacingLabel: String
     val labelsVisibilityLabel: String
 
-    // Bubble settings
+    // Floating (bubble) settings
     val bubbleIconSizeLabel: String
+    val snapPositionLabel: String
+    val sidebarLayoutLabel: String
 
     // Phone settings
     val phoneNavPositionLabel: String
@@ -307,6 +315,9 @@ interface HomeStrings {
 
 interface CommonDashboardStrings {
 
+    val loadFailedTitle: String
+    val retryButton: String
+
     val emptyScreenMessage: (inlineIconId: String) -> AnnotatedString
 
     val mergeButton: String
@@ -327,6 +338,10 @@ interface CommonDashboardStrings {
     val sortAcceptButton: String
     val sortTitle: String
     val sortByTimeTitle: String
+
+    val archiveButton: String
+    val restoreButton: String
+    val archivedSectionTitle: (count: Int) -> String
 
     val itemTimeMessage: (reviewToNowDuration: Duration?) -> String
     val itemTotal: String
@@ -388,6 +403,188 @@ interface AlternativeDialogStrings {
     val meaningsTitle: String
     val reportButton: String
     val closeButton: String
+}
+
+interface SettingsCenterStrings {
+
+    // Shell
+    val searchPlaceholder: String
+    val searchNoResults: String
+    val searchNoResultsHint: String
+    val livePreviewLabel: String
+    val changesApplyInstantly: String
+    val resetToDefaults: String
+    val resetConfirmTitle: (category: String) -> String
+    val resetConfirmMessage: (category: String) -> String
+    val cancel: String
+    val confirm: String
+
+    // Categories
+    val categoryGeneral: String
+    val categoryGeneralSubtitle: String
+    val categoryAppearance: String
+    val categoryAppearanceSubtitle: String
+    val categoryNavigation: String
+    val categoryNavigationSubtitle: String
+    val categoryStudy: String
+    val categoryStudySubtitle: String
+    val categoryWriting: String
+    val categoryWritingSubtitle: String
+    val categoryFlashcards: String
+    val categoryFlashcardsSubtitle: String
+    val categoryNotifications: String
+    val categoryNotificationsSubtitle: String
+    val categoryData: String
+    val categoryDataSubtitle: String
+    val categoryShortcuts: String
+    val categoryShortcutsSubtitle: String
+    val categoryAbout: String
+    val categoryAboutSubtitle: String
+    val categoryAccessibility: String
+    val categoryAccessibilitySubtitle: String
+
+    // Groups
+    val groupStartup: String
+    val groupSchedule: String
+    val groupStudy: String
+    val groupApplication: String
+    val groupAppearance: String
+    val groupTheme: String
+    val groupTypography: String
+    val groupMotion: String
+    val groupInput: String
+    val groupStroke: String
+    val groupFlashcard: String
+    val groupRelated: String
+    val groupLayout: String
+    val groupAdvanced: String
+    val groupDisplay: String
+    val groupInteraction: String
+
+    // General
+    val defaultTab: String
+    val defaultTabDescription: String
+    val dailyResetTime: String
+    val dailyResetTimeDescription: String
+    val dailyLimit: String
+    val dailyLimitDescription: String
+    val language: String
+    val languageDescription: String
+
+    // Appearance
+    val themeMode: String
+    val themeModeDescription: String
+    val accentColor: String
+    val accentColorDescription: String
+    val cornerRadius: String
+    val cornerRadiusDescription: String
+    val density: String
+    val densityDescription: String
+    val animationSpeed: String
+    val animationSpeedDescription: String
+    val reducedMotion: String
+    val reducedMotionDescription: String
+    val fontScale: String
+    val fontScaleDescription: String
+    val titleScale: String
+    val titleScaleDescription: String
+    val lineHeight: String
+    val lineHeightDescription: String
+    val letterSpacing: String
+    val letterSpacingDescription: String
+    val pageTransition: String
+    val pageTransitionDescription: String
+    val themeTransition: String
+    val themeTransitionDescription: String
+    val displayScale: String
+    val displayScaleDescription: String
+    val buttonScale: String
+    val buttonScaleDescription: String
+    val iconScale: String
+    val iconScaleDescription: String
+    val openThemeStudio: String
+    val openThemeStudioDescription: String
+
+    // Accessibility
+    val a11yTextScale: String
+    val a11yTextScaleDescription: String
+    val a11yLargeIcons: String
+    val a11yLargeIconsDescription: String
+    val a11yLargeHitboxes: String
+    val a11yLargeHitboxesDescription: String
+    val a11yHighContrast: String
+    val a11yHighContrastDescription: String
+    val a11yReduceMotion: String
+    val a11yReduceMotionDescription: String
+    val a11yKeyboardNav: String
+    val a11yKeyboardNavDescription: String
+
+    // Reset all
+    val resetAllLabel: String
+    val resetAllDescription: String
+    val resetAllConfirmTitle: String
+    val resetAllConfirmMessage: String
+
+    // Option labels
+    val speedOff: String
+    val speedFast: String
+    val speedNormal: String
+    val speedSlow: String
+    val densityCompact: String
+    val densityComfortable: String
+    val densitySpacious: String
+    val radiusSquare: String
+    val radiusRounded: String
+    val radiusVeryRounded: String
+    val radiusSoft: String
+    val newCardsFirst: String
+    val newCardsLast: String
+    val newCardsMixed: String
+
+    // Study
+    val shuffle: String
+    val shuffleDescription: String
+    val newCardsOrder: String
+    val newCardsOrderDescription: String
+    val highlightRadicals: String
+    val highlightRadicalsDescription: String
+    val kanaAutoPlay: String
+    val kanaAutoPlayDescription: String
+    val letterPracticeType: String
+    val letterPracticeTypeDescription: String
+    val vocabPracticeType: String
+    val vocabPracticeTypeDescription: String
+
+    // Writing
+    val vocabStrictness: String
+    val vocabStrictnessDescription: String
+
+    // Flashcards
+    val romajiFurigana: String
+    val romajiFuriganaDescription: String
+
+    // Notifications
+    val notificationsHint: String
+
+    // Links
+    val importExport: String
+    val importExportDescription: String
+    val shortcutsLink: String
+    val shortcutsLinkDescription: String
+    val creditsLink: String
+    val creditsLinkDescription: String
+    val feedbackLink: String
+    val feedbackLinkDescription: String
+    val aboutLink: String
+    val aboutLinkDescription: String
+    val accountLink: String
+    val accountLinkDescription: String
+    val syncLink: String
+    val syncLinkDescription: String
+    val backupLink: String
+    val backupLinkDescription: String
+    val themeStudioTarget: String
+
 }
 
 interface SettingsStrings {
@@ -673,6 +870,21 @@ interface CommonPracticeStrings {
     val earlyFinishDialogMessage: String
     val earlyFinishDialogCancelButton: String
     val earlyFinishDialogAcceptButton: String
+
+    // Real-time stroke feedback (language-neutral short labels)
+    val writingStrokeCorrect: String
+    val writingStrokeAlmost: String
+    val writingStrokeIncorrect: String
+
+    // Whole-character sequence feedback
+    val sequenceIssueWrongOrder: String
+    val sequenceIssueMissingStroke: String
+    val sequenceIssueExtraStroke: String
+
+    // Summary writing stats
+    val writingStrokeAccuracyTitle: String
+    val writingStrokeAccuracy: (Int) -> String
+    val writingWrongOrder: (Int) -> String
 }
 
 interface LetterPracticeStrings {
@@ -686,6 +898,11 @@ interface LetterPracticeStrings {
     val inputModeMessage: String
     val inputModeStroke: String
     val inputModeCharacter: String
+    val evaluationStrictnessTitle: String
+    val evaluationStrictnessMessage: String
+    val evaluationStrictnessNormal: String
+    val evaluationStrictnessHard: String
+    val evaluationStrictnessExam: String
     val kanaRomajiTitle: String
     val kanaRomajiMessage: String
     val noTranslationLayoutTitle: String

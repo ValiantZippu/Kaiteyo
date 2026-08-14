@@ -2,14 +2,9 @@ package ua.syt0r.kanji.core.transfer
 
 import kotlinx.coroutines.flow.StateFlow
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.KaiteyoCard
-import ua.syt0r.kanji.core.transfer.TransferFormat
-import ua.syt0r.kanji.core.transfer.ImportPreview
-import ua.syt0r.kanji.core.transfer.ImportResult
-import ua.syt0r.kanji.core.transfer.ConflictPolicy
 
-// Forward declarations for types defined below
-typealias ExportFormat = ImportExportContract.ExportFormat
-typealias ExportConfig = ImportExportContract.ExportConfig
+// ConflictPolicy, ImportPreview, ImportResult and TransferFormat resolve to
+// their top-level declarations in this package (single source of truth).
 
 interface ImportExportContract {
 
@@ -17,7 +12,13 @@ interface ImportExportContract {
         val state: StateFlow<ScreenState>
 
         fun loadCards()
+
+        /** Preview a text import (JSON / CSV / TSV / TXT). */
         fun previewImport(text: String, format: TransferFormat)
+
+        /** Preview a binary import (APKG). */
+        fun previewImportBytes(bytes: ByteArray, format: TransferFormat)
+
         fun applyImport(policy: ConflictPolicy)
         fun export(config: ExportConfig): Result<String>
         fun exportToFile(config: ExportConfig, fileName: String): Result<ByteArray>
@@ -64,8 +65,6 @@ interface ImportExportContract {
     enum class TransferFormat { Json, Csv, Tsv, Txt, Apkg }
 
     enum class ExportFormat { Json, Csv, Tsv, Txt, Apkg }
-
-    enum class ConflictPolicy { KeepExisting, OverwriteExisting, Skip, KeepNewest }
 
     data class ExportConfig(
         val format: ExportFormat = ExportFormat.Csv,

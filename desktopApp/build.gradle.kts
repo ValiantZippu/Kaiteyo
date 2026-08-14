@@ -3,6 +3,8 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.compose")
+    // @Serializable models (SettingsEngine snapshots, KJD patch feed).
+    kotlin("plugin.serialization")
     id("org.jetbrains.compose")
     id("com.mikepenz.aboutlibraries.plugin")
 }
@@ -23,6 +25,9 @@ kotlin {
             dependencies {
                 implementation(compose.components.resources)
                 implementation(project(":core"))
+                // KJD Japanese data platform — incremental patch apply for the
+                // bundled language database (DatabasePatcher / DatabasePatch).
+                implementation(project(":kjd"))
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.netty)
                 // Native OS window dragging on Windows (WM_NCLBUTTONDOWN) and
@@ -30,6 +35,16 @@ kotlin {
                 // so the desktop module never depends on generated aliases.
                 implementation("net.java.dev.jna:jna:5.14.0")
                 implementation("net.java.dev.jna:jna-platform:5.14.0")
+                // VLC playback backend (embedded video via VLCJ). GPL-3.0 —
+                // compatible with Kaiteyo's GPL-3.0 license. The app degrades
+                // gracefully when VLC is not installed.
+                implementation(libs.vlcj)
+            }
+        }
+
+        jvmTest {
+            dependencies {
+                implementation(kotlin("test"))
             }
         }
 

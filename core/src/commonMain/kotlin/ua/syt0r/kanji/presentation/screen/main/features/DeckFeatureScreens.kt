@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -58,12 +59,16 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
+import org.koin.compose.koinInject
+import ua.syt0r.kanji.core.statistics.DayItemPractice
+import ua.syt0r.kanji.core.statistics.DayPracticeBreakdown
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.AnkiOperationsFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.BackupManagerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.BulkActionsFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardBrowserFullScreen
+import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardDifficulty
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardFlagType
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardManager
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus
@@ -77,7 +82,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.decks.KeyboardShortcutsPag
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.NoteEditorFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.ReviewSettingsFullScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.SearchEngineScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.decks.StatisticsDashboardV2
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.TagManagerScreenFull
 
 val LocalDeckFeaturesController = staticCompositionLocalOf<DeckFeaturesController?> { null }
@@ -94,6 +98,43 @@ fun DeckFeaturesProvider(
 private fun deckController(): DeckFeaturesController =
     LocalDeckFeaturesController.current ?: error("DeckFeaturesController is not provided")
 
+@Composable
+private fun LoadingView() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorView(onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Could not load data",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = "The data failed to load. Retry to try again.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(onClick = onRetry) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Text("Retry")
+            }
+        }
+    }
+}
+
 // ============================================
 // ROUTES — real database-backed wrappers
 // ============================================
@@ -102,6 +143,14 @@ private fun deckController(): DeckFeaturesController =
 fun TagManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     TagManagerScreenFull(
         tags = controller.tags,
         cards = controller.cards,
@@ -118,6 +167,14 @@ fun TagManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}
 fun FlagManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     FlagManagerScreenFull(
         cards = controller.cards,
         onFlagCard = { id, flag -> scope.launch { controller.setFlagForCards(listOf(id), flag) } },
@@ -131,6 +188,14 @@ fun FlagManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
 fun NoteEditorRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     var cards by remember { mutableStateOf(controller.cards) }
     NoteEditorFullScreen(
         cards = cards,
@@ -146,6 +211,14 @@ fun NoteEditorRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}
 fun ReviewSettingsRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     ReviewSettingsFullScreen(
         initialSettings = controller.reviewSettings,
         onSave = { settings -> scope.launch { controller.saveReviewSettings(settings) } },
@@ -157,6 +230,14 @@ fun ReviewSettingsRoute(controller: DeckFeaturesController, onClose: () -> Unit 
 fun KeyboardShortcutsRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     KeyboardShortcutsPage(
         initialShortcuts = controller.shortcuts,
         onSave = { list -> scope.launch { list.forEach { controller.saveShortcut(it) } } },
@@ -167,6 +248,15 @@ fun KeyboardShortcutsRoute(controller: DeckFeaturesController, onClose: () -> Un
 @Composable
 fun SearchRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
+    val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     SearchEngineScreen(
         cards = controller.cards,
         onClose = onClose
@@ -177,6 +267,14 @@ fun SearchRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
 fun BulkActionsRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     BulkActionsFullScreen(
         cards = controller.cards,
         tags = controller.tags,
@@ -188,6 +286,15 @@ fun BulkActionsRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
 @Composable
 fun HistoryRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
+    val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     HistoryFullScreen(
         cards = controller.cards,
         history = controller.history,
@@ -199,6 +306,14 @@ fun HistoryRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
 fun CardBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     CardBrowserFullScreen(
         cards = controller.cards,
         onFlagCard = { id, flag -> scope.launch { controller.setFlagForCards(listOf(id), flag) } },
@@ -209,8 +324,123 @@ fun CardBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
 }
 
 @Composable
+fun DayPracticeCardsRoute(
+    day: String,
+    onClose: () -> Unit = {}
+) {
+    val controller = koinInject<DeckFeaturesController>()
+    val statisticsController = koinInject<StatisticsController>()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        controller.ensureLoaded()
+        statisticsController.ensureLoaded()
+    }
+
+    if (controller.isLoading || statisticsController.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError || statisticsController.loadError) {
+        ErrorView(onRetry = {
+            scope.launch {
+                controller.loadAll()
+                statisticsController.load()
+            }
+        })
+        return
+    }
+
+    val date = remember(day) {
+        runCatching { kotlinx.datetime.LocalDate.parse(day) }.getOrNull()
+    }
+
+    // Resolve the real set of cards practiced on that day from review history.
+    var breakdown by remember { mutableStateOf<DayPracticeBreakdown?>(null) }
+    LaunchedEffect(date) {
+        breakdown = date?.let {
+            runCatching { statisticsController.itemsPracticedOnDay(it) }.getOrNull()
+        }
+    }
+
+    val practicedKeys = remember(breakdown) {
+        buildSet {
+            breakdown?.kanji?.forEach { add(it.key) }
+            breakdown?.vocab?.forEach { add(it.key) }
+        }
+    }
+
+    // Pass the full shared catalog (plus vocabulary rows synthesized from the
+    // day's history) so the preset filter genuinely narrows it: clearing the
+    // day chip reveals the whole library instead of a no-op.
+    val libraryCards = remember(controller.cards, breakdown) {
+        val catalogKeys = controller.cards.map { it.id }.toSet()
+        val synthesizedVocab = breakdown?.vocab.orEmpty()
+            .filter { it.key !in catalogKeys }
+            .map { it.toLibraryCard(day) }
+        controller.cards + synthesizedVocab
+    }
+
+    CardBrowserFullScreen(
+        cards = libraryCards,
+        presetCardIds = practicedKeys,
+        presetLabel = "Practiced on $day",
+        onFlagCard = { id, flag -> scope.launch { controller.setFlagForCards(listOf(id), flag) } },
+        onStatusChange = { id, status -> scope.launch { controller.changeCardStatus(id, status) } },
+        onUpdateCard = { card -> scope.launch { controller.updateCardFields(card) } },
+        onClose = onClose
+    )
+}
+
+/** Synthesizes a browser row for a vocabulary item practiced on a given day. */
+private fun DayItemPractice.toLibraryCard(day: String): KaiteyoCard = KaiteyoCard(
+    id = key,
+    character = content.ifBlank { key },
+    meaning = meaning.ifBlank { reading },
+    reading = reading,
+    deck = "Vocabulary",
+    deckId = 0L,
+    tags = mutableListOf(),
+    tagNames = mutableListOf(practiceLabel.lowercase().replace(" ", "-")),
+    flag = CardFlagType.None,
+    notes = "",
+    status = when {
+        accuracy >= 0.9f -> CardStatus.Mature
+        accuracy >= 0.7f -> CardStatus.Young
+        else -> CardStatus.Learning
+    },
+    difficulty = CardDifficulty.Good,
+    priority = 0,
+    isSuspended = false,
+    isBuried = false,
+    isArchived = false,
+    isFavorite = false,
+    customFields = mutableMapOf(),
+    aliases = mutableListOf(),
+    relatedCards = mutableListOf(),
+    createdAt = day,
+    modifiedAt = day,
+    lastReviewed = day,
+    reviewCount = count,
+    interval = 0,
+    ease = 2.5f,
+    lapses = mistakes,
+    accuracy = accuracy,
+    totalTimeStudied = 0L
+)
+
+@Composable
 fun CardManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
+    val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     CardManager(
         initialCards = controller.cards,
         stats = controller.stats,
@@ -222,6 +452,14 @@ fun CardManagerRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
 fun AnkiOperationsRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     AnkiOperationsFullScreen(
         cards = controller.cards,
         onOperation = { operation, cards -> scope.launch { controller.runCardOperation(operation, cards) } },
@@ -233,6 +471,14 @@ fun AnkiOperationsRoute(controller: DeckFeaturesController, onClose: () -> Unit 
 fun DeckBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     val decks = remember(controller.cards) { buildRealDecks(controller.cards) }
     DeckBrowserFullScreen(
         decks = decks,
@@ -250,6 +496,14 @@ fun DeckBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
 fun BackupRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     BackupManagerScreen(
         backups = controller.backups,
         config = controller.backupConfig,
@@ -278,29 +532,37 @@ fun BackupRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
 @Composable
 fun ImportExportRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
+    val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     ImportExportScreen()
 }
 
 // ============================================
 // REAL SCREENS
-// Statistics, Undo & History, Collections,
-// Card status manager
+// Undo & History, Collections, Card status
+// manager. (Statistics lives in the unified
+// screen/statistics/StatisticsScreen.kt.)
 // ============================================
-
-@Composable
-fun DeckStatisticsScreen(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
-    LaunchedEffect(Unit) { controller.ensureLoaded() }
-    StatisticsDashboardV2(
-        stats = controller.stats,
-        heatmap = controller.heatmap,
-        onClose = onClose
-    )
-}
 
 @Composable
 fun UndoHistoryScreen(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     val surfaceColors = LocalSurfaceColors.current
 
     Scaffold(
@@ -412,6 +674,14 @@ fun UndoHistoryScreen(controller: DeckFeaturesController, onClose: () -> Unit = 
 fun CollectionsScreen(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     var selectedCollection by remember { mutableStateOf<KaiteyoCollection?>(null) }
@@ -525,6 +795,14 @@ fun CollectionsScreen(controller: DeckFeaturesController, onClose: () -> Unit = 
 fun CardStatusScreen(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
     val surfaceColors = LocalSurfaceColors.current
 
     Scaffold(

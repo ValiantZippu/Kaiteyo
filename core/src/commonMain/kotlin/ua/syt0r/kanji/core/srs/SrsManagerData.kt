@@ -25,6 +25,7 @@ interface SrsDeckData<PracticeType, ItemType> {
     val id: Long
     val title: String
     val position: Int
+    val isArchived: Boolean
     val items: List<ItemType>
     val lastReview: Instant?
     val progressMap: Map<PracticeType, SrsDeckProgress<ItemType>>
@@ -47,6 +48,7 @@ data class SrsDeckDescriptor<ItemType, P : PracticeType>(
     val id: Long,
     val title: String,
     val position: Int,
+    val isArchived: Boolean,
     val lastReview: Instant?,
     val items: List<ItemType>,
     val itemsData: Map<P, PracticeTypeDeckData<ItemType>>

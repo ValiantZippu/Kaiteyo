@@ -36,6 +36,8 @@ fun LetterDashboardBottomBarUI(
             }
 
             ScreenState.Loading -> Box(Modifier.fillMaxWidth())
+
+            is ScreenState.Error -> Box(Modifier.fillMaxWidth())
         }
 
     }

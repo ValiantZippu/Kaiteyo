@@ -83,6 +83,7 @@ fun DeckEditScreenUI(
     dismissSearchResult: () -> Unit,
     onItemClick: (DeckEditListItem) -> Unit,
     toggleRemoval: (DeckEditListItem) -> Unit,
+    resetSrs: (DeckEditListItem) -> Unit,
     editItem: (VocabDeckEditListItem) -> Unit,
     saveChanges: () -> Unit,
     deleteDeck: () -> Unit,
@@ -168,6 +169,7 @@ fun DeckEditScreenUI(
                         dismissSearchResult = dismissSearchResult,
                         onItemClick = onItemClick,
                         toggleRemoval = toggleRemoval,
+                        resetSrs = resetSrs,
                         editItem = editItem,
                         toggleArchive = toggleArchive,
                         onSaveConfirmed = saveChanges
@@ -279,6 +281,7 @@ private fun LoadedState(
     dismissSearchResult: () -> Unit,
     onItemClick: (DeckEditListItem) -> Unit,
     toggleRemoval: (DeckEditListItem) -> Unit,
+    resetSrs: (DeckEditListItem) -> Unit,
     editItem: (VocabDeckEditListItem) -> Unit,
     toggleArchive: () -> Unit,
     onSaveConfirmed: () -> Unit
@@ -307,7 +310,8 @@ private fun LoadedState(
                     extraListSpacerState = extraListSpacerState,
                     submitSearch = onInputSubmit,
                     onItemClick = onItemClick,
-                    toggleRemoval = toggleRemoval
+                    toggleRemoval = toggleRemoval,
+                    onResetSrs = resetSrs
                 )
 
                 screenState.lastSearchResult.value

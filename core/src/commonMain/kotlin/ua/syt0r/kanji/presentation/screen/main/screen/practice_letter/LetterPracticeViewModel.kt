@@ -132,9 +132,16 @@ class LetterPracticeViewModel(
                     .coerceAtLeast(0)
                 correctStrokes.toFloat() * 100 / totalStrokeCount
             }
+        val strokeAccuracy = items
+            .filterIsInstance<LetterPracticeSummaryItem.Writing>()
+            .mapNotNull { it.strokeAccuracyPercent }
+            .takeIf { it.isNotEmpty() }
+            ?.average()
+            ?.toInt()
         return ScreenState.Summary(
             duration = duration,
             accuracy = accuracy,
+            strokeAccuracy = strokeAccuracy,
             items = items
         )
     }

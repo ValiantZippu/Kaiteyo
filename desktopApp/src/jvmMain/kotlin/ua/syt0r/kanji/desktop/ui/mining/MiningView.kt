@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,12 +35,21 @@ import ua.syt0r.kanji.desktop.designsystem.DsCard
 import ua.syt0r.kanji.desktop.designsystem.DsConfirmDialog
 import ua.syt0r.kanji.desktop.designsystem.DsDialog
 import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
+import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
+import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
+import ua.syt0r.kanji.desktop.designsystem.DsStatTile
 import ua.syt0r.kanji.desktop.designsystem.DsTextArea
 import ua.syt0r.kanji.desktop.designsystem.DsTextField
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.todayIn
 import ua.syt0r.kanji.desktop.engine.mining.MiningPayload
 import ua.syt0r.kanji.desktop.engine.mining.MiningSource
 import ua.syt0r.kanji.desktop.engine.mining.MiningTemplate
@@ -61,7 +71,7 @@ fun MiningView(state: AppState) {
     Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
         DsSectionHeader(
             title = "Mining",
-            subtitle = "Review and refine words before they become cards. ${mining.minedRecords.size} mined so far.",
+            subtitle = "Review and refine words before they become cards. ${state.miningStatistics.totalMined} mined all-time.",
             action = {
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                     DsButton(
@@ -72,6 +82,20 @@ fun MiningView(state: AppState) {
                 }
             }
         )
+
+        // Mining volume at a glance — every source, real records.
+        val miningStats = state.miningStatistics
+        val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+        val weekStart = today.minus(6, DateTimeUnit.DAY)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            DsStatTile("Mined all-time", miningStats.totalMined.toString(), Modifier.weight(1f))
+            DsStatTile("This week", miningStats.minedBetween(weekStart, today).toString(), Modifier.weight(1f))
+            DsStatTile("This month", miningStats.minedBetween(LocalDate(today.year, today.month, 1), today).toString(), Modifier.weight(1f))
+            DsStatTile("Sources", miningStats.bySource.size.toString(), Modifier.weight(1f))
+        }
 
         DsCard {
             Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
@@ -120,6 +144,16 @@ fun MiningView(state: AppState) {
                             Text(rec.headword, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                             DsBadge(text = rec.source, tint = sc.textSecondary)
                             Text(rec.createdAt.take(10), color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.padding(start = DsSpacing.Md))
+                            val event = state.media.miningEvents.firstOrNull { it.cardId == rec.cardId }
+                            val sourceCard = state.cards.firstOrNull { it.id == rec.cardId }
+                            if (event != null && sourceCard != null) {
+                                DsIconButton(
+                                    icon = Icons.Default.PlayArrow,
+                                    onClick = { state.media.openFromCard(sourceCard) },
+                                    contentDescription = "Open in Media at timestamp",
+                                    size = 26.dp
+                                )
+                            }
                         }
                     }
                 }
@@ -234,7 +268,33 @@ fun MiningDialog(state: AppState) {
                 placeholder = "tags, comma, separated",
                 label = "Tags"
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md), verticalAlignment = Alignment.CenterVertically) {
+
+            // Deck selection — mined cards land in a real Kaiteyo deck.
+            val decks = state.library.allDecks()
+            if (decks.isNotEmpty()) {
+                val selectedDeck = remember(draft.deckId, decks) {
+                    decks.firstOrNull { it.id == draft.deckId } ?: decks.first()
+                }
+                DsSelect(
+                    selected = selectedDeck,
+                    options = decks,
+                    onSelected = { mining.draft = draft.copy(deckId = it.id) },
+                    labelOf = { "Deck: ${it.name}" },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Captured media assets attach to the card note automatically.
+            Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
+                if (draft.screenshotPath != null) {
+                    DsBadge(text = "📷 screenshot", tint = sc.textSecondary)
+                }
+                if (draft.audioPath != null) {
+                    DsBadge(text = "🔊 audio clip", tint = sc.textSecondary)
+                }
+                if (draft.timestamp != null) {
+                    DsBadge(text = "⏱ ${ua.syt0r.kanji.desktop.engine.media.MediaEngine.formatTime((draft.timestamp * 1000).toLong())}", tint = sc.textMuted)
+                }
                 Text("Example: ${draft.example}", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {

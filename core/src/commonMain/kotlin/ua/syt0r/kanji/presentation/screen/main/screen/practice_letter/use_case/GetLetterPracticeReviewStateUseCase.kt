@@ -33,7 +33,10 @@ class DefaultGetLetterPracticeReviewStateUseCase(
                             strokeEvaluator = descriptor.evaluator,
                             character = descriptor.character,
                             strokes = data.strokes,
-                            configuration = CharacterWriterConfiguration.StrokeInput(isStudyMode = true)
+                            configuration = CharacterWriterConfiguration.StrokeInput(
+                                isStudyMode = true,
+                                evaluationConfig = descriptor.evaluationConfig
+                            )
                         )
 
                         false -> null
@@ -45,10 +48,15 @@ class DefaultGetLetterPracticeReviewStateUseCase(
                         strokes = data.strokes,
                         configuration = when (descriptor.inputMode) {
                             WritingPracticeInputMode.Stroke -> {
-                                CharacterWriterConfiguration.StrokeInput(isStudyMode = false)
+                                CharacterWriterConfiguration.StrokeInput(
+                                    isStudyMode = false,
+                                    evaluationConfig = descriptor.evaluationConfig
+                                )
                             }
 
-                            WritingPracticeInputMode.Character -> CharacterWriterConfiguration.CharacterInput
+                            WritingPracticeInputMode.Character -> CharacterWriterConfiguration.CharacterInput(
+                                evaluationConfig = descriptor.evaluationConfig
+                            )
                         }
                     )
                 )

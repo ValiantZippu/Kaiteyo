@@ -37,8 +37,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
+import ua.syt0r.kanji.presentation.screen.main.screen.statistics.StatisticsScreen
 import kotlinx.datetime.Clock
 
 // ============================================
@@ -275,9 +278,13 @@ fun CardManager(
                     surfaceColors = surfaceColors
                 )
                 // One unified stats menu everywhere: the analytics dashboard
-                // (same screen as the Home Stats tab), which includes the study
-                // heatmap — the old standalone Stats/Heatmap tabs are gone.
-                "Stats" -> StatisticsDashboardV2(stats = stats, heatmap = heatmap, embedded = true)
+                // (same screen as the Home Stats tab and the Statistics
+                // destination), which includes the study heatmap and the exam
+                // system. All numbers come from the real StatisticsController.
+                "Stats" -> StatisticsScreen(
+                    controller = koinInject<StatisticsController>(),
+                    onClose = null
+                )
             }
         }
 

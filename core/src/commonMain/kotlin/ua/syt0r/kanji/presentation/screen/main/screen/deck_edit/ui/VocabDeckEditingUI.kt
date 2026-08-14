@@ -109,6 +109,7 @@ fun VocabDeckEditingUI(
                             val text = when (it) {
                                 is RefreshableData.Loaded<String> -> it.value
                                 is RefreshableData.Loading<*> -> ""
+                                is RefreshableData.Failed<*> -> ""
                             }
                             Text(text)
                         }

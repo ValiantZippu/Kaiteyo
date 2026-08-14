@@ -7,7 +7,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -25,10 +27,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.OpenInFull
@@ -43,25 +45,28 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -74,12 +79,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import kotlin.math.sqrt
 import ua.syt0r.kanji.desktop.appstate.AppState
-import ua.syt0r.kanji.desktop.appstate.LauncherAnchor
 import ua.syt0r.kanji.desktop.appstate.LauncherIconSize
 import ua.syt0r.kanji.desktop.appstate.LauncherSize
+import ua.syt0r.kanji.desktop.appstate.LauncherSnapPoint
 import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
@@ -89,12 +94,13 @@ import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 
 // ============================================
-// FLOATING LAUNCHER
-// An Android-chat-bubble style quick launcher.
-// Draggable, snaps to edges/corners with a
-// spring, auto-fades after inactivity, and
-// opens a compact quick-nav popup. Its position
-// is remembered across sessions.
+// FLOATING LAUNCHER — Floating mode
+// A draggable launcher bubble that magnetizes to
+// the nearest of the 12 snap points when released.
+//   · Tap / Enter        → launchpad (expands from the bubble)
+//   · Hold / right-click → mode switch panel (Floating ↔ Sidebar)
+//   · Drag               → free movement, spring snap on release
+// Auto-fades when idle; position + snap point persist.
 // ============================================
 
 /** The views surfaced by the launcher menu — the everyday destinations. */
@@ -110,6 +116,9 @@ private val launcherTargets: List<WorkspaceView> = listOf(
     WorkspaceView.Settings
 )
 
+/** How long a press must be held before the mode panel opens (ms). */
+private const val LongPressTimeoutMs = 480L
+
 /**
  * Dev-only capture mode. When the desktop app is launched with
  * `--capture-state=<shell|menu|launchpad|strip>` this local is set and the
@@ -124,6 +133,7 @@ fun DsFloatingLauncher(state: AppState) {
     val ac = accent()
     val density = LocalDensity.current
     val captureState = LocalCaptureState.current
+    val scope = rememberCoroutineScope()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
@@ -138,13 +148,16 @@ fun DsFloatingLauncher(state: AppState) {
             LauncherIconSize.Medium -> 22.dp
             LauncherIconSize.Large -> 26.dp
         }
+        // Premium squircle — consistent corner radius for every bubble size.
+        val bubbleShape = RoundedCornerShape(bubbleSize * 0.32f)
         val hitboxExtra = if (state.navigationLargerHitbox) 18.dp else 8.dp
         // Phones/compact windows keep the bubble clear of the tab bars.
         val compactWindow = w < 720.dp
         val edgeInset = if (compactWindow) 72.dp else 0.dp
+        val snapPoint = state.launcherSnapPoint
 
-        // Position as fractions of the window. Phones remember a separate
-        // spot so the bubble never fights the tab bar or gesture zones.
+        // Position as fractions of the window. Compact windows remember a
+        // separate spot so the bubble never fights the tab bar / gesture zones.
         var dragPos by remember(w, h, compactWindow) {
             mutableStateOf(
                 Offset(
@@ -173,19 +186,65 @@ fun DsFloatingLauncher(state: AppState) {
             label = "launcherPos"
         )
 
+        val bubbleDiameterPx = with(density) { bubbleSize.roundToPx() }
+        val hitboxPaddingPx = with(density) { hitboxExtra.roundToPx() }
+
+        val snapPositionFor: (LauncherSnapPoint) -> Offset = { snap ->
+            val size = bubbleSize.value
+            when (snap) {
+                LauncherSnapPoint.TopLeft, LauncherSnapPoint.LeftTop -> Offset(0f, edgeInset.value)
+                LauncherSnapPoint.TopCenter -> Offset((w.value - size) / 2f, edgeInset.value)
+                LauncherSnapPoint.TopRight, LauncherSnapPoint.RightTop -> Offset(w.value - size, edgeInset.value)
+                LauncherSnapPoint.BottomLeft, LauncherSnapPoint.LeftBottom -> Offset(0f, h.value - edgeInset.value - size)
+                LauncherSnapPoint.BottomCenter -> Offset((w.value - size) / 2f, h.value - edgeInset.value - size)
+                LauncherSnapPoint.BottomRight, LauncherSnapPoint.RightBottom -> Offset(w.value - size, h.value - edgeInset.value - size)
+                LauncherSnapPoint.LeftCenter -> Offset(0f, (h.value - size) / 2f)
+                LauncherSnapPoint.RightCenter -> Offset(w.value - size, (h.value - size) / 2f)
+            }
+        }
+
+        fun nearestSnap(pos: Offset): LauncherSnapPoint =
+            LauncherSnapPoint.entries.minByOrNull { snap ->
+                val anchor = snapPositionFor(snap)
+                val dx = pos.x - anchor.x
+                val dy = pos.y - anchor.y
+                dx * dx + dy * dy
+            } ?: LauncherSnapPoint.BottomRight
+
+        // Changing the snap point in settings moves the bubble live (and is
+        // persisted as the new remembered spot). Skipped on first launch so
+        // the remembered position always wins.
+        var initialized by remember { mutableStateOf(false) }
+        LaunchedEffect(state.launcherSnapPoint) {
+            if (!initialized) {
+                initialized = true
+                return@LaunchedEffect
+            }
+            if (w.value <= 0f || h.value <= 0f) return@LaunchedEffect
+            val anchor = snapPositionFor(state.launcherSnapPoint)
+            dragPos = anchor
+            target = anchor
+            state.setLauncherPos(anchor.x / w.value, anchor.y / h.value, compact = compactWindow)
+        }
+
+        fun finishDrag() {
+            val nearest = nearestSnap(dragPos)
+            val anchor = snapPositionFor(nearest)
+            state.updateLauncherSnapPoint(nearest)
+            dragPos = anchor
+            target = anchor
+            state.setLauncherPos(anchor.x / w.value, anchor.y / h.value, compact = compactWindow)
+        }
+
         var faded by remember { mutableStateOf(false) }
         var lastActive by remember { mutableStateOf(System.currentTimeMillis()) }
         // Capture mode pre-opens the requested state so screenshots are
         // deterministic (see LocalCaptureState).
         var menuOpen by remember { mutableStateOf(captureState == "launchpad" || captureState == "strip") }
-        var expanded by remember { mutableStateOf(captureState == "menu") }
-        var chipHovered by remember { mutableStateOf(captureState == "menu") }
+        var modePanelOpen by remember { mutableStateOf(captureState == "menu") }
         var bubbleAnchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
-        var initialized by remember { mutableStateOf(false) }
         var dragging by remember { mutableStateOf(false) }
-        // True when the chips popup was opened with the keyboard (Enter/Space on
-        // the bubble) — makes the popup focusable so arrows work inside it.
-        var chipsViaKeyboard by remember { mutableStateOf(false) }
+        var openingPanelViaKeyboard by remember { mutableStateOf(false) }
         val bubbleFocusRequester = remember { FocusRequester() }
 
         // Turning auto-fade off restores full visibility immediately.
@@ -197,8 +256,8 @@ fun DsFloatingLauncher(state: AppState) {
         // activity or fade-setting change, sleeps exactly the fade delay, then
         // fades once. No perpetual polling while the window is idle — the app
         // can rest between interactions, keeping drag and hover smooth.
-        LaunchedEffect(state.launcherAutoFade, state.launcherFadeDelayMs, menuOpen, lastActive, captureState) {
-            if (!state.launcherAutoFade || menuOpen || captureState != null) return@LaunchedEffect
+        LaunchedEffect(state.launcherAutoFade, state.launcherFadeDelayMs, menuOpen, modePanelOpen, lastActive, captureState) {
+            if (!state.launcherAutoFade || menuOpen || modePanelOpen || captureState != null) return@LaunchedEffect
             delay(state.launcherFadeDelayMs.toLong())
             if (System.currentTimeMillis() - lastActive >= state.launcherFadeDelayMs) {
                 faded = true
@@ -216,56 +275,26 @@ fun DsFloatingLauncher(state: AppState) {
         // Hovering the (larger) invisible hitbox restores it immediately.
         val hitboxInteraction = remember { MutableInteractionSource() }
         val hitboxHovered by hitboxInteraction.collectIsHoveredAsState()
-        LaunchedEffect(hitboxHovered, menuOpen) {
-            if (hitboxHovered || menuOpen) {
+        LaunchedEffect(hitboxHovered, menuOpen, modePanelOpen) {
+            if (hitboxHovered || menuOpen || modePanelOpen) {
                 faded = false
                 lastActive = System.currentTimeMillis()
             }
         }
 
-        // Bubble hover expansion: hovering the bubble, its hitbox, or the
-        // quick-control chips expands the bubble; leaving collapses it after a
-        // short grace so the pointer can travel onto the chips.
-        LaunchedEffect(hitboxHovered, chipHovered, menuOpen) {
-            if (hitboxHovered || chipHovered || menuOpen) {
-                expanded = true
-            } else {
-                delay(350)
-                expanded = false
-            }
-        }
-        LaunchedEffect(menuOpen) {
-            if (menuOpen) expanded = false
-        }
-
-        // Changing "Default position" in settings moves it live (and is
-        // persisted as the new remembered spot). Skipped on first launch
-        // so the remembered position always wins.
-        LaunchedEffect(state.launcherDefaultPosition) {
-            if (!initialized) {
-                initialized = true
-                return@LaunchedEffect
-            }
-            if (w.value <= 0f || h.value <= 0f) return@LaunchedEffect
-            val anchor = anchorFor(state.launcherDefaultPosition, bubbleSize, w, h, edgeInset, edgeInset)
-            dragPos = anchor
-            target = anchor
-            state.setLauncherPos(anchor.x / w.value, anchor.y / h.value, compact = compactWindow)
-        }
-
-        fun finishDrag() {
-            val snapped = if (state.launcherSnapEnabled) {
-                nearestAnchor(dragPos, bubbleSize, w, h, state.launcherSnapSensitivity, edgeInset, edgeInset)
-            } else {
-                Offset(
-                    dragPos.x.coerceIn(0f, w.value - bubbleSize.value),
-                    dragPos.y.coerceIn(edgeInset.value, h.value - edgeInset.value - bubbleSize.value)
-                )
-            }
-            dragPos = snapped
-            target = snapped
-            state.setLauncherPos(snapped.x / w.value, snapped.y / h.value, compact = compactWindow)
-        }
+        // Hover / press response on the bubble glyph itself.
+        val bubbleInteraction = remember { MutableInteractionSource() }
+        val bubbleHovered by bubbleInteraction.collectIsHoveredAsState()
+        val hoverScale by animateFloatAsState(
+            targetValue = if (menuOpen || modePanelOpen) 1f else if (bubbleHovered) 1.06f else 1f,
+            animationSpec = spring(dampingRatio = 0.5f, stiffness = 420f),
+            label = "bubbleHoverScale"
+        )
+        val pressScale by animateFloatAsState(
+            targetValue = if (dragging) 0.94f else 1f,
+            animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
+            label = "bubblePressScale"
+        )
 
         val hitboxSize = bubbleSize + hitboxExtra * 2
 
@@ -282,95 +311,142 @@ fun DsFloatingLauncher(state: AppState) {
                     .onGloballyPositioned { if (bubbleAnchor != it) bubbleAnchor = it },
                 contentAlignment = Alignment.Center
             ) {
-                // Draggable bubble. The auto-fade opacity is applied here so a
-                // faded launcher truly becomes translucent (still fully clickable).
+                // Bubble glyph — premium squircle, theme-aware, hover lift and
+                // press dip, subtle depth. Unified gesture handling below:
+                // tap opens the launchpad, hold/right-click open the mode
+                // panel, dragging moves the bubble freely.
                 Box(
                     modifier = Modifier
                         .size(bubbleSize)
-                        .graphicsLayer { alpha = opacity }
-                        .shadow(if (faded) 2.dp else 10.dp, CircleShape)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(ac.primary, ac.primary.copy(alpha = 0.72f))
-                            )
-                        )
-                        .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
-                        .pointerInput(Unit) {
-                            detectDragGestures(
-                                onDragStart = {
-                                    dragging = true
-                                    faded = false
-                                    lastActive = System.currentTimeMillis()
-                                },
-                                onDrag = { change, amount ->
-                                    change.consume()
-                                    if (menuOpen) menuOpen = false
-                                    lastActive = System.currentTimeMillis()
-                                    dragPos += amount
-                                    target = dragPos
-                                },
-                                onDragEnd = {
-                                    dragging = false
-                                    finishDrag()
-                                },
-                                onDragCancel = {
-                                    dragging = false
-                                    finishDrag()
+                        .graphicsLayer {
+                            alpha = opacity
+                            scaleX = hoverScale * pressScale
+                            scaleY = hoverScale * pressScale
+                        }
+                        .focusRequester(bubbleFocusRequester)
+                        .focusable()
+                        .onKeyEvent { keyEvent ->
+                            if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+                            when {
+                                keyEvent.key == Key.Enter || keyEvent.key == Key.Spacebar -> {
+                                    menuOpen = true
+                                    true
                                 }
-                            )
-                        },
+                                keyEvent.key == Key.Menu ||
+                                    (keyEvent.key == Key.F10 && keyEvent.isShiftPressed) -> {
+                                    modePanelOpen = true
+                                    openingPanelViaKeyboard = true
+                                    true
+                                }
+                                else -> false
+                            }
+                        }
+                        .hoverable(bubbleInteraction)
+                        .pointerInput(bubbleDiameterPx) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                val isSecondary = currentEvent.buttons.isSecondaryPressed
+                                var dragged = false
+                                var previous = down.position
+                                var longPressFired = false
+
+                                val longPressJob = scope.launch {
+                                    delay(LongPressTimeoutMs)
+                                    longPressFired = true
+                                    modePanelOpen = true
+                                    menuOpen = false
+                                }
+
+                                try {
+                                    if (isSecondary) {
+                                        // Right-click → mode switch panel.
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                            if (event.type == PointerEventType.Release) {
+                                                longPressJob.cancel()
+                                                if (!longPressFired) {
+                                                    modePanelOpen = true
+                                                    menuOpen = false
+                                                }
+                                                break
+                                            }
+                                        }
+                                    } else {
+                                        var finished = false
+                                        while (!finished) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                            when (event.type) {
+                                                PointerEventType.Move -> {
+                                                    if (!dragged) {
+                                                        val slop = viewConfiguration.touchSlop
+                                                        if ((change.position - down.position).getDistance() > slop) {
+                                                            dragged = true
+                                                            longPressJob.cancel()
+                                                            dragging = true
+                                                            menuOpen = false
+                                                            modePanelOpen = false
+                                                        }
+                                                    }
+                                                    if (dragged) {
+                                                        change.consume()
+                                                        dragPos += change.position - previous
+                                                        target = dragPos
+                                                        previous = change.position
+                                                    }
+                                                }
+                                                PointerEventType.Release -> {
+                                                    longPressJob.cancel()
+                                                    if (dragged) {
+                                                        dragging = false
+                                                        finishDrag()
+                                                    } else if (!longPressFired) {
+                                                        menuOpen = !menuOpen
+                                                    }
+                                                    finished = true
+                                                }
+                                                else -> {}
+                                            }
+                                        }
+                                    }
+                                } finally {
+                                    longPressJob.cancel()
+                                    dragging = false
+                                }
+                            }
+                        }
+                        .clip(bubbleShape)
+                        .background(ac.primary)
+                        .shadow(if (faded) 2.dp else 10.dp, bubbleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
-                        modifier = Modifier
+                        Modifier
                             .fillMaxSize()
-                            .focusRequester(bubbleFocusRequester)
-                            .onPreviewKeyEvent { keyEvent ->
-                                // Keyboard activation (Enter/Space) makes the
-                                // chips popup focusable so arrows work inside it.
-                                if (keyEvent.type == KeyEventType.KeyDown &&
-                                    (keyEvent.key == Key.Enter || keyEvent.key == Key.Spacebar)
-                                ) {
-                                    chipsViaKeyboard = true
-                                }
-                                false // let the clickable handle the activation
-                            }
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = {
-                                    if (menuOpen) {
-                                        menuOpen = false
-                                    } else if (expanded) {
-                                        expanded = false
-                                        chipsViaKeyboard = false
-                                    } else {
-                                        expanded = true
-                                    }
-                                    faded = false
-                                    lastActive = System.currentTimeMillis()
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = launcherIconFor(state.currentView),
-                            contentDescription = "Open launcher",
-                            tint = ac.onPrimary,
-                            modifier = Modifier.size(iconSize)
-                        )
-                    }
+                            .clip(bubbleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(ac.primary, ac.primary.copy(alpha = 0.78f))
+                                )
+                            )
+                    )
+                    Icon(
+                        imageVector = launcherIconFor(state.currentView),
+                        contentDescription = "Open launcher",
+                        tint = ac.onPrimary,
+                        modifier = Modifier.size(iconSize)
+                    )
                 }
             }
         }
 
-        // Bubble tooltip while hovering (hidden while the quick controls show).
+        // Bubble tooltip while hovering.
         val tipCoords = bubbleAnchor
-        if (hitboxHovered && !menuOpen && !dragging && !faded && !expanded && tipCoords != null) {
+        if (hitboxHovered && !menuOpen && !modePanelOpen && !dragging && !faded && tipCoords != null) {
             val pos = tipCoords.positionInWindow()
-            val tip = "${state.currentView.label} — click for quick actions, drag to move"
-            val estW = with(density) { (tip.length * 6 + 24).dp.toPx() }
+            val tip = "${state.currentView.label} — click for launchpad · right-click or hold for modes · drag to move"
+            val estW = with(density) { (tip.length * 5.4f + 24).dp.toPx() }
             val estH = with(density) { 30.dp.toPx() }
             val showAbove = dragPos.y > h.value / 2f
             val tipOffset = if (showAbove) {
@@ -402,48 +478,33 @@ fun DsFloatingLauncher(state: AppState) {
             }
         }
 
-        // Quick controls beside the bubble while it is hover-expanded.
-        val chipAnchor = bubbleAnchor
-        if (expanded && !menuOpen && chipAnchor != null) {
-            val pos = chipAnchor.positionInWindow()
-            val chipsOnLeft = dragPos.x > w.value / 2f
-            val chipW = with(density) { 252.dp.toPx() }
-            val chipH = with(density) { 46.dp.toPx() }
-            val chipsX = if (chipsOnLeft) pos.x - chipW else pos.x + chipAnchor.size.width
-            val chipsY = pos.y + chipAnchor.size.height / 2f - chipH / 2f
-            Popup(
-                offset = IntOffset(chipsX.roundToInt(), chipsY.roundToInt()),
-                onDismissRequest = {
-                    if (chipsViaKeyboard) {
-                        chipsViaKeyboard = false
-                        expanded = false
+        // Mode switch panel — expands from the bubble (hold / right-click).
+        val panelAnchor = bubbleAnchor
+        if (modePanelOpen && panelAnchor != null) {
+            val pos = panelAnchor.positionInWindow()
+            BubbleModePanel(
+                current = state.navLayout,
+                bubbleWindowPos = IntOffset(pos.x.roundToInt(), pos.y.roundToInt()),
+                bubbleSizePx = bubbleDiameterPx + hitboxPaddingPx * 2,
+                focusable = openingPanelViaKeyboard,
+                onSelect = { mode ->
+                    modePanelOpen = false
+                    if (mode == NavLayout.Sidebar) state.updateNavLayout(NavLayout.Sidebar)
+                    else state.updateNavLayout(NavLayout.Floating)
+                    lastActive = System.currentTimeMillis()
+                },
+                onDismiss = {
+                    modePanelOpen = false
+                    if (openingPanelViaKeyboard) {
+                        openingPanelViaKeyboard = false
                         bubbleFocusRequester.requestFocus()
                     }
-                },
-                properties = PopupProperties(focusable = chipsViaKeyboard)
-            ) {
-                BubbleQuickControls(
-                    state = state,
-                    focusable = chipsViaKeyboard,
-                    onAct = {
-                        expanded = false
-                        if (chipsViaKeyboard) {
-                            chipsViaKeyboard = false
-                            bubbleFocusRequester.requestFocus()
-                        }
-                    },
-                    onLaunchpad = {
-                        menuOpen = true
-                        expanded = false
-                        lastActive = System.currentTimeMillis()
-                    },
-                    onHoverChange = { chipHovered = it }
-                )
-            }
+                }
+            )
         }
 
-        // Full launchpad — a centered, scrimmed overlay that scales out from
-        // the bubble with smooth open and close animations.
+        // Full launchpad — a scrimmed overlay that scales out from the bubble
+        // with smooth open and close animations.
         if (menuOpen) {
             LaunchpadOverlay(
                 state = state,
@@ -461,45 +522,49 @@ fun DsFloatingLauncher(state: AppState) {
 }
 
 // ============================================
-// BUBBLE QUICK CONTROLS (hover expansion)
-// A slim chip row beside the bubble with the
-// three navigation actions — Full Sidebar,
-// Compact Sidebar, Launchpad.
+// MODE SWITCH PANEL — expands from the bubble
 // ============================================
 
 @Composable
-private fun BubbleQuickControls(
-    state: AppState,
+private fun BubbleModePanel(
+    current: NavLayout,
+    bubbleWindowPos: IntOffset,
+    bubbleSizePx: Int,
     focusable: Boolean,
-    onAct: () -> Unit,
-    onLaunchpad: () -> Unit,
-    onHoverChange: (Boolean) -> Unit
+    onSelect: (NavLayout) -> Unit,
+    onDismiss: () -> Unit
 ) {
     val sc = surfaceColors()
-    val interaction = remember { MutableInteractionSource() }
-    val hovered by interaction.collectIsHoveredAsState()
-    LaunchedEffect(hovered) { onHoverChange(hovered) }
+    val ac = accent()
+    val density = LocalDensity.current
+    val windowSize = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize
 
-    // Keyboard navigation across the three chips (only when the popup was
-    // opened with the keyboard): ←/→ wrap, Enter/Space activates the focused
-    // chip via its native clickable, focus shows an accent ring.
-    val chips = listOf(
-        Triple(Icons.Default.ViewSidebar, "Sidebar") to {
-            state.updateNavLayout(NavLayout.Expanded)
-            onAct()
-        },
-        Triple(Icons.Default.Apps, "Compact") to {
-            state.updateNavLayout(NavLayout.Compact)
-            onAct()
-        },
-        Triple(Icons.Default.GridView, "Launchpad") to onLaunchpad
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val scale by animateFloatAsState(
+        targetValue = if (shown) 1f else 0.82f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 420f),
+        label = "modePanelScale"
     )
-    val focusRequesters = remember { List(chips.size) { FocusRequester() } }
-    var selectedIndex by remember { mutableStateOf(0) }
-    var firstFocus by remember { mutableStateOf(true) }
+    val alpha by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(150),
+        label = "modePanelAlpha"
+    )
 
-    // Same settle-on-open as the tile grid: let the popup's focus grab land
-    // first, then move real focus to the selected chip.
+    val panelW = with(density) { 232.dp.roundToPx() }
+    val panelH = with(density) { 152.dp.roundToPx() }
+    val gap = with(density) { 12.dp.roundToPx() }
+
+    val openLeft = bubbleWindowPos.x + bubbleSizePx / 2 > windowSize.width / 2
+    val rawX = if (openLeft) bubbleWindowPos.x - panelW - gap else bubbleWindowPos.x + bubbleSizePx + gap
+    val rawY = (bubbleWindowPos.y + bubbleSizePx / 2 - panelH / 2)
+        .coerceIn(0, (windowSize.height - panelH).coerceAtLeast(0))
+    val offsetX = rawX.coerceIn(0, (windowSize.width - panelW).coerceAtLeast(0))
+
+    val focusRequesters = remember { listOf(FocusRequester(), FocusRequester()) }
+    var selectedIndex by remember { mutableStateOf(if (current == NavLayout.Sidebar) 0 else 1) }
+    var firstFocus by remember { mutableStateOf(true) }
     LaunchedEffect(selectedIndex) {
         if (!focusable) return@LaunchedEffect
         if (firstFocus) {
@@ -509,109 +574,144 @@ private fun BubbleQuickControls(
         focusRequesters[selectedIndex].requestFocus()
     }
 
-    var entered by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { entered = true }
-    val scale by animateFloatAsState(
-        targetValue = if (entered) 1f else 0.85f,
-        animationSpec = if (state.navigationAnimations && !state.navReducedMotion) {
-            spring(dampingRatio = 0.6f, stiffness = 460f)
-        } else {
-            tween(0)
-        },
-        label = "chipScale"
-    )
-    val alpha by animateFloatAsState(
-        targetValue = if (entered) 1f else 0f,
-        animationSpec = tween(if (state.navigationAnimations && !state.navReducedMotion) 160 else 0),
-        label = "chipAlpha"
+    val options = listOf(
+        Pair(NavLayout.Sidebar, Icons.Default.ViewSidebar) to "Sidebar",
+        Pair(NavLayout.Floating, Icons.Default.ChatBubble) to "Floating"
     )
 
-    Row(
-        modifier = Modifier
-            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = alpha }
-            .shadow(18.dp, RoundedCornerShape(DsRadius.Xl))
-            .clip(RoundedCornerShape(DsRadius.Xl))
-            .background(sc.surfaceElevated.copy(alpha = 0.96f))
-            .border(1.dp, sc.border.copy(alpha = 0.4f), RoundedCornerShape(DsRadius.Xl))
-            .padding(4.dp)
-            .hoverable(interaction)
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
-                when (keyEvent.key) {
-                    Key.DirectionRight -> {
-                        selectedIndex = (selectedIndex + 1) % chips.size
-                        true
-                    }
-                    Key.DirectionLeft -> {
-                        selectedIndex = (selectedIndex - 1 + chips.size) % chips.size
-                        true
-                    }
-                    else -> false
-                }
-            },
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    Popup(
+        onDismissRequest = onDismiss,
+        offset = IntOffset(offsetX, rawY),
+        properties = PopupProperties(focusable = focusable)
     ) {
-        chips.forEachIndexed { index, (def, action) ->
-            QuickChip(
-                icon = def.first,
-                label = def.second,
-                onClick = action,
-                focused = focusable && index == selectedIndex,
-                modifier = Modifier.focusRequester(focusRequesters[index])
+        Column(
+            modifier = Modifier
+                .width(232.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                    transformOrigin = TransformOrigin(if (openLeft) 1f else 0f, 0.5f)
+                }
+                .shadow(20.dp, RoundedCornerShape(DsRadius.Xl))
+                .clip(RoundedCornerShape(DsRadius.Xl))
+                .background(sc.surfaceElevated.copy(alpha = 0.98f))
+                .border(1.dp, sc.border.copy(alpha = 0.35f), RoundedCornerShape(DsRadius.Xl))
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "Navigation mode",
+                color = sc.textMuted,
+                fontSize = DsType.Caption,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 6.dp, top = 2.dp, bottom = 2.dp)
             )
+            options.forEachIndexed { index, option ->
+                val (modeIcon, label) = option
+                val (mode, icon) = modeIcon
+                val selected = mode == current
+                BubbleModeOptionRow(
+                    icon = icon,
+                    label = label,
+                    selected = selected,
+                    focused = focusable && selectedIndex == index,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequesters[index])
+                        .onKeyEvent { keyEvent ->
+                            if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+                            when (keyEvent.key) {
+                                Key.DirectionDown, Key.DirectionUp -> {
+                                    selectedIndex = 1 - index
+                                    true
+                                }
+                                Key.Enter, Key.Spacebar -> {
+                                    onSelect(mode)
+                                    true
+                                }
+                                else -> false
+                            }
+                        },
+                    onClick = { onSelect(mode) }
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun QuickChip(
+private fun BubbleModeOptionRow(
     icon: ImageVector,
     label: String,
+    selected: Boolean,
+    focused: Boolean,
     onClick: () -> Unit,
-    focused: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val sc = surfaceColors()
     val ac = accent()
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    val focusedSelf by interaction.collectIsFocusedAsState()
-    val showFocus = focused || focusedSelf
+    val shape = RoundedCornerShape(DsRadius.Lg)
 
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(DsRadius.Md))
-            .background(if (hovered) ac.primary.copy(alpha = 0.14f) else Color.Transparent)
+            .clip(shape)
+            .background(
+                when {
+                    selected -> ac.primary.copy(alpha = 0.16f)
+                    hovered -> sc.surfaceInteractive
+                    else -> Color.Transparent
+                }
+            )
             .then(
-                if (showFocus) Modifier.border(1.5.dp, ac.primary, RoundedCornerShape(DsRadius.Md))
+                if (focused || selected) Modifier.border(1.5.dp, ac.primary.copy(alpha = 0.55f), shape)
                 else Modifier
             )
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .hoverable(interaction)
-            .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = if (hovered) ac.primary else sc.textSecondary,
-            modifier = Modifier.size(14.dp)
-        )
+        Box(
+            Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (selected) ac.primary.copy(alpha = 0.2f) else sc.surfaceInteractive),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = if (selected) ac.primary else sc.textSecondary,
+                modifier = Modifier.size(19.dp)
+            )
+        }
         Text(
             text = label,
-            color = sc.textPrimary,
-            fontSize = DsType.Caption,
-            fontWeight = FontWeight.Medium
+            color = if (selected) ac.primary else sc.textPrimary,
+            fontSize = DsType.Body,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
+        if (selected) {
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(ac.primary)
+            )
+        }
     }
 }
 
 // ============================================
 // LAUNCHPAD OVERLAY
-// A centered, scrimmed launchpad with scale/fade
-// open and close animations, scaling from the
-// bubble toward center — macOS-launchpad style.
+// A scrimmed launchpad with scale/fade open and
+// close animations, scaling from the bubble —
+// macOS-launchpad style.
 // ============================================
 
 @Composable
@@ -669,7 +769,7 @@ private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: (
                             transformOrigin = TransformOrigin(ox, oy)
                             scaleX = scale
                             scaleY = scale
-                            alpha = alpha
+                            this.alpha = alpha
                         }
                 ) {
                     LaunchpadPanel(state, onDismiss = close)
@@ -1000,71 +1100,3 @@ private fun LaunchpadTileBig(
 /** The current view's icon, falling back to the apps glyph. */
 private fun launcherIconFor(view: WorkspaceView): ImageVector =
     allNavItems.firstOrNull { it.first == view }?.second ?: Icons.Default.Apps
-
-/**
- * Compute the anchor point (bubble top-left) for a named snap target.
- * [topInset]/[bottomInset] keep the bubble clear of phone tab bars.
- */
-private fun anchorFor(
-    anchor: LauncherAnchor,
-    bubble: androidx.compose.ui.unit.Dp,
-    w: androidx.compose.ui.unit.Dp,
-    h: androidx.compose.ui.unit.Dp,
-    topInset: androidx.compose.ui.unit.Dp = 0.dp,
-    bottomInset: androidx.compose.ui.unit.Dp = 0.dp
-): Offset {
-    val usableH = (h.value - topInset.value - bottomInset.value).coerceAtLeast(0f)
-    return when (anchor) {
-        LauncherAnchor.Left -> Offset(0f, topInset.value + usableH / 2f - bubble.value / 2f)
-        LauncherAnchor.Right -> Offset(w.value - bubble.value, topInset.value + usableH / 2f - bubble.value / 2f)
-        LauncherAnchor.TopLeft -> Offset(0f, topInset.value)
-        LauncherAnchor.TopRight -> Offset(w.value - bubble.value, topInset.value)
-        LauncherAnchor.BottomLeft -> Offset(0f, h.value - bottomInset.value - bubble.value)
-        LauncherAnchor.BottomRight -> Offset(w.value - bubble.value, h.value - bottomInset.value - bubble.value)
-    }
-}
-
-/**
- * Snap to the closest edge/corner given the bubble's top-left position.
- * [sensitivity] scales the snap radius (how far the bubble can be dropped
- * from an anchor and still snap to it): 0 ≈ free placement, 1 = default,
- * 2 = snaps from anywhere. Insets keep the bubble off phone tab bars.
- */
-private fun nearestAnchor(
-    pos: Offset,
-    bubble: androidx.compose.ui.unit.Dp,
-    w: androidx.compose.ui.unit.Dp,
-    h: androidx.compose.ui.unit.Dp,
-    sensitivity: Float = 1f,
-    topInset: androidx.compose.ui.unit.Dp = 0.dp,
-    bottomInset: androidx.compose.ui.unit.Dp = 0.dp
-): Offset {
-    val center = Offset(pos.x + bubble.value / 2f, pos.y + bubble.value / 2f)
-    val usableH = (h.value - topInset.value - bottomInset.value).coerceAtLeast(0f)
-    val candidates = mapOf(
-        LauncherAnchor.Left to Offset(0f, topInset.value + usableH / 2f),
-        LauncherAnchor.Right to Offset(w.value, topInset.value + usableH / 2f),
-        LauncherAnchor.TopLeft to Offset(0f, topInset.value),
-        LauncherAnchor.TopRight to Offset(w.value, topInset.value),
-        LauncherAnchor.BottomLeft to Offset(0f, h.value - bottomInset.value),
-        LauncherAnchor.BottomRight to Offset(w.value, h.value - bottomInset.value)
-    )
-    val best = candidates.minByOrNull { (_, p) ->
-        val dx = center.x - p.x
-        val dy = center.y - p.y
-        dx * dx + dy * dy
-    }!!
-    val anchorCenter = candidates.getValue(best.key)
-    val dx = center.x - anchorCenter.x
-    val dy = center.y - anchorCenter.y
-    val distance = sqrt(dx * dx + dy * dy)
-    val snapRadius = minOf(w.value, h.value) * 0.22f * sensitivity.coerceAtLeast(0.05f)
-    if (distance > snapRadius) {
-        // Too far from any anchor — keep the free position, clamped in-window.
-        return Offset(
-            pos.x.coerceIn(0f, w.value - bubble.value),
-            pos.y.coerceIn(topInset.value, h.value - bottomInset.value - bubble.value)
-        )
-    }
-    return anchorFor(best.key, bubble, w, h, topInset, bottomInset)
-}

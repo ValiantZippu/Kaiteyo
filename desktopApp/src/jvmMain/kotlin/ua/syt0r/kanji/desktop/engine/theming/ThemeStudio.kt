@@ -134,6 +134,29 @@ data class ThemeEffects(
 )
 
 @Serializable
+data class ThemeGradientStop(
+    val color: String = "#C2FC8B",
+    val position: Float = 0f
+)
+
+@Serializable
+data class ThemeGradient(
+    val enabled: Boolean = true,
+    val type: String = "linear", // linear | radial | sweep
+    val angle: Float = 0f, // degrees, CSS-style (0 = toward the top, 90 = toward the right)
+    val stops: List<ThemeGradientStop> = listOf(
+        ThemeGradientStop("#C2FC8B", 0f),
+        ThemeGradientStop("#FEAB57", 1f)
+    )
+) {
+    /** First stop — drives the accent scheme's gradientStart. */
+    val start: String get() = stops.firstOrNull()?.color ?: "#C2FC8B"
+
+    /** Last stop — drives the accent scheme's gradientEnd. */
+    val end: String get() = stops.lastOrNull()?.color ?: "#FEAB57"
+}
+
+@Serializable
 data class KaiteyoTheme(
     val id: String,
     val name: String,
@@ -142,6 +165,7 @@ data class KaiteyoTheme(
     val version: Int = 1,
     val baseMode: String = "oled",
     val colors: ThemeColors = ThemeColors(),
+    val gradient: ThemeGradient = ThemeGradient(),
     val typography: ThemeTypography = ThemeTypography(),
     val spacing: ThemeSpacing = ThemeSpacing(),
     val scaling: ThemeScaling = ThemeScaling(),
@@ -359,6 +383,9 @@ object ThemeMapper {
         val primary = hexToColor(theme.colors.primary)
         val secondary = hexToColor(theme.colors.secondary)
         val tertiary = hexToColor(theme.colors.tertiary)
+        // When the custom gradient is enabled its first/last stops drive the
+        // accent gradient; when disabled the app falls back to Primary/Secondary
+        // (the old behavior), so toggling off is always safe.
         return KaiteyoAccentScheme(
             name = theme.name,
             primary = primary,
@@ -369,8 +396,8 @@ object ThemeMapper {
             onSecondary = hexToColor(theme.colors.onSecondary),
             tertiary = tertiary,
             previewColors = listOf(primary, secondary, tertiary),
-            gradientStart = primary,
-            gradientEnd = secondary
+            gradientStart = if (theme.gradient.enabled) hexToColor(theme.gradient.start) else null,
+            gradientEnd = if (theme.gradient.enabled) hexToColor(theme.gradient.end) else null
         )
     }
 

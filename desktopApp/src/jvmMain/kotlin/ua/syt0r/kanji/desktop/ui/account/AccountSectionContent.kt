@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -68,9 +69,9 @@ import ua.syt0r.kanji.desktop.engine.account.AccountEngine
 import ua.syt0r.kanji.desktop.engine.account.ConnectionStatus
 import ua.syt0r.kanji.desktop.engine.account.ProviderConnection
 import ua.syt0r.kanji.desktop.engine.account.ProviderKind
-import ua.syt0r.kanji.desktop.engine.sync.SyncResult
-import kotlinx.coroutines.launch
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.sync.ConflictResolution
+import ua.syt0r.kanji.desktop.engine.sync.SyncResult
 import ua.syt0r.kanji.desktop.model.DeckDef
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.ReviewLogEntry
@@ -797,7 +798,7 @@ fun AccountSyncSection(state: AppState, engine: AccountEngine) {
 
             DsToggle(
                 checked = settingsData.autoSync,
-                onCheckedChange = { engine.updateSettings { it.copy(autoSync = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(autoSync = it) } },
                 label = "Automatic sync"
             )
 
@@ -810,7 +811,7 @@ fun AccountSyncSection(state: AppState, engine: AccountEngine) {
                     DsSelect(
                         selected = settingsData.syncIntervalMinutes,
                         options = listOf(5, 15, 30, 60, 360),
-                        onSelected = { engine.updateSettings { it.copy(syncIntervalMinutes = it) } },
+                        onSelected = { engine.updateSettings { s -> s.copy(syncIntervalMinutes = it) } },
                         labelOf = { minutes ->
                             when (minutes) {
                                 60 -> "Every hour"
@@ -825,9 +826,40 @@ fun AccountSyncSection(state: AppState, engine: AccountEngine) {
 
             DsToggle(
                 checked = settingsData.syncOnStart,
-                onCheckedChange = { engine.updateSettings { it.copy(syncOnStart = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(syncOnStart = it) } },
                 label = "Sync on app start"
             )
+
+            // Conflict resolution policy for blobs changed on both sides.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Conflict resolution",
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "When the same data changed on two devices",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+                DsSelect(
+                    selected = settingsData.conflictResolution,
+                    options = listOf(
+                        ConflictResolution.Skip,
+                        ConflictResolution.LocalWins,
+                        ConflictResolution.RemoteWins
+                    ),
+                    onSelected = { engine.updateSettings { s -> s.copy(conflictResolution = it) } },
+                    labelOf = { it.label },
+                    modifier = Modifier.width(200.dp)
+                )
+            }
 
             Text(
                 text = "Last sync: ${state.lastSyncAt?.let { formatDateTime(it.toEpochMilliseconds()) } ?: "never"} · " +
@@ -836,8 +868,8 @@ fun AccountSyncSection(state: AppState, engine: AccountEngine) {
                 fontSize = DsType.Caption
             )
             Text(
-                text = "Cards, decks, review history and daily summaries sync as versioned blobs. " +
-                    "Conflict behavior is configured in the Sync workspace.",
+                text = "Cards, review history, daily summaries, decks, collections, saved filters and " +
+                    "settings sync as versioned blobs. Last-write-wins breaks ties by newest content timestamp.",
                 color = sc.textMuted,
                 fontSize = DsType.Caption
             )
@@ -866,7 +898,7 @@ fun AccountSecuritySection(state: AppState, engine: AccountEngine) {
 
             DsToggle(
                 checked = settingsData.encryptLocalData,
-                onCheckedChange = { engine.updateSettings { it.copy(encryptLocalData = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(encryptLocalData = it) } },
                 label = "Encrypt local data at rest"
             )
             Text(
@@ -934,7 +966,7 @@ fun AccountPrivacySection(state: AppState, engine: AccountEngine) {
             DsSectionHeader(title = "Privacy", subtitle = "What Kaiteyo collects")
             DsToggle(
                 checked = settingsData.allowAnonymousTelemetry,
-                onCheckedChange = { engine.updateSettings { it.copy(allowAnonymousTelemetry = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(allowAnonymousTelemetry = it) } },
                 label = "Anonymous usage statistics"
             )
             Text(
@@ -963,17 +995,17 @@ fun AccountNotificationsSection(state: AppState, engine: AccountEngine) {
             DsSectionHeader(title = "Notifications", subtitle = "What Kaiteyo tells you")
             DsToggle(
                 checked = settingsData.notifySyncCompleted,
-                onCheckedChange = { engine.updateSettings { it.copy(notifySyncCompleted = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(notifySyncCompleted = it) } },
                 label = "Sync completed"
             )
             DsToggle(
                 checked = settingsData.notifySyncFailed,
-                onCheckedChange = { engine.updateSettings { it.copy(notifySyncFailed = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(notifySyncFailed = it) } },
                 label = "Sync failed"
             )
             DsToggle(
                 checked = settingsData.notifyReviewReminders,
-                onCheckedChange = { engine.updateSettings { it.copy(notifyReviewReminders = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(notifyReviewReminders = it) } },
                 label = "Daily review reminder"
             )
         }
@@ -1007,7 +1039,7 @@ fun AccountDeveloperSection(state: AppState, engine: AccountEngine) {
 
             DsToggle(
                 checked = settingsData.debugLogging,
-                onCheckedChange = { engine.updateSettings { it.copy(debugLogging = it) } },
+                onCheckedChange = { engine.updateSettings { s -> s.copy(debugLogging = it) } },
                 label = "Debug logging"
             )
 

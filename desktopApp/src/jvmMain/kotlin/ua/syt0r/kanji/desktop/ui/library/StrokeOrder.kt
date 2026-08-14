@@ -324,7 +324,7 @@ private fun DrawScope.drawPartialPolyline(
 ) {
     if (points.isEmpty() || fraction <= 0f) return
     val scaled = points.map { Offset(it.x * scale, it.y * scale) }
-    val totalLength = (1 until scaled.size).sumOf { (scaled[it] - scaled[it - 1]).getDistance() }
+    val totalLength = (1 until scaled.size).map { (scaled[it] - scaled[it - 1]).getDistance() }.sum()
     if (totalLength <= 0f) return
     val target = totalLength * fraction.coerceIn(0f, 1f)
 

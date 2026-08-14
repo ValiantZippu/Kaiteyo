@@ -3,13 +3,17 @@ package ua.syt0r.kanji.desktop.engine.sync
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import ua.syt0r.kanji.desktop.model.CollectionDef
+import ua.syt0r.kanji.desktop.model.DeckDef
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.ReviewLogEntry
+import ua.syt0r.kanji.desktop.model.SavedFilter
 import ua.syt0r.kanji.desktop.model.StudyDaySummary
 
 // ============================================
-// SYNC ARCHITECTURE (preparation only)
+// SYNC ARCHITECTURE
 // Provider abstraction ready for Git, Google Drive,
 // Dropbox, OneDrive, GitHub, or a custom server.
 // The engines are pure; providers implement IO.
@@ -17,17 +21,6 @@ import ua.syt0r.kanji.desktop.model.StudyDaySummary
 
 @Serializable
 enum class SyncProviderType { LocalFolder, Git, GitHub, GoogleDrive, Dropbox, OneDrive, WebDav, CustomServer }
-
-@Serializable
-data class SyncProfile(
-    val id: String,
-    val name: String,
-    val provider: SyncProviderType,
-    val endpoint: String = "",
-    val enabled: Boolean = true,
-    val autoSync: Boolean = false,
-    val createdAt: Instant = Clock.System.now()
-)
 
 /** Versioned blob that represents one syncable unit of user data. */
 @Serializable
@@ -75,7 +68,20 @@ data class BlobDiff(
     val direction: SyncDirection?
 )
 
-enum class ConflictResolution { LocalWins, RemoteWins, Skip, Manual }
+@Serializable
+enum class ConflictResolution(val label: String) {
+    /** Apply every diff as computed (remote-only pulls, local-only pushes, LWW tiebreaks). */
+    Skip("Last write wins"),
+
+    /** Keep the local copy of blobs that exist on both sides (still pulls remote-only blobs). */
+    LocalWins("Local wins"),
+
+    /** Keep the remote copy of blobs that exist on both sides (still pushes local-only blobs). */
+    RemoteWins("Remote wins"),
+
+    /** Reserved for a future manual-conflict UI. */
+    Manual("Manual")
+}
 
 /** Serializes/deserializes user data into blobs for transport. */
 class SyncCodec {
@@ -92,32 +98,48 @@ class SyncCodec {
      * Build a manifest whose versions are derived from the last-seen remote
      * state: unchanged blobs keep their version (diff → skip), changed or
      * brand-new blobs bump to version + 1 (diff → push).
+     *
+     * Extra payloads (decks, collections, saved filters, settings) default to
+     * empty so callers that only care about study data keep working.
      */
     fun manifest(
         cards: List<DesktopCard>,
         reviewLog: List<ReviewLogEntry>,
         summaries: List<StudyDaySummary>,
-        lastSeen: SyncManifest?
+        lastSeen: SyncManifest?,
+        modifiedAt: ((String) -> Instant)? = null,
+        decks: List<DeckDef> = emptyList(),
+        collections: List<CollectionDef> = emptyList(),
+        savedFilters: List<SavedFilter> = emptyList(),
+        settings: Map<String, String> = emptyMap()
     ): SyncManifest {
+        val contentModifiedAt = modifiedAt ?: { _: String -> Clock.System.now() }
         fun versioned(name: String, payload: String): SyncBlob {
             val previous = lastSeen?.blobs?.firstOrNull { it.name == name }
-            val changed = previous == null || previous.payload != payload
-            return if (changed) {
+            return if (previous == null || previous.payload != payload) {
+                // Changed or brand-new content: bump the version so the diff pushes.
+                // The modifiedAt reflects the newest content timestamp, so a device
+                // with no data (epoch) never overwrites real remote data via LWW.
                 SyncBlob(
                     name = name,
                     version = (previous?.version ?: 0L) + 1,
-                    modifiedAt = Clock.System.now(),
+                    modifiedAt = contentModifiedAt(name),
                     payload = payload
                 )
             } else {
-                SyncBlob(name = name, version = previous!!.version, modifiedAt = previous.modifiedAt, payload = payload)
+                // Unchanged: keep the last-seen version so the diff skips.
+                SyncBlob(name = name, version = previous.version, modifiedAt = previous.modifiedAt, payload = payload)
             }
         }
         return SyncManifest(
             blobs = listOf(
                 versioned("cards", json.encodeToString(cards)),
                 versioned("review-log", json.encodeToString(reviewLog)),
-                versioned("summaries", json.encodeToString(summaries))
+                versioned("summaries", json.encodeToString(summaries)),
+                versioned("decks", json.encodeToString(decks)),
+                versioned("collections", json.encodeToString(collections)),
+                versioned("saved-filters", json.encodeToString(savedFilters)),
+                versioned("settings", json.encodeToString(settings))
             )
         )
     }
@@ -130,6 +152,18 @@ class SyncCodec {
 
     fun decodeSummaries(blob: SyncBlob): List<StudyDaySummary> =
         json.decodeFromString<List<StudyDaySummary>>(blob.payload)
+
+    fun decodeDecks(blob: SyncBlob): List<DeckDef> =
+        json.decodeFromString<List<DeckDef>>(blob.payload)
+
+    fun decodeCollections(blob: SyncBlob): List<CollectionDef> =
+        json.decodeFromString<List<CollectionDef>>(blob.payload)
+
+    fun decodeSavedFilters(blob: SyncBlob): List<SavedFilter> =
+        json.decodeFromString<List<SavedFilter>>(blob.payload)
+
+    fun decodeSettings(blob: SyncBlob): Map<String, String> =
+        json.decodeFromString<Map<String, String>>(blob.payload)
 }
 
 /**

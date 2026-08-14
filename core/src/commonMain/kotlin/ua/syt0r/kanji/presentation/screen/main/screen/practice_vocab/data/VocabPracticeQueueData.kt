@@ -9,11 +9,13 @@ import ua.syt0r.kanji.core.app_data.data.FuriganaString
 import ua.syt0r.kanji.core.srs.SrsCard
 import ua.syt0r.kanji.core.srs.SrsCardKey
 import ua.syt0r.kanji.core.stroke_evaluator.KanjiStrokeEvaluator
+import ua.syt0r.kanji.core.stroke_evaluator.StrokeEvaluationConfig
 import ua.syt0r.kanji.presentation.common.ScreenVocabPracticeType
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenData
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWriterConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.DefaultCharacterWriterState
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingAttemptStats
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueueItem
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueueProgress
@@ -44,13 +46,17 @@ data class VocabPracticeQueueItem(
     override val repeats: Int,
     override val totalMistakes: Int,
     override val data: Deferred<VocabPracticeItemData>,
+    val totalWritingStats: WritingAttemptStats = WritingAttemptStats(),
 ) : PracticeQueueItem<VocabPracticeQueueItem> {
 
     override fun copyForRepeat(answer: PracticeAnswer): VocabPracticeQueueItem {
         return copy(
             srsCard = answer.srsAnswer.card,
             repeats = repeats + 1,
-            totalMistakes = totalMistakes + answer.mistakes
+            totalMistakes = totalMistakes + answer.mistakes,
+            totalWritingStats = answer.writingStats
+                ?.let { totalWritingStats.mergedWith(it) }
+                ?: totalWritingStats
         )
     }
 
@@ -81,7 +87,8 @@ sealed interface VocabPracticeQueueItemDescriptor {
     data class Writing(
         override val cardId: Long,
         override val deckId: Long,
-        val showKanaReading: Boolean
+        val showKanaReading: Boolean,
+        val evaluationConfig: StrokeEvaluationConfig
     ) : VocabPracticeQueueItemDescriptor {
         override val practiceType: ScreenVocabPracticeType = ScreenVocabPracticeType.Writing
     }

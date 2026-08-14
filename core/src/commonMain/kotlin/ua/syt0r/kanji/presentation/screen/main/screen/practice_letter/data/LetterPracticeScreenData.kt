@@ -16,6 +16,7 @@ import ua.syt0r.kanji.presentation.common.ScreenLetterPracticeType
 import ua.syt0r.kanji.presentation.common.resources.string.StringResolveScope
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWriterState
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.DisplayableEnum
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingStrictness
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCard
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCardsSelectorState
@@ -50,6 +51,7 @@ sealed interface LetterPracticeConfiguration {
         val noTranslationsLayout: MutableState<Boolean>,
         val leftHandedMode: MutableState<Boolean>,
         val altStrokeEvaluatorEnabled: MutableState<Boolean>,
+        val strictness: MutableState<WritingStrictness>,
     ) : LetterPracticeConfiguration {
         override val practiceType: ScreenLetterPracticeType = ScreenLetterPracticeType.Writing
     }

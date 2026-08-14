@@ -1,0 +1,405 @@
+-- ============================================
+-- KAITEYO STATISTICS & EXAMINATION SYSTEM
+-- Study sessions, writing attempts, exams,
+-- exam questions, structured mistakes and
+-- precomputed per-day rollups. Every table is
+-- created with IF NOT EXISTS so the same DDL is
+-- safe to run both from a fresh schema and from
+-- the versioned migration (existing installs).
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS study_session (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    practice_type INTEGER NOT NULL DEFAULT -1,
+    mode TEXT NOT NULL DEFAULT '',
+    deck_id INTEGER NOT NULL DEFAULT 0,
+    deck_name TEXT NOT NULL DEFAULT '',
+    items_studied INTEGER NOT NULL DEFAULT 0,
+    new_items INTEGER NOT NULL DEFAULT 0,
+    review_items INTEGER NOT NULL DEFAULT 0,
+    correct INTEGER NOT NULL DEFAULT 0,
+    incorrect INTEGER NOT NULL DEFAULT 0,
+    is_complete INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS study_session_start_idx ON study_session(start_time);
+
+CREATE TABLE IF NOT EXISTS writing_attempt (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character TEXT NOT NULL,
+    practice_type INTEGER NOT NULL DEFAULT 0,
+    timestamp INTEGER NOT NULL,
+    deck_id INTEGER NOT NULL DEFAULT 0,
+    session_id INTEGER,
+    stroke_count INTEGER NOT NULL DEFAULT 0,
+    mistakes INTEGER NOT NULL DEFAULT 0,
+    wrong_order INTEGER NOT NULL DEFAULT 0,
+    almost INTEGER NOT NULL DEFAULT 0,
+    accuracy REAL
+);
+
+CREATE INDEX IF NOT EXISTS writing_attempt_ts_idx ON writing_attempt(timestamp);
+CREATE INDEX IF NOT EXISTS writing_attempt_char_idx ON writing_attempt(character);
+
+CREATE TABLE IF NOT EXISTS exam (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    exam_type TEXT NOT NULL,
+    scope_json TEXT NOT NULL DEFAULT '',
+    question_count INTEGER NOT NULL DEFAULT 0,
+    time_limit_ms INTEGER,
+    seed INTEGER NOT NULL DEFAULT 0,
+    started_at INTEGER NOT NULL,
+    finished_at INTEGER,
+    status INTEGER NOT NULL DEFAULT 0,
+    score INTEGER NOT NULL DEFAULT 0,
+    accuracy REAL NOT NULL DEFAULT 0,
+    total_time_ms INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS exam_started_idx ON exam(started_at);
+
+CREATE TABLE IF NOT EXISTS exam_question (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exam_id INTEGER NOT NULL,
+    question_index INTEGER NOT NULL,
+    question_type TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    options_json TEXT,
+    user_answer TEXT,
+    is_correct INTEGER,
+    time_ms INTEGER NOT NULL DEFAULT 0,
+    entity_key TEXT NOT NULL DEFAULT '',
+    skill TEXT NOT NULL DEFAULT '',
+    jlpt_level INTEGER,
+    mistake_category TEXT,
+    FOREIGN KEY(exam_id) REFERENCES exam(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS exam_question_exam_idx ON exam_question(exam_id);
+
+CREATE TABLE IF NOT EXISTS learning_mistake (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp INTEGER NOT NULL,
+    entity_key TEXT NOT NULL DEFAULT '',
+    content_type TEXT NOT NULL DEFAULT '',
+    mode TEXT NOT NULL DEFAULT '',
+    question_type TEXT NOT NULL DEFAULT '',
+    expected TEXT NOT NULL DEFAULT '',
+    actual TEXT NOT NULL DEFAULT '',
+    category TEXT NOT NULL DEFAULT 'unknown',
+    severity INTEGER NOT NULL DEFAULT 1,
+    session_id INTEGER,
+    exam_id INTEGER,
+    deck_id INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS learning_mistake_ts_idx ON learning_mistake(timestamp);
+CREATE INDEX IF NOT EXISTS learning_mistake_entity_idx ON learning_mistake(entity_key);
+
+-- Precomputed per-day rollups (local calendar day). Updated incrementally
+-- whenever a review / writing attempt / exam / session is recorded so the
+-- heatmap and the today panel never scan the whole history table.
+CREATE TABLE IF NOT EXISTS daily_stats (
+    date TEXT NOT NULL PRIMARY KEY,
+    reviews INTEGER NOT NULL DEFAULT 0,
+    new_cards INTEGER NOT NULL DEFAULT 0,
+    review_cards INTEGER NOT NULL DEFAULT 0,
+    correct INTEGER NOT NULL DEFAULT 0,
+    incorrect INTEGER NOT NULL DEFAULT 0,
+    lapses INTEGER NOT NULL DEFAULT 0,
+    study_time_ms INTEGER NOT NULL DEFAULT 0,
+    writing_attempts INTEGER NOT NULL DEFAULT 0,
+    writing_correct INTEGER NOT NULL DEFAULT 0,
+    exams_taken INTEGER NOT NULL DEFAULT 0,
+    exam_score_sum INTEGER NOT NULL DEFAULT 0,
+    exam_score_count INTEGER NOT NULL DEFAULT 0,
+    sessions INTEGER NOT NULL DEFAULT 0
+);
+
+------- STUDY SESSIONS -------
+
+insertStudySession:
+INSERT INTO study_session(start_time, end_time, duration_ms, practice_type, mode, deck_id, deck_name, items_studied, new_items, review_items, correct, incorrect, is_complete)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+completeStudySession:
+UPDATE study_session
+SET end_time = ?, duration_ms = ?, items_studied = ?, new_items = ?, review_items = ?, correct = ?, incorrect = ?, is_complete = 1
+WHERE id = ?;
+
+updateStudySessionCounters:
+UPDATE study_session
+SET items_studied = items_studied + :delta_items,
+    new_items = new_items + :delta_new,
+    review_items = review_items + :delta_review,
+    correct = correct + :delta_correct,
+    incorrect = incorrect + :delta_incorrect,
+    duration_ms = :duration_ms
+WHERE id = :session_id;
+
+getStudySessions:
+SELECT id, start_time, end_time, duration_ms, practice_type, mode, deck_id, deck_name, items_studied, new_items, review_items, correct, incorrect, is_complete
+FROM study_session
+WHERE start_time >= :start AND start_time < :end
+ORDER BY start_time DESC;
+
+getAllStudySessions:
+SELECT id, start_time, end_time, duration_ms, practice_type, mode, deck_id, deck_name, items_studied, new_items, review_items, correct, incorrect, is_complete
+FROM study_session
+ORDER BY start_time DESC
+LIMIT :limit;
+
+getStudySessionCount:
+SELECT COUNT(*) FROM study_session;
+
+------- WRITING ATTEMPTS -------
+
+insertWritingAttempt:
+INSERT INTO writing_attempt(character, practice_type, timestamp, deck_id, session_id, stroke_count, mistakes, wrong_order, almost, accuracy)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getWritingAttempts:
+SELECT id, character, practice_type, timestamp, deck_id, session_id, stroke_count, mistakes, wrong_order, almost, accuracy
+FROM writing_attempt
+WHERE timestamp >= :start AND timestamp < :end
+ORDER BY timestamp DESC;
+
+getWritingAttemptsForCharacter:
+SELECT id, character, practice_type, timestamp, deck_id, session_id, stroke_count, mistakes, wrong_order, almost, accuracy
+FROM writing_attempt
+WHERE character = :character
+ORDER BY timestamp DESC
+LIMIT :limit;
+
+getWritingAttemptCount:
+SELECT COUNT(*) FROM writing_attempt;
+
+getWritingVerifiedCharacters:
+SELECT DISTINCT character FROM writing_attempt WHERE accuracy >= 0.7;
+
+getWritingSummaryForCharacter:
+SELECT COUNT(*) AS attempts,
+       SUM(CASE WHEN accuracy >= 0.7 THEN 1 ELSE 0 END) AS correct,
+       SUM(mistakes) AS total_mistakes,
+       SUM(wrong_order) AS wrong_order,
+       SUM(almost) AS almost
+FROM writing_attempt
+WHERE character = :character;
+
+------- EXAMS -------
+
+insertExam:
+INSERT INTO exam(title, exam_type, scope_json, question_count, time_limit_ms, seed, started_at, finished_at, status, score, accuracy, total_time_ms)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+completeExam:
+UPDATE exam
+SET finished_at = ?, status = 1, score = ?, accuracy = ?, total_time_ms = ?
+WHERE id = ?;
+
+abandonExam:
+UPDATE exam SET finished_at = ?, status = 2 WHERE id = ? AND status = 0;
+
+getExams:
+SELECT id, title, exam_type, scope_json, question_count, time_limit_ms, seed, started_at, finished_at, status, score, accuracy, total_time_ms
+FROM exam
+ORDER BY started_at DESC
+LIMIT :limit;
+
+getExam:
+SELECT id, title, exam_type, scope_json, question_count, time_limit_ms, seed, started_at, finished_at, status, score, accuracy, total_time_ms
+FROM exam
+WHERE id = ?;
+
+getExamCount:
+SELECT COUNT(*) FROM exam;
+
+getCompletedExams:
+SELECT id, title, exam_type, scope_json, question_count, time_limit_ms, seed, started_at, finished_at, status, score, accuracy, total_time_ms
+FROM exam
+WHERE status = 1
+ORDER BY started_at DESC
+LIMIT :limit;
+
+deleteExam:
+DELETE FROM exam WHERE id = ?;
+
+------- EXAM QUESTIONS -------
+
+insertExamQuestion:
+INSERT INTO exam_question(exam_id, question_index, question_type, prompt, answer, options_json, user_answer, is_correct, time_ms, entity_key, skill, jlpt_level, mistake_category)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getExamQuestions:
+SELECT id, exam_id, question_index, question_type, prompt, answer, options_json, user_answer, is_correct, time_ms, entity_key, skill, jlpt_level, mistake_category
+FROM exam_question
+WHERE exam_id = ?
+ORDER BY question_index;
+
+updateExamQuestionAnswer:
+UPDATE exam_question
+SET user_answer = ?, is_correct = ?, time_ms = ?, mistake_category = ?
+WHERE id = ?;
+
+------- LEARNING MISTAKES -------
+
+insertLearningMistake:
+INSERT INTO learning_mistake(timestamp, entity_key, content_type, mode, question_type, expected, actual, category, severity, session_id, exam_id, deck_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getLearningMistakes:
+SELECT id, timestamp, entity_key, content_type, mode, question_type, expected, actual, category, severity, session_id, exam_id, deck_id
+FROM learning_mistake
+WHERE timestamp >= :start AND timestamp < :end
+ORDER BY timestamp DESC
+LIMIT :limit;
+
+getMistakeCount:
+SELECT COUNT(*) FROM learning_mistake;
+
+getWeakEntities:
+SELECT entity_key, content_type, COUNT(*) AS mistake_count
+FROM learning_mistake
+WHERE timestamp >= :start
+GROUP BY entity_key, content_type
+ORDER BY mistake_count DESC
+LIMIT :limit;
+
+getMistakeCategoryBreakdown:
+SELECT category, COUNT(*) AS count
+FROM learning_mistake
+GROUP BY category
+ORDER BY count DESC;
+
+------- DAILY STATS -------
+
+ensureDailyStatsRow:
+INSERT OR IGNORE INTO daily_stats(date) VALUES (?);
+
+incrementDailyReview:
+UPDATE daily_stats SET
+    reviews = reviews + :reviews,
+    new_cards = new_cards + :new_cards,
+    review_cards = review_cards + :review_cards,
+    correct = correct + :correct,
+    incorrect = incorrect + :incorrect,
+    lapses = lapses + :lapses,
+    study_time_ms = study_time_ms + :study_time_ms
+WHERE date = :date;
+
+incrementDailyWriting:
+UPDATE daily_stats SET
+    writing_attempts = writing_attempts + :attempts,
+    writing_correct = writing_correct + :correct,
+    study_time_ms = study_time_ms + :study_time_ms
+WHERE date = :date;
+
+incrementDailyExam:
+UPDATE daily_stats SET
+    exams_taken = exams_taken + 1,
+    exam_score_sum = exam_score_sum + :score,
+    exam_score_count = exam_score_count + 1
+WHERE date = :date;
+
+incrementDailySession:
+UPDATE daily_stats SET sessions = sessions + 1 WHERE date = :date;
+
+getDailyStats:
+SELECT date, reviews, new_cards, review_cards, correct, incorrect, lapses, study_time_ms, writing_attempts, writing_correct, exams_taken, exam_score_sum, exam_score_count, sessions
+FROM daily_stats
+WHERE date >= :start AND date <= :end
+ORDER BY date;
+
+getDailyStatsAll:
+SELECT date, reviews, new_cards, review_cards, correct, incorrect, lapses, study_time_ms, writing_attempts, writing_correct, exams_taken, exam_score_sum, exam_score_count, sessions
+FROM daily_stats
+ORDER BY date;
+
+------- REVIEW HISTORY AGGREGATION (fast, timezone-aware) -------
+
+reviewDayAggregation:
+SELECT date(round((timestamp - :offset_millis) / 1000.0), 'unixepoch') AS day,
+       COUNT(*) AS reviews,
+       SUM(CASE WHEN grade > 1 THEN 1 ELSE 0 END) AS correct,
+       SUM(CASE WHEN grade <= 1 THEN 1 ELSE 0 END) AS incorrect,
+       SUM(CASE WHEN grade <= 1 THEN 1 ELSE 0 END) AS lapses,
+       SUM(CASE WHEN duration > 120000 THEN 120000 ELSE duration END) AS study_time_ms,
+       COUNT(DISTINCT key) AS cards_studied
+FROM review_history
+WHERE timestamp >= :start
+GROUP BY day;
+
+reviewDayAggregationForType:
+SELECT date(round((timestamp - :offset_millis) / 1000.0), 'unixepoch') AS day,
+       COUNT(*) AS reviews,
+       SUM(CASE WHEN grade > 1 THEN 1 ELSE 0 END) AS correct,
+       SUM(CASE WHEN duration > 120000 THEN 120000 ELSE duration END) AS study_time_ms,
+       COUNT(DISTINCT key) AS cards_studied
+FROM review_history
+WHERE timestamp >= :start AND practice_type IN :practice_types
+GROUP BY day;
+
+reviewGradeBreakdown:
+SELECT grade, COUNT(*) AS count
+FROM review_history
+WHERE timestamp >= :start
+GROUP BY grade
+ORDER BY grade;
+
+reviewGradeBreakdownForRange:
+SELECT grade, COUNT(*) AS count
+FROM review_history
+WHERE timestamp >= :start AND timestamp < :end
+GROUP BY grade
+ORDER BY grade;
+
+reviewIntervalBreakdown:
+-- Buckets reviews by the card's SRS interval. review_history does not store
+-- the interval at review time, so we join the current fsrs_card interval.
+SELECT CASE
+    WHEN COALESCE(fc.interval, 0) < 1 THEN 0
+    WHEN COALESCE(fc.interval, 0) < 4 THEN 1
+    WHEN COALESCE(fc.interval, 0) < 8 THEN 7
+    WHEN COALESCE(fc.interval, 0) < 15 THEN 14
+    WHEN COALESCE(fc.interval, 0) < 31 THEN 30
+    WHEN COALESCE(fc.interval, 0) < 91 THEN 90
+    WHEN COALESCE(fc.interval, 0) < 366 THEN 365
+    ELSE 9999
+END AS bucket,
+COUNT(*) AS count
+FROM review_history rh
+LEFT JOIN fsrs_card fc ON rh.key = fc.key AND rh.practice_type = fc.practice_type
+WHERE rh.timestamp >= :start AND rh.practice_type IN :practice_types
+GROUP BY bucket
+ORDER BY bucket;
+
+reviewFirstSeen:
+SELECT MIN(timestamp) AS first_seen FROM review_history;
+
+reviewFirstSeenForKeys:
+SELECT key, MIN(timestamp) AS first_seen
+FROM review_history
+WHERE key IN :keys
+GROUP BY key;
+
+reviewLapseStats:
+SELECT COUNT(DISTINCT key) AS lapsed_items,
+       COUNT(*) AS lapsed_reviews
+FROM review_history
+WHERE grade <= 1 AND timestamp >= :start;
+
+reviewPerItem:
+SELECT key, practice_type, COUNT(*) AS reviews, SUM(CASE WHEN grade > 1 THEN 1 ELSE 0 END) AS correct
+FROM review_history
+WHERE timestamp >= :start
+GROUP BY key, practice_type;
+
+------- INSERT HELPERS -------
+
+getLastInsertRowId:
+SELECT last_insert_rowid();

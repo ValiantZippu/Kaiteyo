@@ -74,4 +74,18 @@ fun Module.addUserDataDatabaseDefinitions() {
         )
     }
 
+    single<ua.syt0r.kanji.core.statistics.StatisticsRepository> {
+        ua.syt0r.kanji.core.statistics.SqlDelightStatisticsRepository(
+            userDataDatabaseManager = get(),
+            reviewHistoryRepository = get()
+        )
+    }
+
+    single<ua.syt0r.kanji.core.statistics.StatisticsRecorder> {
+        ua.syt0r.kanji.core.statistics.StatisticsRecorder(
+            statisticsRepository = get(),
+            timeUtils = get()
+        )
+    }
+
 }

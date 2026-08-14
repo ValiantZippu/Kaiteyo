@@ -68,7 +68,9 @@ data class DesktopCard(
     val deckId: String = DEFAULT_DECK_ID,
     val createdAt: Instant = Instant.fromEpochMilliseconds(0),
     val lastReviewedAt: Instant? = null,
-    val contentKind: ContentKind = ContentKind.Kanji
+    val contentKind: ContentKind = ContentKind.Kanji,
+    /** Stable foreign key for interop (e.g. `anki:<guid>`); blank when native. */
+    val externalId: String = ""
 ) {
     val readings: List<String> get() = onReadings + kunReadings
 

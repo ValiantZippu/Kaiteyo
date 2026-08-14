@@ -44,10 +44,15 @@ fun GeneralDashboardScreen(
         },
         navigateToSearch = { mainNavigationState.navigate(MainDestination.SearchEngine) },
         navigateToCardBrowser = { mainNavigationState.navigate(MainDestination.CardBrowser) },
-        navigateToStatistics = { mainNavigationState.navigate(MainDestination.StatisticsDashboard) },
-        navigateToImportExport = { mainNavigationState.navigate(MainDestination.ImportExport) },
+        navigateToStatistics = { mainNavigationState.navigate(MainDestination.StatisticsDashboard) },        navigateToImportExport = {
+            mainNavigationState.navigate(MainDestination.ImportExport)
+        },
+        navigateToCollections = {
+            mainNavigationState.navigate(MainDestination.Collections)
+        },
         downloadsClick = { uriHandler.openUri(DownloadsUrl) },
         socialClick = { uriHandler.openUri(it.url) },
+        retryLoad = { viewModel.retryLoad() },
         textAnalysisClick = { mainNavigationState.navigate(MainDestination.TextAnalysis) }
     )
 

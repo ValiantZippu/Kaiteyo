@@ -5,6 +5,7 @@ import ua.syt0r.kanji.presentation.multiplatformViewModel
 import ua.syt0r.kanji.presentation.screen.main.features.DeepLinkHandler
 import ua.syt0r.kanji.presentation.screen.main.features.DeckFeaturesController
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
+import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 
 val mainScreenModule = module {
 
@@ -36,6 +37,18 @@ val mainScreenModule = module {
             cardDatabaseManager = get(),
             reviewHistoryRepository = get(),
             fsrsCardRepository = get(),
+            appPreferences = get(),
+            timeUtils = get()
+        )
+    }
+
+    single {
+        StatisticsController(
+            dataCenter = get(),
+            statisticsRepository = get(),
+            fsrsCardRepository = get(),
+            vocabPracticeRepository = get(),
+            appDataRepository = get(),
             appPreferences = get(),
             timeUtils = get()
         )

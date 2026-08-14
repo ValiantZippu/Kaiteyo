@@ -12,8 +12,8 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashbo
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.use_case.SubscribeOnGeneralDashboardScreenDataUseCase
 
 class GeneralDashboardViewModel(
-    viewModelScope: CoroutineScope,
-    subscribeOnScreenDataUseCase: SubscribeOnGeneralDashboardScreenDataUseCase
+    private val viewModelScope: CoroutineScope,
+    private val subscribeOnScreenDataUseCase: SubscribeOnGeneralDashboardScreenDataUseCase
 ) : GeneralDashboardScreenContract.ViewModel,
     LifecycleAwareViewModel {
 
@@ -22,15 +22,25 @@ class GeneralDashboardViewModel(
     override val state: StateFlow<ScreenState> = _state
     override val lifecycleState = MutableStateFlow(LifecycleState.Hidden)
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     init {
-        subscribeOnScreenDataUseCase(viewModelScope, lifecycleState)
+        subscribeToData()
+    }
+
+    private fun subscribeToData() {
+        loadJob?.cancel()
+        loadJob = subscribeOnScreenDataUseCase(viewModelScope, lifecycleState)
             .onEach { refreshableData ->
                 when (refreshableData) {
                     is RefreshableData.Loading -> _state.value = ScreenState.Loading
+                    is RefreshableData.Failed -> _state.value = ScreenState.Error(refreshableData.error?.message)
                     is RefreshableData.Loaded -> _state.value = refreshableData.value
                 }
             }
             .launchIn(viewModelScope)
     }
+
+    override fun retryLoad() = subscribeToData()
 
 }

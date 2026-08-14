@@ -23,6 +23,8 @@ import ua.syt0r.kanji.core.srs.fsrs.FsrsCard
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCardParams
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus
 import ua.syt0r.kanji.core.time.TimeUtils
+import ua.syt0r.kanji.core.transfer.ConflictPolicy
+import ua.syt0r.kanji.core.transfer.TransferCard
 import ua.syt0r.kanji.core.user_data.database.BackupRow
 import ua.syt0r.kanji.core.user_data.database.CardDatabaseManager
 import ua.syt0r.kanji.core.user_data.database.FilteredDeckRow
@@ -912,6 +914,128 @@ class DeckFeaturesController(
 
     // ── Import / export helpers ──
 
+    /**
+     * Persist imported cards. Kaiteyo's catalog is dictionary-backed, so an
+     * import merges scheduling / tags / flags / notes onto the catalog card
+     * with the same character (this is how an Anki collection's progress for
+     * the kanji Kaiteyo teaches becomes real, persistent study state). Cards
+     * whose character is not in the catalog are reported as skipped rather
+     * than silently dropped.
+     */
+    suspend fun mergeImportedCards(
+        incoming: List<TransferCard>,
+        policy: ConflictPolicy = ConflictPolicy.KeepExisting
+    ): ImportMergeReport {
+        if (incoming.isEmpty()) return ImportMergeReport(merged = 0, skipped = 0, skippedReason = "nothing to import")
+
+        val catalogByCharacter = cards.associateBy { it.character }
+        var merged = 0
+        var skipped = 0
+        var updatedExisting = 0
+        var nonCatalog = 0
+
+        for (transfer in incoming) {
+            val imported = TransferCard.toKaiteyoCard(transfer)
+            val catalog = catalogByCharacter[imported.character]
+            if (catalog == null) {
+                nonCatalog++
+                skipped++
+                continue
+            }
+
+            val key = SrsCardKey(catalog.id, LETTER_WRITING_PRACTICE_TYPE)
+            val existing = fsrsCardRepository.get(key)
+            val hasProgress = existing != null && existing.status != FsrsCardStatus.New
+
+            when (policy) {
+                ConflictPolicy.KeepExisting -> if (hasProgress) {
+                    skipped++
+                    continue
+                }
+                ConflictPolicy.Skip -> if (existing != null) {
+                    skipped++
+                    continue
+                }
+                ConflictPolicy.KeepNewest -> {
+                    val importedTime = imported.lastReviewed.toInstantLenient()
+                    val existingTime = existing?.lastReview
+                    if (existing != null && importedTime != null && existingTime != null && existingTime >= importedTime) {
+                        skipped++
+                        continue
+                    }
+                }
+                ConflictPolicy.OverwriteExisting -> Unit
+            }
+
+            // 1. Scheduling → FSRS (ease/interval/lapses/reps/last-review).
+            val now = Clock.System.now()
+            val lastReview = imported.lastReviewed.toInstantLenient() ?: now
+            val status = imported.status.toFsrsStatus()
+            val intervalDays = imported.interval.coerceAtLeast(0)
+            val fsrs = FsrsCard(
+                status = status,
+                params = if (status == FsrsCardStatus.New) {
+                    FsrsCardParams.New
+                } else {
+                    FsrsCardParams.Existing(
+                        // Anki ease 130%..300% maps onto FSRS difficulty 1..10.
+                        difficulty = (imported.ease * 2f).coerceIn(1f, 10f).toDouble(),
+                        // stability == interval keeps the imported interval intact.
+                        stability = intervalDays.toDouble().coerceAtLeast(0.01),
+                        reviewTime = lastReview
+                    )
+                },
+                interval = intervalDays.days,
+                lapses = imported.lapses.coerceAtLeast(0),
+                repeats = imported.reviewCount.coerceAtLeast(0)
+            )
+            fsrsCardRepository.update(key, fsrs)
+
+            // 2. Flag.
+            if (imported.flag != CardFlagType.None) {
+                if (imported.isSuspended) {
+                    cardDatabaseManager.setFlag(catalog.id, LETTER_WRITING_PRACTICE_TYPE, SUSPENDED_FLAG_TYPE)
+                } else if (imported.isBuried) {
+                    cardDatabaseManager.setFlag(catalog.id, LETTER_WRITING_PRACTICE_TYPE, BURIED_FLAG_TYPE)
+                } else {
+                    cardDatabaseManager.setFlag(catalog.id, LETTER_WRITING_PRACTICE_TYPE, imported.flag.id)
+                }
+            }
+
+            // 3. Tags (created on demand, then attached).
+            imported.tagNames.distinct().forEach { tagName ->
+                val existingTag = tags.firstOrNull { it.name.equals(tagName, ignoreCase = true) }
+                val tagId = existingTag?.id ?: dataCenter.createTag(tagName, "#8BC34A")
+                cardDatabaseManager.addTagToCard(catalog.id, LETTER_WRITING_PRACTICE_TYPE, tagId)
+            }
+
+            // 4. Notes.
+            if (imported.notes.isNotBlank()) {
+                cardDatabaseManager.setNote(catalog.id, LETTER_WRITING_PRACTICE_TYPE, imported.notes, 1)
+            }
+
+            if (hasProgress) updatedExisting++ else merged++
+        }
+
+        // Rebuild in-memory state so the UI reflects the merged progress.
+        refresh()
+        dataCenter.rebuildCollections()
+
+        return ImportMergeReport(
+            merged = merged,
+            skipped = skipped,
+            updatedExisting = updatedExisting,
+            skippedReason = if (nonCatalog > 0) "$nonCatalog not in the kanji catalog" else "already studied"
+        )
+    }
+
+    data class ImportMergeReport(
+        val merged: Int,
+        val skipped: Int,
+        val updatedExisting: Int = 0,
+        val skippedReason: String = ""
+    )
+
     suspend fun recordImport(details: String, imported: Int) {
         recordHistory(KaiteyoHistoryAction.IMPORT, "Imported $imported cards: $details")
         loadHistory()
@@ -1124,6 +1248,27 @@ class DeckFeaturesController(
 // ============================================
 // Mappings
 // ============================================
+
+/**
+ * Lenient instant parsing for imported dates: full ISO-8601 as well as
+ * date-only strings ("2026-01-15", the format Kaiteyo cards carry by
+ * default) resolve to an instant; anything unparseable is ignored.
+ */
+private fun String.toInstantLenient(): kotlinx.datetime.Instant? {
+    if (isBlank()) return null
+    runCatching { return kotlinx.datetime.Instant.parse(this) }
+    if (length == 10 && this[4] == '-' && this[7] == '-') {
+        runCatching { return kotlinx.datetime.Instant.parse("${this}T00:00:00Z") }
+    }
+    return null
+}
+
+private fun ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus.toFsrsStatus(): FsrsCardStatus = when (this) {
+    ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus.New -> FsrsCardStatus.New
+    ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus.Learning -> FsrsCardStatus.Learning
+    ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus.Relearning -> FsrsCardStatus.Relearning
+    else -> FsrsCardStatus.Review
+}
 
 private fun Int.toHistoryEntryType(): HistoryEntryType = when (this) {
     KaiteyoHistoryAction.REVIEW -> HistoryEntryType.Review

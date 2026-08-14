@@ -289,6 +289,13 @@ class AppPreferences(
         enableBackup = false
     )
 
+    override val themeSettingsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "theme_settings_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
     override val reviewSettingsJson: SuspendedProperty<String> = createProperty(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_review_settings_json",
@@ -335,6 +342,20 @@ class AppPreferences(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_browser_last_query",
         initialValue = { "" }
+    )
+
+    override val statisticsGoalsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_statistics_goals_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val statisticsGoalHistoryJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_statistics_goal_history_json",
+        initialValue = { "" },
+        enableBackup = false
     )
 
 }

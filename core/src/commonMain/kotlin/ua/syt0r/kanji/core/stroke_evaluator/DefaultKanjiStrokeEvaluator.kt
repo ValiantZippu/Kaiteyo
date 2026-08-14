@@ -1,99 +1,196 @@
 package ua.syt0r.kanji.core.stroke_evaluator
 
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import ua.syt0r.kanji.core.PathApproximation
+import ua.syt0r.kanji.core.PointF
 import ua.syt0r.kanji.core.approximateEvenly
 import ua.syt0r.kanji.core.center
 import ua.syt0r.kanji.core.decreaseAll
 import ua.syt0r.kanji.core.euclDistance
 import ua.syt0r.kanji.core.logger.Logger
-import ua.syt0r.kanji.core.relativeScale
-import ua.syt0r.kanji.core.scaled
-import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiSize
-import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 
+/**
+ * Stroke evaluator with configurable scoring. Compares a drawn stroke against a
+ * reference stroke on four independent axes — direction, position, length and
+ * curvature — and combines them with the weights from [StrokeEvaluationConfig].
+ *
+ * Position is normalized against the reference stroke's own bounding box, so the
+ * same tolerances work at any canvas size (small kanji, large kanji, tablet vs
+ * phone) and for fast vs slow input (timing is deliberately ignored).
+ */
 class DefaultKanjiStrokeEvaluator : KanjiStrokeEvaluator {
 
-    companion object {
-        private const val SIMILARITY_ERROR_THRESHOLD = 100f
-        private const val INTERPOLATION_POINTS = 22
-        private const val MIN_SCALE_DIMENSION = 1f
-    }
+    override fun evaluate(
+        expected: Path,
+        drawn: Path,
+        config: StrokeEvaluationConfig
+    ): StrokeEvaluation {
+        val expectedApprox = expected.approximateEvenly(config.interpolationPoints)
+            as? PathApproximation.Success
+            ?: return failedEvaluation()
+        val drawnApprox = drawn.approximateEvenly(config.interpolationPoints)
+            as? PathApproximation.Success
+            ?: return failedEvaluation()
 
-    override fun areStrokesSimilar(
-        first: Path, second: Path
-    ): Boolean {
-        val error = getError(first, second)
-        return error <= SIMILARITY_ERROR_THRESHOLD
-    }
-
-    private fun getError(first: Path, second: Path): Float {
-        val firstApproximation = first
-            .approximateEvenly(INTERPOLATION_POINTS) as? PathApproximation.Success
-
-        if (firstApproximation == null) {
-            Logger.d("Couldn't approximate first path")
-            return SIMILARITY_ERROR_THRESHOLD + 1
-        }
-
-        val secondApproximation = second
-            .approximateEvenly(INTERPOLATION_POINTS) as? PathApproximation.Success
-
-        if (secondApproximation == null) {
-            Logger.d("Couldn't approximate second path")
-            return SIMILARITY_ERROR_THRESHOLD + 1
-        }
-
-        val lengthDiff = abs(firstApproximation.length - secondApproximation.length)
-        val lengthDifferenceError = 20f * lengthDiff / KanjiSize
-
-        val firstCenter = firstApproximation.points.center()
-        val secondCenter = secondApproximation.points.center()
-
-        val centerDifferenceError = 2f * euclDistance(firstCenter, secondCenter)
-
-        val centeredFirstPoints = firstApproximation.points.decreaseAll(firstCenter)
-        val centeredSecondPoints = secondApproximation.points.decreaseAll(secondCenter)
-
-        val (firstScale, secondScale) = relativeScale(centeredFirstPoints, centeredSecondPoints)
-        val relativeScaleError = getScaleError(firstScale, secondScale)
-
-        val firstScaledToSecond = centeredFirstPoints.scaled(
-            scaleX = secondScale.width / firstScale.width,
-            scaleY = secondScale.height / firstScale.height
+        val metrics = StrokeMetrics(
+            directionAccuracy = directionAccuracy(expectedApprox.points, drawnApprox.points, config),
+            positionAccuracy = positionAccuracy(expectedApprox.points, drawnApprox.points, config),
+            lengthAccuracy = lengthAccuracy(expectedApprox.length, drawnApprox.length, config),
+            curvatureAccuracy = curvatureAccuracy(expectedApprox.points, drawnApprox.points, config)
         )
 
-        val pointsDistanceSum = firstScaledToSecond.zip(centeredSecondPoints)
-            .sumOf { euclDistance(it.first, it.second).toDouble() }.toFloat()
-        val pointsDistanceError = .2f * pointsDistanceSum
+        val classification = when {
+            metrics.overallScore >= config.correctThreshold -> StrokeClassification.Correct
+            metrics.overallScore >= config.almostThreshold -> StrokeClassification.AlmostCorrect
+            else -> StrokeClassification.Incorrect
+        }
 
-        val cumulativeError =
-            lengthDifferenceError + centerDifferenceError + relativeScaleError + pointsDistanceError
-        Logger.d("error[$cumulativeError] lengthErr[$lengthDifferenceError] centerDiffErr[$centerDifferenceError] scaleErr[$relativeScaleError] distanceErr[$pointsDistanceError]")
-        return cumulativeError
+        Logger.d(
+            "stroke score[${metrics.accuracyPercent()}] dir[${metrics.directionAccuracy}] " +
+                "pos[${metrics.positionAccuracy}] len[${metrics.lengthAccuracy}] " +
+                "curv[${metrics.curvatureAccuracy}] -> $classification"
+        )
+
+        return StrokeEvaluation(classification = classification, metrics = metrics)
     }
 
-    private fun getScaleError(firstScale: Size, secondScale: Size): Float {
-        // Limiting min scale to avoid big scale difference when kanji has straight lines
-        val safe1Scale = firstScale.withMinSide(MIN_SCALE_DIMENSION)
-        val safe2Scale = secondScale.withMinSide(MIN_SCALE_DIMENSION)
+    private fun directionAccuracy(
+        expected: List<PointF>,
+        drawn: List<PointF>,
+        config: StrokeEvaluationConfig
+    ): Float {
+        val segmentCount = expected.size - 1
+        if (segmentCount < 1) return 0f
 
-        val widthScaleDiff = bigSideToShortSideRatio(safe1Scale.width, safe2Scale.width)
-        val heightScaleDiff = bigSideToShortSideRatio(safe1Scale.height, safe2Scale.height)
-
-        return 5f * (widthScaleDiff + heightScaleDiff)
+        var sum = 0f
+        for (i in 0 until segmentCount) {
+            val expectedAngle = segmentAngle(expected[i], expected[i + 1])
+            val drawnAngle = segmentAngle(drawn[i], drawn[i + 1])
+            sum += angularAccuracy(expectedAngle, drawnAngle, config)
+        }
+        return sum / segmentCount
     }
 
-    private fun Size.withMinSide(minSideValue: Float) = Size(
-        max(minSideValue, width),
-        max(minSideValue, height)
-    )
+    private fun positionAccuracy(
+        expected: List<PointF>,
+        drawn: List<PointF>,
+        config: StrokeEvaluationConfig
+    ): Float {
+        val expectedCenter = expected.center()
+        val drawnCenter = drawn.center()
 
-    private fun bigSideToShortSideRatio(side1: Float, side2: Float): Float {
-        return max(side1, side2) / min(side1, side2)
+        val centeredExpected = expected.decreaseAll(expectedCenter)
+        val centeredDrawn = drawn.decreaseAll(drawnCenter)
+
+        val expectedSize = boundingBoxDiagonal(centeredExpected)
+        if (expectedSize <= 0f) return 1f
+
+        // Scale the drawn stroke to the reference bounding box so size
+        // differences don't inflate the positional error.
+        val drawnSize = boundingBoxDiagonal(centeredDrawn)
+        val scale = if (drawnSize <= 0f) 1f else expectedSize / drawnSize
+        val scaledDrawn = centeredDrawn.map { PointF(it.x * scale, it.y * scale) }
+
+        val meanDistance = centeredExpected.zip(scaledDrawn)
+            .map { (a, b) -> euclDistance(a, b) }
+            .sum() / centeredExpected.size
+
+        val deadBand = expectedSize * config.positionDeadBandFraction
+        val normalizedError = meanDistance / deadBand
+        val accuracy = 1f - min(1f, normalizedError / config.maxPositionError)
+        return accuracy.coerceIn(0f, 1f)
     }
 
+    private fun lengthAccuracy(
+        expectedLength: Float,
+        drawnLength: Float,
+        config: StrokeEvaluationConfig
+    ): Float {
+        if (expectedLength <= 0f) return 1f
+        if (drawnLength <= 0f) return 0f
+
+        val deviation = kotlin.math.abs(drawnLength / expectedLength - 1f)
+        val accuracy = 1f - min(1f, deviation / config.lengthTolerance)
+        return accuracy.coerceIn(0f, 1f)
+    }
+
+    private fun curvatureAccuracy(
+        expected: List<PointF>,
+        drawn: List<PointF>,
+        config: StrokeEvaluationConfig
+    ): Float {
+        val expectedTurns = turningAngles(expected)
+        val drawnTurns = turningAngles(drawn)
+        val count = min(expectedTurns.size, drawnTurns.size)
+        if (count == 0) return 1f
+
+        var sum = 0f
+        for (i in 0 until count) {
+            val diff = angularDifference(expectedTurns[i], drawnTurns[i])
+            val error = (diff - config.curvatureDeadBand).coerceAtLeast(0f)
+            val range = max(1f, config.maxDirectionErrorDegrees - config.curvatureDeadBand)
+            val normalized = min(1f, error / range)
+            sum += 1f - normalized
+        }
+        return (sum / count).coerceIn(0f, 1f)
+    }
+
+    // ------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------
+
+    private fun segmentAngle(from: PointF, to: PointF): Float {
+        return atan2(to.y - from.y, to.x - from.x) * 180f / PI
+    }
+
+    private fun angularAccuracy(expected: Float, drawn: Float, config: StrokeEvaluationConfig): Float {
+        val diff = angularDifference(expected, drawn)
+        val error = (diff - config.directionDeadBand).coerceAtLeast(0f)
+        val range = max(1f, config.maxDirectionErrorDegrees - config.directionDeadBand)
+        val normalized = min(1f, error / range)
+        return 1f - normalized
+    }
+
+    private fun angularDifference(a: Float, b: Float): Float {
+        var diff = kotlin.math.abs(a - b) % 360f
+        if (diff > 180f) diff = 360f - diff
+        return diff
+    }
+
+    private fun turningAngles(points: List<PointF>): List<Float> {
+        if (points.size < 3) return emptyList()
+        return (1 until points.size - 1).map { i ->
+            val a = segmentAngle(points[i - 1], points[i])
+            val b = segmentAngle(points[i], points[i + 1])
+            angularDifference(a, b)
+        }
+    }
+
+    private fun boundingBoxDiagonal(points: List<PointF>): Float {
+        val minX = points.minOf { it.x }
+        val maxX = points.maxOf { it.x }
+        val minY = points.minOf { it.y }
+        val maxY = points.maxOf { it.y }
+        return sqrt((maxX - minX) * (maxX - minX) + (maxY - minY) * (maxY - minY))
+    }
+
+    private fun failedEvaluation(): StrokeEvaluation {
+        return StrokeEvaluation(
+            classification = StrokeClassification.Incorrect,
+            metrics = StrokeMetrics(
+                directionAccuracy = 0f,
+                positionAccuracy = 0f,
+                lengthAccuracy = 0f,
+                curvatureAccuracy = 0f
+            )
+        )
+    }
+
+    companion object {
+        private const val PI = 3.14159265f
+    }
 }

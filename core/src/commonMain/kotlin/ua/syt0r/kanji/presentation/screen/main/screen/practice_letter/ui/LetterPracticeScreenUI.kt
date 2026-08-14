@@ -80,6 +80,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.Lette
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeSummaryItem
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.WritingPracticeHintMode
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.WritingPracticeInputMode
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingStrictness
 import kotlin.math.absoluteValue
 import kotlin.math.cos
 
@@ -238,6 +239,7 @@ private fun ConfiguringState(
                 var altStrokeEvaluatorEnabled by configuration.altStrokeEvaluatorEnabled
                 var selectedHintMode by configuration.hintMode
                 var selectedInputMode by configuration.inputMode
+                var selectedStrictness by configuration.strictness
 
                 PracticeConfigurationItemsSelector(
                     state = configuration.selectorState
@@ -262,6 +264,14 @@ private fun ConfiguringState(
                     values = WritingPracticeInputMode.entries,
                     selected = selectedInputMode,
                     onSelected = { selectedInputMode = it }
+                )
+
+                PracticeConfigurationEnumSelector(
+                    title = resolveString { letterPractice.evaluationStrictnessTitle },
+                    subtitle = resolveString { letterPractice.evaluationStrictnessMessage },
+                    values = WritingStrictness.entries,
+                    selected = selectedStrictness,
+                    onSelected = { selectedStrictness = it }
                 )
 
                 PracticeConfigurationOption(
@@ -363,6 +373,12 @@ private fun SummaryState(
                     data = "${screenState.accuracy}%"
                 )
             }
+            if (screenState.strokeAccuracy != null) {
+                PracticeSummaryInfoLabel(
+                    title = resolveString { commonPractice.writingStrokeAccuracyTitle },
+                    data = "${screenState.strokeAccuracy}%"
+                )
+            }
         }
     ) {
 
@@ -371,10 +387,29 @@ private fun SummaryState(
                 PracticeSummaryItem(
                     index = index,
                     header = {
-                        Text(
-                            text = item.letter,
-                            modifier = Modifier
-                        )
+                        Column {
+                            Text(
+                                text = item.letter,
+                                modifier = Modifier
+                            )
+                            if (item is LetterPracticeSummaryItem.Writing) {
+                                val details = buildList {
+                                    item.strokeAccuracyPercent?.let {
+                                        add(resolveString { commonPractice.writingStrokeAccuracy(it) })
+                                    }
+                                    if (item.wrongOrderCount > 0) {
+                                        add(resolveString { commonPractice.writingWrongOrder(item.wrongOrderCount) })
+                                    }
+                                }
+                                if (details.isNotEmpty()) {
+                                    Text(
+                                        text = details.joinToString(" · "),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     },
                     totalReviews = item.totalReviews,
                     nextInterval = item.nextInterval,

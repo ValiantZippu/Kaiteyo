@@ -1,6 +1,9 @@
 package ua.syt0r.kanji.desktop.designsystem
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -34,11 +37,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.model.ToastKind
 import ua.syt0r.kanji.desktop.model.ToastMessage
+import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
+import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
+import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — TOASTS
@@ -67,6 +75,9 @@ fun DsToastHostView(
 ) {
     Box(modifier = modifier) {
         content()
+        // Toast motion honors the animation speed / reduced-motion config and
+        // is identical for every message, so it is computed once per host.
+        val duration = tweenDuration(LocalAnimationConfig.current, 240)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -77,13 +88,17 @@ fun DsToastHostView(
                 LaunchedEffect(msg) {
                     kotlinx.coroutines.delay(msg.durationMs)
                     visible = false
-                    kotlinx.coroutines.delay(200)
+                    // Wait for the exit animation to finish before removing
+                    // the message, so the fade/slide never gets clipped.
+                    kotlinx.coroutines.delay(duration.toLong() + 50)
                     host.dismiss(msg)
                 }
                 AnimatedVisibility(
                     visible = visible,
-                    enter = slideInVertically { it } + fadeIn(),
-                    exit = slideOutVertically { it } + fadeOut()
+                    enter = slideInVertically(tween<IntOffset>(duration), initialOffsetY = { it / 4 }) +
+                        fadeIn(tween(duration)),
+                    exit = slideOutVertically(tween<IntOffset>(duration), targetOffsetY = { it / 4 }) +
+                        fadeOut(tween(duration))
                 ) {
                     DsToastItem(msg, onDismiss = { host.dismiss(msg) })
                 }
@@ -103,6 +118,19 @@ private fun DsToastItem(message: ToastMessage, onDismiss: () -> Unit) {
         ToastKind.Info -> Triple(sc.surfaceInteractive, Icons.Default.Info, sc.textSecondary)
     }
 
+    // Gentle spring pop on the icon as the toast appears, layered over the
+    // slide-up entrance. Skipped under reduced motion / instant speed.
+    val config = LocalAnimationConfig.current
+    val iconScale = remember(message) { Animatable(0.5f) }
+    LaunchedEffect(message) {
+        if (config.reducedMotion || config.speed == AnimationSpeed.Instant) {
+            iconScale.snapTo(1f)
+        } else {
+            iconScale.animateTo(1.08f, spring(dampingRatio = 0.45f, stiffness = 480f))
+            iconScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 900f))
+        }
+    }
+
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(DsRadius.Md))
@@ -111,7 +139,17 @@ private fun DsToastItem(message: ToastMessage, onDismiss: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier
+                .size(18.dp)
+                .graphicsLayer {
+                    scaleX = iconScale.value
+                    scaleY = iconScale.value
+                }
+        )
         Text(
             text = message.text,
             color = sc.textPrimary,

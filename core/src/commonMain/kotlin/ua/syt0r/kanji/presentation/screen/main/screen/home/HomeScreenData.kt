@@ -7,20 +7,20 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.font.FontWeight
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.common.resources.icon.ExtraIcons
 import ua.syt0r.kanji.presentation.common.resources.icon.HomeOutline
 import ua.syt0r.kanji.presentation.common.resources.string.StringResolveScope
 import ua.syt0r.kanji.presentation.common.textDp
+import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
-import ua.syt0r.kanji.presentation.screen.main.features.DeckFeaturesController
-import ua.syt0r.kanji.presentation.screen.main.screen.decks.StatisticsDashboardV2
+import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.SettingsScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.library.LibraryScreen
+import ua.syt0r.kanji.presentation.screen.main.screen.statistics.StatisticsScreen
 
 enum class HomeScreenTab(
     val analyticsName: String,
@@ -76,16 +76,18 @@ enum class HomeScreenTab(
 
 /**
  * The Stats tab renders the unified Kaiteyo analytics dashboard — the single
- * Statistics implementation in the app.
+ * Statistics implementation in the app. Every number is computed by
+ * [StatisticsController] from real database data.
  */
 @Composable
 private fun HomeStatsTab(navigationState: MainNavigationState) {
-    val controller: DeckFeaturesController = koinInject()
-    LaunchedEffect(Unit) { controller.ensureLoaded() }
-    StatisticsDashboardV2(
-        stats = controller.stats,
-        heatmap = controller.heatmap,
-        onClose = null
+    val controller: StatisticsController = koinInject()
+    StatisticsScreen(
+        controller = controller,
+        onClose = null,
+        onOpenLibraryDay = { day ->
+            navigationState.navigate(MainDestination.DayPractice(day.toString()))
+        }
     )
 }
 

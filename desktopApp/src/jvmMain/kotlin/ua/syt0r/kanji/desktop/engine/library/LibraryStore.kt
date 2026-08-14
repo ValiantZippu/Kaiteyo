@@ -20,12 +20,15 @@ import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.LibraryProgressDto
 import ua.syt0r.kanji.desktop.model.LibrarySearchResult
 import ua.syt0r.kanji.desktop.model.LibrarySuggestion
+import ua.syt0r.kanji.desktop.model.ReviewLogEntry
 import ua.syt0r.kanji.desktop.model.ReviewRating
 import ua.syt0r.kanji.desktop.model.SrsStatus
+import ua.syt0r.kanji.desktop.model.StudyDaySummary
 import ua.syt0r.kanji.desktop.model.StudyMode
 import ua.syt0r.kanji.desktop.model.StudyModeProgress
 import java.io.File
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 // ============================================
 // LIBRARY STORE
@@ -40,6 +43,12 @@ import kotlin.math.abs
 private data class HistoryDto(
     val recentSearches: List<String> = emptyList(),
     val recentlyStudied: List<String> = emptyList()
+)
+
+/** Loaded study statistics: the review log and per-day summaries. */
+data class StatisticsSnapshot(
+    val reviewLog: List<ReviewLogEntry> = emptyList(),
+    val summaries: List<StudyDaySummary> = emptyList()
 )
 
 class LibraryStore(
@@ -67,6 +76,8 @@ class LibraryStore(
     private val deckFile: File get() = File(directory, "decks.json")
     private val progressFile: File get() = File(directory, "progress.json")
     private val historyFile: File get() = File(directory, "history.json")
+    private val statisticsFile: File get() = File(directory, "statistics.json")
+    private val cardsFile: File get() = File(directory, "cards.json")
 
     init {
         directory.mkdirs()
@@ -74,6 +85,27 @@ class LibraryStore(
         loadProgress()
         loadHistory()
     }
+
+    // ------------------------------------------------------------
+    // Card pool persistence
+    // The desktop suite's card pool is the user's study data; it must
+    // survive restarts the same way decks, progress and statistics do.
+    // A missing or corrupt file simply means "no persisted pool yet"
+    // so the caller can seed demo data instead of crashing.
+    // ------------------------------------------------------------
+    fun loadCards(): List<DesktopCard>? {
+        if (!cardsFile.exists()) return null
+        return runCatching {
+            json.decodeFromString<List<DesktopCard>>(cardsFile.readText())
+        }.getOrNull()
+    }
+
+    fun saveCards(cards: List<DesktopCard>) {
+        runCatching { cardsFile.writeText(json.encodeToString(cards)) }
+    }
+
+    /** True once a pool has ever been persisted (first-run detection). */
+    fun hasPersistedCards(): Boolean = cardsFile.exists()
 
     private fun bump() {
         revision++
@@ -653,6 +685,22 @@ class LibraryStore(
         bump()
     }
 
+    /**
+     * Replace the whole deck catalog with an incoming set (sync restore).
+     * Blank ids are dropped and built-in decks are always re-added so the
+     * library never ends up without its standard catalog.
+     */
+    fun restoreDecks(decks: List<DeckDef>) {
+        val incoming = decks.filter { it.id.isNotBlank() }
+        this.decks.clear()
+        this.decks.addAll(incoming)
+        BuiltInDecks.all.forEach { builtIn ->
+            if (this.decks.none { it.id == builtIn.id }) this.decks.add(builtIn)
+        }
+        saveDecks()
+        bump()
+    }
+
     private fun loadProgress() {
         if (!progressFile.exists()) return
         runCatching {
@@ -697,4 +745,102 @@ class LibraryStore(
             historyFile.writeText(json.encodeToString(HistoryDto(recentSearches.toList(), recentlyStudied.toList())))
         }
     }
+
+    // ------------------------------------------------------------
+    // Study statistics (review log + daily summaries).
+    // Persisted so stats survive restarts; the live lists stay owned
+    // by AppState and are pushed here on every mutation.
+    // ------------------------------------------------------------
+
+    fun loadStatistics(): StatisticsSnapshot? {
+        if (!statisticsFile.exists()) return null
+        return runCatching {
+            val dto = json.decodeFromString<StatisticsDto>(statisticsFile.readText())
+            StatisticsSnapshot(
+                reviewLog = dto.reviewLog.map {
+                    ReviewLogEntry(
+                        cardId = it.cardId,
+                        reviewedAt = Instant.parse(it.reviewedAtIso),
+                        rating = ReviewRating.valueOf(it.ratingName),
+                        timeSpent = it.timeSpentMs.milliseconds,
+                        intervalBefore = it.intervalBefore,
+                        intervalAfter = it.intervalAfter,
+                        wasNew = it.wasNew,
+                        source = it.source
+                    )
+                },
+                summaries = dto.summaries.map {
+                    StudyDaySummary(
+                        day = it.day,
+                        newCount = it.newCount,
+                        reviewCount = it.reviewCount,
+                        correctCount = it.correctCount,
+                        wrongCount = it.wrongCount,
+                        timeSpent = it.timeSpentMs.milliseconds
+                    )
+                }
+            )
+        }.getOrNull()
+    }
+
+    fun saveStatistics(reviewLog: List<ReviewLogEntry>, summaries: List<StudyDaySummary>) {
+        runCatching {
+            statisticsFile.writeText(
+                json.encodeToString(
+                    StatisticsDto(
+                        reviewLog = reviewLog.map {
+                            ReviewLogDto(
+                                cardId = it.cardId,
+                                reviewedAtIso = it.reviewedAt.toString(),
+                                ratingName = it.rating.name,
+                                timeSpentMs = it.timeSpent.inWholeMilliseconds,
+                                intervalBefore = it.intervalBefore,
+                                intervalAfter = it.intervalAfter,
+                                wasNew = it.wasNew,
+                                source = it.source
+                            )
+                        },
+                        summaries = summaries.map {
+                            SummaryDto(
+                                day = it.day,
+                                newCount = it.newCount,
+                                reviewCount = it.reviewCount,
+                                correctCount = it.correctCount,
+                                wrongCount = it.wrongCount,
+                                timeSpentMs = it.timeSpent.inWholeMilliseconds
+                            )
+                        }
+                    )
+                )
+            )
+        }
+    }
 }
+
+@Serializable
+private data class StatisticsDto(
+    val reviewLog: List<ReviewLogDto> = emptyList(),
+    val summaries: List<SummaryDto> = emptyList()
+)
+
+@Serializable
+private data class ReviewLogDto(
+    val cardId: String,
+    val reviewedAtIso: String,
+    val ratingName: String,
+    val timeSpentMs: Long = 0,
+    val intervalBefore: Double = 0.0,
+    val intervalAfter: Double = 0.0,
+    val wasNew: Boolean = false,
+    val source: String = "review"
+)
+
+@Serializable
+private data class SummaryDto(
+    val day: String,
+    val newCount: Int = 0,
+    val reviewCount: Int = 0,
+    val correctCount: Int = 0,
+    val wrongCount: Int = 0,
+    val timeSpentMs: Long = 0
+)

@@ -33,7 +33,9 @@ class DefaultGetVocabPracticeSummaryItemUseCase : GetVocabPracticeSummaryItemUse
                 reading = state.summaryReading,
                 vocabReference = state.vocabReference,
                 totalReviews = totalReviews,
-                nextInterval = item.srsCard.interval
+                nextInterval = item.srsCard.interval,
+                strokeAccuracyPercent = item.totalWritingStats.accuracyPercent,
+                wrongOrderCount = item.totalWritingStats.wrongOrderCount
             )
         }
     }

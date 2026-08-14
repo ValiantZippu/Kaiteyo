@@ -36,6 +36,8 @@ build-config = "5.4.0"
 
 javacv-platform = "1.5.11"
 mockk = "1.13.16"
+vlcj = "4.8.2"
+sqlite-jdbc = "3.46.0.0"
 
 [plugins]
 build-config = { id = "com.github.gmazzo.buildconfig", version.ref="build-config" }
@@ -110,6 +112,8 @@ compose-reorderable = { module = "sh.calvin.reorderable:reorderable", version.re
 
 javacv-platform = { module = "org.bytedeco:javacv-platform", version.ref = "javacv-platform" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 
 [bundles]
 firebase-bom = ["firebase-analytics-ktx", "firebase-crashlytics-ktx"]

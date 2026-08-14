@@ -26,22 +26,25 @@ fun DeckDetailsScreen(
         state = viewModel.state.collectAsState(),
         navigateUp = { mainNavigationState.navigateBack() },
         navigateToDeckEdit = {
-            val deckEditConfiguration = when (configuration) {
-                is DeckDetailsScreenConfiguration.LetterDeck -> {
-                    DeckEditScreenConfiguration.LetterDeck.Edit(
-                        title = viewModel.state.value.let { it as ScreenState.Loaded }.title,
-                        letterDeckId = configuration.deckId
-                    )
-                }
+            val loadedState = viewModel.state.value as? ScreenState.Loaded
+            if (loadedState != null) {
+                val deckEditConfiguration = when (configuration) {
+                    is DeckDetailsScreenConfiguration.LetterDeck -> {
+                        DeckEditScreenConfiguration.LetterDeck.Edit(
+                            title = loadedState.title,
+                            letterDeckId = configuration.deckId
+                        )
+                    }
 
-                is DeckDetailsScreenConfiguration.VocabDeck -> {
-                    DeckEditScreenConfiguration.VocabDeck.Edit(
-                        title = viewModel.state.value.let { it as ScreenState.Loaded }.title,
-                        vocabDeckId = configuration.deckId
-                    )
+                    is DeckDetailsScreenConfiguration.VocabDeck -> {
+                        DeckEditScreenConfiguration.VocabDeck.Edit(
+                            title = loadedState.title,
+                            vocabDeckId = configuration.deckId
+                        )
+                    }
                 }
+                mainNavigationState.navigate(MainDestination.DeckEdit(deckEditConfiguration))
             }
-            mainNavigationState.navigate(MainDestination.DeckEdit(deckEditConfiguration))
         },
         navigateToCharacterDetails = {
             val screenData = InfoScreenData.Letter(it)
@@ -59,7 +62,8 @@ fun DeckDetailsScreen(
         startMultiselectReview = {
             val reviewConfiguration = viewModel.getMultiselectPracticeConfiguration()
             mainNavigationState.navigate(reviewConfiguration)
-        }
+        },
+        retryLoad = { viewModel.retryLoad() }
     )
 
 }

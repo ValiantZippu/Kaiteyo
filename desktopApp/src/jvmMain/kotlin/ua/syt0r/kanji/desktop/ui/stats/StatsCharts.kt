@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.LocalDate
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
@@ -40,6 +41,7 @@ import ua.syt0r.kanji.presentation.common.theme.semanticNew
 import ua.syt0r.kanji.presentation.common.theme.semanticSuccess
 import ua.syt0r.kanji.presentation.common.theme.semanticWarning
 import ua.syt0r.kanji.desktop.engine.history.ActivityFormatters
+import ua.syt0r.kanji.desktop.engine.media.MediaDayStat
 import ua.syt0r.kanji.desktop.engine.stats.BreakdownRow
 import ua.syt0r.kanji.desktop.engine.stats.DailyRatingSeries
 import ua.syt0r.kanji.desktop.engine.stats.ForecastDay
@@ -123,6 +125,107 @@ private fun ColumnScope.StackedSegment(fraction: Float, color: Color) {
             .weight(fraction)
             .background(color)
     )
+}
+
+// ============================================
+// MEDIA ACTIVITY (immersion watch vs study time)
+// ============================================
+
+/**
+ * Daily immersion bars for the global Statistics view. Each column shows
+ * total watch minutes, stacked so the study-mode share (solid accent) sits
+ * above the leisure share (dimmed accent). Fed by [MediaDayStat] — real
+ * recorded media activity, never synthetic.
+ */
+@Composable
+fun MediaActivityChart(
+    days: List<Pair<LocalDate, MediaDayStat>>,
+    modifier: Modifier = Modifier,
+    height: Dp = 120.dp
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val maxMs = maxOf(1L, days.maxOfOrNull { it.second.watchMs } ?: 0L)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        days.forEach { (date, stat) ->
+            val watch = stat.watchMs
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(((height - 20.dp) * (watch.toFloat() / maxMs)).coerceAtLeast(if (watch > 0) 3.dp else 2.dp))
+                        .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                        .background(if (watch == 0L) sc.surfaceInteractive else Color.Transparent)
+                ) {
+                    if (watch > 0L) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            StackedSegment(stat.studyMs.toFloat() / watch, ac.primary)
+                            StackedSegment((watch - stat.studyMs).toFloat() / watch, ac.primary.copy(alpha = 0.35f))
+                        }
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
+        }
+    }
+}
+
+// ============================================
+// MINING ACTIVITY (sentences mined per day)
+// ============================================
+
+/**
+ * Daily mined-sentence bars for the global Statistics view. Fed by the
+ * MiningStatisticsStore — every source (dictionary, media, OCR, browser,
+ * API…) counts, and zero days render as an empty track rather than a lie.
+ */
+@Composable
+fun MiningActivityChart(
+    days: List<Pair<LocalDate, Int>>,
+    modifier: Modifier = Modifier,
+    height: Dp = 120.dp
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val maxMined = maxOf(1, days.maxOfOrNull { it.second } ?: 0)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        days.forEach { (date, mined) ->
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(((height - 20.dp) * (mined.toFloat() / maxMined)).coerceAtLeast(if (mined > 0) 3.dp else 2.dp))
+                        .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                        .background(if (mined == 0) sc.surfaceInteractive else ac.primary.copy(alpha = 0.8f))
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
+        }
+    }
 }
 
 // ============================================

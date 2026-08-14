@@ -1,0 +1,147 @@
+﻿  public fun <T : Any> getStudySessions(
+  public fun getStudySessions(start: Long, end: Long): Query<Study_session> =
+  public fun <T : Any> getAllStudySessions(limit: Long, mapper: (
+  public fun getAllStudySessions(limit: Long): Query<Study_session> = getAllStudySessions(limit) {
+  public fun getStudySessionCount(): Query<Long> = Query(834_514_028, arrayOf("study_session"),
+  public fun <T : Any> getWritingAttempts(
+  public fun getWritingAttempts(start: Long, end: Long): Query<Writing_attempt> =
+  public fun <T : Any> getWritingAttemptsForCharacter(
+  public fun getWritingAttemptsForCharacter(character: String, limit: Long): Query<Writing_attempt>
+  public fun getWritingAttemptCount(): Query<Long> = Query(2_087_877_288,
+  public fun getWritingVerifiedCharacters(): Query<String> = Query(-623_207_624,
+  public fun <T : Any> getWritingSummaryForCharacter(character: String, mapper: (
+  public fun getWritingSummaryForCharacter(character: String): Query<GetWritingSummaryForCharacter>
+  public fun <T : Any> getExams(limit: Long, mapper: (
+  public fun getExams(limit: Long): Query<Exam> = getExams(limit) { id, title, exam_type,
+  public fun <T : Any> getExam(id: Long, mapper: (
+  public fun getExam(id: Long): Query<Exam> = getExam(id) { id_, title, exam_type, scope_json,
+  public fun getExamCount(): Query<Long> = Query(-1_178_332_646, arrayOf("exam"), driver,
+  public fun <T : Any> getCompletedExams(limit: Long, mapper: (
+  public fun getCompletedExams(limit: Long): Query<Exam> = getCompletedExams(limit) { id, title,
+  public fun <T : Any> getExamQuestions(exam_id: Long, mapper: (
+  public fun getExamQuestions(exam_id: Long): Query<Exam_question> = getExamQuestions(exam_id) { id,
+  public fun <T : Any> getLearningMistakes(
+  public fun getLearningMistakes(
+  public fun getMistakeCount(): Query<Long> = Query(-1_035_696_601, arrayOf("learning_mistake"),
+  public fun <T : Any> getWeakEntities(
+  public fun getWeakEntities(start: Long, limit: Long): Query<GetWeakEntities> =
+  public fun <T : Any> getMistakeCategoryBreakdown(mapper: (category: String, count: Long) -> T):
+  public fun getMistakeCategoryBreakdown(): Query<GetMistakeCategoryBreakdown> =
+  public fun <T : Any> getDailyStats(
+  public fun getDailyStats(start: String, end: String): Query<Daily_stats> = getDailyStats(start,
+  public fun <T : Any> getDailyStatsAll(mapper: (
+  public fun getDailyStatsAll(): Query<Daily_stats> = getDailyStatsAll { date, reviews, new_cards,
+  public fun <T : Any> reviewDayAggregation(
+  public fun reviewDayAggregation(offset_millis: Long, start: Long): Query<ReviewDayAggregation> =
+  public fun <T : Any> reviewDayAggregationForType(
+  public fun reviewDayAggregationForType(
+  public fun <T : Any> reviewGradeBreakdown(start: Long, mapper: (grade: Long, count: Long) -> T):
+  public fun reviewGradeBreakdown(start: Long): Query<ReviewGradeBreakdown> =
+  public fun <T : Any> reviewGradeBreakdownForRange(
+  public fun reviewGradeBreakdownForRange(start: Long, end: Long):
+  public fun <T : Any> reviewIntervalBreakdown(
+  public fun reviewIntervalBreakdown(start: Long, practice_types: Collection<Long>):
+  public fun <T : Any> reviewFirstSeen(mapper: (first_seen: Long?) -> T): Query<T> =
+  public fun reviewFirstSeen(): Query<ReviewFirstSeen> = reviewFirstSeen { first_seen ->
+  public fun <T : Any> reviewFirstSeenForKeys(keys: Collection<String>, mapper: (key: String,
+  public fun reviewFirstSeenForKeys(keys: Collection<String>): Query<ReviewFirstSeenForKeys> =
+  public fun <T : Any> reviewLapseStats(start: Long, mapper: (lapsed_items: Long,
+  public fun reviewLapseStats(start: Long): Query<ReviewLapseStats> = reviewLapseStats(start) {
+  public fun <T : Any> reviewPerItem(start: Long, mapper: (
+  public fun reviewPerItem(start: Long): Query<ReviewPerItem> = reviewPerItem(start) { key,
+  public fun insertStudySession(
+  public fun completeStudySession(
+  public fun updateStudySessionCounters(
+  public fun insertWritingAttempt(
+  public fun insertExam(
+  public fun completeExam(
+  public fun abandonExam(finished_at: Long?, id: Long) {
+  public fun deleteExam(id: Long) {
+  public fun insertExamQuestion(
+  public fun updateExamQuestionAnswer(
+  public fun insertLearningMistake(
+  public fun ensureDailyStatsRow(date: String) {
+  public fun incrementDailyReview(
+  public fun incrementDailyWriting(
+  public fun incrementDailyExam(score: Long, date: String) {
+  public fun incrementDailySession(date: String) {
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getStudySessions"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getAllStudySessions"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getWritingAttempts"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getWritingAttemptsForCharacter"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getWritingSummaryForCharacter"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getExams"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getExam"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getCompletedExams"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getExamQuestions"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getLearningMistakes"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getWeakEntities"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:getDailyStats"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:reviewDayAggregation"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> {
+    override fun toString(): String = "UserData_statistics.sq:reviewDayAggregationForType"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:reviewGradeBreakdown"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:reviewGradeBreakdownForRange"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> {
+    override fun toString(): String = "UserData_statistics.sq:reviewIntervalBreakdown"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> {
+    override fun toString(): String = "UserData_statistics.sq:reviewFirstSeenForKeys"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:reviewLapseStats"
+    override fun addListener(listener: Query.Listener) {
+    override fun removeListener(listener: Query.Listener) {
+    override fun <R> execute(mapper: (SqlCursor) -> QueryResult<R>): QueryResult<R> =
+    override fun toString(): String = "UserData_statistics.sq:reviewPerItem"

@@ -1,382 +1,404 @@
 package ua.syt0r.kanji.desktop.ui.media
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.WindowPlacement
+import kotlinx.coroutines.delay
+import java.awt.dnd.DnDConstants
+import java.awt.dnd.DropTarget
+import java.awt.dnd.DropTargetDragEvent
+import java.awt.dnd.DropTargetDropEvent
+import java.awt.dnd.DropTargetEvent
+import java.awt.dnd.DropTargetListener
+import java.awt.datatransfer.DataFlavor
+import java.io.File
 import ua.syt0r.kanji.desktop.appstate.AppState
-import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
-import ua.syt0r.kanji.desktop.designsystem.DsCard
-import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsPromptDialog
-import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
+import ua.syt0r.kanji.desktop.designsystem.DsSearchField
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
+import ua.syt0r.kanji.desktop.designsystem.DsTabRow
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
-import ua.syt0r.kanji.desktop.engine.media.AudioClip
-import ua.syt0r.kanji.desktop.engine.media.AudioPlayer
-import ua.syt0r.kanji.desktop.engine.media.MediaEngine
-import ua.syt0r.kanji.desktop.engine.media.MediaKind
-import ua.syt0r.kanji.desktop.engine.mining.MiningPayload
-import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
+import ua.syt0r.kanji.desktop.engine.media.AnnotationMode
+import ua.syt0r.kanji.desktop.engine.media.AutoPauseMode
 
 // ============================================
 // KAITEYO MEDIA WORKSPACE
-// Video / audio / images / PDF / text with
-// subtitle sync, bookmarks, audio clips and
-// one-click mining into study cards.
+// The immersion environment: a real player
+// (VLC/mpv/Java Sound), subtitle engine, Japanese
+// dictionary and mining pipeline in one screen.
+//
+//   MEDIA → SUBTITLES → TEXT → DICTIONARY
+//        → UNDERSTANDING → MINING → CARD → SRS
 // ============================================
+
+enum class MediaPanel(val label: String) {
+    Player("Player"), Library("Library"), Stats("Stats"), Bookmarks("Bookmarks"), Settings("Settings")
+}
 
 @Composable
 fun MediaView(state: AppState) {
-    var clipLabelOpen by remember { mutableStateOf(false) }
+    val media = state.media
+    var panel by remember { mutableStateOf(MediaPanel.Player) }
+    // The ComposeWindow hosting this workspace (best effort; null in previews).
+    // Found via the AWT window list because Compose's LocalWindow is not public
+    // API in this version and LocalView no longer exists on desktop.
+    val window = remember {
+        java.awt.Window.getWindows().firstOrNull { it is ComposeWindow && it.isShowing } as? ComposeWindow
+    }
 
-    Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
-        DsSectionHeader(
-            title = "Media Workspace",
-            subtitle = "Study Japanese with video, audio, images, PDF and subtitles — mine words straight into your deck.",
-            action = {
-                DsButton(text = "Open file", icon = Icons.Default.FileOpen, onClick = { chooseAndOpenMedia(state) })
+    // Drag & drop: dropping a video/audio file opens it, a subtitle file
+    // attaches to the current media, and a folder gets scanned into the
+    // library. Active only while the Media workspace is composed.
+    DisposableEffect(window) {
+        val host = window ?: return@DisposableEffect onDispose {}
+        val dropTarget = DropTarget(
+            host.contentPane,
+            object : DropTargetListener {
+                override fun dragEnter(e: DropTargetDragEvent) = e.acceptDrag(DnDConstants.ACTION_COPY)
+                override fun dragOver(e: DropTargetDragEvent) = e.acceptDrag(DnDConstants.ACTION_COPY)
+                override fun dropActionChanged(e: DropTargetDragEvent) = Unit
+                override fun dragExit(e: DropTargetEvent) = Unit
+                override fun drop(e: DropTargetDropEvent) {
+                    e.acceptDrop(DnDConstants.ACTION_COPY)
+                    val files = runCatching {
+                        e.transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
+                    }.getOrNull()
+                    e.dropComplete(true)
+                    if (files != null) handleMediaDrop(state, files.filterIsInstance<File>())
+                }
             }
         )
+        onDispose { host.contentPane.dropTarget = null }
+    }
 
-        val doc = state.media.currentDocument
-        if (doc == null) {
-            DsCard {
-                DsEmptyState(
-                    title = "No media open",
-                    message = "Open a video (mp4/mkv/webm), audio (mp3/wav/ogg), image, PDF or subtitle file to start learning.",
-                    icon = Icons.Default.Movie,
-                    action = {
-                        DsButton(text = "Open file", icon = Icons.Default.FileOpen, onClick = { chooseAndOpenMedia(state) })
-                    }
-                )
-            }
-        } else {
-            PlayerCard(state, onRequestSaveClip = { clipLabelOpen = true })
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg), modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                SubtitleCard(state)
-                BookmarkCard(state)
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                AudioClipsCard(state)
-                RecentFilesCard(state)
-            }
+    // The 10 Hz reconciliation loop: position, active subtitle, condensed
+    // playback, auto-pause, looping and periodic watch-progress saves.
+    LaunchedEffect(Unit) {
+        media.speed = state.settings.getFloat("media.default-speed", 1f).coerceIn(0.25f, 2f)
+        media.seekAmountMs = state.settings.getInt("media.seek-amount-ms", 5000).toLong().coerceAtLeast(1000)
+        media.autoPauseMode = autoPauseFromSettings(state.settings.getString("media.auto-pause", "off"))
+        media.condensedPlayback = state.settings.getBool("media.condensed-playback")
+        media.condensedFastForward = state.settings.getBool("media.condensed-fast-forward")
+        media.annotationMode = annotationFromSettings(state.settings.getString("media.subtitle-annotation", "status"))
+        media.studyMode = state.settings.getBool("media.study-mode-default")
+        media.subtitles.showSecondary = state.settings.getBool("media.dual-subtitles")
+        media.miniPlayerEnabled = state.settings.getBool("media.mini-player")
+        media.resumePromptEnabled = state.settings.getBool("media.resume-prompt")
+        while (true) {
+            media.tick()
+            delay(100)
         }
     }
 
-    if (clipLabelOpen) {
-        DsPromptDialog(
-            title = "Save audio clip",
-            placeholder = "Label (e.g. 行ってきます)",
-            onConfirm = { label ->
-                state.media.addAudioClip(label)
-                state.toastHost.show("Audio clip saved")
-                clipLabelOpen = false
-            },
-            onDismiss = { clipLabelOpen = false }
-        )
+    // Apply fullscreen intent to the host window (best effort per platform).
+    LaunchedEffect(media.fullscreenActive) {
+        runCatching {
+            window?.placement = if (media.fullscreenActive) WindowPlacement.Fullscreen else WindowPlacement.Floating
+        }
+    }
+
+    // Cinema mode removes the chrome and pins the player.
+    LaunchedEffect(media.cinemaMode) {
+        if (media.cinemaMode) panel = MediaPanel.Player
+    }
+
+    // Engine flags can request a tab switch (e.g. "Back to library" from the
+    // end-of-episode dialog) — honor them here since the panel is local state.
+    LaunchedEffect(media.libraryOpen) {
+        if (media.libraryOpen) {
+            panel = MediaPanel.Library
+            media.libraryOpen = false
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        if (!media.cinemaMode) {
+            MediaToolbar(state, panel, onSelectPanel = { panel = it })
+        }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            when (panel) {
+                MediaPanel.Player -> MediaPlayerWorkspace(state)
+                MediaPanel.Library -> MediaLibraryPanel(state)
+                MediaPanel.Stats -> MediaStatsPanel(state)
+                MediaPanel.Bookmarks -> MediaBookmarksPanel(state)
+                MediaPanel.Settings -> MediaSettingsPanel(state)
+            }
+        }
     }
 }
 
 @Composable
-private fun PlayerCard(state: AppState, onRequestSaveClip: () -> Unit) {
+private fun MediaToolbar(state: AppState, panel: MediaPanel, onSelectPanel: (MediaPanel) -> Unit) {
     val sc = surfaceColors()
     val media = state.media
-    val doc = media.currentDocument ?: return
-    val player = remember(doc.path) { AudioPlayer() }
+    val item = media.currentItem
 
-    DsCard {
-        Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(doc.name, color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                DsBadge(text = doc.kind.name, tint = sc.textSecondary)
-            }
-            Text(
-                buildString {
-                    append(formatBytes(doc.sizeBytes))
-                    if (doc.kind == MediaKind.Video || doc.kind == MediaKind.Audio) {
-                        append("  ·  ").append(MediaEngine.formatTime(media.currentDurationMs))
-                    }
-                },
-                color = sc.textMuted,
-                fontSize = DsType.Caption
-            )
+    var urlPromptOpen by remember { mutableStateOf(false) }
+    var urlDraft by remember { mutableStateOf("") }
 
-            if (doc.kind == MediaKind.Audio) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    DsIconButton(
-                        icon = if (player.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        onClick = {
-                            if (!player.isPlaying) {
-                                if (player.positionMs == 0L) player.load(File(doc.path))
-                                player.play()
-                            } else player.pause()
-                        },
-                        contentDescription = if (player.isPlaying) "Pause" else "Play",
-                        size = 44.dp
-                    )
-                    DsIconButton(icon = Icons.Default.Stop, onClick = { player.stop() }, contentDescription = "Stop", size = 36.dp)
-                    Text(MediaEngine.formatTime(player.positionMs), color = sc.textSecondary, fontSize = DsType.Body)
-                    Text("/ ${MediaEngine.formatTime(player.lengthMs)}", color = sc.textMuted, fontSize = DsType.Body)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    Text("Speed", color = sc.textMuted, fontSize = DsType.Caption)
-                    listOf(0.75f, 1.0f, 1.25f, 1.5f).forEach { rate ->
-                        DsButton(
-                            text = "${rate}x",
-                            kind = if (media.playbackSpeed == rate) DsButtonKind.Primary else DsButtonKind.Secondary,
-                            compact = true,
-                            onClick = { media.playbackSpeed = rate }
-                        )
-                    }
-                }
-            } else {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Md),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+            Column(Modifier.weight(1f)) {
+                Text("Media", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.SemiBold)
                 Text(
-                    "Full playback UI is rendered by the platform renderer. You can still bookmark the current position, add clips and mine words from subtitles.",
+                    text = when {
+                        media.backendKind.name == "None" && item == null -> "Immersion workspace — open a video, episode or audio file"
+                        item != null -> "${item.name} · ${media.backendKind.name} · ${MediaEngineFormat.time(media.positionMs)} / ${MediaEngineFormat.time(media.durationMs)}"
+                        else -> "No media loaded"
+                    },
                     color = sc.textMuted,
-                    fontSize = DsType.Body
+                    fontSize = DsType.Caption
                 )
             }
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                DsButton(
-                    text = "Bookmark",
-                    icon = Icons.Default.Bookmark,
-                    kind = DsButtonKind.Secondary,
-                    compact = true,
-                    onClick = {
-                        media.addBookmark()
-                        state.toastHost.show("Bookmarked at ${MediaEngine.formatTime(media.currentPositionMs)}")
-                    }
-                )
-                DsButton(
-                    text = "Save clip",
-                    icon = Icons.Default.AudioFile,
-                    kind = DsButtonKind.Secondary,
-                    compact = true,
-                    onClick = onRequestSaveClip
-                )
-                if (media.subtitleTrack != null) {
-                    DsButton(
-                        text = if (media.subtitleVisible) "Hide subtitles" else "Show subtitles",
-                        icon = Icons.Default.Subtitles,
-                        kind = DsButtonKind.Secondary,
-                        compact = true,
-                        onClick = { media.subtitleVisible = !media.subtitleVisible }
-                    )
-                }
-            }
+            // Quick actions — always available.
+            DsButton(
+                text = "Open file",
+                icon = Icons.Default.PlayArrow,
+                compact = true,
+                onClick = { chooseMediaFile(state) }
+            )
+            DsButton(
+                text = "Open folder",
+                icon = Icons.Default.FolderOpen,
+                kind = DsButtonKind.Secondary,
+                compact = true,
+                onClick = { chooseMediaFolder(state) }
+            )
+            DsButton(
+                text = "Open URL",
+                icon = Icons.Default.Language,
+                kind = DsButtonKind.Secondary,
+                compact = true,
+                onClick = { urlPromptOpen = true }
+            )
+            // In-player library search — types land straight in the library panel.
+            DsSearchField(
+                value = media.librarySearchQuery,
+                onValueChange = {
+                    media.librarySearchQuery = it
+                    onSelectPanel(MediaPanel.Library)
+                },
+                placeholder = "Search library…",
+                modifier = Modifier.width(190.dp).onFocusChanged { state.media.textInputFocused = it.isFocused }
+            )
+            DsButton(
+                text = if (media.cinemaMode) "Exit cinema" else "Cinema",
+                icon = Icons.Default.Fullscreen,
+                kind = if (media.cinemaMode) DsButtonKind.Primary else DsButtonKind.Ghost,
+                compact = true,
+                onClick = { media.toggleCinemaMode() }
+            )
+            DsIconButton(
+                icon = Icons.Default.PhotoCamera,
+                onClick = { media.captureScreenshot() },
+                contentDescription = "Screenshot",
+                size = 34.dp
+            )
+            DsIconButton(
+                icon = Icons.Default.Subtitles,
+                onClick = {
+                    val subFile = chooseSubtitleFile()
+                    if (subFile != null) media.openSubtitleFile(subFile)
+                },
+                contentDescription = "Load subtitles",
+                size = 34.dp
+            )
+            DsIconButton(
+                icon = Icons.Default.Add,
+                onClick = {
+                    val subFile = chooseSubtitleFile()
+                    if (subFile != null) media.openSecondarySubtitleFile(subFile)
+                },
+                contentDescription = "Load secondary subtitles (dual-language)",
+                size = 34.dp
+            )
+            DsIconButton(
+                icon = Icons.Default.BarChart,
+                onClick = { onSelectPanel(MediaPanel.Stats) },
+                contentDescription = "Media study stats",
+                size = 34.dp
+            )
+            DsIconButton(
+                icon = Icons.Default.Bookmarks,
+                onClick = { onSelectPanel(MediaPanel.Bookmarks) },
+                contentDescription = "Media bookmarks",
+                size = 34.dp
+            )
+            DsIconButton(
+                icon = Icons.Default.Settings,
+                onClick = { onSelectPanel(MediaPanel.Settings) },
+                contentDescription = "Media settings",
+                size = 34.dp
+            )
         }
+        DsTabRow(
+            tabs = MediaPanel.entries.map { it.label },
+            selectedIndex = MediaPanel.entries.indexOf(panel),
+            onSelect = { onSelectPanel(MediaPanel.entries[it]) },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
-}
 
-@Composable
-private fun SubtitleCard(state: AppState) {
-    val sc = surfaceColors()
-    val media = state.media
-    DsCard {
-        Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Subtitles", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        media.subtitleTrack?.let { "${it.name} · ${it.cues.size} cues · ${it.format.name}" } ?: "No subtitle track loaded",
-                        color = sc.textMuted,
-                        fontSize = DsType.Caption
-                    )
-                }
-                DsButton(
-                    text = "Load subtitles",
-                    icon = Icons.Default.Subtitles,
-                    kind = DsButtonKind.Ghost,
-                    compact = true,
-                    onClick = {
-                        val file = chooseFile("subtitle")
-                        if (file != null) {
-                            media.openSubtitle(file)
-                            state.toastHost.show("Loaded subtitle track '${file.name}'")
-                        }
-                    }
-                )
-            }
-            val cue = media.cueAt(media.currentPositionMs)
-            val cueText = cue?.text.orEmpty()
-            if (cue != null && cueText.isNotBlank()) {
-                Text(cueText, color = sc.textPrimary, fontSize = DsType.BodyLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), modifier = Modifier.padding(top = DsSpacing.Sm)) {
-                    DsButton(
-                        text = "Mine sentence",
-                        icon = Icons.Default.PlayArrow,
-                        kind = DsButtonKind.Primary,
-                        compact = true,
-                        onClick = {
-                            state.mining.openMining(
-                                MiningPayload(
-                                    headword = cueText.take(40),
-                                    sentence = cueText,
-                                    source = "subtitle",
-                                    sourceDetail = media.subtitleTrack?.name.orEmpty(),
-                                    timestamp = cue.startMs / 1000.0
-                                )
-                            )
-                        }
-                    )
-                    cue.tokens().take(6).forEach { token ->
-                        DsButton(
-                            text = token,
-                            kind = DsButtonKind.Secondary,
-                            compact = true,
-                            onClick = { state.dictionary.query = token }
-                        )
-                    }
-                }
-            } else {
-                Text("No cue at the current position — scrub or open a track.", color = sc.textMuted, fontSize = DsType.Caption)
-            }
-        }
-    }
-}
-
-@Composable
-private fun BookmarkCard(state: AppState) {
-    val sc = surfaceColors()
-    val bookmarks = state.media.bookmarks
-    DsCard {
-        Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-            Text("Bookmarks", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-            if (bookmarks.isEmpty()) {
-                Text("No bookmarks yet.", color = sc.textMuted, fontSize = DsType.Caption)
-            } else {
-                bookmarks.take(8).forEach { bm ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(bm.label.ifBlank { "Bookmark" }, color = sc.textPrimary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
-                        Text(MediaEngine.formatTime(bm.timestampMs), color = sc.textMuted, fontSize = DsType.Caption)
-                        DsIconButton(
-                            icon = Icons.Default.Delete,
-                            onClick = { state.media.removeBookmark(bm.id) },
-                            contentDescription = "Delete bookmark",
-                            size = 26.dp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AudioClipsCard(state: AppState) {
-    val sc = surfaceColors()
-    val clips = state.media.audioClips
-    DsCard {
-        Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-            Text("Audio clips", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-            if (clips.isEmpty()) {
-                Text("No audio clips yet. Save a clip while listening to build a pronunciation library.", color = sc.textMuted, fontSize = DsType.Caption)
-            } else {
-                clips.take(8).forEach { clip -> AudioClipRow(state, clip) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AudioClipRow(state: AppState, clip: AudioClip) {
-    val sc = surfaceColors()
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(clip.label.ifBlank { "Clip" }, color = sc.textPrimary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
-        DsBadge(text = clip.sourcePath.substringAfterLast(File.separatorChar), tint = sc.textMuted)
-        DsIconButton(
-            icon = Icons.Default.Delete,
-            onClick = { state.media.removeClip(clip.id) },
-            contentDescription = "Delete clip",
-            size = 26.dp
+    if (urlPromptOpen) {
+        DsPromptDialog(
+            title = "Open network media",
+            placeholder = "https://… (video or audio URL)",
+            initialValue = urlDraft,
+            onConfirm = { raw ->
+                urlDraft = raw
+                urlPromptOpen = false
+                media.openUrl(raw)
+            },
+            onDismiss = { urlPromptOpen = false }
         )
     }
 }
 
-@Composable
-private fun RecentFilesCard(state: AppState) {
-    val sc = surfaceColors()
-    val recent = state.media.recentFiles
-    DsCard {
-        Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-            Text("Recent files", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-            if (recent.isEmpty()) {
-                Text("Nothing opened yet.", color = sc.textMuted, fontSize = DsType.Caption)
-            } else {
-                recent.take(8).forEach { path ->
-                    Row(
-                        Modifier.fillMaxWidth().clickable { state.media.openFile(File(path)) }.padding(vertical = DsSpacing.Xs),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(path.substringAfterLast(File.separatorChar), color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
-                    }
-                }
+// ============================================
+// Drag & drop handling
+// ============================================
+
+/** Route dropped files: video/audio → open, subtitle → attach, folder → scan. */
+private fun handleMediaDrop(state: AppState, files: List<File>) {
+    val subtitleExtensions = setOf("srt", "ass", "ssa", "vtt")
+    var opened = 0
+    var subtitles = 0
+    var folders = 0
+    var unsupported = 0
+    files.forEach { file ->
+        when {
+            file.isDirectory -> {
+                state.media.library.addFolder(file.absolutePath)
+                state.media.scanner.scan(file, recursive = true)
+                folders++
             }
+            file.extension.lowercase() in subtitleExtensions -> {
+                state.media.openSubtitleFile(file)
+                subtitles++
+            }
+            ua.syt0r.kanji.desktop.engine.media.MediaKind.of(file) != null -> {
+                state.media.openFile(file)
+                opened++
+            }
+            else -> unsupported++
+        }
+    }
+    val summary = buildList {
+        if (opened > 0) add("$opened media file(s) opened")
+        if (subtitles > 0) add("$subtitles subtitle track(s) attached")
+        if (folders > 0) add("$folders folder(s) scanned")
+        if (unsupported > 0) add("$unsupported file(s) skipped")
+    }.joinToString(" · ")
+    if (summary.isNotBlank()) {
+        state.toastHost.show(summary, kind = ua.syt0r.kanji.desktop.model.ToastKind.Info)
+    }
+}
+
+// ============================================
+// File pickers (desktop)
+// ============================================
+
+internal fun chooseMediaFile(state: AppState) {
+    val chooser = javax.swing.JFileChooser().apply {
+        dialogTitle = "Open media file (video / audio / image)"
+        fileSelectionMode = javax.swing.JFileChooser.FILES_ONLY
+        isMultiSelectionEnabled = true
+        addChoosableFileFilter(
+            javax.swing.filechooser.FileNameExtensionFilter(
+                "Media",
+                "mp4", "mkv", "webm", "mov", "avi", "m4v", "mp3", "wav", "ogg", "flac", "m4a", "aac", "opus"
+            )
+        )
+    }
+    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+        chooser.selectedFiles.forEach { state.media.openFile(it) }
+    }
+}
+
+internal fun chooseMediaFolder(state: AppState) {
+    val chooser = javax.swing.JFileChooser().apply {
+        dialogTitle = "Add media folder to library"
+        fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
+    }
+    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+        val folder = chooser.selectedFile
+        state.media.scanner.scan(folder, recursive = true) { added ->
+            state.toastHost.show("Added $added media files from ${folder.name}")
         }
     }
 }
 
-private fun chooseAndOpenMedia(state: AppState) {
-    val file = chooseFile("media") ?: return
-    val doc = state.media.openFile(file)
-    state.toastHost.show("Opened '${doc.name}'")
+internal fun chooseSubtitleFile(): java.io.File? {
+    val chooser = javax.swing.JFileChooser().apply {
+        dialogTitle = "Open subtitle file (SRT / ASS / SSA / VTT)"
+        fileSelectionMode = javax.swing.JFileChooser.FILES_ONLY
+        addChoosableFileFilter(
+            javax.swing.filechooser.FileNameExtensionFilter("Subtitles", "srt", "ass", "ssa", "vtt")
+        )
+    }
+    return if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
 }
 
-private fun chooseFile(kind: String): File? {
-    val chooser = JFileChooser().apply {
-        dialogTitle = when (kind) {
-            "subtitle" -> "Open subtitle file (SRT / ASS / SSA / VTT)"
-            else -> "Open media file"
-        }
-        fileSelectionMode = JFileChooser.FILES_ONLY
-        if (kind == "subtitle") {
-            addChoosableFileFilter(FileNameExtensionFilter("Subtitles", "srt", "ass", "ssa", "vtt"))
-        } else {
-            addChoosableFileFilter(FileNameExtensionFilter("Media", "mp4", "mkv", "webm", "mov", "mp3", "wav", "ogg", "png", "jpg", "pdf", "txt"))
-        }
-    }
-    return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
+// ============================================
+// Settings mapping helpers
+// ============================================
+
+internal fun autoPauseFromSettings(value: String): AutoPauseMode = when (value) {
+    "at-cue-start" -> AutoPauseMode.AtCueStart
+    "at-cue-end" -> AutoPauseMode.AtCueEnd
+    "before-cue" -> AutoPauseMode.BeforeCue
+    else -> AutoPauseMode.Off
 }
 
-private fun formatBytes(bytes: Long): String {
-    val kb = bytes / 1024.0
-    return when {
-        bytes < 1024 -> "$bytes B"
-        kb < 1024 -> String.format("%.1f KB", kb)
-        else -> String.format("%.1f MB", kb / 1024)
-    }
+internal fun annotationFromSettings(value: String): AnnotationMode = when (value) {
+    "reading" -> AnnotationMode.Reading
+    "frequency" -> AnnotationMode.Frequency
+    "off" -> AnnotationMode.Off
+    else -> AnnotationMode.Status
+}
+
+/** Small formatter alias so the UI doesn't import the engine companion directly. */
+internal object MediaEngineFormat {
+    fun time(ms: Long): String = ua.syt0r.kanji.desktop.engine.media.MediaEngine.formatTime(ms)
 }

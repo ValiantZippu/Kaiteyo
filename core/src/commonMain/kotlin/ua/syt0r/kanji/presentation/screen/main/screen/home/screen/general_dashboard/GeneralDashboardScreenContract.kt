@@ -9,11 +9,16 @@ interface GeneralDashboardScreenContract {
 
     interface ViewModel {
         val state: StateFlow<ScreenState>
+        fun retryLoad()
     }
 
     sealed interface ScreenState {
 
         data object Loading : ScreenState
+
+        data class Error(
+            val message: String? = null
+        ) : ScreenState
 
         data class Loaded(
             val studyTargets: MutableState<List<StudyTargetState>>,

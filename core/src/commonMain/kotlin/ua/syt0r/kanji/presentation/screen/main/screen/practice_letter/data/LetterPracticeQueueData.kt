@@ -5,10 +5,12 @@ import ua.syt0r.kanji.core.srs.LetterPracticeType
 import ua.syt0r.kanji.core.srs.SrsCard
 import ua.syt0r.kanji.core.srs.SrsCardKey
 import ua.syt0r.kanji.core.stroke_evaluator.KanjiStrokeEvaluator
+import ua.syt0r.kanji.core.stroke_evaluator.StrokeEvaluationConfig
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueueItem
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueueProgress
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingAttemptStats
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeSummaryItem
 import kotlin.time.Duration
 
@@ -47,6 +49,7 @@ sealed interface LetterPracticeQueueItemDescriptor {
         override val layoutConfiguration: LetterPracticeLayoutConfiguration.WritingLayoutConfiguration,
         val inputMode: WritingPracticeInputMode,
         val evaluator: KanjiStrokeEvaluator,
+        val evaluationConfig: StrokeEvaluationConfig,
         val shouldStudy: Boolean
     ) : LetterPracticeQueueItemDescriptor {
         override val practiceType = LetterPracticeType.Writing
@@ -70,14 +73,18 @@ data class LetterPracticeQueueItem(
     override val deckId: Long,
     override val repeats: Int,
     override val totalMistakes: Int,
-    override val data: Deferred<LetterPracticeItemData>
+    override val data: Deferred<LetterPracticeItemData>,
+    val totalWritingStats: WritingAttemptStats = WritingAttemptStats()
 ) : PracticeQueueItem<LetterPracticeQueueItem> {
 
     override fun copyForRepeat(answer: PracticeAnswer): LetterPracticeQueueItem {
         return copy(
             srsCard = answer.srsAnswer.card,
             repeats = repeats + 1,
-            totalMistakes = totalMistakes + answer.mistakes
+            totalMistakes = totalMistakes + answer.mistakes,
+            totalWritingStats = answer.writingStats
+                ?.let { totalWritingStats.mergedWith(it) }
+                ?: totalWritingStats
         )
     }
 
@@ -93,7 +100,9 @@ sealed interface LetterPracticeSummaryItem : PracticeSummaryItem {
         override val nextInterval: Duration,
         override val totalReviews: Deferred<Int>,
         val strokeCount: Int,
-        val mistakes: Int
+        val mistakes: Int,
+        val strokeAccuracyPercent: Int? = null,
+        val wrongOrderCount: Int = 0
     ) : LetterPracticeSummaryItem
 
     data class Reading(

@@ -10,16 +10,22 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.core.theme_manager.ThemeManager
+import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme
-import ua.syt0r.kanji.presentation.common.theme.AllAccentSchemes
 import ua.syt0r.kanji.presentation.common.theme.AppTheme
 import ua.syt0r.kanji.presentation.common.theme.BaseMode
+import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoThemeState
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
-import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
+import ua.syt0r.kanji.presentation.common.theme.LocalThemeSettingsState
+import ua.syt0r.kanji.presentation.common.theme.ThemeSettings
+import ua.syt0r.kanji.presentation.common.theme.ThemeSettingsState
 import ua.syt0r.kanji.presentation.common.ui.Orientation
 import ua.syt0r.kanji.presentation.screen.main.MainScreen
 import ua.syt0r.kanji.presentation.screen.main.features.DeepLinkHandler
@@ -48,7 +54,28 @@ fun KaiteyoApp(
 
     // themeManager.currentTheme is a compose State<PreferencesTheme>, so 'by' delegate works with import
     val currentPrefTheme: PreferencesTheme by themeManager.currentTheme
+    val appPreferences = koinInject<PreferencesContract.AppPreferences>()
     val themeState = remember { KaiteyoThemeState() }
+
+    // Persisted appearance configuration (accent, radius, density, motion,
+    // typography). Restored on launch and kept in sync with KaiteyoThemeState
+    // so changes from the Settings Center and the Theme Studio both persist.
+    val themeSettingsState = koinInject<ThemeSettingsState>()
+
+    // Apply the persisted configuration to the live theme state (and re-apply
+    // whenever it changes, e.g. from the Settings Center).
+    LaunchedEffect(themeSettingsState.settings) {
+        themeSettingsState.applyTo(themeState)
+    }
+
+    // Persist any change made to KaiteyoThemeState anywhere in the app (the
+    // Theme Studio mutates it directly). The equality guard prevents loops.
+    LaunchedEffect(Unit) {
+        snapshotFlow { ThemeSettings.from(themeState) }
+            .drop(1)
+            .distinctUntilChanged()
+            .collect { themeSettingsState.accept(it) }
+    }
 
     // Map PreferencesTheme to BaseMode
     val baseMode: BaseMode = when (currentPrefTheme) {
@@ -73,14 +100,16 @@ fun KaiteyoApp(
     val accentScheme: KaiteyoAccentScheme = themeState.accentScheme
 
     CompositionLocalProvider(
-        LocalKaiteyoThemeState provides themeState
+        LocalKaiteyoThemeState provides themeState,
+        LocalThemeSettingsState provides themeSettingsState
     ) {
         AppTheme(
             useDarkTheme = useDarkTheme,
             useAmoledTheme = currentPrefTheme == ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme.Amoled,
             orientation = orientation,
             baseMode = baseMode,
-            accentScheme = accentScheme
+            accentScheme = accentScheme,
+            typeScale = themeState.typeScale
         ) {
             Surface {
                 Box(

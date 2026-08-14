@@ -3,10 +3,16 @@ package ua.syt0r.kanji.presentation.screen.main.screen.practice_common
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -18,17 +24,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.merge
+import ua.syt0r.kanji.core.stroke_evaluator.StrokeClassification
+import ua.syt0r.kanji.core.stroke_evaluator.StrokeEvaluation
+import ua.syt0r.kanji.core.stroke_evaluator.StrokeSequenceEvaluation
+import ua.syt0r.kanji.core.stroke_evaluator.StrokeSequenceIssueType
+import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.ui.kanji.AnimatedStroke
 import ua.syt0r.kanji.presentation.common.ui.kanji.Kanji
 import ua.syt0r.kanji.presentation.common.ui.kanji.Stroke
@@ -131,20 +149,77 @@ private fun BoxScope.MultipleStrokeInputContent(
                     is StrokeProcessingResult.Mistake -> {
                         Stroke(
                             path = strokeResult.hintStroke,
-                            color = MaterialTheme.colorScheme.error,
+                            color = strokeResult.evaluation.feedbackStrokeColor(),
                             modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
             }
+
+            SequenceIssueChips(
+                sequenceEvaluation = currentState.sequenceEvaluation,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
 
     }
 
 }
 
+/** Whole-character issue feedback: wrong order / missing / extra strokes. */
 @Composable
-private fun SingleStrokeInputContent(
+private fun SequenceIssueChips(
+    sequenceEvaluation: StrokeSequenceEvaluation?,
+    modifier: Modifier = Modifier
+) {
+    val issues = sequenceEvaluation?.issues ?: return
+    val uniqueTypes = issues.map { it.type }.distinct()
+    if (uniqueTypes.isEmpty()) return
+
+    Column(
+        modifier = modifier.padding(top = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        uniqueTypes.forEach { type ->
+            val label = when (type) {
+                StrokeSequenceIssueType.WrongOrder ->
+                    resolveString { commonPractice.sequenceIssueWrongOrder }
+
+                StrokeSequenceIssueType.MissingStroke ->
+                    resolveString { commonPractice.sequenceIssueMissingStroke }
+
+                StrokeSequenceIssueType.ExtraStroke ->
+                    resolveString { commonPractice.sequenceIssueExtraStroke }
+            }
+            val count = issues.count { it.type == type }
+            Box(
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = if (count > 1) "$label ×$count" else label,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
+    }
+}
+
+/** Stroke color used for rejected strokes: tertiary for near-misses, error otherwise. */
+@Composable
+private fun StrokeEvaluation?.feedbackStrokeColor(): Color {
+    return when (this?.classification) {
+        StrokeClassification.AlmostCorrect -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.error
+    }
+}
+
+@Composable
+private fun BoxScope.SingleStrokeInputContent(
     strokes: List<Path>,
     inputState: CharacterWriterContent.SingleStrokeInput,
     onStrokeDrawn: (CharacterInputData.SingleStroke) -> Unit,
@@ -197,6 +272,10 @@ private fun SingleStrokeInputContent(
     CorrectMovingStroke(
         correctFlow = remember { correctStrokeAnimations.consumeAsFlow() },
         onAnimationEnd = { isAnimatingCorrectStroke.value = false }
+    )
+
+    StrokeFeedbackPill(
+        feedbackFlow = inputState.inputProcessingResults
     )
 
     val shouldShowStrokeInput by remember {
@@ -302,14 +381,76 @@ fun ErrorFadeOutStroke(
 
     lastData.value?.let {
         AnimatedStroke(
-            stroke = it.hintStroke,
+            // Show the user's own rejected stroke when available — more actionable
+            // feedback than re-drawing the reference.
+            stroke = it.attemptStroke ?: it.hintStroke,
             modifier = Modifier.fillMaxSize(),
-            strokeColor = MaterialTheme.colorScheme.error,
+            strokeColor = it.evaluation.feedbackStrokeColor(),
             drawProgress = { 1f },
             strokeAlpha = { strokeAlpha.value }
         )
     }
 
+}
+
+/**
+ * Real-time stroke feedback: a compact pill that appears after every stroke
+ * evaluation with the classification and the scored accuracy (0..100).
+ * Color + text + percent keep the feedback usable without relying on color alone.
+ */
+@Composable
+private fun BoxScope.StrokeFeedbackPill(
+    feedbackFlow: Flow<StrokeProcessingResult>,
+    modifier: Modifier = Modifier
+) {
+    val feedback = remember { mutableStateOf<StrokeProcessingResult?>(null) }
+    val alpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        feedbackFlow.collect {
+            feedback.value = it
+            alpha.snapTo(1f)
+            delay(700)
+            alpha.animateTo(0f, tween(300))
+        }
+    }
+
+    val result = feedback.value ?: return
+    val percent = result.evaluation?.metrics?.accuracyPercent()
+    val (label, color) = when (result) {
+        is StrokeProcessingResult.Correct -> {
+            resolveString { commonPractice.writingStrokeCorrect } to
+                MaterialTheme.extraColorScheme.success
+        }
+
+        is StrokeProcessingResult.Mistake -> {
+            val almost = result.evaluation?.classification == StrokeClassification.AlmostCorrect
+            if (almost) {
+                resolveString { commonPractice.writingStrokeAlmost } to
+                    MaterialTheme.colorScheme.tertiary
+            } else {
+                resolveString { commonPractice.writingStrokeIncorrect } to
+                    MaterialTheme.colorScheme.error
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .align(Alignment.TopCenter)
+            .padding(top = 10.dp)
+            .graphicsLayer { this.alpha = alpha.value }
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+            .border(1.5.dp, color, MaterialTheme.shapes.medium)
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = if (percent != null) "$label · $percent%" else label,
+            color = color,
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
 }
 
 @Composable

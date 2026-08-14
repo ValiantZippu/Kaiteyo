@@ -59,6 +59,7 @@ interface LetterPracticeScreenContract {
         data class Summary(
             val duration: Duration,
             val accuracy: Float?,
+            val strokeAccuracy: Int? = null,
             val items: List<LetterPracticeSummaryItem>,
         ) : ScreenState
 

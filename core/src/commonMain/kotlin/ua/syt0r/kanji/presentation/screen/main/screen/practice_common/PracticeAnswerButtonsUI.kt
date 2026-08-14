@@ -61,7 +61,9 @@ data class PracticeAnswers(
 
 data class PracticeAnswer(
     val srsAnswer: SrsAnswer,
-    val mistakes: Int = 0
+    val mistakes: Int = 0,
+    /** Scored writing-attempt statistics (filled by writing practice answer flows). */
+    val writingStats: WritingAttemptStats? = null
 )
 
 @Composable

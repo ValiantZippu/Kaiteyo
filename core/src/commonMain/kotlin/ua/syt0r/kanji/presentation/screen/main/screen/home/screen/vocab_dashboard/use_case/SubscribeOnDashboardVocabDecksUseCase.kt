@@ -50,6 +50,7 @@ class DefaultSubscribeOnDashboardVocabDecksUseCase(
                     deckId = it.id,
                     title = it.title,
                     position = it.position,
+                    isArchived = it.isArchived,
                     elapsedSinceLastReview = it.lastReview?.let { now.minus(it) },
                     studyProgress = it.progressMap
                         .map { (practiceType, srsProgress) ->

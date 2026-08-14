@@ -1,0 +1,19 @@
+Compiled from "PointerEvent.kt"
+public final class androidx.compose.ui.input.pointer.PointerType {
+  public static final androidx.compose.ui.input.pointer.PointerType$Companion Companion;
+  public static java.lang.String toString-impl(int);
+  public java.lang.String toString();
+  public static int hashCode-impl(int);
+  public int hashCode();
+  public static boolean equals-impl(int, java.lang.Object);
+  public boolean equals(java.lang.Object);
+  public static final androidx.compose.ui.input.pointer.PointerType box-impl(int);
+  public final int unbox-impl();
+  public static final boolean equals-impl0(int, int);
+  public static final int access$getUnknown$cp();
+  public static final int access$getTouch$cp();
+  public static final int access$getMouse$cp();
+  public static final int access$getStylus$cp();
+  public static final int access$getEraser$cp();
+  static {};
+}

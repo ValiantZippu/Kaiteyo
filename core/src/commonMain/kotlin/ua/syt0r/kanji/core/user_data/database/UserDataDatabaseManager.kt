@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.readUserVersion
 import ua.syt0r.kanji.core.user_data.database.use_case.UpdateLocalDataTimestampUseCase
+import ua.syt0r.kanji.core.user_data.db.UserDataDatabase
 import ua.syt0r.kanji.core.userdata.db.UserDataQueries
 
 
@@ -72,6 +73,12 @@ class DefaultUserDataDatabaseManager(
     override suspend fun <T> writeTransaction(block: UserDataQueries.() -> T): T =
         runTransaction(true, block)
 
+    override suspend fun <T> readDatabaseTransaction(block: UserDataDatabase.() -> T): T =
+        runDatabaseTransaction(false, block)
+
+    override suspend fun <T> writeDatabaseTransaction(block: UserDataDatabase.() -> T): T =
+        runDatabaseTransaction(true, block)
+
     override suspend fun withDisconnectedDatabase(scope: suspend (info: UserDatabaseInfo) -> Unit) {
         withContext(dispatcher) {
             val databaseInfo = withConnectedDatabase {
@@ -104,6 +111,19 @@ class DefaultUserDataDatabaseManager(
         }
         if (isWritingChanges) updateLocalDataTimestampUseCase()
         Logger.d("<< transaction isWritingChanges[$isWritingChanges]")
+        return result
+    }
+
+    private suspend fun <T> runDatabaseTransaction(
+        isWritingChanges: Boolean,
+        block: UserDataDatabase.() -> T
+    ): T {
+        Logger.d(">> database transaction isWritingChanges[$isWritingChanges]")
+        var result = withConnectedDatabase {
+            database.transactionWithResult { block(database) }
+        }
+        if (isWritingChanges) updateLocalDataTimestampUseCase()
+        Logger.d("<< database transaction isWritingChanges[$isWritingChanges]")
         return result
     }
 

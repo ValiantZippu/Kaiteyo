@@ -19,6 +19,9 @@ fun LettersDashboardScreen(
         state = viewModel.state,
         mergeDecks = { viewModel.mergeDecks(it) },
         sortDecks = { viewModel.sortDecks(it) },
+        setDeckArchived = { deckId, isArchived ->
+            viewModel.setDeckArchived(deckId, isArchived)
+        },
         navigateToDeckDetails = {
             val configuration = DeckDetailsScreenConfiguration.LetterDeck(it.deckId)
             mainNavigationState.navigate(MainDestination.DeckDetails(configuration))
@@ -39,7 +42,8 @@ fun LettersDashboardScreen(
         navigateToDeckPicker = {
             val destination = MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters)
             mainNavigationState.navigate(destination)
-        }
+        },
+        retryLoad = { viewModel.retryLoad() }
     )
 
 }

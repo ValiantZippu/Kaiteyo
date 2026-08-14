@@ -6,6 +6,7 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import ua.syt0r.kanji.core.file.PlatformFile
+import ua.syt0r.kanji.core.user_data.db.UserDataDatabase
 import ua.syt0r.kanji.core.userdata.db.UserDataQueries
 
 interface UserDataDatabaseContract {
@@ -13,6 +14,14 @@ interface UserDataDatabaseContract {
     interface TransactionScope {
         suspend fun <T> readTransaction(block: UserDataQueries.() -> T): T
         suspend fun <T> writeTransaction(block: UserDataQueries.() -> T): T
+
+        /**
+         * Like [readTransaction] but exposes the whole [UserDataDatabase], so
+         * queries declared in auxiliary `.sq` files (statistics, enhancements)
+         * can run inside the same transaction.
+         */
+        suspend fun <T> readDatabaseTransaction(block: UserDataDatabase.() -> T): T
+        suspend fun <T> writeDatabaseTransaction(block: UserDataDatabase.() -> T): T
     }
 
     interface Manager : TransactionScope {

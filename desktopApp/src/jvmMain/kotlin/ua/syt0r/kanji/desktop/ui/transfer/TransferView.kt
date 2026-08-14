@@ -487,6 +487,7 @@ private fun applyImport(state: AppState, preview: ImportPreview, policy: Conflic
     val result = ImportPipeline().apply(state.cards.toList(), preview.cards, policy)
     state.cards.clear()
     state.cards.addAll(result.combined)
+    state.library.saveCards(state.cards.toList())
     val added = result.imported + result.createdCopies
     state.activityLog.record(ActivityCategory.Import, "Imported $added cards ($label)", affectedCount = added)
     state.toastHost.show(

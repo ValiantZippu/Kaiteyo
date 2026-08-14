@@ -1,0 +1,3 @@
+PRAGMA user_version = 13;
+
+ALTER TABLE review_history ADD COLUMN interval INTEGER NOT NULL DEFAULT 0;

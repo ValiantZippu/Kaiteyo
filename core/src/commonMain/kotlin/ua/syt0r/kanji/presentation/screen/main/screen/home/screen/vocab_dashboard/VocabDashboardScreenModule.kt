@@ -7,6 +7,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboar
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.DefaultUpdateVocabDecksOrderUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.MergeVocabDecksUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.SubscribeOnDashboardVocabDecksUseCase
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.UpdateVocabDeckArchivedUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.UpdateVocabDecksOrderUseCase
 
 val vocabDashboardScreenModule = module {
@@ -17,6 +18,7 @@ val vocabDashboardScreenModule = module {
             subscribeOnDashboardVocabDecksUseCase = get(),
             mergeVocabDecksUseCase = get(),
             updateDecksOrderUseCase = get(),
+            updateDeckArchivedUseCase = get(),
             preferencesRepository = get(),
             analyticsManager = get()
         )
@@ -39,6 +41,12 @@ val vocabDashboardScreenModule = module {
         DefaultUpdateVocabDecksOrderUseCase(
             appPreferences = get(),
             practiceRepository = get()
+        )
+    }
+
+    factory<VocabDashboardScreenContract.UpdateDeckArchivedUseCase> {
+        UpdateVocabDeckArchivedUseCase(
+            repository = get()
         )
     }
 

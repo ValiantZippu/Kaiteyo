@@ -28,6 +28,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.LetterPrac
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.VocabPracticeScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.data.VocabPracticeScreenConfiguration
+import ua.syt0r.kanji.presentation.screen.main.screen.statistics.StatisticsScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.sync.SyncScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.text_analysis.TextAnalysisScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.SuggestedVocabCardData
@@ -43,7 +44,8 @@ import ua.syt0r.kanji.presentation.screen.main.features.BulkActionsRoute
 import ua.syt0r.kanji.presentation.screen.main.features.CardBrowserRoute
 import ua.syt0r.kanji.presentation.screen.main.features.CardStatusScreen
 import ua.syt0r.kanji.presentation.screen.main.features.DeckBrowserRoute
-import ua.syt0r.kanji.presentation.screen.main.features.DeckStatisticsScreen
+import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
+import ua.syt0r.kanji.presentation.screen.main.features.DayPracticeCardsRoute
 import ua.syt0r.kanji.presentation.screen.main.features.FlagManagerRoute
 import ua.syt0r.kanji.presentation.screen.main.features.HistoryRoute
 import ua.syt0r.kanji.presentation.screen.main.features.ImportExportRoute
@@ -376,8 +378,30 @@ interface MainDestination {
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            DeckStatisticsScreen(
-                controller = koinInject(),
+            // Single unified statistics destination — the old StatisticsDashboardV2
+            // screen and its route wrappers have been consolidated into this one.
+            StatisticsScreen(
+                controller = koinInject<StatisticsController>(),
+                onClose = { state.navigateBack() },
+                onOpenLibraryDay = { day ->
+                    state.navigate(MainDestination.DayPractice(day.toString()))
+                }
+            )
+        }
+
+    }
+
+    @Serializable
+    data class DayPractice(
+        val day: String
+    ) : MainDestination {
+
+        override val analyticsName: String = "day_practice"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            DayPracticeCardsRoute(
+                day = day,
                 onClose = { state.navigateBack() }
             )
         }
@@ -684,6 +708,7 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.DeckBrowser.configuration(),
     MainDestination.CardBrowser.configuration(),
     MainDestination.StatisticsDashboard.configuration(),
+    MainDestination.DayPractice::class.configuration(),
     MainDestination.PluginManager.configuration(),
     MainDestination.BackupManager.configuration(),
     MainDestination.ImportExport.configuration(),

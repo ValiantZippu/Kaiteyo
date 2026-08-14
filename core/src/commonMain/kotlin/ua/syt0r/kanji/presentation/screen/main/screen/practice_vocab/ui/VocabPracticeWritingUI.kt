@@ -68,6 +68,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.Expandable
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.ExpandableVocabPracticeAnswersRowState
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingAttemptStats
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.data.VocabCharacterWritingData
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.data.VocabReviewState
 
@@ -83,12 +84,16 @@ fun VocabPracticeWritingUI(
     AutoSwitchSelectedItemLaunchedEffect(reviewState)
 
     val handleAnswer = { answer: PracticeAnswer ->
+        val writers = reviewState.charactersData
+            .filterIsInstance<VocabCharacterWritingData.WithStrokes>()
         val updatedAnswer = answer.copy(
-            mistakes = reviewState.charactersData
-                .filterIsInstance<VocabCharacterWritingData.WithStrokes>()
+            mistakes = writers
                 .map { it.writerState.progress.value }
                 .filterIsInstance<CharacterWritingProgress.Completed>()
-                .sumOf { it.mistakes }
+                .sumOf { it.mistakes },
+            writingStats = writers
+                .map { it.writerState.attemptStats.value }
+                .fold(WritingAttemptStats()) { acc, stats -> acc.mergedWith(stats) }
         )
         answerSelected(updatedAnswer)
     }

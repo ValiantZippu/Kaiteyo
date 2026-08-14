@@ -29,6 +29,7 @@ class SqlDelightReviewHistoryRepository(
                 duration = duration.inWholeMilliseconds,
                 grade = grade.toLong(),
                 mistakes = mistakes.toLong(),
+                interval = interval,
                 deck_id = deckId
             )
         }
@@ -138,6 +139,7 @@ class SqlDelightReviewHistoryRepository(
         duration = duration.milliseconds,
         grade = grade.toInt(),
         mistakes = mistakes.toInt(),
+        interval = interval,
         deckId = deck_id
     )
 

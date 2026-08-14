@@ -69,6 +69,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAn
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswerButtonsContainer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswerButtonsRow
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingAttemptStats
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeExampleWord
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeLayoutConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeReviewState
@@ -270,7 +271,8 @@ private sealed interface LetterWritingButtonsState {
     object StudyButtons : LetterWritingButtonsState
     data class DefaultButtons(
         val answers: PracticeAnswers,
-        val mistakes: Int
+        val mistakes: Int,
+        val writingStats: WritingAttemptStats? = null
     ) : LetterWritingButtonsState
 }
 
@@ -287,7 +289,8 @@ private fun State<LetterPracticeReviewState.Writing>.toAnswerButtonsState(): Sta
                     if (currentState.isStudyMode.value) LetterWritingButtonsState.StudyButtons
                     else LetterWritingButtonsState.DefaultButtons(
                         answers = currentState.answers,
-                        mistakes = progress.mistakes
+                        mistakes = progress.mistakes,
+                        writingStats = currentState.writerState.value.attemptStats.value
                     )
                 }
 
@@ -361,7 +364,10 @@ private fun AnswerButtons(
                     PracticeAnswerButtonsRow(
                         answers = writingButtonsState.answers,
                         onClick = {
-                            val updatedAnswer = it.copy(mistakes = writingButtonsState.mistakes)
+                            val updatedAnswer = it.copy(
+                                mistakes = writingButtonsState.mistakes,
+                                writingStats = writingButtonsState.writingStats
+                            )
                             answerSelected(updatedAnswer)
                         }
                     )

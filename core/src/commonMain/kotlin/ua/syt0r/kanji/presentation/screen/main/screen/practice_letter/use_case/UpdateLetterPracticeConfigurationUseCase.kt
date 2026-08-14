@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.use_case
 
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.toRepoType
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeConfiguration
 
 interface UpdateLetterPracticeConfigurationUseCase {
@@ -24,6 +25,7 @@ class DefaultUpdateLetterPracticeConfigurationUseCase(
                 writingRomajiInsteadOfKanaWords.set(configuration.useRomajiForKanaWords.value)
                 writingInputMethod.set(configuration.inputMode.value.repoType)
                 altStrokeEvaluator.set(configuration.altStrokeEvaluatorEnabled.value)
+                letterWritingStrictness.set(configuration.strictness.value.toRepoType())
             }
 
             is LetterPracticeConfiguration.Reading -> {

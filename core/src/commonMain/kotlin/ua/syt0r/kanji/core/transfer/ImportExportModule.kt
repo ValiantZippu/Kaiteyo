@@ -12,12 +12,4 @@ val importExportModule = module {
             ankiPackage = get()
         )
     }
-    multiplatformViewModel<BackupContract.ViewModel> { parametersHolder ->
-        BackupViewModel(
-            coroutineScope = parametersHolder.component1(),
-            backupManager = get(),
-            deckFeaturesController = get(),
-            platformFileFactory = { get() }
-        )
-    }
 }

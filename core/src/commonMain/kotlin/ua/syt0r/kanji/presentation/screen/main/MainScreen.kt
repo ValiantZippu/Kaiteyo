@@ -142,7 +142,7 @@ fun MainScreen(
                 add(
                     PaletteAction(
                         title = "Card Manager",
-                        subtitle = "Legacy deck card browser",
+                        subtitle = "Browse and manage deck cards",
                         keywords = "decks cards manager anki",
                         category = "Navigate"
                     ) { navigationState.navigate(MainDestination.CardBrowser) }

@@ -8,38 +8,80 @@ import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 
 // ============================================
 // KAITEYO NAVIGATION MODEL
-// Exactly three modes · adaptive form factors ·
-// persistent settings for desktop/tablet and phone.
+// Exactly two modes — Floating and Sidebar —
+// with adaptive form factors and persistent
+// settings for desktop/tablet and phone.
 // ============================================
 
-/** The three navigation modes. There are exactly three — no more. */
+/**
+ * The two navigation modes. There are exactly two — no more.
+ *
+ * - [Floating]: a movable launcher bubble with a full launchpad. The bubble
+ *   is freely draggable and magnetizes to the nearest of the 12 snap points
+ *   when released.
+ * - [Sidebar]: a structured dock on one of the four screen edges. Its
+ *   layout is selected through [SidebarExpansion] (Expanded ↔ Compact).
+ */
 @Serializable
 enum class NavigationMode {
+    Floating,
+    Sidebar
+}
+
+/** The two predefined sidebar layouts. No free resizing — exactly these two. */
+@Serializable
+enum class SidebarExpansion {
     Expanded,
-    Compact,
-    Bubble
+    Compact
 }
 
 /**
- * Edge margin the floating launcher keeps from the screen edges. Shared with
- * the snackbar clearance so the launcher position and the published bottom
- * space can never drift apart.
- */
-val BubbleEdgeMargin: Dp = Dimens.Space3
-
-/**
- * Anchor points the floating launcher can snap to.
- * Desktop & tablet use the full set; phone restricts to the four corners.
+ * Snap points the floating bubble can magnetize to. Desktop, tablet and phone
+ * all use the full set of 12 — three per screen edge. Corner positions appear
+ * twice (once per adjacent edge) at identical coordinates.
  */
 @Serializable
-enum class BubbleAnchor {
-    Left,
-    Right,
+enum class BubbleSnapPoint {
+    // Top edge
     TopLeft,
+    TopCenter,
     TopRight,
+    // Bottom edge
     BottomLeft,
-    BottomRight
+    BottomCenter,
+    BottomRight,
+    // Left edge
+    LeftTop,
+    LeftCenter,
+    LeftBottom,
+    // Right edge
+    RightTop,
+    RightCenter,
+    RightBottom;
+
+    companion object {
+        /** The four visual corners, deduplicated across adjacent edges. */
+        val Corners: List<BubbleSnapPoint> =
+            listOf(TopLeft, TopRight, BottomLeft, BottomRight)
+
+        /** All snap points, ordered for the visual 3-column picker grid. */
+        val PickerOrder: List<BubbleSnapPoint> =
+            listOf(
+                TopLeft, TopCenter, TopRight,
+                LeftTop, RightTop,
+                LeftCenter, RightCenter,
+                LeftBottom, RightBottom,
+                BottomLeft, BottomCenter, BottomRight
+            )
+    }
 }
+
+/** Whether this snap point sits on the top or bottom edge (horizontal bar zone). */
+val BubbleSnapPoint.isHorizontalEdge: Boolean
+    get() = this in listOf(
+        BubbleSnapPoint.TopLeft, BubbleSnapPoint.TopCenter, BubbleSnapPoint.TopRight,
+        BubbleSnapPoint.BottomLeft, BubbleSnapPoint.BottomCenter, BubbleSnapPoint.BottomRight
+    )
 
 /** How labels are shown in the sidebar. */
 @Serializable
@@ -67,6 +109,13 @@ val FormFactor.isPhone: Boolean get() = this == FormFactor.Phone
 /** Whether the platform can host navigation on any of the four screen edges. */
 val FormFactor.supportsFourEdges: Boolean get() = !isPhone
 
+/**
+ * Edge margin the floating launcher keeps from the screen edges. Shared with
+ * the snackbar clearance so the launcher position and the published bottom
+ * space can never drift apart.
+ */
+val BubbleEdgeMargin: Dp = Dimens.Space3
+
 // ============================================
 // BUBBLE SETTINGS
 // ============================================
@@ -76,11 +125,56 @@ data class BubbleSettings(
     val size: Int = 56,
     val iconSize: Int = 26,
     val snapSensitivity: Int = 80,
+    /**
+     * Maximum distance (dp) from a snap anchor at which the bubble magnetizes
+     * on release. Larger = more aggressive snapping.
+     */
+    val snapDistance: Int = 140,
     val autoFade: Boolean = true,
     val fadeDelayMs: Long = 4000,
     val fadeOpacity: Float = 0.35f,
-    val defaultAnchor: BubbleAnchor = BubbleAnchor.BottomRight,
-    val animationSpeed: Float = 1.0f
+    /**
+     * Idle timeout (ms) before the bubble starts fading. Independent of the
+     * fade animation duration.
+     */
+    val idleTimeoutMs: Long = 6000,
+    /**
+     * Hover reveal: when the bubble has faded, hovering over its area reveals
+     * it again instantly. Off = only drag/tap brings it back.
+     */
+    val hoverReveal: Boolean = true,
+    val animationSpeed: Float = 1.0f,
+    /** Shadow elevation of the bubble glyph, in dp. */
+    val elevation: Int = 12
+)
+
+// ============================================
+// LAUNCHPAD SETTINGS
+// ============================================
+
+/** Direction the launchpad expands toward when it opens. */
+@Serializable
+enum class LaunchpadDirection {
+    /** Expand toward the bubble's nearest edge (auto). */
+    Auto,
+    /** Always expand upward from a bottom-anchored bubble. */
+    Up,
+    /** Always expand downward from a top-anchored bubble. */
+    Down
+}
+
+@Serializable
+data class LaunchpadSettings(
+    /** Panel width scale relative to the default (0.7..1.2). */
+    val scale: Float = 1f,
+    /** Tile / row spacing multiplier (0.7..1.5). */
+    val spacing: Float = 1f,
+    /** Direction the panel visually grows from the bubble. */
+    val direction: LaunchpadDirection = LaunchpadDirection.Auto,
+    /** Panel background opacity (0.6..1.0). */
+    val opacity: Float = 0.96f,
+    /** Staggered cascade reveal of tiles. */
+    val staggeredReveal: Boolean = true
 )
 
 // ============================================
@@ -108,9 +202,9 @@ data class SidebarSettings(
 @Serializable
 data class PhoneNavigationSettings(
     val edge: SidebarPosition = SidebarPosition.Bottom,
-    val bubbleAnchor: BubbleAnchor = BubbleAnchor.BottomRight,
-    val bubbleOffsetX: Int = 0,
-    val bubbleOffsetY: Int = 0
+    val snapPoint: BubbleSnapPoint = BubbleSnapPoint.BottomRight,
+    val snapOffsetX: Int = 0,
+    val snapOffsetY: Int = 0
 )
 
 // ============================================
@@ -131,20 +225,25 @@ data class AccessibilitySettings(
 
 @Serializable
 data class NavigationSettings(
-    val mode: NavigationMode = NavigationMode.Expanded,
+    val mode: NavigationMode = NavigationMode.Sidebar,
     val rememberPreviousMode: Boolean = true,
     /** When [rememberPreviousMode] is off, the app always starts in this mode. */
-    val defaultMode: NavigationMode = NavigationMode.Expanded,
+    val defaultMode: NavigationMode = NavigationMode.Sidebar,
     /** Last used mode — restored when [rememberPreviousMode] is enabled. */
     val lastMode: NavigationMode? = null,
     val animationsEnabled: Boolean = true,
     /** Base duration for all navigation transitions, in milliseconds. */
     val animationDurationMs: Int = 260,
     val desktopEdge: SidebarPosition = SidebarPosition.Left,
-    val bubbleAnchor: BubbleAnchor = BubbleAnchor.BottomRight,
-    val bubbleOffsetX: Int = 0,
-    val bubbleOffsetY: Int = 0,
+    /** Sidebar sub-layout: Expanded (icons + labels) or Compact (icons only). */
+    val sidebarExpansion: SidebarExpansion = SidebarExpansion.Expanded,
+    /** Desktop/tablet bubble snap point. */
+    val snapPoint: BubbleSnapPoint = BubbleSnapPoint.BottomRight,
+    /** Fine-grained drift from the exact snap anchor (dp, desktop/tablet). */
+    val snapOffsetX: Int = 0,
+    val snapOffsetY: Int = 0,
     val bubble: BubbleSettings = BubbleSettings(),
+    val launchpad: LaunchpadSettings = LaunchpadSettings(),
     val phone: PhoneNavigationSettings = PhoneNavigationSettings(),
     val sidebar: SidebarSettings = SidebarSettings(),
     val accessibility: AccessibilitySettings = AccessibilitySettings()
@@ -154,19 +253,24 @@ data class NavigationSettings(
         if (animations) animationDurationMs else 0
 }
 
-/** Convenience projections used across the nav system. */
+/** Convenience projection used across the nav system. */
 val NavigationSettings.effectiveEdge: SidebarPosition
     get() = desktopEdge
 
-/** Desktop/tablet share one bubble anchor; phone keeps its own. */
-fun NavigationSettings.bubbleAnchorFor(formFactor: FormFactor): BubbleAnchor =
-    if (formFactor.isPhone) phone.bubbleAnchor else bubbleAnchor
+/** The active bubble snap point for the current form factor. */
+fun NavigationSettings.snapPointFor(formFactor: FormFactor): BubbleSnapPoint =
+    if (formFactor.isPhone) phone.snapPoint else snapPoint
 
-fun NavigationSettings.bubbleOffsetFor(formFactor: FormFactor): Pair<Int, Int> =
-    if (formFactor.isPhone) phone.bubbleOffsetX to phone.bubbleOffsetY
-    else bubbleOffsetX to bubbleOffsetY
+/** The active bubble micro-offset for the current form factor. */
+fun NavigationSettings.snapOffsetFor(formFactor: FormFactor): Pair<Int, Int> =
+    if (formFactor.isPhone) phone.snapOffsetX to phone.snapOffsetY
+    else snapOffsetX to snapOffsetY
 
 fun NavigationSettings.bubbleSettingsFor(formFactor: FormFactor): BubbleSettings = bubble
+
+/** The active sidebar layout for the current form factor (shared across all). */
+fun NavigationSettings.expansionFor(formFactor: FormFactor): SidebarExpansion =
+    sidebarExpansion
 
 /** Pick the edge for the current form factor. Phone only supports Top/Bottom. */
 fun NavigationSettings.edgeFor(formFactor: FormFactor): SidebarPosition {
@@ -185,10 +289,33 @@ fun AccessibilitySettings.scaledIconSize(base: Int): Int =
 fun AccessibilitySettings.scaledHitbox(base: Int): Int =
     if (largerHitboxes) (base * 1.25f).toInt() else base
 
-/** Map a legacy persisted [SidebarMode] name onto the new three-mode model. */
+// ============================================
+// LEGACY MIGRATION HELPERS
+// The previous model had three modes
+// (Expanded / Compact / Bubble) and six bubble
+// anchors. These map old values onto the new
+// two-mode model.
+// ============================================
+
+/** Map a legacy persisted mode name onto the two-mode model. */
 fun legacyModeToNavigationMode(name: String?): NavigationMode = when (name) {
-    "FloatingIsland", "Docked" -> NavigationMode.Bubble
-    "IconsOnly", "AutoHide", "Compact" -> NavigationMode.Compact
-    "Expanded", null -> NavigationMode.Expanded
-    else -> NavigationMode.Expanded
+    "FloatingIsland", "Docked", "Bubble" -> NavigationMode.Floating
+    else -> NavigationMode.Sidebar
+}
+
+/** Map a legacy mode name onto the sidebar layout. */
+fun legacyModeToSidebarExpansion(name: String?): SidebarExpansion = when (name) {
+    "IconsOnly", "AutoHide", "Compact" -> SidebarExpansion.Compact
+    else -> SidebarExpansion.Expanded
+}
+
+/** Map a legacy bubble anchor onto the new 12-point snap set. */
+fun legacyAnchorToSnapPoint(anchor: String?): BubbleSnapPoint = when (anchor) {
+    "Left" -> BubbleSnapPoint.LeftCenter
+    "Right" -> BubbleSnapPoint.RightCenter
+    "TopLeft" -> BubbleSnapPoint.TopLeft
+    "TopRight" -> BubbleSnapPoint.TopRight
+    "BottomLeft" -> BubbleSnapPoint.BottomLeft
+    "BottomRight" -> BubbleSnapPoint.BottomRight
+    else -> BubbleSnapPoint.BottomRight
 }

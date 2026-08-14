@@ -46,6 +46,7 @@ class LettersDashboardLoadDataUseCase(
                     deckId = deck.id,
                     title = deck.title,
                     position = deck.position,
+                    isArchived = deck.isArchived,
                     elapsedSinceLastReview = deck.lastReview?.let { currentInstant - it },
                     writingProgress = writingProgress,
                     readingProgress = readingProgress

@@ -13,6 +13,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 
@@ -20,8 +26,9 @@ import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 // NAVIGATION SETTINGS STATE
 // Single source of truth for all navigation
 // preferences. Persisted as one JSON blob and
-// migrated from the legacy individual prefs on
-// first launch after upgrade.
+// migrated from both the legacy individual prefs
+// and the previous three-mode JSON schema on
+// first load after upgrade.
 // ============================================
 
 class NavigationSettingsState(
@@ -61,8 +68,7 @@ class NavigationSettingsState(
     private fun load(): NavigationSettings {
         val stored = runBlocking { appPreferences.navSettingsJson.get() }
         if (!stored.isNullOrBlank()) {
-            runCatching {
-                val decoded = json.decodeFromString(NavigationSettings.serializer(), stored)
+            decodeStored(stored)?.let { decoded ->
                 // "Remember previous mode" off → always start in the configured default.
                 return if (decoded.rememberPreviousMode) {
                     decoded.copy(mode = decoded.lastMode ?: decoded.mode)
@@ -72,6 +78,48 @@ class NavigationSettingsState(
             }
         }
         return migrateFromLegacy()
+    }
+
+    /**
+     * Decode the persisted blob. Tries the current schema first; when the
+     * stored blob was written by an older build (three modes, six anchors)
+     * the enum names no longer match, so the JSON is rebuilt field-by-field
+     * with the legacy values mapped onto the new model.
+     */
+    private fun decodeStored(stored: String): NavigationSettings? {
+        runCatching {
+            return json.decodeFromString(NavigationSettings.serializer(), stored)
+        }
+        runCatching {
+            val obj = json.parseToJsonElement(stored).jsonObject
+            val modeName = obj["mode"]?.jsonPrimitive?.contentOrNull
+            val mapped = buildJsonObject {
+                put("mode", legacyModeToNavigationMode(modeName).name)
+                put("defaultMode", legacyModeToNavigationMode(obj["defaultMode"]?.jsonPrimitive?.contentOrNull).name)
+                obj["lastMode"]?.let { put("lastMode", legacyModeToNavigationMode(it.jsonPrimitive.contentOrNull).name) }
+                put("sidebarExpansion", legacyModeToSidebarExpansion(modeName).name)
+                put("snapPoint", legacyAnchorToSnapPoint(obj["bubbleAnchor"]?.jsonPrimitive?.contentOrNull).name)
+                obj["bubbleOffsetX"]?.let { put("snapOffsetX", it.jsonPrimitive.int) }
+                obj["bubbleOffsetY"]?.let { put("snapOffsetY", it.jsonPrimitive.int) }
+                for (key in listOf(
+                    "rememberPreviousMode", "animationsEnabled", "animationDurationMs",
+                    "desktopEdge", "bubble", "sidebar", "accessibility"
+                )) {
+                    obj[key]?.let { put(key, it) }
+                }
+                obj["phone"]?.let { phoneEl ->
+                    val phoneObj = phoneEl.jsonObject
+                    buildJsonObject {
+                        phoneObj["edge"]?.let { put("edge", it) }
+                        put("snapPoint", legacyAnchorToSnapPoint(phoneObj["bubbleAnchor"]?.jsonPrimitive?.contentOrNull).name)
+                        phoneObj["bubbleOffsetX"]?.let { put("snapOffsetX", it.jsonPrimitive.int) }
+                        phoneObj["bubbleOffsetY"]?.let { put("snapOffsetY", it.jsonPrimitive.int) }
+                    }.let { put("phone", it) }
+                }
+            }
+            return json.decodeFromString(NavigationSettings.serializer(), mapped.toString())
+        }
+        return null
     }
 
     private fun migrateFromLegacy(): NavigationSettings {
@@ -86,12 +134,13 @@ class NavigationSettingsState(
 
         val migrated = NavigationSettings(
             mode = legacyModeToNavigationMode(modeName),
+            sidebarExpansion = legacyModeToSidebarExpansion(modeName),
             desktopEdge = edge,
-            bubbleAnchor = when (edge) {
-                SidebarPosition.Right -> BubbleAnchor.Right
-                SidebarPosition.Top -> BubbleAnchor.TopRight
-                SidebarPosition.Bottom -> BubbleAnchor.BottomRight
-                else -> BubbleAnchor.Left
+            snapPoint = when (edge) {
+                SidebarPosition.Right -> BubbleSnapPoint.RightCenter
+                SidebarPosition.Top -> BubbleSnapPoint.TopCenter
+                SidebarPosition.Bottom -> BubbleSnapPoint.BottomCenter
+                else -> BubbleSnapPoint.LeftCenter
             },
             sidebar = SidebarSettings(expandedWidthIndex = widthIndex)
         )

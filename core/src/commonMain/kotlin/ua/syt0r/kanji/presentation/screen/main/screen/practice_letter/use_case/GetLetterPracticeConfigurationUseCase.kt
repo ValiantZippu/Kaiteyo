@@ -8,6 +8,7 @@ import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesNewCardsOrder
 import ua.syt0r.kanji.presentation.common.ScreenLetterPracticeType
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCardsSelectorState
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.toScreenType
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.WritingPracticeHintMode
@@ -83,7 +84,10 @@ class DefaultGetLetterPracticeConfigurationUseCase(
                         practicePreferences.writingInputMethod.get().toScreenType()
                     ),
                     hintMode = mutableStateOf(WritingPracticeHintMode.OnlyNew),
-                    altStrokeEvaluatorEnabled = mutableStateOf(practicePreferences.altStrokeEvaluator.get())
+                    altStrokeEvaluatorEnabled = mutableStateOf(practicePreferences.altStrokeEvaluator.get()),
+                    strictness = mutableStateOf(
+                        practicePreferences.letterWritingStrictness.get().toScreenType()
+                    )
                 )
             }
 

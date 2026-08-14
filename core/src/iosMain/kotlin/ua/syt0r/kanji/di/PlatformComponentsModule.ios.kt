@@ -14,7 +14,6 @@ import ua.syt0r.kanji.core.IosAppDataDatabaseProvider
 import ua.syt0r.kanji.core.IosUserDataDatabasePlatformHandler
 import ua.syt0r.kanji.core.app_data.AppDataDatabaseProvider
 import ua.syt0r.kanji.core.transfer.AnkiPackage
-import ua.syt0r.kanji.core.transfer.AnkiPackageIos
 import ua.syt0r.kanji.core.file.PlatformFile
 import ua.syt0r.kanji.core.file.IosPlatformFileHandler
 import ua.syt0r.kanji.core.file.PlatformFileHandler
@@ -67,7 +66,7 @@ actual val platformComponentsModule: Module = module {
     factory<PlatformFile> {
         PlatformFile(okio.Path(getPrivateAppDataDirPath()))
     }
-    single<AnkiPackage> { AnkiPackageIos() }
+    single<AnkiPackage> { AnkiPackage() }
 
     factory<KanaVoiceData> {
         val voicePath = Res

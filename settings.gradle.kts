@@ -27,4 +27,4 @@ pluginManagement {
 }
 
 rootProject.name = "kaiteyo"
-include(":app", ":iosApp", ":desktopApp", ":core", ":mediaGenerator")
+include(":app", ":iosApp", ":desktopApp", ":core", ":mediaGenerator", ":kjd")

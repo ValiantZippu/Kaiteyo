@@ -282,11 +282,11 @@ private fun MediaPanel(state: AppState) {
         media.currentDocument?.let { doc ->
             Text(doc.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
             Text(
-                media.subtitleTrack?.let { "Subtitles: ${it.name} (${it.cues.size} cues)" } ?: "No subtitle track",
+                media.subtitles.activeTrack?.let { "Subtitles: ${it.name} (${it.track.cues.size} cues)" } ?: "No subtitle track",
                 color = sc.textMuted,
                 fontSize = DsType.Caption
             )
-            val cue = media.cueAt(media.currentPositionMs)
+            val cue = media.subtitles.activeCueAt(media.positionMs)
             if (cue != null) {
                 Text(cue.text, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.fillMaxWidth().padding(top = DsSpacing.Sm))
                 Text(MediaEngine.formatTime(cue.startMs), color = sc.textMuted, fontSize = DsType.Caption)

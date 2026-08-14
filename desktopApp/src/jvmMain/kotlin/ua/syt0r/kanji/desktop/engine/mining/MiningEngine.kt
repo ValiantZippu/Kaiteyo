@@ -35,6 +35,7 @@ data class MiningPayload(
     val sentence: String = "",
     val screenshotPath: String? = null,
     val audioPath: String? = null,
+    val videoPath: String? = null,
     val timestamp: Double? = null,
     val source: String = "manual",
     val sourceDetail: String = "",
@@ -70,7 +71,8 @@ data class MinedRecord(
     val id: String,
     val headword: String,
     val createdAt: String,
-    val source: String
+    val source: String,
+    val cardId: String = ""
 )
 
 enum class MiningSource(val label: String) {
@@ -111,7 +113,9 @@ class MiningEngine(val state: AppState) {
 
     /**
      * Create a study card from a mining payload.
-     * Idempotent-ish: re-mining an identical headword updates it.
+     * Duplicate policy (create / skip / update) is applied per the
+     * settings; identical sentence+target pairs are detected across the
+     * existing card pool.
      */
     fun mine(payload: MiningPayload): DesktopCard {
         val definition = payload.definition
@@ -121,7 +125,33 @@ class MiningEngine(val state: AppState) {
             .orEmpty()
             .take(400)
 
-        val id = "mined-${payload.headword.hashCode().toUInt().toString(16)}-${payload.source.hashCode().toUInt().toString(16)}"
+        // Duplicate detection: sentence + target word is the default key.
+        val duplicate = if (payload.sentence.isNotBlank()) {
+            state.cards.firstOrNull {
+                it.character == payload.headword &&
+                    (it.note.contains(payload.sentence.take(60)) || it.note.contains("Sentence: ${payload.sentence.take(60)}"))
+            }
+        } else null
+        if (duplicate != null) {
+            when (state.settings.getString("media.mine-duplicate-policy", "create")) {
+                "skip" -> {
+                    state.toastHost.show("Duplicate sentence already mined — skipped", kind = ToastKind.Info)
+                    return duplicate
+                }
+                "update" -> {
+                    val updated = duplicate.copy(
+                        meaning = definition,
+                        onReadings = payload.reading.takeIf { it.isNotBlank() }?.let { listOf(it) } ?: duplicate.onReadings,
+                        tags = (duplicate.tags + payload.tags + listOf("re-mined")).distinct()
+                    )
+                    state.updateCard(updated)
+                    state.toastHost.show("Updated existing card for \"${payload.headword}\"", kind = ToastKind.Success)
+                    return updated
+                }
+            }
+        }
+
+        val id = "mined-${payload.headword.hashCode().toUInt().toString(16)}-${payload.source.hashCode().toUInt().toString(16)}-${(payload.timestamp ?: 0.0).toLong()}"
         val now = Clock.System.now()
         val card = DesktopCard(
             id = id,
@@ -142,6 +172,7 @@ class MiningEngine(val state: AppState) {
                 if (payload.notes.isNotBlank()) append("Notes: ").append(payload.notes).append("\n")
                 if (payload.screenshotPath != null) append("Screenshot: ").append(payload.screenshotPath).append("\n")
                 if (payload.audioPath != null) append("Audio: ").append(payload.audioPath).append("\n")
+                if (payload.videoPath != null) append("Video: ").append(payload.videoPath).append("\n")
                 if (payload.timestamp != null) append("Timestamp: ").append(payload.timestamp).append("\n")
             }.trim(),
             favorite = false,
@@ -156,7 +187,27 @@ class MiningEngine(val state: AppState) {
             details = definition,
             cardIds = listOf(card.id)
         )
-        recordMine(payload)
+        recordMine(payload, card.id)
+
+        // External transports (GameSentenceMiner / AnkiConnect) when enabled —
+        // Kaiteyo mining never depends on them.
+        state.miningIntegration.forward(payload).forEach { result ->
+            result.onSuccess {
+                state.activityLog.record(ActivityCategory.Study, "Forwarded \"${payload.headword}\" to an external integration")
+            }.onFailure {
+                state.toastHost.show("External forward failed: ${it.message}", kind = ToastKind.Warning)
+            }
+        }
+
+        // OS notification when the app is in the background (opt-in).
+        state.media.notifyMined(payload.headword)
+
+        // Media source link: cards mined from a subtitle keep a pointer back
+        // to the exact anime moment (Media → Card → Media round-trip).
+        if (payload.source == "subtitle" && state.media.currentItem != null) {
+            state.media.recordMiningEvent(card, payload)
+        }
+
         state.toastHost.show("Mined \"${payload.headword}\" → study it in Review", kind = ToastKind.Success)
         return card
     }
@@ -212,12 +263,17 @@ class MiningEngine(val state: AppState) {
     // Persistence
     // ------------------------------------------------------------
 
-    private fun recordMine(payload: MiningPayload) {
+    private fun recordMine(payload: MiningPayload, cardId: String = "") {
+        // Every completed mine — from any source — feeds the mining statistics
+        // store (per-day + per-source counters) so Statistics and the Dashboard
+        // reflect real volume, not just the capped in-memory record feed.
+        state.miningStatistics.recordMine(payload.source)
         val rec = MinedRecord(
             id = "mine-${System.currentTimeMillis()}",
             headword = payload.headword,
             createdAt = Clock.System.now().toString(),
-            source = payload.source
+            source = payload.source,
+            cardId = cardId
         )
         minedRecords.add(0, rec)
         while (minedRecords.size > 200) minedRecords.removeAt(minedRecords.lastIndex)

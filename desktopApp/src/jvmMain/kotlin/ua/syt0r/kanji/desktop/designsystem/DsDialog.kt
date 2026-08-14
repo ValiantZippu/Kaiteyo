@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,7 +44,7 @@ import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
  * 0.94 and fades in with a spring for a deliberate, premium feel.
  */
 @Composable
-private fun dialogEntranceLayer(): androidx.compose.ui.graphics.graphicsLayer.GraphicsLayerScope.() -> Unit {
+private fun dialogEntranceLayer(): GraphicsLayerScope.() -> Unit {
     val reducedMotion = LocalAnimationConfig.current.reducedMotion
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }

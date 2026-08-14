@@ -36,6 +36,8 @@ fun VocabDashboardBottomBarUI(
             }
 
             ScreenState.Loading -> Box(Modifier.fillMaxWidth())
+
+            is ScreenState.Error -> Box(Modifier.fillMaxWidth())
         }
 
     }

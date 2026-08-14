@@ -27,10 +27,12 @@ open class KaiteyoActivity : AppCompatActivity() {
         intent.dataString?.let { deepLinkHandler.notifyDeepLink(it) }
 
         setContent {
-            KaiteyoApp(
-                windowSizeClass = calculateWindowSizeClass(this),
-                deepLinkHandler = deepLinkHandler
-            )
+            AndroidTransferFilePickerHost {
+                KaiteyoApp(
+                    windowSizeClass = calculateWindowSizeClass(this),
+                    deepLinkHandler = deepLinkHandler
+                )
+            }
         }
     }
 

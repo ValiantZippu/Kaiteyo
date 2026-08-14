@@ -2,32 +2,59 @@ package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings
 
 import org.koin.core.qualifier.qualifier
 import org.koin.dsl.module
+import ua.syt0r.kanji.presentation.common.theme.ThemeSettingsState
 import ua.syt0r.kanji.presentation.multiplatformViewModel
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.items.AppearanceSettingItem
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.items.DefaultHomeTabSettingItem
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.items.DailyResetTimeSettingItem
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.AboutSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.AccessibilitySettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.AppearanceSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.DataSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.FlashcardSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.GeneralSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.NavigationSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.ShortcutsSettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.StudySettingsCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.categories.WritingSettingsCategory
 
 val defaultSettingItemsQualifier = qualifier("default_setting_items")
 val settingItemsQualifier = qualifier("setting_items")
 
 val settingsScreenModule = module {
 
+    single {
+        ThemeSettingsState(appPreferences = get())
+    }
+
     multiplatformViewModel<SettingsScreenContract.ViewModel> {
         SettingsScreenViewModel(
             coroutineScope = it.component1(),
-            defaultSettingItems = get(defaultSettingItemsQualifier),
-            customSettingItems = get(settingItemsQualifier)
+            defaultCategories = get(defaultSettingItemsQualifier),
+            customCategories = get(settingItemsQualifier)
         )
     }
 
     factory(defaultSettingItemsQualifier) {
-        listOf(
-            AppearanceSettingItem(themeManager = get()),
-            DefaultHomeTabSettingItem(appPreferences = get()),
-            DailyResetTimeSettingItem(appPreferences = get())
+        listOf<SettingsScreenContract.Category>(
+            GeneralSettingsCategory(appPreferences = get()),
+            AppearanceSettingsCategory(
+                themeManager = get(),
+                themeSettingsState = get()
+            ),
+            NavigationSettingsCategory(),
+            AccessibilitySettingsCategory(
+                themeSettingsState = get()
+            ),
+            StudySettingsCategory(
+                appPreferences = get(),
+                practicePreferences = get()
+            ),
+            WritingSettingsCategory(practicePreferences = get()),
+            FlashcardSettingsCategory(practicePreferences = get()),
+            DataSettingsCategory(),
+            ShortcutsSettingsCategory(),
+            AboutSettingsCategory()
         )
     }
 
-    factory(settingItemsQualifier) { listOf<SettingsScreenContract.ListItem>() }
+    factory(settingItemsQualifier) { listOf<SettingsScreenContract.Category>() }
 
 }

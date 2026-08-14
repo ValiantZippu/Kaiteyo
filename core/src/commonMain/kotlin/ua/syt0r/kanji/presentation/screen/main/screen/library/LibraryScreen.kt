@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -207,8 +208,18 @@ private fun LibraryHub(
         return
     }
     if (dataCenter.loadError) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val retryScope = rememberCoroutineScope()
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text("Could not load the library", color = surfaceColors.textMuted)
+            TextButton(
+                onClick = { retryScope.launch { dataCenter.retryLoad() } }
+            ) {
+                Text("Retry")
+            }
         }
         return
     }

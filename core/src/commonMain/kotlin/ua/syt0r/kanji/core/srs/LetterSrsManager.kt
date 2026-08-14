@@ -24,6 +24,7 @@ data class LetterSrsDeck(
     override val id: Long,
     override val title: String,
     override val position: Int,
+    override val isArchived: Boolean,
     override val items: List<String>,
     override val lastReview: Instant?,
     override val progressMap: Map<LetterPracticeType, LetterSrsDeckProgress>
@@ -92,6 +93,7 @@ class DefaultLetterSrsManager(
             id = it.id,
             title = it.name,
             position = it.position,
+            isArchived = it.isArchived,
             lastReview = historyStats
                 .flatMap { it.value.practiceTypeToDataMap.values }
                 .maxOfOrNull { it.lastReview },
@@ -133,6 +135,7 @@ class DefaultLetterSrsManager(
             id = deckDescriptor.id,
             title = deckDescriptor.title,
             position = deckDescriptor.position,
+            isArchived = deckDescriptor.isArchived,
             lastReview = deckDescriptor.lastReview,
             items = deckDescriptor.items,
             progressMap = deckDescriptor.itemsData.mapValues { (practiceType, deckData) ->

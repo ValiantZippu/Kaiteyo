@@ -28,10 +28,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
+import ua.syt0r.kanji.presentation.screen.main.screen.statistics.StatisticsScreen
 
 // ============================================
 // KAITEYO v1.2 — LEARNING POWER HUB
@@ -354,9 +357,8 @@ fun LearningPowerHub(
                         onClose = { selectedFeature = null }
                     )
                     LearningFeature.ImportExport -> ImportExportScreen()
-                    LearningFeature.Statistics -> StatisticsDashboardV2(
-                        stats = StatsOverviewV2(),
-                        heatmap = HeatmapDataV2(),
+                    LearningFeature.Statistics -> StatisticsScreen(
+                        controller = koinInject<StatisticsController>(),
                         onClose = { selectedFeature = null }
                     )
                     LearningFeature.Search -> SearchEngineScreen(

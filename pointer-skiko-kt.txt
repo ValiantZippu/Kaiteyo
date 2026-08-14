@@ -1,0 +1,31 @@
+Compiled from "PointerEvent.skiko.kt"
+public final class androidx.compose.ui.input.pointer.PointerEvent_skikoKt {
+  public static final int PointerButtons(boolean, boolean, boolean, boolean, boolean);
+  public static int PointerButtons$default(boolean, boolean, boolean, boolean, boolean, int, java.lang.Object);
+  public static final int PointerKeyboardModifiers(boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+  public static int PointerKeyboardModifiers$default(boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, int, java.lang.Object);
+  public static final int EmptyPointerKeyboardModifiers();
+  public static final boolean isPrimaryPressed-aHzCx-E(int);
+  public static final boolean isSecondaryPressed-aHzCx-E(int);
+  public static final boolean isTertiaryPressed-aHzCx-E(int);
+  public static final boolean isBackPressed-aHzCx-E(int);
+  public static final boolean isForwardPressed-aHzCx-E(int);
+  public static final boolean isPressed-bNIWhpI(int, int);
+  public static final boolean getAreAnyPressed-aHzCx-E(int);
+  public static final int indexOfFirstPressed-aHzCx-E(int);
+  public static final int indexOfLastPressed-aHzCx-E(int);
+  public static final boolean isCtrlPressed-5xRPYO0(int);
+  public static final boolean isMetaPressed-5xRPYO0(int);
+  public static final boolean isAltPressed-5xRPYO0(int);
+  public static final boolean isAltGraphPressed-5xRPYO0(int);
+  public static final boolean isSymPressed-5xRPYO0(int);
+  public static final boolean isShiftPressed-5xRPYO0(int);
+  public static final boolean isFunctionPressed-5xRPYO0(int);
+  public static final boolean isCapsLockOn-5xRPYO0(int);
+  public static final boolean isScrollLockOn-5xRPYO0(int);
+  public static final boolean isNumLockOn-5xRPYO0(int);
+  public static final int copy-LlqEk5Q(int, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean);
+  public static int copy-LlqEk5Q$default(int, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, int, java.lang.Object);
+  public static final int copy-rFZtxw0(int, boolean, boolean, boolean, boolean, boolean);
+  public static int copy-rFZtxw0$default(int, boolean, boolean, boolean, boolean, boolean, int, java.lang.Object);
+}

@@ -18,6 +18,7 @@ import ua.syt0r.kanji.core.srs.SrsCard
 import ua.syt0r.kanji.core.srs.SrsCardKey
 import ua.syt0r.kanji.core.srs.SrsCardRepository
 import ua.syt0r.kanji.core.srs.SrsScheduler
+import ua.syt0r.kanji.core.statistics.StatisticsRecorder
 import ua.syt0r.kanji.core.time.TimeUtils
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryItem
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
@@ -66,6 +67,7 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
     protected val srsScheduler: SrsScheduler,
     protected val srsCardRepository: SrsCardRepository,
     private val reviewHistoryRepository: ReviewHistoryRepository,
+    private val statisticsRecorder: StatisticsRecorder,
     analyticsManager: AnalyticsManager
 ) : PracticeQueue<State, Descriptor>
         where QueueItem : PracticeQueueItem<QueueItem>,
@@ -104,6 +106,14 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
     override suspend fun initialize(items: List<Descriptor>) {
         practiceStartInstant = timeUtils.now()
         queue = items.map { it.toQueueItem() }.toMutableList()
+        // Begin a statistics session for the practice flow (finalized on finish).
+        if (items.isNotEmpty()) {
+            val firstItem = queue.first()
+            statisticsRecorder.startSession(
+                practiceType = firstItem.srsCardKey.practiceType,
+                deckId = firstItem.deckId
+            )
+        }
         updateState()
     }
 
@@ -112,6 +122,7 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
     }
 
     override fun immediateFinish() {
+        practiceScope.launch { statisticsRecorder.finishSession() }
         val isLoading = summaryItems.any { it.value.totalReviews.isCompleted.not() }
         if (isLoading) {
             _state.value = getLoadingState()
@@ -157,6 +168,40 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
         srsCardRepository.update(item.srsCardKey, answer.srsAnswer.card)
         saveReviewHistory(item, answer, instant, reviewDuration)
         reviewReporter.reportReview(updatedItem, answer, reviewDuration)
+
+        recordStatistics(item, answer, reviewDuration)
+    }
+
+    private suspend fun recordStatistics(
+        item: QueueItem,
+        answer: PracticeAnswer,
+        reviewDuration: Duration
+    ) {
+        val key = item.srsCardKey
+        val isNew = item.srsCard.fsrsCard.repeats == 0
+        val isCorrect = answer.srsAnswer.grade > 1
+        statisticsRecorder.recordReview(
+            key = key.itemKey,
+            practiceType = key.practiceType,
+            isNew = isNew,
+            isCorrect = isCorrect,
+            mistakes = answer.mistakes,
+            duration = reviewDuration,
+            deckId = item.deckId
+        )
+        answer.writingStats?.takeIf { it.strokeCount > 0 }?.let { writing ->
+            statisticsRecorder.recordWritingAttempt(
+                character = key.itemKey,
+                practiceType = key.practiceType,
+                strokeCount = writing.strokeCount,
+                mistakes = writing.mistakes,
+                wrongOrder = writing.wrongOrderCount,
+                almost = writing.almostCount,
+                accuracy = writing.strokeAccuracy,
+                deckId = item.deckId,
+                studyTimeMs = reviewDuration.inWholeMilliseconds
+            )
+        }
     }
 
     private suspend fun updateState() {
@@ -229,6 +274,7 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
             duration = reviewDuration,
             grade = answer.srsAnswer.grade,
             mistakes = answer.mistakes,
+            interval = answer.srsAnswer.card.interval.inWholeDays,
             deckId = queueItem.deckId
         )
         reviewHistoryRepository.addReview(item)

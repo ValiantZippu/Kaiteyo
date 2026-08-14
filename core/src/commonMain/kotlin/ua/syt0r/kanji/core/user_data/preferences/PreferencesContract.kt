@@ -66,6 +66,7 @@ interface PreferencesContract {
         val navFloatingOffsetY: SuspendedProperty<Int>
         val navAccentIndex: SuspendedProperty<Int>
         val navSettingsJson: SuspendedProperty<String>
+        val themeSettingsJson: SuspendedProperty<String>
 
         // Kaiteyo features (serialized JSON held in string properties)
         val reviewSettingsJson: SuspendedProperty<String>
@@ -76,6 +77,8 @@ interface PreferencesContract {
         val tagSortOrder: SuspendedProperty<String>
         val collectionSortOrder: SuspendedProperty<String>
         val browserLastQuery: SuspendedProperty<String>
+        val statisticsGoalsJson: SuspendedProperty<String>
+        val statisticsGoalHistoryJson: SuspendedProperty<String>
     }
 
     interface PracticePreferences {
@@ -91,6 +94,8 @@ interface PreferencesContract {
         val kanaAutoPlay: SuspendedProperty<Boolean>
 
         val writingInputMethod: SuspendedProperty<PreferencesLetterPracticeWritingInputMode>
+        val letterWritingStrictness: SuspendedProperty<PreferencesWritingStrictness>
+        val vocabWritingStrictness: SuspendedProperty<PreferencesWritingStrictness>
         val writingRomajiInsteadOfKanaWords: SuspendedProperty<Boolean>
 
         val readingRomajiFuriganaForKanaWords: SuspendedProperty<Boolean>
@@ -109,6 +114,7 @@ enum class PreferencesLetterSortOption { AddOrder, Frequency, Name, ReviewTime }
 enum class PreferencesDeckDetailsLetterLayout { Character, Groups }
 enum class PreferencesTheme { System, Light, Dark, Amoled }
 enum class PreferencesLetterPracticeWritingInputMode { Stroke, Character }
+enum class PreferencesWritingStrictness { Normal, Hard, Exam }
 enum class PreferencesVocabPracticeType { Flashcard, ReadingPicker, Writing }
 enum class PreferencesDefaultHomeTab { GeneralDashboard, Letters, Vocab }
 

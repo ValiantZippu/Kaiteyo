@@ -1,0 +1,22 @@
+diff --git a/core/src/commonMain/kotlin/ua/syt0r/kanji/core/app_data/SqlDelightAppDataRepository.kt b/core/src/commonMain/kotlin/ua/syt0r/kanji/core/app_data/SqlDelightAppDataRepository.kt
+index 5fc9c97b..4edd1530 100644
+--- a/core/src/commonMain/kotlin/ua/syt0r/kanji/core/app_data/SqlDelightAppDataRepository.kt
++++ b/core/src/commonMain/kotlin/ua/syt0r/kanji/core/app_data/SqlDelightAppDataRepository.kt
+@@ -155,6 +155,17 @@ class SqlDelightAppDataRepository(
+         ).executeAsList()
+     }
+ 
++    override suspend fun getRadicalsForCharacters(characters: List<String>): Map<String, List<String>> =
++        lettersQuery {
++            characters.chunked(400)
++                .flatMap { chunk ->
++                    getRadicalsForCharacters(chunk).executeAsList().map {
++                        it.kanji to (it.radicals?.split("|") ?: emptyList())
++                    }
++                }
++                .toMap()
++        }
++
+ 
+     override suspend fun getWordsWithTextCount(text: String): Int = vocabQuery {
+         getCountOfVocabReadingsWithText(text = text, includeKanjiReadings = true).executeAsOne()

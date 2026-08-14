@@ -33,7 +33,7 @@ private fun randomStudyProgress(): LetterDeckStudyProgress {
     )
 }
 
-private fun getLoadedState(itemsCount: Int): ScreenState.Loaded {
+private fun getLoadedState(itemsCount: Int, archivedItemsCount: Int = 0): ScreenState.Loaded {
     val practiceTypeItems = ScreenLetterPracticeType.entries
         .map { LetterDeckDashboardPracticeTypeItem(it, Random.nextBoolean()) }
     return ScreenState.Loaded(
@@ -43,6 +43,7 @@ private fun getLoadedState(itemsCount: Int): ScreenState.Loaded {
                     deckId = Random.nextLong(),
                     title = "Grade $it",
                     position = 1,
+                    isArchived = false,
                     elapsedSinceLastReview = 1.days,
                     writingProgress = randomStudyProgress(),
                     readingProgress = randomStudyProgress()
@@ -52,6 +53,17 @@ private fun getLoadedState(itemsCount: Int): ScreenState.Loaded {
             showDailyNewIndicator = true,
             mode = mutableStateOf(DeckDashboardListMode.Browsing),
         ),
+        archivedItems = (0 until archivedItemsCount).map {
+            LetterDeckDashboardItem(
+                deckId = Random.nextLong(),
+                title = "Archived $it",
+                position = 1,
+                isArchived = true,
+                elapsedSinceLastReview = 1.days,
+                writingProgress = randomStudyProgress(),
+                readingProgress = randomStudyProgress()
+            )
+        },
         practiceTypeItems = practiceTypeItems,
         selectedPracticeTypeItem = mutableStateOf(practiceTypeItems.first()),
     )
@@ -82,6 +94,14 @@ private fun ScreenPreview(
 private fun EmptyPreview() {
     ScreenPreview(
         state = getLoadedState(0)
+    )
+}
+
+@Preview
+@Composable
+private fun ArchivedPreview() {
+    ScreenPreview(
+        state = getLoadedState(2, archivedItemsCount = 3)
     )
 }
 

@@ -4,7 +4,7 @@ import com.sun.jna.Callback
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
-import com.sun.jna.PointerByReference
+import com.sun.jna.ptr.PointerByReference
 import com.sun.jna.Structure
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef
@@ -57,6 +57,15 @@ internal fun startNativeWindowDrag(window: Frame): Boolean {
     }
 }
 
+/** Minimal WinUser surface for the capture release not exposed by JNA's User32. */
+private interface NativeUser32 : Library {
+    companion object {
+        val INSTANCE: NativeUser32 = Native.load("user32", NativeUser32::class.java)
+    }
+
+    fun ReleaseCapture(): Boolean
+}
+
 // ------------------------------------------------------------
 // Windows — WM_NCLBUTTONDOWN / HTCAPTION
 // ------------------------------------------------------------
@@ -68,7 +77,7 @@ private fun dragWindows(): Boolean {
         if (hwnd == null) return false
         // AWT holds the mouse capture while the button is down; release it so
         // the OS drag loop can take over.
-        user32.ReleaseCapture()
+        NativeUser32.INSTANCE.ReleaseCapture()
         // WM_NCLBUTTONDOWN = 0x00A1 with HTCAPTION = 0x0002.
         user32.SendMessage(hwnd, 0x00A1, WinDef.WPARAM(0x0002), WinDef.LPARAM(0))
         true

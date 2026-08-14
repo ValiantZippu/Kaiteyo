@@ -13,7 +13,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -21,6 +25,8 @@ import ua.syt0r.kanji.presentation.common.ScreenVocabPracticeType
 import ua.syt0r.kanji.presentation.common.rememberExtraListSpacerState
 import ua.syt0r.kanji.presentation.common.theme.snapSizeTransform
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.ArchivedSectionHeader
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DashboardErrorState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DeckDashboardEmptyState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DeckDashboardListItem
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DeckDashboardListMode
@@ -41,10 +47,12 @@ fun VocabDashboardScreenUI(
     screenState: State<ScreenState>,
     mergeDecks: (DecksMergeRequestData) -> Unit,
     sortDecks: (DecksSortRequestData) -> Unit,
+    setDeckArchived: (deckId: Long, isArchived: Boolean) -> Unit,
     navigateToDeckDetails: (VocabDeckDashboardItem) -> Unit,
     navigateToDeckEdit: (VocabDeckDashboardItem) -> Unit,
     startQuickPractice: (VocabDeckDashboardItem, ScreenVocabPracticeType, List<Long>) -> Unit,
-    createDeck: () -> Unit
+    createDeck: () -> Unit,
+    retryLoad: () -> Unit
 ) {
 
     val extraListSpacerState = rememberExtraListSpacerState()
@@ -61,13 +69,18 @@ fun VocabDashboardScreenUI(
 
             when (screenState) {
                 ScreenState.Loading -> FancyLoading(Modifier.fillMaxSize().wrapContentSize())
+                is ScreenState.Error -> DashboardErrorState(
+                    message = screenState.message,
+                    onRetry = retryLoad
+                )
                 is ScreenState.Loaded -> {
-                    if (screenState.listState.items.isEmpty()) {
+                    if (screenState.listState.items.isEmpty() && screenState.archivedItems.isEmpty()) {
                         DeckDashboardEmptyState()
                     } else {
                         val practiceType = remember {
                             derivedStateOf { screenState.selectedPracticeTypeItem.value.practiceType }
                         }
+                        var archivedExpanded by rememberSaveable { mutableStateOf(false) }
                         DeckDashboardLoadedStateContainer(extraListSpacerState) {
 
                             if (screenState.listState.items.size > 1) {
@@ -86,8 +99,32 @@ fun VocabDashboardScreenUI(
                                         showNewIndicator = screenState.listState.showDailyNewIndicator,
                                         navigateToDetails = navigateToDeckDetails,
                                         navigateToEdit = navigateToDeckEdit,
-                                        navigateToPractice = startQuickPractice
+                                        navigateToPractice = startQuickPractice,
+                                        onArchiveClick = { setDeckArchived(it.deckId, true) }
                                     )
+
+                                    if (screenState.archivedItems.isNotEmpty()) {
+                                        item(
+                                            key = "archived_section_header"
+                                        ) {
+                                            ArchivedSectionHeader(
+                                                count = screenState.archivedItems.size,
+                                                expanded = archivedExpanded,
+                                                onToggle = { archivedExpanded = !archivedExpanded }
+                                            )
+                                        }
+
+                                        if (archivedExpanded) {
+                                            screenState.listState.addArchivedItems(
+                                                scope = this,
+                                                items = screenState.archivedItems,
+                                                practiceType = practiceType,
+                                                navigateToDetails = navigateToDeckDetails,
+                                                navigateToEdit = navigateToDeckEdit,
+                                                onRestoreClick = { setDeckArchived(it.deckId, false) }
+                                            )
+                                        }
+                                    }
                                 }
 
                                 is DeckDashboardListMode.MergeMode -> {
@@ -130,6 +167,7 @@ private fun DeckDashboardListState.addBrowseItems(
     navigateToDetails: (VocabDeckDashboardItem) -> Unit,
     navigateToEdit: (VocabDeckDashboardItem) -> Unit,
     navigateToPractice: (VocabDeckDashboardItem, ScreenVocabPracticeType, List<Long>) -> Unit,
+    onArchiveClick: (VocabDeckDashboardItem) -> Unit,
 ) = scope.apply {
 
     items(
@@ -151,7 +189,43 @@ private fun DeckDashboardListState.addBrowseItems(
             studyProgress = studyProgress.value,
             onDetailsClick = { navigateToDetails(item) },
             onEditClick = { navigateToEdit(item) },
-            navigateToPractice = { navigateToPractice(item, practiceType.value, it) }
+            navigateToPractice = { navigateToPractice(item, practiceType.value, it) },
+            onArchiveClick = { onArchiveClick(item) }
+        )
+
+    }
+
+}
+
+private fun DeckDashboardListState.addArchivedItems(
+    scope: LazyListScope,
+    items: List<VocabDeckDashboardItem>,
+    practiceType: State<ScreenVocabPracticeType>,
+    navigateToDetails: (VocabDeckDashboardItem) -> Unit,
+    navigateToEdit: (VocabDeckDashboardItem) -> Unit,
+    onRestoreClick: (VocabDeckDashboardItem) -> Unit,
+) = scope.apply {
+
+    items(
+        items = items,
+        key = { DeckDashboardListMode.Browsing::class.simpleName to "archived_${it.deckId}" }
+    ) { item ->
+
+        val studyProgress = remember {
+            derivedStateOf { item.studyProgress.getValue(practiceType.value) }
+        }
+
+        DeckDashboardListItem(
+            itemKey = item.deckId,
+            title = item.title,
+            elapsedSinceLastReview = item.elapsedSinceLastReview,
+            showNewIndicator = false,
+            studyProgress = studyProgress.value,
+            isArchived = true,
+            onDetailsClick = { navigateToDetails(item) },
+            onEditClick = { navigateToEdit(item) },
+            navigateToPractice = {},
+            onRestoreClick = { onRestoreClick(item) }
         )
 
     }

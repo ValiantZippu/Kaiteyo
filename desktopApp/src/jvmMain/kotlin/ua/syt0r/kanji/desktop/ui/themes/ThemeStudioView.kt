@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -40,18 +41,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.appstate.AppState
+import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
 import ua.syt0r.kanji.desktop.designsystem.DsDialog
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
+import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
+import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
 import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
+import ua.syt0r.kanji.desktop.designsystem.DsStatTile
 import ua.syt0r.kanji.desktop.designsystem.DsTabRow
 import ua.syt0r.kanji.desktop.designsystem.DsTextArea
 import ua.syt0r.kanji.desktop.designsystem.DsTextButton
@@ -59,13 +67,18 @@ import ua.syt0r.kanji.desktop.designsystem.DsTextField
 import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 import ua.syt0r.kanji.desktop.engine.theming.KaiteyoTheme
 import ua.syt0r.kanji.desktop.engine.theming.ThemeAnimation
 import ua.syt0r.kanji.desktop.engine.theming.ThemeColors
+import ua.syt0r.kanji.desktop.engine.theming.ThemeGradient
+import ua.syt0r.kanji.desktop.engine.theming.ThemeGradientStop
 import ua.syt0r.kanji.desktop.engine.theming.ThemeManager
 import ua.syt0r.kanji.desktop.engine.theming.ThemeSerializer
+import ua.syt0r.kanji.desktop.engine.theming.colorToHex
 import ua.syt0r.kanji.desktop.engine.theming.colorToRgbHex
 import ua.syt0r.kanji.desktop.engine.theming.hexToColor
 import ua.syt0r.kanji.desktop.engine.theming.hsvToColor
@@ -89,7 +102,7 @@ import kotlin.math.roundToInt
 // shortcuts, and portable JSON import/export.
 // ============================================
 
-private val STUDIO_TABS = listOf("Colors", "Typography", "Scaling", "Animation", "Effects", "Accessibility")
+private val STUDIO_TABS = listOf("Colors", "Typography", "Scaling", "Animation", "Effects", "Accessibility", "Preview")
 
 @Composable
 fun ThemeStudioView(state: AppState) {
@@ -369,7 +382,8 @@ private fun ThemeEditor(
                 2 -> ThemeScalingEditor(theme, manager)
                 3 -> ThemeAnimationEditor(theme, manager)
                 4 -> ThemeEffectsEditor(theme, manager)
-                else -> ThemeAccessibilityEditor(theme, manager)
+                5 -> ThemeAccessibilityEditor(theme, manager)
+                else -> ThemePreviewTab(theme, manager)
             }
         }
     }
@@ -382,6 +396,7 @@ private fun ThemeEditorHeader(state: AppState, showJson: Boolean, onToggleJson: 
     val custom = !manager.isPreset(theme.id)
     val sc = surfaceColors()
     val ac = accent()
+    var renameOpen by remember { mutableStateOf(false) }
 
     DsCard {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
@@ -432,7 +447,6 @@ private fun ThemeEditorHeader(state: AppState, showJson: Boolean, onToggleJson: 
                     )
                 }
             }
-            var renameOpen by remember { mutableStateOf(false) }
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
@@ -526,6 +540,7 @@ private fun ThemeColorsEditor(theme: KaiteyoTheme, manager: ThemeManager) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
     ) {
+        GradientSection(theme, manager)
         ColorGroup("Surfaces") {
             ColorField("Background", c.background) { hex -> manager.updateActiveColors { it.copy(background = hex) } }
             ColorField("Surface", c.surface) { hex -> manager.updateActiveColors { it.copy(surface = hex) } }
@@ -629,7 +644,7 @@ private fun ColorField(label: String, value: String, onChange: (String) -> Unit)
             modifier = Modifier.width(140.dp)
         )
         DsIconButton(
-            icon = androidx.compose.material.icons.filled.Colorize,
+            icon = Icons.Default.Palette,
             onClick = { pickerOpen = true },
             contentDescription = "Pick color",
             size = 32.dp
@@ -652,13 +667,13 @@ private fun ColorField(label: String, value: String, onChange: (String) -> Unit)
 private fun ColorPickerDialog(initialHex: String, onDismiss: () -> Unit, onPick: (String) -> Unit) {
     val sc = surfaceColors()
     var color by remember(initialHex) { mutableStateOf(hexToColor(initialHex)) }
-    var hexText by remember(initialHex) { mutableStateOf(colorToRgbHex(color)) }
+    var hexText by remember(initialHex) { mutableStateOf(hexForDisplay(color)) }
     val (h, s, v) = rgbToHsv(color)
     val (r, g, b) = rgbChannels(color)
 
     fun apply(updated: Color) {
         color = updated
-        hexText = colorToRgbHex(updated)
+        hexText = hexForDisplay(updated)
     }
 
     DsDialog(title = "Pick color", onDismiss = onDismiss) {
@@ -683,6 +698,7 @@ private fun ColorPickerDialog(initialHex: String, onDismiss: () -> Unit, onPick:
         PickerSlider("Hue", h, 0f..360f, "%.0f") { apply(hsvToColor(it, s, v)) }
         PickerSlider("Saturation", s, 0f..1f, "%.2f") { apply(hsvToColor(h, it, v)) }
         PickerSlider("Value", v, 0f..1f, "%.2f") { apply(hsvToColor(h, s, it)) }
+        PickerSlider("Opacity", color.alpha, 0f..1f, "%.2f") { a -> apply(color.copy(alpha = a)) }
         Spacer(Modifier.height(DsSpacing.Md))
 
         Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
@@ -692,12 +708,15 @@ private fun ColorPickerDialog(initialHex: String, onDismiss: () -> Unit, onPick:
             DsTextField(
                 value = hexText,
                 onValueChange = { raw ->
-                    val clean = raw.uppercase().replace("[^0-9A-F#]".toRegex(), "").take(7)
+                    val clean = raw.uppercase().replace("[^0-9A-F#]".toRegex(), "").take(9)
                     hexText = clean
-                    if (clean.matches(Regex("^#[0-9A-F]{6}$"))) color = hexToColor(clean)
+                    when {
+                        clean.matches(Regex("^#[0-9A-F]{6}$")) -> color = hexToColor(clean)
+                        clean.matches(Regex("^#[0-9A-F]{8}$")) -> color = hexToColor(clean)
+                    }
                 },
                 singleLine = true,
-                modifier = Modifier.width(130.dp)
+                modifier = Modifier.width(150.dp)
             )
         }
         Spacer(Modifier.height(DsSpacing.Xl))
@@ -706,7 +725,7 @@ private fun ColorPickerDialog(initialHex: String, onDismiss: () -> Unit, onPick:
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)
         ) {
             DsTextButton(text = "Cancel", onClick = onDismiss)
-            DsButton(text = "Apply", onClick = { onPick(colorToRgbHex(color)) })
+            DsButton(text = "Apply", onClick = { onPick(hexForDisplay(color)) })
         }
     }
 }
@@ -744,6 +763,128 @@ private fun RgbField(label: String, value: Int, onChange: (Int) -> Unit) {
         )
     }
 }
+
+// ------------------------------------------------------------
+// Gradient editor
+// ------------------------------------------------------------
+
+@Composable
+private fun GradientSection(theme: KaiteyoTheme, manager: ThemeManager) {
+    val g = theme.gradient
+    val sc = surfaceColors()
+    EditorCard("Gradient", "Brand gradients across navigation, progress bars, hero surfaces and previews") {
+        SettingToggle(
+            label = "Gradient enabled",
+            description = "Off → gradients follow Primary/Secondary automatically",
+            checked = g.enabled,
+            onCheckedChange = { on -> manager.updateActiveGradient { it.copy(enabled = on) } }
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            Text("Type", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(80.dp))
+            DsSelect(
+                selected = g.type,
+                options = listOf("linear", "radial", "sweep"),
+                onSelected = { type -> manager.updateActiveGradient { it.copy(type = type) } },
+                labelOf = { it.replaceFirstChar { c -> c.uppercaseChar() } },
+                modifier = Modifier.width(160.dp)
+            )
+        }
+        if (g.type == "linear") {
+            StudioSlider("Angle", g.angle, 0f..360f, "%.0f°") { a -> manager.updateActiveGradient { it.copy(angle = a) } }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Stops", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
+            Text("${g.stops.size}", color = sc.textMuted, fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
+        }
+        Slider(
+            value = g.stops.size.toFloat(),
+            onValueChange = { count ->
+                val n = count.roundToInt().coerceIn(2, 8)
+                manager.updateActiveGradient { grad ->
+                    val current = grad.stops
+                    val resized = if (n < current.size) current.take(n)
+                    else current + List(n - current.size) { current.lastOrNull() ?: ThemeGradientStop() }
+                    grad.copy(
+                        stops = resized.mapIndexed { i, s -> s.copy(position = if (n <= 1) 0f else i / (n - 1f)) }
+                    )
+                }
+            },
+            valueRange = 2f..8f,
+            steps = 5
+        )
+        g.stops.forEachIndexed { index, stop ->
+            ColorField("Stop ${index + 1}", stop.color) { hex ->
+                manager.updateActiveGradient { grad ->
+                    grad.copy(stops = grad.stops.mapIndexed { i, s -> if (i == index) s.copy(color = hex) else s })
+                }
+            }
+            StudioSlider("Position", stop.position, 0f..1f, "%.2f") { p ->
+                manager.updateActiveGradient { grad ->
+                    grad.copy(stops = grad.stops.mapIndexed { i, s -> if (i == index) s.copy(position = p) else s })
+                }
+            }
+        }
+        Text("Live swatch", color = sc.textSecondary, fontSize = DsType.Body)
+        ThemeGradientBar(
+            g,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .clip(RoundedCornerShape(DsRadius.Md))
+                .border(1.dp, sc.border, RoundedCornerShape(DsRadius.Md))
+        )
+        DsTextButton(
+            text = "Reset to brand colors",
+            onClick = {
+                manager.updateActiveGradient {
+                    it.copy(
+                        type = "linear",
+                        angle = 0f,
+                        stops = listOf(
+                            ThemeGradientStop(theme.colors.primary, 0f),
+                            ThemeGradientStop(theme.colors.secondary, 1f)
+                        )
+                    )
+                }
+            }
+        )
+    }
+}
+
+/** Renders a theme gradient honoring type, angle and stop positions. */
+@Composable
+private fun ThemeGradientBar(gradient: ThemeGradient, modifier: Modifier = Modifier) {
+    // (position, color) pairs — the Compose 1.8 gradient API takes stops as
+    // pairs rather than a separate colors list + positions array.
+    val stops = gradient.stops.sortedBy { it.position }.map { stop ->
+        stop.position.coerceIn(0f, 1f) to hexToColor(stop.color)
+    }
+    val angleRad = gradient.angle * kotlin.math.PI.toFloat() / 180f
+    Box(
+        modifier = modifier.drawBehind {
+            val dx = kotlin.math.sin(angleRad) * size.width / 2f
+            val dy = -kotlin.math.cos(angleRad) * size.height / 2f
+            val brush = when (gradient.type) {
+                "radial" -> Brush.radialGradient(
+                    colorStops = stops.toTypedArray(),
+                    center = center,
+                    radius = size.minDimension / 2f
+                )
+                "sweep" -> Brush.sweepGradient(colorStops = stops.toTypedArray(), center = center)
+                else -> Brush.linearGradient(
+                    colorStops = stops.toTypedArray(),
+                    start = center - Offset(dx, dy),
+                    end = center + Offset(dx, dy)
+                )
+            }
+            drawRect(brush)
+        }
+    )
+}
+
+/** Picker output keeps 6-digit hex for opaque colors and 8-digit ARGB otherwise. */
+private fun hexForDisplay(color: Color): String =
+    if (color.alpha >= 0.999f) colorToRgbHex(color) else colorToHex(color)
 
 // ------------------------------------------------------------
 // Typography
@@ -1068,6 +1209,242 @@ private fun ThemeAccessibilityEditor(theme: KaiteyoTheme, manager: ThemeManager)
                 }
             )
         }
+    }
+}
+
+// ------------------------------------------------------------
+// Preview tab — component anatomy rendered with the live theme
+// ------------------------------------------------------------
+
+@Composable
+private fun ThemePreviewTab(theme: KaiteyoTheme, _manager: ThemeManager) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val g = theme.gradient
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+    ) {
+        EditorCard("App anatomy", "Sidebar, top bar, cards, lists and controls — every change applies live") {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(460.dp)
+                    .clip(RoundedCornerShape(DsRadius.Xl))
+                    .background(sc.background)
+                    .border(1.dp, sc.border.copy(alpha = 0.6f), RoundedCornerShape(DsRadius.Xl))
+            ) {
+                Row(Modifier.fillMaxSize()) {
+                    // Mini sidebar
+                    Column(
+                        Modifier
+                            .width(168.dp)
+                            .fillMaxHeight()
+                            .background(sc.surface)
+                            .padding(DsSpacing.Md),
+                        verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+                    ) {
+                        Box(
+                            Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(DsRadius.Md)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ThemeGradientBar(g, Modifier.fillMaxSize())
+                            Text(
+                                "K",
+                                color = Color.Black.copy(alpha = 0.72f),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = DsType.BodyLarge
+                            )
+                        }
+                        Spacer(Modifier.height(DsSpacing.Sm))
+                        PreviewNavItem("Dashboard", active = true, g = g)
+                        PreviewNavItem("Browse", active = false, g = g)
+                        PreviewNavItem("Review", active = false, g = g)
+                        PreviewNavItem("Collections", active = false, g = g)
+                        PreviewNavItem("Statistics", active = false, g = g)
+                        Spacer(Modifier.weight(1f))
+                        Text("Weekly goal", color = sc.textMuted, fontSize = DsType.Caption)
+                        DsProgressBar(fraction = 0.62f, height = 5.dp)
+                    }
+                    // Main content
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(DsSpacing.Lg),
+                        verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Dashboard", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.SemiBold)
+                                Text("Live theme preview", color = sc.textMuted, fontSize = DsType.Caption)
+                            }
+                            DsButton(text = "New review", onClick = {}, compact = true)
+                            DsIconButton(icon = Icons.Default.Palette, onClick = {}, contentDescription = "Theme")
+                            DsIconButton(icon = Icons.Default.Star, onClick = {}, contentDescription = "Favorite")
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                            DsStatTile("Due", "128", modifier = Modifier.weight(1f), delta = "+12 today")
+                            DsStatTile("Learning", "24", modifier = Modifier.weight(1f))
+                            DsStatTile("Mastered", "1,024", modifier = Modifier.weight(1f))
+                        }
+                        Row(
+                            Modifier.weight(1f).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                        ) {
+                            DsCard(modifier = Modifier.weight(1f)) {
+                                Column(
+                                    Modifier.padding(DsSpacing.Sm),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        "Continue learning",
+                                        color = sc.textPrimary,
+                                        fontSize = DsType.BodyLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(DsSpacing.Sm)
+                                    )
+                                    PreviewListItem("N5 · Kanji", "23 cards due", leading = "日", g = g)
+                                    PreviewListItem("N4 · Vocab", "12 cards due", leading = "語", g = g)
+                                    PreviewListItem("JLPT · Grammar", "8 cards due", leading = "文", g = g)
+                                }
+                            }
+                            DsCard(modifier = Modifier.weight(1f)) {
+                                Column(
+                                    Modifier.padding(DsSpacing.Lg),
+                                    verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                                ) {
+                                    Text("Controls", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
+                                        DsButton("Primary", onClick = {}, compact = true)
+                                        DsButton("Ghost", onClick = {}, kind = DsButtonKind.Ghost, compact = true)
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
+                                        DsButton("Secondary", onClick = {}, kind = DsButtonKind.Secondary, compact = true)
+                                        DsButton("Danger", onClick = {}, kind = DsButtonKind.Danger, compact = true)
+                                    }
+                                    DsToggle(checked = true, onCheckedChange = {}, label = "Auto-hide sidebar")
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        DsBadge("12 due", tint = ac.primary)
+                                        DsBadge("NEW", tint = successColor())
+                                        DsBadge("FLAG", tint = warningColor())
+                                    }
+                                    Text("Progress", color = sc.textSecondary, fontSize = DsType.Caption)
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(sc.surfaceInteractive)
+                                    ) {
+                                        Box(
+                                            Modifier
+                                                .fillMaxWidth(0.7f)
+                                                .height(8.dp)
+                                                .clip(RoundedCornerShape(4.dp))
+                                        ) {
+                                            ThemeGradientBar(g, Modifier.fillMaxSize())
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        EditorCard("Dialog anatomy", "Floating surfaces, fields and actions") {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(DsRadius.Xl))
+                    .background(sc.surfaceElevated)
+                    .border(1.dp, sc.border, RoundedCornerShape(DsRadius.Xl))
+            ) {
+                Column(
+                    Modifier.padding(DsSpacing.Xl),
+                    verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    Text("Edit card", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.SemiBold)
+                    Text("A dialog keeps focus on the current action.", color = sc.textMuted, fontSize = DsType.Body)
+                    DsTextField(value = "進む", onValueChange = {}, singleLine = true)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)
+                    ) {
+                        DsTextButton(text = "Cancel", onClick = {})
+                        DsButton(text = "Save", onClick = {})
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewNavItem(label: String, active: Boolean, g: ThemeGradient) {
+    val sc = surfaceColors()
+    val ac = accent()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DsRadius.Md))
+            .then(if (active) Modifier.background(ac.primary.copy(alpha = 0.14f)) else Modifier)
+            .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Box(Modifier.size(6.dp).clip(RoundedCornerShape(3.dp))) {
+            if (active) {
+                ThemeGradientBar(g, Modifier.fillMaxSize())
+            } else {
+                Box(Modifier.fillMaxSize().background(sc.border.copy(alpha = 0.5f)))
+            }
+        }
+        Text(
+            text = label,
+            color = if (active) sc.textPrimary else sc.textMuted,
+            fontSize = DsType.Label,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun PreviewListItem(title: String, subtitle: String, leading: String, g: ThemeGradient) {
+    val sc = surfaceColors()
+    val ac = accent()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DsRadius.Md))
+            .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+            .padding(DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Box(
+            Modifier
+                .size(30.dp)
+                .clip(RoundedCornerShape(DsRadius.Sm))
+                .background(sc.surfaceElevated),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(leading, color = ac.primary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = sc.textMuted, fontSize = DsType.Caption)
+        }
+        Text("→", color = sc.textMuted, fontSize = DsType.Body)
     }
 }
 

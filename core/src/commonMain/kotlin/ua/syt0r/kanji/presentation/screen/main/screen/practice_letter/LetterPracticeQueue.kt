@@ -10,6 +10,7 @@ import kotlinx.coroutines.async
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
 import ua.syt0r.kanji.core.srs.SrsCardRepository
 import ua.syt0r.kanji.core.srs.SrsScheduler
+import ua.syt0r.kanji.core.statistics.StatisticsRecorder
 import ua.syt0r.kanji.core.time.TimeUtils
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BasePracticeQueue
@@ -30,6 +31,7 @@ class DefaultLetterPracticeQueue(
     timeUtils: TimeUtils,
     srsCardRepository: SrsCardRepository,
     reviewHistoryRepository: ReviewHistoryRepository,
+    statisticsRecorder: StatisticsRecorder,
     srsScheduler: SrsScheduler,
     private val getQueueItemDataUseCase: GetLetterPracticeQueueItemDataUseCase,
     analyticsManager: AnalyticsManager
@@ -39,6 +41,7 @@ class DefaultLetterPracticeQueue(
     srsScheduler = srsScheduler,
     srsCardRepository = srsCardRepository,
     reviewHistoryRepository = reviewHistoryRepository,
+    statisticsRecorder = statisticsRecorder,
     analyticsManager = analyticsManager
 ), LetterPracticeQueue {
 
@@ -73,6 +76,8 @@ class DefaultLetterPracticeQueue(
                     totalReviews = totalReviews,
                     strokeCount = data.strokes.size,
                     mistakes = queueItem.totalMistakes,
+                    strokeAccuracyPercent = queueItem.totalWritingStats.accuracyPercent,
+                    wrongOrderCount = queueItem.totalWritingStats.wrongOrderCount
                 )
             }
 

@@ -41,6 +41,7 @@ interface AppDataRepository {
     suspend fun getRadicals(): List<RadicalData>
     suspend fun getCharactersWithRadicals(radicals: List<String>): List<String>
     suspend fun getAllRadicalsInCharactersWithSelectedRadicals(radicals: Set<String>): List<String>
+    suspend fun getRadicalsForCharacters(characters: List<String>): Map<String, List<String>>
 
     suspend fun getWordsWithTextCount(text: String): Int
     suspend fun getWordsWithText(

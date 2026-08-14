@@ -155,6 +155,17 @@ class SqlDelightAppDataRepository(
         ).executeAsList()
     }
 
+    override suspend fun getRadicalsForCharacters(characters: List<String>): Map<String, List<String>> =
+        lettersQuery {
+            characters.chunked(400)
+                .flatMap { chunk ->
+                    getRadicalsForCharacters(chunk).executeAsList().map { row ->
+                        row.kanji to row.radicals.split("|")
+                    }
+                }
+                .toMap()
+        }
+
 
     override suspend fun getWordsWithTextCount(text: String): Int = vocabQuery {
         getCountOfVocabReadingsWithText(text = text, includeKanjiReadings = true).executeAsOne()

@@ -82,6 +82,7 @@ import ua.syt0r.kanji.desktop.ui.tags.TagFlagView
 import ua.syt0r.kanji.desktop.ui.themes.ThemeStudioView
 import ua.syt0r.kanji.desktop.ui.transfer.TransferView
 import ua.syt0r.kanji.desktop.ui.dictionary.DictionaryManagerView
+import ua.syt0r.kanji.desktop.ui.media.MediaMiniPlayer
 import ua.syt0r.kanji.desktop.ui.media.MediaView
 import ua.syt0r.kanji.desktop.ui.browser_web.LearningBrowserView
 import ua.syt0r.kanji.desktop.ui.ocr.OcrView
@@ -138,6 +139,10 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("open-integrations") { state.currentView = WorkspaceView.Integrations }
         d.register("mine-selection") { if (state.browserEngine.selectedText != null) state.mining.openMining() }
 
+        // Media workspace transport keys are dispatched by MediaEngine through
+        // its configurable hotkey catalog (Media → Settings → Keyboard
+        // shortcuts), so they are intentionally not registered here.
+
         d.register("again") { if (state.reviewSession != null) state.rateCurrent(ReviewRating.Again) }
         d.register("hard") { if (state.reviewSession != null) state.rateCurrent(ReviewRating.Hard) }
         d.register("good") { if (state.reviewSession != null) state.rateCurrent(ReviewRating.Good) }
@@ -148,6 +153,21 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("bury") { if (state.reviewSession != null) state.buryCurrent() }
         d.register("skip") { if (state.reviewSession != null) state.skipCurrent() }
         d.register("retry") { if (state.reviewSession != null) state.retryCurrent() }
+    }
+
+    // Leaving Media while something plays pops up the persistent mini player.
+    LaunchedEffect(state.currentView) {
+        val media = state.media
+        if (state.currentView == WorkspaceView.Media) {
+            media.miniPlayerOpen = false
+        } else if (media.isPlaying && media.miniPlayerEnabled) {
+            media.miniPlayerOpen = true
+        }
+    }
+
+    // Start the enabled external integrations (text hook / WebSocket) once.
+    LaunchedEffect(Unit) {
+        state.media.startIntegrationsIfEnabled()
     }
 
     CompositionLocalProvider(LocalAppState provides state) {
@@ -178,6 +198,11 @@ fun KaiteyoWorkspace(state: AppState) {
                 if (state.launcherEnabled) {
                     DsFloatingLauncher(state)
                 }
+
+                // Persistent mini player — media keeps playing while browsing.
+                if (state.media.miniPlayerOpen && state.currentView != WorkspaceView.Media) {
+                    MediaMiniPlayer(state)
+                }
             }
         }
     }
@@ -197,12 +222,32 @@ private fun WorkspaceLayout(state: AppState, compact: Boolean, onOpenPalette: ()
 private fun CompactLayout(state: AppState, onOpenPalette: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         if (state.compactNavPosition == NavPosition.Top) {
-            DsCompactNavBar(state)
+            DsDockIsland(Modifier.fillMaxWidth()) {
+                DsCompactNavBar(state)
+            }
         }
         ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
         if (state.compactNavPosition != NavPosition.Top) {
-            DsCompactNavBar(state)
+            DsDockIsland(Modifier.fillMaxWidth()) {
+                DsCompactNavBar(state)
+            }
         }
+    }
+}
+
+/**
+ * Floating-island wrapper for the dock. Wraps the nav rail/bar in an even
+ * 8dp ring of window background so it reads as an elevated floating element
+ * rather than chrome glued to the window edge (see
+ * docs/design/DESIGN_LANGUAGE.md — "Floating elements").
+ */
+@Composable
+private fun DsDockIsland(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(modifier = modifier.padding(DsSpacing.Sm)) {
+        content()
     }
 }
 
@@ -210,9 +255,9 @@ private fun CompactLayout(state: AppState, onOpenPalette: () -> Unit) {
 @Composable
 private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
     val sc = surfaceColors()
-    // The dock is visible in Expanded and Compact modes; Bubble mode
-    // removes it entirely and hands navigation to the floating launcher.
-    val dockVisible = state.navLayout != NavLayout.Bubble
+    // The dock is visible in Sidebar mode; Floating mode removes it entirely
+    // and hands navigation to the launcher bubble.
+    val dockVisible = state.navLayout == NavLayout.Sidebar
     val position = state.navPosition
     // Dock show/hide honors the animation speed / reduced-motion config,
     // matching the view transitions.
@@ -231,7 +276,9 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
                         exit = slideOutHorizontally(motion) { -it } + fadeOut(fadeMotion),
                         modifier = Modifier.fillMaxHeight()
                     ) {
-                        DsNavRail(state, onOpenPalette)
+                        DsDockIsland(Modifier.fillMaxHeight()) {
+                            DsNavRail(state, onOpenPalette)
+                        }
                     }
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxHeight())
                 } else {
@@ -242,7 +289,9 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
                         exit = slideOutHorizontally(motion) { it } + fadeOut(fadeMotion),
                         modifier = Modifier.fillMaxHeight()
                     ) {
-                        DsNavRail(state, onOpenPalette)
+                        DsDockIsland(Modifier.fillMaxHeight()) {
+                            DsNavRail(state, onOpenPalette)
+                        }
                     }
                 }
             }
@@ -255,7 +304,9 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
                         exit = slideOutVertically(motion) { -it } + fadeOut(fadeMotion),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        DsNavBar(state, onOpenPalette)
+                        DsDockIsland(Modifier.fillMaxWidth()) {
+                            DsNavBar(state, onOpenPalette)
+                        }
                     }
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
                 } else {
@@ -266,7 +317,9 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
                         exit = slideOutVertically(motion) { it } + fadeOut(fadeMotion),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        DsNavBar(state, onOpenPalette)
+                        DsDockIsland(Modifier.fillMaxWidth()) {
+                            DsNavBar(state, onOpenPalette)
+                        }
                     }
                 }
             }
@@ -294,6 +347,22 @@ private fun ContentColumn(state: AppState, onOpenPalette: () -> Unit, modifier: 
 private fun handleGlobalKey(state: AppState, event: KeyEvent): Boolean {
     if (event.type != KeyEventType.KeyDown) return false
     val name = keyName(event.key)
+    // The media workspace owns its immersion hotkeys while it is the active
+    // view. Chords are resolved against the configurable media catalog, so
+    // anything the engine declines (Ctrl+K palette, Ctrl+Z undo, review
+    // grades…) still falls through to the global dispatcher below. Review
+    // and browser shortcuts are untouched because they only dispatch in
+    // their own views.
+    if (state.currentView == WorkspaceView.Media) {
+        val handled = state.media.handleKey(
+            key = name,
+            ctrl = event.isCtrlPressed,
+            shift = event.isShiftPressed,
+            alt = event.isAltPressed,
+            meta = event.isMetaPressed
+        )
+        if (handled) return true
+    }
     return state.shortcutDispatcher.handle(
         pressedKey = name,
         ctrl = event.isCtrlPressed,

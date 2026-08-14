@@ -1,140 +1,237 @@
 <div align="center">
 
-  <img src="preview_assets/kaiteyo_logo.svg" height=120 style="border-radius: 20px;">
+  <img src="preview_assets/kaiteyo_logo.svg" height="120" style="border-radius: 20px;">
 
   # Kaiteyo (書いてよ)
-  ![Version Badge](https://img.shields.io/badge/version-v1.1.0-blue?style=for-the-badge&labelColor=1A1A1A&color=C2FC8B)
-  ![License](https://img.shields.io/badge/license-GPLv3-green?style=for-the-badge&labelColor=1A1A1A&color=FEAB57)
 
-  **A premium, cross-platform Japanese language learning application**
+  **Write it. Practice it. Master it.**
 
-  [![Desktop](https://img.shields.io/badge/Desktop-Windows%20%7C%20macOS%20%7C%20Linux-1A1A1A?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/your-org/kaiteyo/releases)
-  [![Android](https://img.shields.io/badge/Android-1A1A1A?style=for-the-badge&logo=android&logoColor=white)](https://github.com/your-org/kaiteyo/releases)
+  A premium, cross-platform Japanese language learning application — offline-first,
+  desktop-focused, and free.
+
+  ![Version](https://img.shields.io/badge/version-v2.2.1-blue?style=for-the-badge&labelColor=1A1A1A&color=C2FC8B)
+  ![License](https://img.shields.io/badge/license-GPL--3.0-green?style=for-the-badge&labelColor=1A1A1A&color=FEAB57)
+  ![Platforms](https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-1A1A1A?style=for-the-badge)
 
 </div>
 
 ---
 
-## About Kaiteyo
+## What is Kaiteyo?
 
-Kaiteyo (書いてよ) — "write it!" in Japanese — is a premium, cross-platform application for learning Japanese. Originally based on Kanji Dojo by syt0r, Kaiteyo is now independently developed with its own design language, roadmap, branding, and feature set.
+Kaiteyo (書いてよ) — *"write it!"* in Japanese — is a premium application for learning
+Japanese. It began as a fork of [Kanji Dojo](https://github.com/syt0r/Kanji-Dojo) and has
+since grown into an independently developed project with its own design language, roadmap,
+and feature set.
 
-### Features
+Kaiteyo is **desktop-first**: the Windows/macOS/Linux app is a complete immersion
+workspace — a Yomitan-style dictionary, an ASBPlayer-style media player, sentence mining,
+OCR, and a study engine in one cohesive window. The mobile apps share the same core study
+engine (kanji, kana, vocabulary, SRS, writing practice) built on Kotlin Multiplatform.
 
-- **Study kanji and kana** — Follow JLPT levels or school grades
-- **Spaced repetition** — Scientifically sound SRS review system
-- **Custom decks** — Create your own study decks from 6000+ characters
-- **Built-in dictionary** — Search letters and words with definitions
-- **Flashcards** — Study words with interactive flashcards
-- **Writing practice** — Stroke order diagrams and drawing canvas
-- **Offline-first** — Works completely offline
-- **Cross-platform** — Desktop (Windows, macOS, Linux), Android, iOS
-- **Premium desktop experience** — Undecorated window, floating controls, custom theming
-- **Appearance Studio** — Full theme customization with live preview
+> **Project status:** actively developed. The desktop suite is the flagship; mobile
+> shares the core learning engine. See [docs/features/FEATURES.md](docs/features/FEATURES.md)
+> for a per-feature status matrix and [docs/roadmap/ROADMAP.md](docs/roadmap/ROADMAP.md)
+> for what is planned.
+
+## Why Kaiteyo?
+
+Most Japanese learning tools split study into disconnected silos — a flashcard app here,
+a dictionary there, a video player somewhere else. Kaiteyo puts them together:
+
+1. **Read or watch something in Japanese.**
+2. **Hover a word** — the dictionary popup appears instantly (Yomitan-style).
+3. **Mine a sentence** — a card lands in your SRS queue with a screenshot, audio, and timestamp.
+4. **Review with spaced repetition** — and jump straight back to the exact scene in the media.
+
+Everything works **offline by default**. Your study data is yours: import/export, Anki
+compatibility, backup, and GitHub-based sync are all built in.
+
+## Features at a glance
+
+Status legend: ✅ implemented · 🚧 partial · 📋 planned
+
+### Core study engine (all platforms)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Kanji & kana study | ✅ | JLPT (N5–N1) and school-grade decks |
+| Vocabulary study & flashcards | ✅ | Readings, meanings, furigana |
+| Writing practice | ✅ | Stroke-order diagrams, drawing canvas, stroke evaluation |
+| Spaced repetition (SRS) | ✅ | FSRS-based scheduling, custom intervals |
+| Deck management | ✅ | Create, edit, archive, duplicate, bulk actions |
+| Radical & reading search | ✅ | 6000+ characters, dictionary-backed |
+| Text analysis | ✅ | Word-by-word breakdown (Ichiran-style output) |
+| Statistics & achievements | ✅ | Heatmap, learning curves, goals, achievements |
+| Anki `.apkg` import/export | ✅ | On desktop, Android and iOS |
+| Backup / restore | ✅ | Profile archives, settings, window state |
+| User accounts & sync | 🚧 | GitHub device-flow + private-gist sync (desktop) |
+
+### Desktop suite (Windows / macOS / Linux)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Yomitan-style dictionary | ✅ | Import Yomitan/EPWING-style ZIP & JSON dictionaries; JMdict, KANJIDIC, KanjiVG data |
+| Dictionary popup lookup | ✅ | Hover/click on any Japanese text — reading, definitions, mining, TTS |
+| Media center | ✅ | VLC / mpv / Java Sound backends; SRT/ASS/SSA/VTT subtitles |
+| Subtitle mining | ✅ | Sentence cards from subtitles with screenshot + audio + timestamp |
+| Learning browser | ✅ | Study-friendly web browsing with lookup & mining |
+| OCR | 🚧 | Tesseract-backed capture/lookup (screenshot, clipboard, region) |
+| Local HTTP API | ✅ | Bearer-token protected; media, mining, player-state endpoints |
+| AnkiConnect integration | ✅ | Push mined cards to Anki; import decks from Anki |
+| Auto-update system | 🚧 | Architecture complete (channels, sha256 verification); staged rollout |
+| Plugin system | 🚧 | Manifest-driven registry + marketplace scaffold; no runtime loading yet |
+| Custom theming (Theme Studio) | ✅ | Color/gradient editors, presets, live preview |
+| First-run onboarding | ✅ | 8-step wizard, theme/accent/scale/font/nav/motion |
+
+### Mobile
+
+| Feature | Status | Notes |
+|---|---|---|
+| Android (Play / F-Droid) | ✅ | Play flavor adds Firebase analytics, billing, review |
+| iOS | 🚧 | Shared engine + app shell exist; built from macOS only |
 
 ## Screenshots
 
 <p float="left">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="400"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="400"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="400"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="400"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" height="400"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" height="400"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="380"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="380"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="380"/>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="380"/>
 </p>
+
+Desktop captures live in [docs/screenshots/](docs/screenshots/).
 
 ## Downloads
 
 ### Desktop
 
-| Platform | Download |
-|----------|----------|
-| Windows | [Download MSI](https://github.com/your-org/kaiteyo/releases/latest) |
-| macOS | [Download DMG](https://github.com/your-org/kaiteyo/releases/latest) |
-| Linux | [Download Deb/AppImage](https://github.com/your-org/kaiteyo/releases/latest) |
+| Platform | Package |
+|---|---|
+| Windows | MSI, EXE (Inno Setup) + portable ZIP — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
+| macOS | DMG (arm64 + x64, notarized) — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
+| Linux | AppImage, deb, rpm (+ Flatpak/Snap packaging in progress) — [releases](https://github.com/ValiantZippu/Kaiteyo/releases) |
 
 ### Android
 
-[![Play Store](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ua.syt0r.kanji)
+[![Google Play](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ua.syt0r.kanji)
 [![F-Droid](https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white)](https://f-droid.org/en/packages/ua.syt0r.kanji.fdroid/)
-[![GitHub Releases](https://img.shields.io/badge/GitHub_Releases-1A1A1A?style=for-the-badge&logo=github&logoColor=white)](https://github.com/your-org/kaiteyo/releases/latest)
 
 ### iOS
 
-[![App Store](https://img.shields.io/badge/App_Store-blue?style=for-the-badge&logo=appstore&logoColor=blue&color=white)](https://apps.apple.com/ua/app/kanji-dojo/id6745169386)
+[![App Store](https://img.shields.io/badge/App_Store-blue?style=for-the-badge&logo=appstore&logoColor=white)](https://apps.apple.com/ua/app/kanji-dojo/id6745169386)
 
-## Quick Start
+## Quick start (development)
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/kaiteyo.git
-cd kaiteyo
+# Clone
+git clone https://github.com/ValiantZippu/Kaiteyo.git
+cd Kaiteyo
 
-# Run the desktop application
+# Run the desktop app (JDK 17 required)
 ./gradlew :desktopApp:run
 
-# Build for distribution
+# Japanese UI locale
+./gradlew :desktopApp:run -Duser.language=ja -Duser.country=JP
+
+# Compile checks
+./gradlew :desktopApp:compileKotlinJvm
+
+# Tests
+./gradlew :core:allTests
+
+# Installers (run on the matching host OS)
 ./gradlew :desktopApp:packageMsi    # Windows
 ./gradlew :desktopApp:packageDmg    # macOS
 ./gradlew :desktopApp:packageDeb    # Linux
 ```
 
+> First build downloads app data assets (dictionary database + TTS voices) from GitHub
+> releases — network required. See [docs/development/DEVELOPMENT_SETUP.md](docs/development/DEVELOPMENT_SETUP.md).
+
+## Repository layout
+
+| Path | What it is |
+|---|---|
+| `core/` | Shared Kotlin Multiplatform code — study engine, UI, data layer (all platforms) |
+| `desktopApp/` | Desktop app: native window shell + the standalone desktop suite (dictionary, media, mining, OCR, sync, …) |
+| `app/` | Android entry point (flavors: `googlePlay`, `fdroid`) |
+| `iosApp/` | iOS entry point (Swift host + Compose UI) |
+| `kjd/` | **KJD** — the Kaiteyo Japanese Data Platform: ingests open datasets and generates the offline language database |
+| `mediaGenerator/` | JVM utility for generating media assets |
+| `installer/` | Branded installer subsystem (Inno Setup, DMG, AppImage/deb/rpm, update feeds) |
+| `website/` | Static project website (Python build) |
+| `buildSrc/` | Gradle build logic — versions (`AppVersion.kt`) and app assets (`AppAssets.kt`) |
+
 ## Documentation
 
-The project includes comprehensive documentation in the `/docs` directory:
+The full documentation lives in [`docs/`](docs/README.md) and is organized like a
+documentation site:
 
-| Category | Location |
-|----------|----------|
-| 📖 Start Here | `docs/README.md` |
-| 🤖 AI Context | `docs/development/AI_CONTEXT.md` |
-| 🎨 Design Language | `docs/design/DESIGN_LANGUAGE.md` |
-| 🧠 Features | `docs/features/` |
-| 🚀 Roadmap | `docs/planning/` |
-| 🐞 Issues | `docs/planning/CURRENT_ISSUES.md` |
-| 📚 Guides | `docs/guides/` |
-| 🔧 Development | `docs/development/` |
+| Area | Location |
+|---|---|
+| 📖 Docs index | [`docs/README.md`](docs/README.md) |
+| 🏛️ Architecture | [`docs/architecture/`](docs/architecture/) |
+| 🧱 Data & attribution | [`docs/data/`](docs/data/README.md) |
+| 🔌 Integrations | [`docs/integrations/`](docs/integrations/README.md) |
+| 👤 User guide | [`docs/user-guide/`](docs/user-guide/README.md) |
+| ⚙️ Development | [`docs/development/`](docs/development/) |
+| 🎨 Design system | [`docs/design/`](docs/design/README.md) |
+| 🧠 Features | [`docs/features/FEATURES.md`](docs/features/FEATURES.md) |
+| 🗺️ Roadmap | [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) |
+| 🐞 Known issues | [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) |
+| 🧪 Testing | [`docs/testing/README.md`](docs/testing/README.md) |
+| 📦 Releases | [`docs/releases/`](docs/releases/) |
+| 🔐 Security | [`SECURITY.md`](SECURITY.md) |
+| ⚖️ Legal & attribution | [`docs/legal/README.md`](docs/legal/README.md) |
 
-## Technical Stack
+## Technical stack
 
-- **Language**: Kotlin Multiplatform
-- **UI**: Compose Multiplatform
-- **DI**: Koin
-- **Database**: SQLDelight
-- **Networking**: Ktor
-- **Preferences**: DataStore
-- **Build**: Gradle with version catalog
+- **Language** — Kotlin Multiplatform (2.1), Compose Multiplatform 1.8
+- **Architecture** — shared `core` (business logic + UI) with thin platform entry points; modular screen pattern with Koin DI
+- **Data** — SQLDelight (two databases: immutable dictionary + mutable user data), DataStore preferences, JSON state on desktop
+- **Networking** — Ktor client, `java.net.http` for OAuth/sync
+- **Desktop media** — VLCJ (VLC), mpv (JSON-RPC), Java Sound
+- **Build** — Gradle with version catalog (`gradle/libs.versions.toml`), JDK 17
 
 ## Contributing
 
-Contributions are welcome! Please read:
+Contributions of all kinds are welcome — code, documentation, design, data, translations.
 
-1. `docs/contributing/CONTRIBUTING.md` — Contribution guidelines
-2. `docs/contributing/CONTRIBUTING.md` — Detailed contributing guide
-3. `docs/development/DEVELOPMENT_SETUP.md` — Development environment setup
-4. `docs/development/CODING_STANDARDS.md` — Coding standards
+1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first.
+2. Check [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) for things to fix.
+3. Read [`docs/development/CODING_STANDARDS.md`](docs/development/CODING_STANDARDS.md) before writing code.
+4. Read [`docs/development/AI_CONTEXT.md`](docs/development/AI_CONTEXT.md) — written for AI-assisted contributors.
+
+Development workflow is branch-based (`develop` is the default branch; PRs target it).
+See [`docs/development/GITHUB_WORKFLOW.md`](docs/development/GITHUB_WORKFLOW.md).
 
 ## License
 
-> (c) 2022-2023 Yaroslav Shuliak (original Kanji Dojo)
-> 
-> Kaiteyo is a fork of Kanji Dojo. It is independently developed with its own design language, roadmap, branding, and feature set.
+Kaiteyo is free software licensed under the **GNU General Public License v3.0**
+(or, at your option, any later version). See [`LICENSE`](LICENSE).
+
+> © 2022–2023 Yaroslav Shuliak (original Kanji Dojo). Kaiteyo is a fork of Kanji Dojo,
+> independently developed with its own design language, branding, and feature set.
 >
-> This is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-> 
-> This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-> 
-> You should have received a copy of the GNU General Public License along with this app. If not, see https://www.gnu.org/licenses/.
+> This program is distributed in the hope that it will be useful, but **WITHOUT ANY
+> WARRANTY**; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+> PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-## Credits
+## Data attribution
 
-Originally based on [Kanji Dojo](https://github.com/syt0r/Kanji-Dojo) by syt0r. Kaiteyo is now independently developed.
+Kaiteyo bundles openly licensed Japanese-language datasets. Original Kaiteyo code and
+third-party datasets remain distinct. Sources include:
 
-### Data Sources
+| Dataset | License |
+|---|---|
+| [KanjiVG](https://kanjivg.tagaini.net/) — stroke order data | CC BY-SA 3.0 |
+| [KANJIDIC](https://www.edrdg.org/kanjidic/kanjdicindex.html) — character info | CC BY-SA 3.0 |
+| [JMdict](https://www.edrdg.org/jmdict/j_jmdict.html) — dictionary | CC BY-SA 4.0 |
+| [JmdictFurigana](https://github.com/Doublevil/JmdictFurigana) | CC BY-SA 4.0 |
+| [Tanos JLPT lists](http://www.tanos.co.uk/jlpt/) | Free with attribution |
+| [Leeds frequency data](https://corpus.leeds.ac.uk/list.html) | Free for research/education |
+| [yomichan-jlpt-vocab](https://github.com/stephenmk/yomichan-jlpt-vocab) | CC BY-SA 4.0 |
 
-- **KanjiVG** — Writing strokes, radicals information (CC BY-SA 3.0)
-- **Kanji Dic** — Character info, meanings, readings (CC BY-SA 3.0)
-- **Tanos by Jonathan Waller** — JLPT classification (CC BY)
-- **JMDict** — Japanese-Multilingual dictionary (CC BY-SA 4.0)
-- **JmdictFurigana** — Furigana resource (CC BY-SA 4.0)
-- **Leeds University Frequency List** — Word frequency ranking (CC BY)
-- **yomichan-jlpt-vocab** — JLPT vocabulary tags (CC BY-SA 4.0)
+See [docs/data/SOURCES.md](docs/data/SOURCES.md) for full provenance, redistribution
+requirements, and the KJD generation pipeline.

@@ -77,6 +77,8 @@ data class ReviewHistoryItem(
     val duration: Duration,
     val grade: Int,
     val mistakes: Int,
+    /** SRS interval (in days) scheduled after this review — feeds interval stats. */
+    val interval: Long = 0,
     val deckId: Long,
 )
 

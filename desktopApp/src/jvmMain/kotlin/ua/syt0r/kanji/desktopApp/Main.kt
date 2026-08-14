@@ -27,6 +27,12 @@ import ua.syt0r.kanji.desktop.engine.updates.UpdateService
 import ua.syt0r.kanji.desktop.engine.updates.UPDATE_FEED_BASE_URL
 import ua.syt0r.kanji.desktop.engine.updates.currentAppVersion
 import ua.syt0r.kanji.desktop.engine.updates.updatesDataDir
+import ua.syt0r.kanji.desktop.engine.updates.kjd.HttpKjdPatchChecker
+import ua.syt0r.kanji.desktop.engine.updates.kjd.HttpKjdPatchDownloader
+import ua.syt0r.kanji.desktop.engine.updates.kjd.KJD_PATCH_FEED_BASE_URL
+import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseLocator
+import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseUpdater
+import ua.syt0r.kanji.desktop.engine.updates.kjd.kjdUpdatesDataDir
 import ua.syt0r.kanji.di.appModules
 import ua.syt0r.kanji.presentation.KaiteyoApp
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
@@ -49,6 +55,19 @@ val desktopAppModule = module {
             policy = UpdatePolicy(),
             dataDir = updatesDataDir()
         ).apply { configure(currentAppVersion()) }
+    }
+
+    // KJD language database updater — downloads and applies incremental data
+    // patches to the bundled KJD database (non-destructive, fingerprint
+    // verified). Mirrors the app UpdateService; see engine/updates/kjd/.
+    single {
+        KjdDatabaseUpdater(
+            scope = get(),
+            checker = HttpKjdPatchChecker(KJD_PATCH_FEED_BASE_URL),
+            downloader = HttpKjdPatchDownloader(),
+            locator = KjdDatabaseLocator(),
+            dataDir = kjdUpdatesDataDir()
+        )
     }
 }
 
@@ -86,7 +105,7 @@ fun main(args: Array<String>) = application {
             savedBounds.height.takeIf { it > 0 }?.dp ?: 800.dp
         ),
         position = if (captureState == null && savedBounds.x != null && savedBounds.y != null) {
-            WindowPosition(savedBounds.x, savedBounds.y)
+            WindowPosition(savedBounds.x.dp, savedBounds.y.dp)
         } else {
             WindowPosition.PlatformDefault
         }
@@ -99,6 +118,17 @@ fun main(args: Array<String>) = application {
         icon = painterResource(Res.drawable.windowIcon),
         undecorated = true
     ) {
+        // KJD language database: quietly download + apply data patches to the
+        // bundled database at startup (never blocks the UI; failures surface
+        // via the updater's state, and the applied-state file makes re-runs
+        // skip work). The desktop suite additionally mirrors the result into
+        // Settings via its own hook.
+        LaunchedEffect(Unit) {
+            org.koin.core.context.GlobalContext.get()
+                .get<KjdDatabaseUpdater>()
+                .checkOnStartup("stable")
+        }
+
         KaiteyoWindow(
             windowState = windowState,
             onClose = { exitApplication() },

@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.data.buildDemoCards
 import ua.syt0r.kanji.desktop.data.buildDemoContentCards
 import ua.syt0r.kanji.desktop.data.buildStressDataset
@@ -24,6 +25,7 @@ import ua.syt0r.kanji.desktop.engine.theming.ThemePresets
 import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryService
 import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryRepository
 import ua.syt0r.kanji.desktop.engine.mining.MiningEngine
+import ua.syt0r.kanji.desktop.engine.mining.MiningStatisticsStore
 import ua.syt0r.kanji.desktop.engine.media.MediaEngine
 import ua.syt0r.kanji.desktop.engine.browser.BrowserEngine
 import ua.syt0r.kanji.desktop.engine.ocr.OcrEngine
@@ -94,27 +96,42 @@ enum class NavPosition(val label: String) {
 }
 
 /**
- * The three navigation modes. There is exactly one dock and no free sizing:
- * Expanded shows icons + labels, Compact is an icon-only rail, and Bubble
- * removes the dock entirely in favor of the floating launcher.
+ * The two navigation modes — Floating and Sidebar. There is exactly one dock
+ * and no free sizing: the sidebar's layout is chosen through [NavExpansion]
+ * (Expanded shows icons + labels, Compact is an icon-only rail), and Floating
+ * removes the dock entirely in favor of the launcher bubble.
  */
 enum class NavLayout(val label: String) {
-    Expanded("Expanded"),
-    Compact("Compact icons"),
-    Bubble("Bubble mode")
+    Sidebar("Sidebar"),
+    Floating("Floating")
 }
 
-/** Snap targets for the floating launcher. Edge targets sit half-off the screen; corners sit fully visible. */
-enum class LauncherAnchor(val label: String) {
-    BottomRight("Bottom right"),
-    BottomLeft("Bottom left"),
-    TopRight("Top right"),
+/** The two predefined sidebar layouts — no free resizing. */
+enum class NavExpansion(val label: String) {
+    Expanded("Expanded"),
+    Compact("Compact icons")
+}
+
+/**
+ * Snap targets for the floating launcher — 12 points, three per screen edge.
+ * Corner points appear twice (once per adjacent edge) at identical positions.
+ */
+enum class LauncherSnapPoint(val label: String) {
     TopLeft("Top left"),
-    Right("Right edge"),
-    Left("Left edge");
+    TopCenter("Top center"),
+    TopRight("Top right"),
+    BottomLeft("Bottom left"),
+    BottomCenter("Bottom center"),
+    BottomRight("Bottom right"),
+    LeftTop("Left top"),
+    LeftCenter("Left center"),
+    LeftBottom("Left bottom"),
+    RightTop("Right top"),
+    RightCenter("Right center"),
+    RightBottom("Right bottom");
 
     companion object {
-        fun fromName(name: String?): LauncherAnchor =
+        fun fromName(name: String?): LauncherSnapPoint =
             entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: BottomRight
     }
 }
@@ -207,7 +224,12 @@ enum class NavSpacing(val label: String) {
  * and owns the engine singletons. Created once per window.
  */
 class AppState(
-    val settings: SettingsEngine = SettingsEngine(),
+    // Persisted to ~/.kaiteyo/settings.json so media keys, integration config
+    // and the local API token survive restarts (SettingsEngine persists only
+    // when given a file).
+    val settings: SettingsEngine = SettingsEngine(
+        persistFile = java.io.File(System.getProperty("user.home"), ".kaiteyo/settings.json")
+    ),
     val shortcutRegistry: ShortcutRegistry = ShortcutRegistry(),
     val shortcutDispatcher: ShortcutDispatcher = ShortcutDispatcher(shortcutRegistry),
     val filterStore: SavedFilterStore = SavedFilterStore(),
@@ -234,55 +256,6 @@ class AppState(
         CloudSyncCoordinator(state = this, account = account)
     }
 
-init {
-        loadWorkspacePanels()
-        loadOnboardingFlag()
-        // Force the cloud sync coordinator to start (auto-sync scheduling,
-        // sync-on-start) even when the Sync view is never opened.
-        cloudSync
-        pluginRegistry.restoreSnapshot(settings.getString("plugins.installed"))
-        // Reconcile the persisted bubble toggle with the stored mode so both stay in sync.
-        if (settings.getBool("launcher.enabled") && navLayout != NavLayout.Bubble) {
-            navLayout = NavLayout.Bubble
-        }
-        settings.observe { key, _, newValue ->
-            when (key) {
-                "navigation.position" -> navPosition = NavPosition.entries.firstOrNull { it.name.equals(newValue, ignoreCase = true) } ?: NavPosition.Left
-                "navigation.layout" -> navLayout = navLayoutFromStored(newValue) ?: NavLayout.Expanded
-                "navigation.compact-position" -> compactNavPosition = NavPosition.entries
-                    .firstOrNull { it.name.equals(newValue, ignoreCase = true) && it != NavPosition.Left && it != NavPosition.Right }
-                    ?: NavPosition.Bottom
-                "navigation.animations" -> navigationAnimations = newValue.toBooleanStrictOrNull() ?: true
-                "navigation.animation-speed" -> navigationAnimationSpeed = (newValue.toFloatOrNull() ?: 1f).coerceIn(0.25f, 3f)
-                "navigation.reduced-motion" -> refreshReducedMotion()
-                "navigation.larger-icons" -> navigationLargerIcons = newValue.toBooleanStrictOrNull() ?: false
-                "navigation.larger-hitbox" -> navigationLargerHitbox = newValue.toBooleanStrictOrNull() ?: false
-                "navigation.high-contrast" -> navHighContrast = newValue.toBooleanStrictOrNull() ?: false
-                "navigation.compact-icon-size" -> compactIconSize = CompactIconSize.fromName(newValue)
-                "navigation.tooltip-delay" -> navigationTooltipDelayMs = (newValue.toIntOrNull() ?: 450).coerceIn(0, 3000)
-                "navigation.sidebar-width" -> sidebarWidth = SidebarWidth.fromName(newValue)
-                "navigation.icon-size" -> navIconSize = NavIconSize.fromName(newValue)
-                "navigation.label-mode" -> navLabelMode = NavLabelMode.fromName(newValue)
-                "navigation.compact-spacing" -> navSpacing = NavSpacing.fromName(newValue)
-                "launcher.enabled" -> {
-                    val on = newValue.toBooleanStrictOrNull() ?: false
-                    if (on && navLayout != NavLayout.Bubble) updateNavLayout(NavLayout.Bubble)
-                    else if (!on && navLayout == NavLayout.Bubble) updateNavLayout(NavLayout.Expanded)
-                }
-                "launcher.auto-fade" -> launcherAutoFade = newValue.toBooleanStrictOrNull() ?: true
-                "launcher.fade-delay" -> launcherFadeDelayMs = (newValue.toIntOrNull() ?: 6).coerceIn(1, 120) * 1000
-                "launcher.fade-opacity" -> launcherFadeOpacity = (newValue.toFloatOrNull() ?: 0.25f).coerceIn(0f, 1f)
-                "launcher.fade-duration" -> launcherFadeDurationMs = (newValue.toIntOrNull() ?: 450).coerceIn(50, 3000)
-                "launcher.snap" -> launcherSnapEnabled = newValue.toBooleanStrictOrNull() ?: true
-                "launcher.snap-sensitivity" -> launcherSnapSensitivity = (newValue.toFloatOrNull() ?: 1f).coerceIn(0.25f, 2f)
-                "launcher.animation-speed" -> launcherAnimationSpeed = (newValue.toFloatOrNull() ?: 1f).coerceIn(0.25f, 3f)
-                "launcher.default-position" -> launcherDefaultPosition = LauncherAnchor.fromName(newValue)
-                "launcher.size" -> launcherSize = LauncherSize.fromName(newValue)
-                "launcher.icon-size" -> launcherIconSize = LauncherIconSize.fromName(newValue)
-                "appearance.reduced-motion" -> refreshReducedMotion()
-            }
-        }
-    }
 
     /** Reduced motion is the OR of the global preference and the nav-specific one. */
     private fun refreshReducedMotion() {
@@ -294,11 +267,16 @@ init {
     // OCR and the local integration API).
     // ---------------------------------------------------------------
     val dictionary = DictionaryService(DictionaryRepository(dictionaryDir()))
+    val miningIntegration = ua.syt0r.kanji.desktop.engine.mining.MiningIntegrationManager(settings)
     val mining = MiningEngine(this)
-    val media = MediaEngine()
+    /** All-source mining counters (per day + per source) for Statistics/Dashboard. */
+    val miningStatistics = MiningStatisticsStore()
+    val media = MediaEngine(this)
     val browserEngine = BrowserEngine()
     val ocr = OcrEngine()
-    val localApi = LocalApiServer(mining)
+    val localApi = LocalApiServer(mining, media, settings)
+    /** Anki → Kaiteyo import bridge (deck/note/card/tag pull with dedupe). */
+    val ankiImporter = ua.syt0r.kanji.desktop.engine.transfer.AnkiImporter(this, miningIntegration.anki)
 
     private fun dictionaryDir(): java.io.File =
         java.io.File(System.getProperty("user.home"), ".kaiteyo/dictionary")
@@ -320,6 +298,11 @@ init {
             ?: NavPosition.Left
     )
     var navLayout by mutableStateOf(loadNavLayout())
+    /** Sidebar sub-layout: Expanded (icons + labels) or Compact (icons only). */
+    var navExpansion by mutableStateOf(
+        NavExpansion.entries.firstOrNull { it.name.equals(settings.getString("navigation.expansion", "expanded"), ignoreCase = true) }
+            ?: NavExpansion.Expanded
+    )
 
     /** Compact-window navigation edge — restricted to Top or Bottom by design. */
     var compactNavPosition by mutableStateOf(
@@ -350,8 +333,8 @@ init {
     // ---------------------------------------------------------------
     // Floating launcher settings (live mirrors) + remembered position
     // ---------------------------------------------------------------
-    /** True only while Bubble mode is active — the launcher is the mode, not an overlay. */
-    val launcherEnabled: Boolean get() = navLayout == NavLayout.Bubble
+    /** True only while Floating mode is active — the launcher is the mode, not an overlay. */
+    val launcherEnabled: Boolean get() = navLayout == NavLayout.Floating
     var launcherAutoFade by mutableStateOf(settings.getBool("launcher.auto-fade"))
     var launcherFadeDelayMs by mutableStateOf(settings.getInt("launcher.fade-delay", 6) * 1000)
     var launcherFadeOpacity by mutableStateOf(settings.getFloat("launcher.fade-opacity", 0.25f))
@@ -359,7 +342,7 @@ init {
     var launcherSnapEnabled by mutableStateOf(settings.getBool("launcher.snap"))
     var launcherSnapSensitivity by mutableStateOf(settings.getFloat("launcher.snap-sensitivity", 1f))
     var launcherAnimationSpeed by mutableStateOf(settings.getFloat("launcher.animation-speed", 1f))
-    var launcherDefaultPosition by mutableStateOf(LauncherAnchor.fromName(settings.getString("launcher.default-position", "bottom-right")))
+    var launcherSnapPoint by mutableStateOf(LauncherSnapPoint.fromName(settings.getString("launcher.snap-point", "bottom-right")))
     var launcherSize by mutableStateOf(LauncherSize.fromName(settings.getString("launcher.size", "medium")))
     var launcherIconSize by mutableStateOf(LauncherIconSize.fromName(settings.getString("launcher.icon-size", "medium")))
     /** Remembered launcher position as fractions (0..1) of the window size. */
@@ -368,6 +351,77 @@ init {
     /** Phone keeps its own remembered position so it never fights the tab bar. */
     var launcherPosXPhone by mutableStateOf(settings.getFloat("launcher.pos-x-phone", 0.88f))
     var launcherPosYPhone by mutableStateOf(settings.getFloat("launcher.pos-y-phone", 0.78f))
+init {
+        // Shut down owned media processes (VLC/mpv children, audio clips)
+        // when the application exits — never leave orphan players behind.
+        Runtime.getRuntime().addShutdownHook(Thread {
+            runCatching { media.shutdown() }
+        })
+        loadWorkspacePanels()
+        loadOnboardingFlag()
+        // The card pool is the user's study data: restore it first so a
+        // relaunch continues exactly where the previous session stopped.
+        // On a true first run there is nothing to restore and demo data is
+        // seeded once (see seedDemoData) — never on every launch.
+        library.loadCards()?.let { cards.addAll(it) }
+        // Study statistics (review log + daily summaries) persist to disk so
+        // the dashboards survive restarts — see LibraryStore.statistics.
+        library.loadStatistics()?.let { snap ->
+            reviewLog.addAll(snap.reviewLog)
+            summaries.addAll(snap.summaries)
+        }
+        // Force the cloud sync coordinator to start (auto-sync scheduling,
+        // sync-on-start) even when the Sync view is never opened.
+        cloudSync
+        pluginRegistry.restoreSnapshot(settings.getString("plugins.installed"))
+        // Reconcile the persisted floating toggle with the stored mode so both stay in sync.
+        if (settings.getBool("launcher.enabled") && navLayout != NavLayout.Floating) {
+            navLayout = NavLayout.Floating
+        }
+        // Migrate a legacy "compact" dock into the sidebar expansion.
+        if (navExpansion == NavExpansion.Expanded && "compact".equals(settings.getString("navigation.layout"), ignoreCase = true)) {
+            navExpansion = NavExpansion.Compact
+        }
+        settings.observe { key, _, newValue ->
+            when (key) {
+                "navigation.position" -> navPosition = NavPosition.entries.firstOrNull { it.name.equals(newValue, ignoreCase = true) } ?: NavPosition.Left
+                "navigation.layout" -> navLayout = navLayoutFromStored(newValue) ?: NavLayout.Sidebar
+                "navigation.expansion" -> navExpansion = NavExpansion.entries
+                    .firstOrNull { it.name.equals(newValue, ignoreCase = true) } ?: NavExpansion.Expanded
+                "navigation.compact-position" -> compactNavPosition = NavPosition.entries
+                    .firstOrNull { it.name.equals(newValue, ignoreCase = true) && it != NavPosition.Left && it != NavPosition.Right }
+                    ?: NavPosition.Bottom
+                "navigation.animations" -> navigationAnimations = newValue.toBooleanStrictOrNull() ?: true
+                "navigation.animation-speed" -> navigationAnimationSpeed = (newValue.toFloatOrNull() ?: 1f).coerceIn(0.25f, 3f)
+                "navigation.reduced-motion" -> refreshReducedMotion()
+                "navigation.larger-icons" -> navigationLargerIcons = newValue.toBooleanStrictOrNull() ?: false
+                "navigation.larger-hitbox" -> navigationLargerHitbox = newValue.toBooleanStrictOrNull() ?: false
+                "navigation.high-contrast" -> navHighContrast = newValue.toBooleanStrictOrNull() ?: false
+                "navigation.compact-icon-size" -> compactIconSize = CompactIconSize.fromName(newValue)
+                "navigation.tooltip-delay" -> navigationTooltipDelayMs = (newValue.toIntOrNull() ?: 450).coerceIn(0, 3000)
+                "navigation.sidebar-width" -> sidebarWidth = SidebarWidth.fromName(newValue)
+                "navigation.icon-size" -> navIconSize = NavIconSize.fromName(newValue)
+                "navigation.label-mode" -> navLabelMode = NavLabelMode.fromName(newValue)
+                "navigation.compact-spacing" -> navSpacing = NavSpacing.fromName(newValue)
+                "launcher.enabled" -> {
+                    val on = newValue.toBooleanStrictOrNull() ?: false
+                    if (on && navLayout != NavLayout.Floating) updateNavLayout(NavLayout.Floating)
+                    else if (!on && navLayout == NavLayout.Floating) updateNavLayout(NavLayout.Sidebar)
+                }
+                "launcher.auto-fade" -> launcherAutoFade = newValue.toBooleanStrictOrNull() ?: true
+                "launcher.fade-delay" -> launcherFadeDelayMs = (newValue.toIntOrNull() ?: 6).coerceIn(1, 120) * 1000
+                "launcher.fade-opacity" -> launcherFadeOpacity = (newValue.toFloatOrNull() ?: 0.25f).coerceIn(0f, 1f)
+                "launcher.fade-duration" -> launcherFadeDurationMs = (newValue.toIntOrNull() ?: 450).coerceIn(50, 3000)
+                "launcher.snap" -> launcherSnapEnabled = newValue.toBooleanStrictOrNull() ?: true
+                "launcher.snap-sensitivity" -> launcherSnapSensitivity = (newValue.toFloatOrNull() ?: 1f).coerceIn(0.25f, 2f)
+                "launcher.animation-speed" -> launcherAnimationSpeed = (newValue.toFloatOrNull() ?: 1f).coerceIn(0.25f, 3f)
+                "launcher.snap-point" -> launcherSnapPoint = LauncherSnapPoint.fromName(newValue)
+                "launcher.size" -> launcherSize = LauncherSize.fromName(newValue)
+                "launcher.icon-size" -> launcherIconSize = LauncherIconSize.fromName(newValue)
+                "appearance.reduced-motion" -> refreshReducedMotion()
+            }
+        }
+    }
 
     /** Persist a new launcher position (fractions of the window size). */
     fun setLauncherPos(x: Float, y: Float, compact: Boolean = false) {
@@ -402,9 +456,21 @@ init {
     fun updateNavLayout(layout: NavLayout) {
         navLayout = layout
         settings.set("navigation.layout", layout.name.lowercase())
-        // Keep the settings-page bubble toggle in sync with the active mode.
-        settings.set("launcher.enabled", layout == NavLayout.Bubble)
+        // Keep the settings-page floating toggle in sync with the active mode.
+        settings.set("launcher.enabled", layout == NavLayout.Floating)
         activityLog.record(ActivityCategory.System, "Navigation mode: ${layout.label}")
+    }
+
+    /** Switch the sidebar between Expanded and Compact (persisted). */
+    fun updateNavExpansion(expansion: NavExpansion) {
+        navExpansion = expansion
+        settings.set("navigation.expansion", expansion.name.lowercase())
+    }
+
+    /** Remember the launcher's active snap point (persisted). */
+    fun updateLauncherSnapPoint(snap: LauncherSnapPoint) {
+        launcherSnapPoint = snap
+        settings.set("launcher.snap-point", snap.name.lowercase())
     }
 
     /** Compact-window edge — coerced to Top or Bottom (desktop edges never leak in). */
@@ -414,13 +480,9 @@ init {
         settings.set("navigation.compact-position", safe.name.lowercase())
     }
 
-    /** Cycle the dock through Expanded → Compact → Bubble (bound to Ctrl+Shift+N). */
+    /** Toggle between Sidebar and Floating (bound to Ctrl+Shift+N). */
     fun cycleNavLayout() {
-        val next = when (navLayout) {
-            NavLayout.Expanded -> NavLayout.Compact
-            NavLayout.Compact -> NavLayout.Bubble
-            NavLayout.Bubble -> NavLayout.Expanded
-        }
+        val next = if (navLayout == NavLayout.Sidebar) NavLayout.Floating else NavLayout.Sidebar
         updateNavLayout(next)
     }
 
@@ -440,8 +502,8 @@ init {
             navLayoutFromStored(stored)?.let { return it }
         }
         return when (settings.getString("navigation.mode", "traditional")?.lowercase()) {
-            "floating", "both", "hidden" -> NavLayout.Bubble
-            else -> NavLayout.Expanded
+            "floating", "both", "hidden" -> NavLayout.Floating
+            else -> NavLayout.Sidebar
         }
     }
 
@@ -646,6 +708,8 @@ init {
                 source = mode?.name?.lowercase() ?: "review"
             )
         )
+        persistStatistics()
+        if (mode == null) persistCards()
 
         answerRevealed = false
         if (session.isFinished) endReview()
@@ -669,7 +733,10 @@ init {
                 activityLog.record(ActivityCategory.Review, "Suspended ${card.character} (${mode.label})")
             } else {
                 val idx = cards.indexOfFirst { it.id == card.id }
-                if (idx >= 0) cards[idx] = updated
+                if (idx >= 0) {
+                    cards[idx] = updated
+                    persistCards()
+                }
                 activityLog.record(ActivityCategory.Review, "Suspended ${card.character}")
             }
         }
@@ -715,7 +782,10 @@ init {
                 activityLog.record(ActivityCategory.Review, "Forgot ${entry.card.character} (${mode.label})")
             } else {
                 val idx = cards.indexOfFirst { it.id == entry.card.id }
-                if (idx >= 0) cards[idx] = updated
+                if (idx >= 0) {
+                    cards[idx] = updated
+                    persistCards()
+                }
                 activityLog.record(ActivityCategory.Review, "Forgot ${entry.card.character}")
             }
             session.removeCard(entry.card.id)
@@ -738,6 +808,7 @@ init {
                         dueAt = Clock.System.now().minus(-days.toLong(), DateTimeUnit.DAY, TimeZone.currentSystemDefault()),
                         intervalDays = days.toDouble()
                     )
+                    persistCards()
                 }
             }
         }
@@ -767,7 +838,13 @@ init {
         answerRevealed = false
         libraryActiveDeck = null
         libraryActiveMode = null
-        toastHost.show("Session complete — $rated cards rated", kind = ToastKind.Success)
+        // Reward the finish: a success toast summarizing the session, with a
+        // special line for a perfect run.
+        toastHost.show(
+            completionToastMessage(rated, correct, "cards", "Session complete"),
+            kind = ToastKind.Success,
+            durationMs = 4200
+        )
         currentView = WorkspaceView.Dashboard
     }
 
@@ -798,6 +875,7 @@ init {
         } else {
             cards.add(0, card)
         }
+        persistCards()
         activityLog.record(ActivityCategory.Study, "Edited card \"${card.character}\"")
         toastHost.show("Card saved", kind = ToastKind.Success)
         editingCard = null
@@ -871,6 +949,7 @@ init {
             )
         )
         activityLog.record(ActivityCategory.Review, "Writing: ${card.character} — ${rating.displayName}")
+        if (mode == null) persistCards()
 
         writingRevealed = false
         if (session.isFinished) endWriting()
@@ -897,7 +976,13 @@ init {
         writingRevealed = false
         libraryActiveDeck = null
         libraryActiveMode = null
-        toastHost.show("Writing practice done — $rated kanji practiced", kind = ToastKind.Success)
+        // Same accuracy-aware completion toast as review sessions, so both
+        // finish flows celebrate identically.
+        toastHost.show(
+            completionToastMessage(rated, correct, "kanji", "Writing practice done"),
+            kind = ToastKind.Success,
+            durationMs = 4200
+        )
         currentView = WorkspaceView.Dashboard
     }
 
@@ -969,6 +1054,17 @@ init {
                 )
             )
         }
+        persistStatistics()
+    }
+
+    /** Push the in-memory review log + daily summaries to disk. */
+    private fun persistStatistics() {
+        library.saveStatistics(reviewLog.toList(), summaries.toList())
+    }
+
+    /** Push the in-memory card pool to disk. */
+    private fun persistCards() {
+        library.saveCards(cards.toList())
     }
 
     // ---------------------------------------------------------------
@@ -1026,6 +1122,7 @@ init {
         } else {
             cards.add(0, card)
         }
+        persistCards()
         activityLog.record(ActivityCategory.Study, "Added card \"${card.character}\"")
         return card
     }
@@ -1035,12 +1132,36 @@ init {
         cards.removeAll { it.id == id }
         if (selectedCard?.id == id) selectedCard = null
         selectedCardIds.remove(id)
+        persistCards()
         activityLog.record(ActivityCategory.Study, "Deleted card \"${card?.character ?: id}\"")
     }
 
     fun updateCard(card: DesktopCard) {
         val idx = cards.indexOfFirst { it.id == card.id }
-        if (idx >= 0) cards[idx] = card
+        if (idx >= 0) {
+            cards[idx] = card
+            persistCards()
+        }
+    }
+
+    /**
+     * Bulk-import cards (used by the AnkiConnect importer). New cards are
+     * added at the front; updated cards replace their existing entry. The
+     * pool is persisted exactly once so large imports don't rewrite the
+     * cards file per card.
+     */
+    fun importCards(newCards: List<DesktopCard>, updatedCards: List<DesktopCard>) {
+        val additions = newCards.filter { new -> cards.none { it.id == new.id } }
+        if (additions.isNotEmpty()) {
+            cards.addAll(0, additions)
+        }
+        updatedCards.forEach { card ->
+            val idx = cards.indexOfFirst { it.id == card.id }
+            if (idx >= 0) cards[idx] = card
+        }
+        if (additions.isNotEmpty() || updatedCards.isNotEmpty()) {
+            persistCards()
+        }
     }
 
     // ---------------------------------------------------------------
@@ -1071,6 +1192,7 @@ init {
         val before = cards.size
         val stress = buildStressDataset(count)
         cards.addAll(stress)
+        persistCards()
         toastHost.show("Added $count synthetic cards ($before → ${cards.size})", kind = ToastKind.Success)
         activityLog.record(ActivityCategory.Study, "Loaded stress dataset ($count cards)")
     }
@@ -1079,7 +1201,9 @@ init {
     // Demo seeding
     // ---------------------------------------------------------------
     fun seedDemoData() {
-        if (cards.isNotEmpty()) return
+        // Never reseed over a real pool: demo data is only for a true first
+        // run. Imported / edited / reviewed cards must survive every launch.
+        if (cards.isNotEmpty() || library.hasPersistedCards()) return
         val demo = buildDemoCards()
         cards.addAll(demo)
         cards.addAll(buildDemoContentCards())
@@ -1088,6 +1212,10 @@ init {
         seedActivity()
         seedDictionary()
         seedLibrary()
+        // Persist the seeded stats so they survive restarts instead of being
+        // regenerated on every launch until the first real review.
+        persistStatistics()
+        persistCards()
     }
 
     /** Seed the library: per-mode progress for every card + a couple of recent searches. */
@@ -1198,11 +1326,13 @@ init {
     }
 }
 
-/** Maps a stored navigation-mode string to the current model, migrating legacy values. */
+/** Maps a stored navigation-mode string to the two-mode model, migrating legacy values. */
 private fun navLayoutFromStored(value: String?): NavLayout? = when (value?.lowercase()) {
-    "expanded" -> NavLayout.Expanded
-    "compact" -> NavLayout.Compact
-    "bubble", "hidden", "floating", "both" -> NavLayout.Bubble
+    "sidebar" -> NavLayout.Sidebar
+    "floating" -> NavLayout.Floating
+    // Legacy sidebar docks map onto the sidebar with their own expansion state.
+    "expanded", "compact" -> NavLayout.Sidebar
+    "bubble", "hidden", "both" -> NavLayout.Floating
     else -> null
 }
 
@@ -1211,6 +1341,21 @@ private data class DemoSeedRef(val character: String, val cardId: String)
 
 private fun demoKanji(): List<DemoSeedRef> =
     ua.syt0r.kanji.desktop.data.demoKanji.map { DemoSeedRef(it.character, "kanji-${it.character.hashCode().toString(16)}") }
+
+/** Builds the accuracy-aware completion toast text shared by review and writing sessions. */
+private fun completionToastMessage(
+    rated: Int,
+    correct: Int,
+    subject: String,
+    base: String
+): String {
+    val accuracyPct = if (rated == 0) 100 else (correct * 100 / rated)
+    return when {
+        rated == 0 -> base
+        accuracyPct == 100 -> "Perfect session — $rated $subject, 100% accuracy"
+        else -> "$base — $rated $subject, $accuracyPct% accuracy"
+    }
+}
 
 /** Result of a single rating inside a live review session. */
 data class ReviewResult(

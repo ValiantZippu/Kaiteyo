@@ -44,6 +44,8 @@ import kotlin.math.roundToInt
 @Composable
 fun CardBrowserFullScreen(
     cards: List<KaiteyoCard>,
+    presetCardIds: Set<String> = emptySet(),
+    presetLabel: String? = null,
     onFlagCard: (String, CardFlagType) -> Unit = { _, _ -> },
     onStatusChange: (String, CardStatus) -> Unit = { _, _ -> },
     onUpdateCard: (KaiteyoCard) -> Unit = {},
@@ -65,12 +67,19 @@ fun CardBrowserFullScreen(
     var statusFilter by remember { mutableStateOf<CardStatus?>(null) }
     var deckFilter by remember { mutableStateOf<String?>(null) }
     var tagFilter by remember { mutableStateOf<String?>(null) }
+    // Optional day-filter preset: landing view for "cards practiced on <day>".
+    var dayCardIds by remember { mutableStateOf(presetCardIds) }
     var showCardDetail by remember { mutableStateOf<KaiteyoCard?>(null) }
     var visibleColumns by remember { mutableStateOf(columns.filter { it.isVisible }.map { it.id }.toSet()) }
 
     // ── Filtered & Sorted Cards ──
-    val processedCards = remember(cards, searchQuery, flagFilter, statusFilter, deckFilter, tagFilter, sortColumn, sortAscending) {
+    val processedCards = remember(cards, searchQuery, flagFilter, statusFilter, deckFilter, tagFilter, dayCardIds, sortColumn, sortAscending) {
         var result = cards
+
+        // Day preset filter (cards practiced on a specific day)
+        if (dayCardIds.isNotEmpty()) {
+            result = result.filter { it.id in dayCardIds }
+        }
 
         // Text search
         if (searchQuery.isNotBlank()) {
@@ -136,7 +145,7 @@ fun CardBrowserFullScreen(
                     IconButton(onClick = { showColumnPicker = true }) { Icon(Icons.Default.ViewColumn, "Columns") }
                     IconButton(onClick = { showFilterPanel = !showFilterPanel }) {
                         Icon(Icons.Default.FilterList, "Filters",
-                            tint = if (flagFilter != null || statusFilter != null || deckFilter != null || tagFilter != null)
+                            tint = if (flagFilter != null || statusFilter != null || deckFilter != null || tagFilter != null || dayCardIds.isNotEmpty())
                                 accent.primary else surfaceColors.textMuted)
                     }
                     if (isSelectionMode) {
@@ -175,6 +184,8 @@ fun CardBrowserFullScreen(
                 statusFilter = statusFilter,
                 deckFilter = deckFilter,
                 tagFilter = tagFilter,
+                dayFilterLabel = if (dayCardIds.isNotEmpty()) presetLabel else null,
+                onClearDayFilter = { dayCardIds = emptySet() },
                 onFlagFilterChange = { flagFilter = it },
                 onStatusFilterChange = { statusFilter = it },
                 onDeckFilterChange = { deckFilter = it },
@@ -182,6 +193,7 @@ fun CardBrowserFullScreen(
                 onClearFilters = {
                     flagFilter = null; statusFilter = null
                     deckFilter = null; tagFilter = null
+                    dayCardIds = emptySet()
                     searchQuery = ""
                 },
                 surfaceColors = surfaceColors,
@@ -233,8 +245,23 @@ fun CardBrowserFullScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.Search, null, Modifier.size(48.dp), tint = surfaceColors.textMuted)
                         Spacer(Modifier.height(8.dp))
-                        Text(if (searchQuery.isNotBlank()) "No cards match your search" else "No cards to display",
-                            color = surfaceColors.textMuted)
+                        Text(
+                            when {
+                                dayCardIds.isNotEmpty() && searchQuery.isNotBlank() ->
+                                    "No cards from ${presetLabel ?: "the filtered set"} match your search"
+                                dayCardIds.isNotEmpty() ->
+                                    "No cards practiced on this day — the day filter is still applied"
+                                searchQuery.isNotBlank() -> "No cards match your search"
+                                else -> "No cards to display"
+                            },
+                            color = surfaceColors.textMuted
+                        )
+                        if (dayCardIds.isNotEmpty() && searchQuery.isBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            TextButton(onClick = { dayCardIds = emptySet() }) {
+                                Text("Show all cards", fontSize = 12.sp, color = accent.primary)
+                            }
+                        }
                     }
                 }
             } else {
@@ -352,6 +379,8 @@ private fun BrowserSearchBar(
     statusFilter: CardStatus?,
     deckFilter: String?,
     tagFilter: String?,
+    dayFilterLabel: String?,
+    onClearDayFilter: () -> Unit,
     onFlagFilterChange: (CardFlagType?) -> Unit,
     onStatusFilterChange: (CardStatus?) -> Unit,
     onDeckFilterChange: (String?) -> Unit,
@@ -360,7 +389,7 @@ private fun BrowserSearchBar(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
-    val hasFilters = flagFilter != null || statusFilter != null || deckFilter != null || tagFilter != null || query.isNotBlank()
+    val hasFilters = flagFilter != null || statusFilter != null || deckFilter != null || tagFilter != null || dayFilterLabel != null || query.isNotBlank()
     var showSearchTips by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -400,6 +429,11 @@ private fun BrowserSearchBar(
         if (hasFilters) {
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                if (dayFilterLabel != null) {
+                    AssistChip(onClick = onClearDayFilter, label = { Text("📅 $dayFilterLabel", fontSize = 10.sp, maxLines = 1) },
+                        trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(12.dp)) },
+                        modifier = Modifier.height(24.dp), shape = RoundedCornerShape(12.dp))
+                }
                 if (query.isNotBlank()) {
                     AssistChip(onClick = { onQueryChange("") }, label = { Text("\"$query\"", fontSize = 10.sp, maxLines = 1) },
                         trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(12.dp)) },

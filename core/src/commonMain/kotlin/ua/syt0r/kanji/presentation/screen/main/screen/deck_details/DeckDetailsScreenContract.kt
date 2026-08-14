@@ -17,6 +17,7 @@ interface DeckDetailsScreenContract {
         val state: StateFlow<ScreenState>
 
         fun loadData(configuration: DeckDetailsScreenConfiguration)
+        fun retryLoad()
 
         fun getPracticeConfiguration(group: DeckDetailsListItem.Group): MainDestination.LetterPractice
         fun getMultiselectPracticeConfiguration(): MainDestination
@@ -26,6 +27,10 @@ interface DeckDetailsScreenContract {
     sealed interface ScreenState {
 
         object Loading : ScreenState
+
+        data class Error(
+            val message: String? = null
+        ) : ScreenState
 
         sealed interface Loaded : ScreenState {
 

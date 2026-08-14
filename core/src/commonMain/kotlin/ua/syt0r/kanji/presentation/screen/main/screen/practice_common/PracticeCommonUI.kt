@@ -193,28 +193,26 @@ fun PracticeProgressCounter(pending: Int, repeat: Int, completed: Int) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ToolbarCountItem(count: Int, color: Color) {
-    CompositionLocalProvider(
-        LocalRippleConfiguration provides RippleConfiguration(color)
+    Row(
+        modifier = Modifier.padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        TextButton(onClick = {}) {
-            Box(
-                modifier = Modifier
-                    .alignBy { it.measuredHeight }
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = count.toString(),
-                color = color,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.alignByBaseline()
-            )
-        }
+        Box(
+            modifier = Modifier
+                .alignBy { it.measuredHeight }
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = count.toString(),
+            color = color,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.alignByBaseline()
+        )
     }
 }
 

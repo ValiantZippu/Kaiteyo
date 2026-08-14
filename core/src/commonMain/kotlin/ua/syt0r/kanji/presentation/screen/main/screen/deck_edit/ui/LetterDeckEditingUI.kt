@@ -69,6 +69,7 @@ fun LetterDeckEditingUI(
     submitSearch: (String) -> Unit,
     onItemClick: (DeckEditListItem) -> Unit,
     toggleRemoval: (DeckEditListItem) -> Unit,
+    onResetSrs: (DeckEditListItem) -> Unit,
 ) {
 
     val deckEditingMode = rememberSaveable { mutableStateOf(LetterDeckEditingMode.Search) }
@@ -90,10 +91,15 @@ fun LetterDeckEditingUI(
 
                 DeckEditingModeSelector(
                     selectedMode = deckEditingMode,
-                    availableOptions = listOf(
-                        LetterDeckEditingMode.Search,
-                        LetterDeckEditingMode.Removal
-                    )
+                    availableOptions = buildList {
+                        add(LetterDeckEditingMode.Search)
+                        add(LetterDeckEditingMode.Removal)
+                        // Reset SRS only makes sense for decks that already have
+                        // study history (existing decks, not freshly created ones).
+                        if (screenState.isArchiveEnabled) {
+                            add(LetterDeckEditingMode.ResetSrs)
+                        }
+                    }
                 )
 
                 AnimatedContent(
@@ -132,7 +138,7 @@ fun LetterDeckEditingUI(
                         when (deckEditingMode.value) {
                             LetterDeckEditingMode.Search -> onItemClick(it)
                             LetterDeckEditingMode.Removal -> toggleRemoval(it)
-                            LetterDeckEditingMode.ResetSrs -> { /* TODO: implement SRS reset */ }
+                            LetterDeckEditingMode.ResetSrs -> onResetSrs(it)
                         }
                     }
                 )

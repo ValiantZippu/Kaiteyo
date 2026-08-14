@@ -1,5 +1,8 @@
 package ua.syt0r.kanji.desktop.ui.review
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +43,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,7 +86,15 @@ import ua.syt0r.kanji.desktop.engine.srs.intervalDaysToDuration
 import ua.syt0r.kanji.desktop.engine.srs.toLike
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.ReviewRating
+import kotlinx.coroutines.delay
+import ua.syt0r.kanji.desktop.designsystem.errorColor
+import ua.syt0r.kanji.desktop.designsystem.infoColor
+import ua.syt0r.kanji.desktop.designsystem.successColor
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.model.StudyMode
+import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
+import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
+import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 
 // ============================================
 // REVIEW
@@ -237,6 +261,12 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
 
     val revealed = state.answerRevealed
     val stats = session.sessionStats()
+
+    // OS key auto-repeat fires repeated KeyDown events while a key is held;
+    // ignore presses of the same key within a short window so holding "1"
+    // can't grade through the whole queue. Distinct keys are always allowed.
+    var lastShortcutKey by remember { mutableStateOf(Key.Unknown) }
+    var lastShortcutTime by remember { mutableStateOf(0L) }
     val progress = if (session.total == 0) 0f else session.currentIndex.toFloat() / session.total
 
     // Mode-aware presentation: each study lane asks a different question.
@@ -265,7 +295,28 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
         else -> "Show Answer"
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                val now = System.currentTimeMillis()
+                val isAutoRepeat = event.key == lastShortcutKey && now - lastShortcutTime < 200L
+                lastShortcutKey = event.key
+                lastShortcutTime = now
+                !isAutoRepeat && event.handleReviewShortcut(
+                    revealed = state.answerRevealed,
+                    dialogOpen = rescheduleDialog,
+                    canUndo = session.currentIndex > 0,
+                    onReveal = { state.answerRevealed = true },
+                    onRate = { state.rateCurrent(it) },
+                    onBury = { state.buryCurrent() },
+                    onSuspend = { state.suspendCurrent() },
+                    onSkip = { state.skipCurrent() },
+                    onUndo = { state.undoLast() },
+                    onRetry = { state.retryCurrent() }
+                )
+            }
+    ) {
         // Progress header
         Row(
             modifier = Modifier
@@ -302,14 +353,17 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
             ) {
-                // Front of the card — varies by study mode
-                Text(
-                    text = frontText,
-                    color = sc.textPrimary,
-                    fontSize = frontSize,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
+                // Front of the card — varies by study mode. A one-shot shimmer
+                // sweeps across it each time a graded card is replaced.
+                CardFrontShimmer(cardId = card.id) {
+                    Text(
+                        text = frontText,
+                        color = sc.textPrimary,
+                        fontSize = frontSize,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 if (frontSubtitle != null) {
                     Text(
                         text = frontSubtitle,
@@ -404,6 +458,51 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
     }
 }
 
+/**
+ * One-shot shimmer sweep across the card front, replayed each time a new
+ * card appears after grading. A soft accent highlight glides left → right
+ * over the hero text; skipped under reduced motion / instant speed.
+ */
+@Composable
+private fun CardFrontShimmer(
+    cardId: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val config = LocalAnimationConfig.current
+    // Fresh animation per card — the sweep plays exactly once.
+    val sweep = remember(cardId) { Animatable(0f) }
+    LaunchedEffect(cardId) {
+        if (config.reducedMotion || config.speed == AnimationSpeed.Instant) {
+            sweep.snapTo(1f)
+        } else {
+            sweep.animateTo(1f, tween(tweenDuration(config, 520), easing = LinearEasing))
+        }
+    }
+    val highlight = accent().primary
+
+    Box(
+        modifier = modifier.drawWithContent {
+            drawContent()
+            val band = size.width * 0.40f
+            val center = -band + (size.width + band * 2) * sweep.value
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        highlight.copy(alpha = 0.16f),
+                        Color.Transparent
+                    ),
+                    startX = center - band,
+                    endX = center + band
+                )
+            )
+        }
+    ) {
+        content()
+    }
+}
+
 @Composable
 private fun RevealedContent(state: AppState, card: DesktopCard, mode: StudyMode?) {
     val sc = surfaceColors()
@@ -491,6 +590,20 @@ private fun GradingRow(state: AppState, card: DesktopCard) {
         )
     }
 
+    // The clicked rating pulses with its color for a beat before the card
+    // advances, so the grade choice lands with visible feedback. Reset per
+    // card so a new card always starts with a clean grading row. One shared
+    // duration drives both the delay and the ripple so the pulse always
+    // completes before the card advances.
+    val pulseDurationMs = tweenDuration(LocalAnimationConfig.current, 300)
+    var pulsing by remember(card.id) { mutableStateOf<ReviewRating?>(null) }
+    LaunchedEffect(pulsing) {
+        val rating = pulsing ?: return@LaunchedEffect
+        delay(pulseDurationMs.toLong())
+        pulsing = null
+        state.rateCurrent(rating)
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
@@ -502,18 +615,141 @@ private fun GradingRow(state: AppState, card: DesktopCard) {
                 duration.inWholeHours >= 1 -> "${duration.inWholeHours}h"
                 else -> "${duration.inWholeMinutes}m"
             }
-            DsButton(
-                text = "${rating.displayName} · $label",
-                onClick = { state.rateCurrent(rating) },
-                modifier = Modifier.weight(1f),
-                kind = when (rating) {
-                    ReviewRating.Again -> DsButtonKind.Danger
-                    ReviewRating.Hard -> DsButtonKind.Secondary
-                    ReviewRating.Good -> DsButtonKind.Primary
-                    ReviewRating.Easy -> DsButtonKind.AccentTint
-                }
-            )
+            Box(Modifier.weight(1f)) {
+                DsButton(
+                    text = "${rating.displayName} · $label",
+                    onClick = { if (pulsing == null) pulsing = rating },
+                    modifier = Modifier.fillMaxWidth(),
+                    kind = when (rating) {
+                        ReviewRating.Again -> DsButtonKind.Danger
+                        ReviewRating.Hard -> DsButtonKind.Secondary
+                        ReviewRating.Good -> DsButtonKind.Primary
+                        ReviewRating.Easy -> DsButtonKind.AccentTint
+                    }
+                )
+                RatingPulse(
+                    pulsing = pulsing == rating,
+                    color = when (rating) {
+                        ReviewRating.Again -> errorColor()
+                        ReviewRating.Hard -> warningColor()
+                        ReviewRating.Good -> successColor()
+                        ReviewRating.Easy -> infoColor()
+                    },
+                    durationMs = pulseDurationMs,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
         }
+    }
+}
+
+/**
+ * Contained ripple pulse that plays on the pressed rating button, in that
+ * grade's color, for a beat before the card advances. The ripple grows as
+ * an oval from the button's center to its full bounds — it never spills
+ * over neighboring buttons. Skipped under reduced motion / instant speed.
+ */
+@Composable
+private fun RatingPulse(
+    pulsing: Boolean,
+    color: Color,
+    durationMs: Int,
+    modifier: Modifier = Modifier
+) {
+    val config = LocalAnimationConfig.current
+    val pulse = remember { Animatable(0f) }
+    LaunchedEffect(pulsing) {
+        if (pulsing && !config.reducedMotion && config.speed != AnimationSpeed.Instant) {
+            pulse.snapTo(0f)
+            pulse.animateTo(1f, tween(durationMs, easing = LinearEasing))
+        } else {
+            pulse.snapTo(1f)
+        }
+    }
+    Box(
+        modifier = modifier.drawWithContent {
+            drawContent()
+            val progress = pulse.value
+            val alpha = (1f - progress) * 0.4f
+            if (alpha > 0.01f) {
+                val w = size.width
+                val h = size.height
+                val inset = 2.dp.toPx()
+                val ringW = (w - inset * 2) * (0.25f + 0.75f * progress)
+                val ringH = (h - inset * 2) * (0.35f + 0.65f * progress)
+                drawOval(
+                    color = color.copy(alpha = alpha),
+                    topLeft = Offset((w - ringW) / 2f, (h - ringH) / 2f),
+                    size = Size(ringW, ringH),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+            }
+        }
+    )
+}
+
+/**
+ * Keyboard shortcuts advertised in the review footer:
+ * Space reveal · 1-4 grade · B bury · S suspend · R retry ·
+ * Ctrl+Enter skip · Ctrl+Z undo. Returns true when the key was consumed.
+ * Keys are ignored while the reschedule dialog is open so typing in its
+ * numeric field is never intercepted.
+ */
+private fun KeyEvent.handleReviewShortcut(
+    revealed: Boolean,
+    dialogOpen: Boolean,
+    canUndo: Boolean,
+    onReveal: () -> Unit,
+    onRate: (ReviewRating) -> Unit,
+    onBury: () -> Unit,
+    onSuspend: () -> Unit,
+    onSkip: () -> Unit,
+    onUndo: () -> Unit,
+    onRetry: () -> Unit
+): Boolean {
+    if (type != KeyEventType.KeyDown || dialogOpen) return false
+    return when {
+        key == Key.Spacebar && !revealed -> {
+            onReveal()
+            true
+        }
+        revealed && key == Key.One -> {
+            onRate(ReviewRating.Again)
+            true
+        }
+        revealed && key == Key.Two -> {
+            onRate(ReviewRating.Hard)
+            true
+        }
+        revealed && key == Key.Three -> {
+            onRate(ReviewRating.Good)
+            true
+        }
+        revealed && key == Key.Four -> {
+            onRate(ReviewRating.Easy)
+            true
+        }
+        key == Key.B -> {
+            onBury()
+            true
+        }
+        key == Key.S -> {
+            onSuspend()
+            true
+        }
+        key == Key.R -> {
+            onRetry()
+            true
+        }
+        isCtrlPressed && key == Key.Enter -> {
+            onSkip()
+            true
+        }
+        isCtrlPressed && key == Key.Z && canUndo -> {
+            onUndo()
+            true
+        }
+        else -> false
     }
 }
 

@@ -101,6 +101,10 @@ class DictionaryRepository(private val dataDirectory: File) {
 
     fun totalEntries(): Long = entriesByDict.values.sumOf { it.size.toLong() }
 
+    /** Every entry across installed dictionaries (used by the segmenter). */
+    fun allEntries(): List<DictionaryEntry> =
+        installed.flatMap { entriesFor(it.id) }
+
     // ------------------------------------------------------------
     // Install / manage
     // ------------------------------------------------------------

@@ -11,6 +11,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.DeckEditScreenCo
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.DeleteDeckUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.LoadDeckEditLetterDataUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.LoadDeckEditVocabDataUseCase
+import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.ResetLetterSrsUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.SaveDeckUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.SearchResult
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.use_case.SearchValidCharactersUseCase
@@ -23,6 +24,7 @@ class DeckEditViewModel(
     private val searchValidCharactersUseCase: SearchValidCharactersUseCase,
     private val saveDeckUseCase: SaveDeckUseCase,
     private val deleteDeckUseCase: DeleteDeckUseCase,
+    private val resetLetterSrsUseCase: ResetLetterSrsUseCase,
     private val analyticsManager: AnalyticsManager
 ) : DeckEditScreenContract.ViewModel {
 
@@ -162,6 +164,13 @@ class DeckEditViewModel(
             DeckEditItemAction.Nothing -> DeckEditItemAction.Remove
         }
         wasDeckEdited.value = true
+    }
+
+    override fun resetSrs(item: DeckEditListItem) {
+        val letterItem = item as? LetterDeckEditListItem ?: return
+        viewModelScope.launch {
+            resetLetterSrsUseCase(letterItem)
+        }
     }
 
     override fun saveDeck() {

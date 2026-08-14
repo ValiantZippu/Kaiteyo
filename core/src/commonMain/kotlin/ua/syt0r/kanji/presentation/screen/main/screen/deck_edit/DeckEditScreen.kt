@@ -47,6 +47,7 @@ fun DeckEditScreen(
             mainNavigationState.navigate(MainDestination.Info(screenData))
         },
         toggleRemoval = { viewModel.toggleRemoval(it) },
+        resetSrs = { viewModel.resetSrs(it) },
         editItem = {
             val destination = MainDestination.VocabCard(
                 screenMode = VocabCardScreenMode.Edit(it.index),

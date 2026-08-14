@@ -183,8 +183,6 @@ class GitHubCloudProvider(
 }
 
 // ============================================
-// (WebDAV Cloud Provider placeholder - TBD)
-//
 // NOTE: the previous DefaultSyncEncryption implementation used a fixed
 // XOR mask (0xAA) and a weak 31-multiplier checksum. Neither is real
 // cryptography, so the implementation was removed rather than shipped as

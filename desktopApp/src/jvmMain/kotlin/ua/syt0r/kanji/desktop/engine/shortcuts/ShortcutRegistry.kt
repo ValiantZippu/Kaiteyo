@@ -72,7 +72,7 @@ data class ShortcutDef(
 }
 
 @Serializable
-enum class ShortcutCategory { Review, Browser, Navigation, App, Search, Statistics }
+enum class ShortcutCategory { Review, Browser, Navigation, App, Search, Statistics, Media }
 
 /** Registry with rebinding, reset, conflict detection and export. */
 class ShortcutRegistry(initial: List<ShortcutDef> = defaultShortcuts()) {
@@ -187,5 +187,12 @@ fun defaultShortcuts(): List<ShortcutDef> = listOf(
     ShortcutDef("open-themes", "Theme Studio", ShortcutCategory.Navigation, KeyChord("t", ctrl = true), "Open theme studio"),
     ShortcutDef("open-history", "Activity Log", ShortcutCategory.Navigation, KeyChord("y", ctrl = true), "Open activity log"),
     ShortcutDef("open-transfer", "Import / Export", ShortcutCategory.Navigation, KeyChord("i", ctrl = true), "Open import/export"),
-    ShortcutDef("toggle-nav", "Toggle Navigation", ShortcutCategory.App, KeyChord("n", ctrl = true, shift = true), "Cycle navigation through expanded / compact / bubble modes")
+    ShortcutDef("toggle-nav", "Toggle Navigation", ShortcutCategory.App, KeyChord("n", ctrl = true, shift = true), "Cycle navigation through expanded / compact / bubble modes"),
+
+    // ---- Media workspace ------------------------------------------
+    // Transport hotkeys live in the media workspace's own configurable
+    // catalog (Media → Settings → Keyboard shortcuts) so they are rebindable
+    // without colliding with review/browser keys. Only the navigation chord
+    // to open the workspace belongs to the global registry.
+    ShortcutDef("open-media", "Media", ShortcutCategory.Navigation, KeyChord("v", alt = true), "Open the media workspace")
 )

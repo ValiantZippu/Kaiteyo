@@ -19,11 +19,11 @@ import ua.syt0r.kanji.presentation.screen.main.screen.account.AccountScreenContr
 import ua.syt0r.kanji.presentation.screen.main.screen.account.GooglePlayAccountScreenContent
 import ua.syt0r.kanji.presentation.screen.main.screen.account.GooglePlayAccountScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.account.GooglePlayAccountScreenViewModel
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.AndroidReminderSettingListItem
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.AndroidReminderSettingsCategory
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.settingItemsQualifier
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.LetterPracticeScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.sponsor.SponsorScreenContract
-import ua.syt0r.kanji.presentation.screen.settings.GooglePlayAnalyticsSettingListItem
+import ua.syt0r.kanji.presentation.screen.settings.GooglePlayAnalyticsSettingsCategory
 import ua.syt0r.kanji.presentation.screen.sponsor.GooglePlaySponsorScreenContent
 import ua.syt0r.kanji.presentation.screen.sponsor.GooglePlaySponsorScreenContract
 import ua.syt0r.kanji.presentation.screen.sponsor.GooglePlaySponsorViewModel
@@ -58,7 +58,7 @@ val flavorModule = module {
     single<LetterPracticeScreenContract.Content> { GooglePlayLetterPracticeScreenContent }
 
     factory {
-        GooglePlayAnalyticsSettingListItem(
+        GooglePlayAnalyticsSettingsCategory(
             appPreferences = get(),
             analyticsManager = get()
         )
@@ -66,8 +66,8 @@ val flavorModule = module {
 
     factory(settingItemsQualifier) {
         listOf(
-            get<GooglePlayAnalyticsSettingListItem>(),
-            get<AndroidReminderSettingListItem>()
+            get<GooglePlayAnalyticsSettingsCategory>(),
+            get<AndroidReminderSettingsCategory>()
         )
     }
 

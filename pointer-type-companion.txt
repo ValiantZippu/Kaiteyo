@@ -1,0 +1,9 @@
+Compiled from "PointerEvent.kt"
+public final class androidx.compose.ui.input.pointer.PointerType$Companion {
+  public final int getUnknown-T8wyACA();
+  public final int getTouch-T8wyACA();
+  public final int getMouse-T8wyACA();
+  public final int getStylus-T8wyACA();
+  public final int getEraser-T8wyACA();
+  public androidx.compose.ui.input.pointer.PointerType$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
+}

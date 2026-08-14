@@ -31,10 +31,11 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(FlowPreview::class)
 class LettersDashboardViewModel(
     private val viewModelScope: CoroutineScope,
-    loadDataUseCase: LettersDashboardScreenContract.LoadDataUseCase,
+    private val loadDataUseCase: LettersDashboardScreenContract.LoadDataUseCase,
     private val updateSortUseCase: LettersDashboardScreenContract.UpdateSortUseCase,
     private val appPreferences: PreferencesContract.AppPreferences,
     private val mergeDecksUseCase: LettersDashboardScreenContract.MergeDecksUseCase,
+    private val updateDeckArchivedUseCase: LettersDashboardScreenContract.UpdateDeckArchivedUseCase,
     private val analyticsManager: AnalyticsManager
 ) : LettersDashboardScreenContract.ViewModel, LifecycleAwareViewModel {
 
@@ -45,16 +46,37 @@ class LettersDashboardViewModel(
 
     override val state = mutableStateOf<ScreenState>(ScreenState.Loading)
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     init {
-        loadDataUseCase.load(lifecycleState)
-            .onEach {
-                state.value = when (it) {
-                    is RefreshableData.Loaded -> {
-                        val screenData = it.value
+        subscribeToData()
+        sortRequestsChannel.consumeAsFlow()
+            // To avoid infinite loading when rapidly clicking on apply sort button
+            .debounce(1.seconds)
+            .onEach { updateSortUseCase.update(it) }
+            .launchIn(viewModelScope)
+    }
+
+    private fun subscribeToData() {
+        loadJob?.cancel()
+        loadJob = loadDataUseCase.load(lifecycleState)
+            .onEach { state.value = toScreenState(it) }
+            .launchIn(viewModelScope)
+    }
+
+    override fun retryLoad() = subscribeToData()
+
+    private suspend fun toScreenState(it: RefreshableData<LettersDashboardScreenData>): ScreenState = when (it) {
+        is RefreshableData.Loading -> ScreenState.Loading
+        is RefreshableData.Failed -> ScreenState.Error(it.error?.message)
+        is RefreshableData.Loaded -> {
+            val screenData = it.value
                         val sortByTimeEnabled = appPreferences
                             .letterDashboardSortByTime.get()
+                        val (activeItems, archivedItems) =
+                            screenData.items.partition { !it.isArchived }
                         val listState = DeckDashboardListState(
-                            items = screenData.items,
+                            items = activeItems,
                             sortByReviewTime = sortByTimeEnabled,
                             showDailyNewIndicator = screenData.dailyLimitEnabled,
                             mode = mutableStateOf(DeckDashboardListMode.Browsing)
@@ -88,22 +110,12 @@ class LettersDashboardViewModel(
 
                         ScreenState.Loaded(
                             listState = listState,
+                            archivedItems = archivedItems,
                             practiceTypeItems = practiceTypeItems,
                             selectedPracticeTypeItem = selectedItemState,
                         )
                     }
-
-                    is RefreshableData.Loading -> ScreenState.Loading
                 }
-            }
-            .launchIn(viewModelScope)
-
-        sortRequestsChannel.consumeAsFlow()
-            // To avoid infinite loading when rapidly clicking on apply sort button
-            .debounce(1.seconds)
-            .onEach { updateSortUseCase.update(it) }
-            .launchIn(viewModelScope)
-    }
 
     override fun mergeDecks(data: DecksMergeRequestData) {
         Logger.d("data[$data]")
@@ -115,6 +127,14 @@ class LettersDashboardViewModel(
         Logger.d("data[$data]")
         state.value = ScreenState.Loading
         viewModelScope.launch { sortRequestsChannel.send(data) }
+    }
+
+    override fun setDeckArchived(deckId: Long, isArchived: Boolean) {
+        Logger.d("deckId[$deckId] isArchived[$isArchived]")
+        state.value = ScreenState.Loading
+        viewModelScope.launch {
+            updateDeckArchivedUseCase(deckId, isArchived)
+        }
     }
 
 }

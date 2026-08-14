@@ -21,6 +21,9 @@ fun VocabDashboardScreen(
         screenState = viewModel.screenState.collectAsState(),
         mergeDecks = { viewModel.mergeDecks(it) },
         sortDecks = { viewModel.sortDecks(it) },
+        setDeckArchived = { deckId, isArchived ->
+            viewModel.setDeckArchived(deckId, isArchived)
+        },
         createDeck = {
             val destination = MainDestination.DeckPicker(DeckPickerScreenConfiguration.Vocab)
             mainNavigationState.navigate(destination)
@@ -39,7 +42,8 @@ fun VocabDashboardScreen(
                 practiceType = practiceType
             )
             mainNavigationState.navigate(MainDestination.VocabPractice(configuration))
-        }
+        },
+        retryLoad = { viewModel.retryLoad() }
     )
 
 }

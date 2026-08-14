@@ -27,9 +27,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ReadMore
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -47,6 +49,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -84,7 +87,10 @@ fun <T> DeckDashboardListItem(
     studyProgress: DeckStudyProgress<T>,
     onDetailsClick: () -> Unit,
     onEditClick: () -> Unit,
-    navigateToPractice: (List<T>) -> Unit
+    navigateToPractice: (List<T>) -> Unit,
+    isArchived: Boolean = false,
+    onArchiveClick: (() -> Unit)? = null,
+    onRestoreClick: (() -> Unit)? = null
 ) {
 
     var expanded by rememberSaveable(itemKey) { mutableStateOf(false) }
@@ -92,12 +98,16 @@ fun <T> DeckDashboardListItem(
     Column(
         modifier = Modifier.clip(MaterialTheme.shapes.large)
             .padding(horizontal = 20.dp)
+            .alpha(if (isArchived) 0.6f else 1f)
     ) {
 
         Row(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.large)
-                .clickable(onClick = { expanded = !expanded })
+                .clickable(
+                    enabled = !isArchived,
+                    onClick = { expanded = !expanded }
+                )
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
                 .testTag(DeckDashboardListItemHeaderButtonTestTag),
@@ -109,14 +119,19 @@ fun <T> DeckDashboardListItem(
                 title = title,
                 expanded = expanded,
                 elapsedSinceLastReview = elapsedSinceLastReview,
+                isArchived = isArchived,
                 onDetailsClick = onDetailsClick,
                 onEditClick = onEditClick,
+                onArchiveClick = onArchiveClick,
+                onRestoreClick = onRestoreClick,
                 indicatorContent = {
-                    PendingReviewsCountIndicator(
-                        showNewIndicator = showNewIndicator,
-                        new = studyProgress.dailyNew.size,
-                        due = studyProgress.dailyDue.size
-                    )
+                    if (!isArchived) {
+                        PendingReviewsCountIndicator(
+                            showNewIndicator = showNewIndicator,
+                            new = studyProgress.dailyNew.size,
+                            due = studyProgress.dailyDue.size
+                        )
+                    }
                 },
             )
         }
@@ -141,8 +156,11 @@ fun RowScope.DeckDashboardListItemHeader(
     title: String,
     expanded: Boolean,
     elapsedSinceLastReview: Duration?,
+    isArchived: Boolean,
     onDetailsClick: () -> Unit,
     onEditClick: () -> Unit,
+    onArchiveClick: (() -> Unit)?,
+    onRestoreClick: (() -> Unit)?,
     indicatorContent: @Composable RowScope.() -> Unit
 ) {
 
@@ -153,12 +171,20 @@ fun RowScope.DeckDashboardListItemHeader(
             .padding(2.dp)
             .size(20.dp)
     ) {
-        val rotation = animateFloatAsState(if (expanded) -180f else 0f)
-        Icon(
-            imageVector = Icons.Default.ExpandMore,
-            contentDescription = null,
-            modifier = Modifier.graphicsLayer { rotationZ = rotation.value }
-        )
+        if (isArchived) {
+            Icon(
+                imageVector = Icons.Default.Archive,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            val rotation = animateFloatAsState(if (expanded) -180f else 0f)
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.graphicsLayer { rotationZ = rotation.value }
+            )
+        }
     }
 
     Column(
@@ -210,6 +236,26 @@ fun RowScope.DeckDashboardListItemHeader(
                     Text(stringResource(Res.string.common_dashboard_deck_edit))
                 }
             )
+
+            if (onArchiveClick != null) {
+                AppDropdownMenuItem(
+                    onClick = onArchiveClick,
+                    content = {
+                        Icon(Icons.Default.Archive, null)
+                        Text(resolveString { commonDashboard.archiveButton })
+                    }
+                )
+            }
+
+            if (onRestoreClick != null) {
+                AppDropdownMenuItem(
+                    onClick = onRestoreClick,
+                    content = {
+                        Icon(Icons.Default.Unarchive, null)
+                        Text(resolveString { commonDashboard.restoreButton })
+                    }
+                )
+            }
 
         }
 

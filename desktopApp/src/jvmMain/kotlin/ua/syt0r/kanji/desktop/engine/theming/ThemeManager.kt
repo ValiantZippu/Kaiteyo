@@ -81,8 +81,28 @@ class ThemeManager(
         saveActive()
     }
 
-    fun updateActiveColors(transform: (ThemeColors) -> ThemeColors) =
-        updateActive { it.copy(colors = transform(it.colors)) }
+    fun updateActiveColors(transform: (ThemeColors) -> ThemeColors) = updateActive { theme ->
+        val old = theme.colors
+        val colors = transform(old)
+        // Keep the brand gradient in step with Primary / Secondary edits — unless
+        // the user has explicitly recolored a stop away from those colors, in
+        // which case their explicit stop wins.
+        var gradient = theme.gradient
+        if (gradient.enabled) {
+            val stops = gradient.stops.toMutableList()
+            if (colors.primary != old.primary && stops.isNotEmpty() && stops.first().color == old.primary) {
+                stops[0] = stops[0].copy(color = colors.primary)
+            }
+            if (colors.secondary != old.secondary && stops.size > 1 && stops.last().color == old.secondary) {
+                stops[stops.lastIndex] = stops.last().copy(color = colors.secondary)
+            }
+            if (stops != gradient.stops) gradient = gradient.copy(stops = stops)
+        }
+        theme.copy(colors = colors, gradient = gradient)
+    }
+
+    fun updateActiveGradient(transform: (ThemeGradient) -> ThemeGradient) =
+        updateActive { it.copy(gradient = transform(it.gradient)) }
 
     fun updateActiveTypography(transform: (ThemeTypography) -> ThemeTypography) =
         updateActive { it.copy(typography = transform(it.typography)) }

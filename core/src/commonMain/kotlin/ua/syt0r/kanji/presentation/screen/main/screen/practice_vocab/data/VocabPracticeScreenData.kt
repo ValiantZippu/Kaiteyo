@@ -10,6 +10,7 @@ import ua.syt0r.kanji.presentation.common.ScreenVocabPracticeType
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenData
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWriterState
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.WritingStrictness
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCard
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueueProgress
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeSummaryItem
@@ -47,7 +48,8 @@ sealed interface VocabPracticeConfiguration {
     ) : VocabPracticeConfiguration
 
     data class Writing(
-        val showKanaReading: MutableState<Boolean>
+        val showKanaReading: MutableState<Boolean>,
+        val strictness: MutableState<WritingStrictness>
     ) : VocabPracticeConfiguration
 
 }
@@ -121,5 +123,7 @@ data class VocabSummaryItem(
     val reading: FuriganaString,
     val vocabReference: InfoScreenData.Vocab,
     override val totalReviews: Deferred<Int>,
-    override val nextInterval: Duration
+    override val nextInterval: Duration,
+    val strokeAccuracyPercent: Int? = null,
+    val wrongOrderCount: Int = 0
 ) : PracticeSummaryItem

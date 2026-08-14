@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.School
@@ -57,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
+import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
@@ -72,6 +75,9 @@ import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.media.MediaCapture
+import ua.syt0r.kanji.desktop.engine.media.MediaEngine
+import ua.syt0r.kanji.desktop.engine.playback.BackendKind
 import ua.syt0r.kanji.desktop.engine.settings.SettingCategory
 import ua.syt0r.kanji.desktop.engine.settings.SettingDef
 import ua.syt0r.kanji.desktop.engine.settings.SettingType
@@ -79,6 +85,9 @@ import ua.syt0r.kanji.desktop.engine.updates.UpdateChannel
 import ua.syt0r.kanji.desktop.engine.updates.UpdateService
 import ua.syt0r.kanji.desktop.engine.updates.UpdateState
 import ua.syt0r.kanji.desktop.engine.updates.currentAppVersion
+import ua.syt0r.kanji.desktop.designsystem.errorColor
+import ua.syt0r.kanji.desktop.designsystem.successColor
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.model.ToastKind
 
 // ============================================
@@ -97,6 +106,7 @@ private val CATEGORY_ORDER = listOf(
     SettingCategory.Appearance,
     SettingCategory.Review,
     SettingCategory.Browser,
+    SettingCategory.Media,
     SettingCategory.Statistics,
     SettingCategory.History,
     SettingCategory.ImportExport,
@@ -113,6 +123,7 @@ private fun iconForCategory(category: SettingCategory): ImageVector = when (cate
     SettingCategory.Appearance -> Icons.Default.Palette
     SettingCategory.Review -> Icons.Default.School
     SettingCategory.Browser -> Icons.Default.Language
+    SettingCategory.Media -> Icons.Default.Movie
     SettingCategory.Statistics -> Icons.Default.Insights
     SettingCategory.History -> Icons.Default.History
     SettingCategory.ImportExport -> Icons.Default.FileUpload
@@ -129,6 +140,7 @@ private fun describeCategory(category: SettingCategory): String = when (category
     SettingCategory.Appearance -> "Colors, base mode and theme"
     SettingCategory.Review -> "Session behavior, limits and grading"
     SettingCategory.Browser -> "Card browsing preferences"
+    SettingCategory.Media -> "Playback backends, subtitles, mining and the media library"
     SettingCategory.Statistics -> "Dashboard range and goals"
     SettingCategory.History -> "Activity log retention"
     SettingCategory.ImportExport -> "Transfers and conflict policy"
@@ -448,6 +460,10 @@ private fun SettingsContent(
                 OnboardingLink(state)
             }
 
+            if (selected == SettingCategory.Media) {
+                MediaSettingsCard(state)
+            }
+
             if (selected == SettingCategory.Updates) {
                 UpdatesCard(state)
             }
@@ -507,6 +523,127 @@ private fun CategoryGroupCard(
                 wide = wide,
                 onChanged = onChanged
             )
+        }
+    }
+}
+
+/** Backend diagnostics + test actions for the Media settings category. */
+@Composable
+private fun MediaSettingsCard(state: AppState) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val probes = remember { state.media.probeBackends() }
+    val ffmpegAvailable = remember { MediaCapture.ffmpegAvailable }
+
+    DsCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(DsSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(ac.primary.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Movie, contentDescription = null, tint = ac.primary, modifier = Modifier.size(24.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Playback backends",
+                        color = sc.textPrimary,
+                        fontSize = DsType.BodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Kaiteyo uses VLC, mpv or the built-in audio engine to play media. Install a backend to unlock video playback inside the workspace.",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+            }
+
+            probes.forEach { probe ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = probe.kind.name,
+                            color = sc.textPrimary,
+                            fontSize = DsType.Body,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = probe.version.ifBlank { probe.message },
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            maxLines = 1
+                        )
+                    }
+                    DsBadge(
+                        text = probe.statusLabel,
+                        tint = if (probe.available) successColor() else errorColor()
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    DsButton(
+                        text = "Re-test",
+                        kind = DsButtonKind.Ghost,
+                        compact = true,
+                        onClick = {
+                            when (probe.kind) {
+                                BackendKind.Vlc -> { state.media.backends.refreshVlc() }
+                                BackendKind.Mpv -> { state.media.backends.refreshMpv() }
+                                else -> Unit
+                            }
+                            state.toastHost.show("Re-probed ${probe.kind.name}", kind = ToastKind.Info)
+                        }
+                    )
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Audio capture (ffmpeg)",
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = if (ffmpegAvailable) "Installed — video audio clips can be extracted"
+                        else "Not found — audio clips still work for WAV/AIFF sources",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+                DsBadge(text = if (ffmpegAvailable) "Installed" else "Not installed", tint = if (ffmpegAvailable) successColor() else warningColor())
+            }
+
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Media cache",
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "${MediaCapture.cacheFileCount()} files · ${MediaEngine.formatTime(MediaCapture.cacheSizeBytes() / 1000)} of screenshots and audio clips",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+                DsButton(
+                    text = "Clear cache",
+                    kind = DsButtonKind.Ghost,
+                    compact = true,
+                    onClick = {
+                        val removed = MediaCapture.clearCache()
+                        state.toastHost.show("Cleared $removed cached media files", kind = ToastKind.Info)
+                    }
+                )
+            }
         }
     }
 }

@@ -102,11 +102,13 @@ class GitHubGistSyncTransport(
         )
     }
 
-    override suspend fun testConnection(): Result<String> = runCatching {
-        val token = obtainToken()
-        val body = getText("$API_URL/user", token)
-        val login = json.parseToJsonElement(body).jsonObject["login"]?.jsonPrimitive?.content ?: "GitHub user"
-        "Connected as $login"
+    override suspend fun testConnection(): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val token = obtainToken()
+            val body = getText("$API_URL/user", token)
+            val login = json.parseToJsonElement(body).jsonObject["login"]?.jsonPrimitive?.content ?: "GitHub user"
+            "Connected as $login"
+        }
     }
 
     // ------------------------------------------------------------
@@ -127,6 +129,8 @@ class GitHubGistSyncTransport(
         }
 
         // Search the account's gists for the Kaiteyo marker.
+        // (A single 100-gist page: plenty for the typical account; a heavier
+        // gist user would simply create a second Kaiteyo gist on next sync.)
         val token = obtainToken()
         val listing = getText("$API_URL/gists?per_page=100", token)
         val foundId = runCatching {
@@ -152,7 +156,7 @@ class GitHubGistSyncTransport(
             })
         }.toString()
 
-        val created = postJson("$API_URL/gists", createBody, token)
+        val created = sendJson("POST", "$API_URL/gists", createBody, token)
         val id = json.parseToJsonElement(created).jsonObject["id"]?.jsonPrimitive?.content
             ?: error("GitHub gist creation returned no id")
         cachedGistId = id
@@ -198,7 +202,8 @@ class GitHubGistSyncTransport(
                 })
             })
         }.toString()
-        postJson("$API_URL/gists/$gistId", body, token)
+        // Editing a gist requires PATCH, not POST.
+        sendJson("PATCH", "$API_URL/gists/$gistId", body, token)
     }
 
     // ------------------------------------------------------------
@@ -230,14 +235,14 @@ class GitHubGistSyncTransport(
     }
 
     /** POST/PATCH JSON with one token-refresh retry on 401. */
-    private suspend fun postJson(url: String, body: String, token: String): String {
+    private suspend fun sendJson(method: String, url: String, body: String, token: String): String {
         var attempt = 0
         while (true) {
-            val response = send("POST", url, token, body)
+            val response = send(method, url, token, body)
             if (response.statusCode() == 401 && attempt == 0) {
                 attempt++
                 val refreshed = tokenProvider().getOrNull() ?: continue
-                val retried = send("POST", url, refreshed, body)
+                val retried = send(method, url, refreshed, body)
                 if (retried.statusCode() !in 200..299) {
                     error("GitHub request failed (HTTP ${retried.statusCode()})")
                 }

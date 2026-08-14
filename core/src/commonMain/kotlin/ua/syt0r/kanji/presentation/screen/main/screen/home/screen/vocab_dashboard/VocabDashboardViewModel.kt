@@ -27,13 +27,15 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboar
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.MergeVocabDecksUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.SubscribeOnDashboardVocabDecksUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.UpdateVocabDecksOrderUseCase
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.use_case.VocabDashboardScreenData
 import kotlin.time.Duration.Companion.seconds
 
 class VocabDashboardViewModel(
     private val viewModelScope: CoroutineScope,
-    subscribeOnDashboardVocabDecksUseCase: SubscribeOnDashboardVocabDecksUseCase,
+    private val subscribeOnDashboardVocabDecksUseCase: SubscribeOnDashboardVocabDecksUseCase,
     private val mergeVocabDecksUseCase: MergeVocabDecksUseCase,
     private val updateDecksOrderUseCase: UpdateVocabDecksOrderUseCase,
+    private val updateDeckArchivedUseCase: VocabDashboardScreenContract.UpdateDeckArchivedUseCase,
     private val preferencesRepository: PreferencesContract.AppPreferences,
     private val analyticsManager: AnalyticsManager
 ) : VocabDashboardScreenContract.ViewModel, LifecycleAwareViewModel {
@@ -46,19 +48,39 @@ class VocabDashboardViewModel(
     override val lifecycleState: MutableStateFlow<LifecycleState> =
         MutableStateFlow(LifecycleState.Hidden)
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     init {
+        subscribeToData()
+        sortRequestsChannel.consumeAsFlow()
+            // To avoid infinite loading when rapidly clicking on apply sort button
+            .debounce(1.seconds)
+            .onEach { updateDecksOrderUseCase.update(it) }
+            .launchIn(viewModelScope)
+    }
 
-        subscribeOnDashboardVocabDecksUseCase(lifecycleState)
-            .onEach { data ->
-                _screenState.value = when (data) {
-                    is RefreshableData.Loading ->
-                        ScreenState.Loading
+    private fun subscribeToData() {
+        loadJob?.cancel()
+        loadJob = subscribeOnDashboardVocabDecksUseCase(lifecycleState)
+            .onEach { _screenState.value = toScreenState(it) }
+            .launchIn(viewModelScope)
+    }
 
-                    is RefreshableData.Loaded -> {
-                        val screenData = data.value
+    override fun retryLoad() = subscribeToData()
+
+    private suspend fun toScreenState(data: RefreshableData<VocabDashboardScreenData>): ScreenState = when (data) {
+        is RefreshableData.Loading ->
+            ScreenState.Loading
+
+        is RefreshableData.Failed -> ScreenState.Error(data.error?.message)
+
+        is RefreshableData.Loaded -> {
+            val screenData = data.value
                         val sortByTimeEnabled = preferencesRepository.vocabDashboardSortByTime.get()
+                        val (activeItems, archivedItems) =
+                            screenData.decks.partition { !it.isArchived }
                         val listState = DeckDashboardListState(
-                            items = screenData.decks,
+                            items = activeItems,
                             sortByReviewTime = sortByTimeEnabled,
                             showDailyNewIndicator = screenData.dailyLimitEnabled,
                             mode = mutableStateOf(DeckDashboardListMode.Browsing)
@@ -91,21 +113,12 @@ class VocabDashboardViewModel(
 
                         ScreenState.Loaded(
                             listState = listState,
+                            archivedItems = archivedItems,
                             practiceTypeItems = practiceTypeItems,
                             selectedPracticeTypeItem = selectedItemState
                         )
                     }
                 }
-
-            }
-            .launchIn(viewModelScope)
-
-        sortRequestsChannel.consumeAsFlow()
-            // To avoid infinite loading when rapidly clicking on apply sort button
-            .debounce(1.seconds)
-            .onEach { updateDecksOrderUseCase.update(it) }
-            .launchIn(viewModelScope)
-    }
 
     override fun mergeDecks(data: DecksMergeRequestData) {
         _screenState.value = ScreenState.Loading
@@ -115,6 +128,11 @@ class VocabDashboardViewModel(
     override fun sortDecks(data: DecksSortRequestData) {
         _screenState.value = ScreenState.Loading
         viewModelScope.launch { sortRequestsChannel.send(data) }
+    }
+
+    override fun setDeckArchived(deckId: Long, isArchived: Boolean) {
+        _screenState.value = ScreenState.Loading
+        viewModelScope.launch { updateDeckArchivedUseCase(deckId, isArchived) }
     }
 
 }

@@ -7,6 +7,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -53,6 +57,24 @@ class CloudSyncCoordinator(
     private val lastSeenFile: File get() = File(syncDir, "last-seen.json")
     private val gistStateDir: File get() = File(syncDir, "gists")
 
+    /**
+     * Settings that describe this device (window/launcher geometry, onboarding
+     * state, plugin registry, browsing position) and must never travel between
+     * machines — otherwise one device's layout overwrites another's.
+     */
+    private val nonPortableSettingKeys = setOf(
+        "launcher.pos-x", "launcher.pos-y", "launcher.pos-x-phone", "launcher.pos-y-phone",
+        "navigation.position", "navigation.sidebar-width", "navigation.compact-position",
+        "workspace.panels", "plugins.installed", "onboarding.completed", "onboarding.version",
+        "account.joined-at", "account.last-backup-at",
+        "browser.library-sort", "browser.library-scope",
+        "browser.library-filter-jlpt", "browser.library-filter-difficulty", "browser.library-filter-favorites"
+    )
+
+    /** The settings subset that is safe (and meaningful) to share across devices. */
+    fun portableSettings(): Map<String, String> =
+        state.settings.snapshot().filterKeys { it !in nonPortableSettingKeys }
+
     /** The most recent remote manifest we observed — used to compute version bumps. */
     private var lastSeen: SyncManifest? = null
 
@@ -60,16 +82,16 @@ class CloudSyncCoordinator(
     private var startupSyncDone = false
 
     init {
-        lastSeen = loadLastSeen()
         // Start the auto-sync scheduler, reacting to account settings changes.
         scope.launch {
+            lastSeen = loadLastSeen()
             account.settingsData.collect { settings ->
                 scheduleAutoSync(settings.autoSync, settings.syncIntervalMinutes)
                 // One-shot at startup when the user opted in but auto-sync is off.
                 if (!startupSyncDone && settings.syncOnStart && !settings.autoSync) {
                     startupSyncDone = true
                     syncNow(manual = false, notify = false)
-                } else {
+                } else if (!startupSyncDone) {
                     startupSyncDone = true
                 }
             }
@@ -88,8 +110,16 @@ class CloudSyncCoordinator(
         account.connections.value.firstOrNull { it.kind == ProviderKind.GitHub && it.isConnected }
             ?.displayName ?: ""
 
-    /** Run a full push/pull cycle. Returns the result or null when nothing ran. */
-    suspend fun syncNow(manual: Boolean = true, notify: Boolean = true): SyncResult? {
+    /**
+     * Run a full push/pull cycle. Returns the result or null when nothing ran.
+     * @param resolution overrides the account's configured conflict resolution;
+     * when null the Account → Sync setting is used.
+     */
+    suspend fun syncNow(
+        manual: Boolean = true,
+        notify: Boolean = true,
+        resolution: ConflictResolution? = null
+    ): SyncResult? {
         if (state.syncBusy) return null
         val connection = account.connections.value.firstOrNull { it.kind == ProviderKind.GitHub && it.isConnected }
         if (connection == null) {
@@ -111,9 +141,15 @@ class CloudSyncCoordinator(
                 cards = state.cards.toList(),
                 reviewLog = state.reviewLog.toList(),
                 summaries = state.summaries.toList(),
-                lastSeen = lastSeen
+                lastSeen = lastSeen,
+                modifiedAt = { name -> contentModifiedAt(name) },
+                decks = state.library.decks.toList(),
+                collections = state.collections.collections,
+                savedFilters = state.filterStore.saved,
+                settings = portableSettings()
             )
-            val result = engine.reconcile(transport, local, ConflictResolution.Skip)
+            val effectiveResolution = resolution ?: account.settingsData.value.conflictResolution
+            val result = engine.reconcile(transport, local, effectiveResolution)
 
             // Apply pulled blobs into live state.
             result.pulledBlobs.forEach { blob -> applyBlob(blob) }
@@ -125,11 +161,13 @@ class CloudSyncCoordinator(
             val now = Clock.System.now()
             state.lastSyncAt = now
             state.lastSyncMessage =
-                "Synced with ${connection.displayName} — pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}"
+                "Synced with ${connection.displayName} — pushed ${result.pushed}, pulled ${result.pulled}, " +
+                    "skipped ${result.skipped} (${effectiveResolution.label})"
             state.activityLog.record(
                 ActivityCategory.Sync,
                 "Cloud sync completed (${connection.displayName})",
-                details = "pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped}",
+                details = "pushed ${result.pushed}, pulled ${result.pulled}, skipped ${result.skipped} " +
+                    "(${effectiveResolution.label})",
                 affectedCount = result.pushed + result.pulled
             )
             account.recordSync(ProviderKind.GitHub, now.toEpochMilliseconds())
@@ -180,8 +218,69 @@ class CloudSyncCoordinator(
                 state.summaries.clear()
                 state.summaries.addAll(summaries)
             }
+            "decks" -> {
+                val decks = codec.decodeDecks(blob)
+                state.library.restoreDecks(decks)
+            }
+            "collections" -> {
+                val collections = codec.decodeCollections(blob)
+                state.collections.load(collections)
+            }
+            "saved-filters" -> {
+                val filters = codec.decodeSavedFilters(blob)
+                state.filterStore.loadSaved(filters)
+            }
+            "settings" -> {
+                val settings = codec.decodeSettings(blob)
+                state.settings.restore(settings)
+            }
             else -> Logger.d("CloudSync: ignoring unknown blob '${blob.name}'")
         }
+    }
+
+    /**
+     * Newest timestamp inside each blob's data. An empty blob reports the
+     * epoch, so LWW never lets an empty device overwrite real remote data.
+     */
+    private fun contentModifiedAt(name: String): kotlinx.datetime.Instant = when (name) {
+        "cards" -> state.cards
+            .maxOfOrNull { maxOf(it.createdAt, it.lastReviewedAt ?: it.createdAt) }
+            ?: Instant.fromEpochMilliseconds(0L)
+
+        "review-log" -> state.reviewLog
+            .maxOfOrNull { it.reviewedAt }
+            ?: Instant.fromEpochMilliseconds(0L)
+
+        "summaries" -> state.summaries
+            .mapNotNull { runCatching { LocalDate.parse(it.day).atStartOfDayIn(TimeZone.UTC) }.getOrNull() }
+            .maxOrNull()
+            ?: Instant.fromEpochMilliseconds(0L)
+
+        "decks" -> state.library.decks
+            .maxOfOrNull { maxOf(it.createdAt, it.importedAt ?: it.createdAt) }
+            ?: Instant.fromEpochMilliseconds(0L)
+
+        "collections" -> state.collections.collections
+            .maxOfOrNull { it.createdAt }
+            ?: Instant.fromEpochMilliseconds(0L)
+
+        "saved-filters" -> state.filterStore.saved
+            .maxOfOrNull { Instant.fromEpochMilliseconds(it.lastUsedAt) }
+            ?: Instant.fromEpochMilliseconds(0L)
+
+        // Settings have no per-value timestamps. A snapshot that still matches the
+        // factory defaults reports the epoch (never overwrites cloud settings via
+        // LWW); otherwise the last user change wins.
+        "settings" -> {
+            val snapshot = portableSettings()
+            val defaults = state.settings.defs
+                .filter { it.key !in nonPortableSettingKeys }
+                .associate { it.key to it.normalizedDefault }
+            if (snapshot == defaults) Instant.fromEpochMilliseconds(0L)
+            else state.settings.lastModifiedAt()
+        }
+
+        else -> Instant.fromEpochMilliseconds(0L)
     }
 
     // ------------------------------------------------------------

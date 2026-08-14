@@ -13,7 +13,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -21,6 +25,8 @@ import ua.syt0r.kanji.presentation.common.ScreenLetterPracticeType
 import ua.syt0r.kanji.presentation.common.rememberExtraListSpacerState
 import ua.syt0r.kanji.presentation.common.theme.snapSizeTransform
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.ArchivedSectionHeader
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DashboardErrorState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DeckDashboardEmptyState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DeckDashboardListItem
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DeckDashboardListMode
@@ -40,10 +46,12 @@ fun LettersDashboardScreenUI(
     state: State<ScreenState>,
     mergeDecks: (DecksMergeRequestData) -> Unit,
     sortDecks: (DecksSortRequestData) -> Unit,
+    setDeckArchived: (deckId: Long, isArchived: Boolean) -> Unit,
     navigateToDeckDetails: (LetterDeckDashboardItem) -> Unit,
     navigateToDeckEdit: (LetterDeckDashboardItem) -> Unit,
     startQuickPractice: (LetterDeckDashboardItem, ScreenLetterPracticeType, List<String>) -> Unit,
-    navigateToDeckPicker: () -> Unit
+    navigateToDeckPicker: () -> Unit,
+    retryLoad: () -> Unit
 ) {
 
     Box {
@@ -59,13 +67,21 @@ fun LettersDashboardScreenUI(
                     LoadingState()
                 }
 
+                is ScreenState.Error -> {
+                    DashboardErrorState(
+                        message = screenState.message,
+                        onRetry = retryLoad
+                    )
+                }
+
                 is ScreenState.Loaded -> {
-                    if (screenState.listState.items.isEmpty()) {
+                    if (screenState.listState.items.isEmpty() && screenState.archivedItems.isEmpty()) {
                         DeckDashboardEmptyState()
                     } else {
                         val practiceType = remember {
                             derivedStateOf { screenState.selectedPracticeTypeItem.value.practiceType }
                         }
+                        var archivedExpanded by rememberSaveable { mutableStateOf(false) }
                         DeckDashboardLoadedStateContainer(extraListSpacerState) {
 
                             if (screenState.listState.items.size > 1) {
@@ -84,8 +100,32 @@ fun LettersDashboardScreenUI(
                                         showPendingNewIndicator = screenState.listState.showDailyNewIndicator,
                                         navigateToDetails = navigateToDeckDetails,
                                         navigateToEdit = navigateToDeckEdit,
-                                        navigateToPractice = startQuickPractice
+                                        navigateToPractice = startQuickPractice,
+                                        onArchiveClick = { setDeckArchived(it.deckId, true) }
                                     )
+
+                                    if (screenState.archivedItems.isNotEmpty()) {
+                                        item(
+                                            key = "archived_section_header"
+                                        ) {
+                                            ArchivedSectionHeader(
+                                                count = screenState.archivedItems.size,
+                                                expanded = archivedExpanded,
+                                                onToggle = { archivedExpanded = !archivedExpanded }
+                                            )
+                                        }
+
+                                        if (archivedExpanded) {
+                                            screenState.listState.addArchivedItems(
+                                                scope = this,
+                                                items = screenState.archivedItems,
+                                                practiceType = practiceType,
+                                                navigateToDetails = navigateToDeckDetails,
+                                                navigateToEdit = navigateToDeckEdit,
+                                                onRestoreClick = { setDeckArchived(it.deckId, false) }
+                                            )
+                                        }
+                                    }
                                 }
 
                                 is DeckDashboardListMode.MergeMode -> {
@@ -131,6 +171,7 @@ private fun DeckDashboardListState.addBrowseItems(
     navigateToDetails: (LetterDeckDashboardItem) -> Unit,
     navigateToEdit: (LetterDeckDashboardItem) -> Unit,
     navigateToPractice: (LetterDeckDashboardItem, ScreenLetterPracticeType, List<String>) -> Unit,
+    onArchiveClick: (LetterDeckDashboardItem) -> Unit,
 ) = scope.apply {
 
     items(
@@ -152,7 +193,42 @@ private fun DeckDashboardListState.addBrowseItems(
             studyProgress = studyProgress.value,
             onDetailsClick = { navigateToDetails(item) },
             onEditClick = { navigateToEdit(item) },
-            navigateToPractice = { navigateToPractice(item, practiceType.value, it) }
+            navigateToPractice = { navigateToPractice(item, practiceType.value, it) },
+            onArchiveClick = { onArchiveClick(item) }
+        )
+    }
+
+}
+
+private fun DeckDashboardListState.addArchivedItems(
+    scope: LazyListScope,
+    items: List<LetterDeckDashboardItem>,
+    practiceType: State<ScreenLetterPracticeType>,
+    navigateToDetails: (LetterDeckDashboardItem) -> Unit,
+    navigateToEdit: (LetterDeckDashboardItem) -> Unit,
+    onRestoreClick: (LetterDeckDashboardItem) -> Unit,
+) = scope.apply {
+
+    items(
+        items = items,
+        key = { DeckDashboardListMode.Browsing::class.simpleName to "archived_${it.deckId}" }
+    ) { item ->
+
+        val studyProgress = remember {
+            derivedStateOf { item.studyProgress.getValue(practiceType.value) }
+        }
+
+        DeckDashboardListItem(
+            itemKey = item.deckId,
+            title = item.title,
+            elapsedSinceLastReview = item.elapsedSinceLastReview,
+            showNewIndicator = false,
+            studyProgress = studyProgress.value,
+            isArchived = true,
+            onDetailsClick = { navigateToDetails(item) },
+            onEditClick = { navigateToEdit(item) },
+            navigateToPractice = {},
+            onRestoreClick = { onRestoreClick(item) }
         )
     }
 

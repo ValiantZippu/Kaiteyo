@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,24 +37,31 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow as materialShadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -78,25 +84,27 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.HomeNavigationState
 // ============================================
 
 /** Base delay before the cascade starts, in ms. */
-private const val StaggerBaseMs = 60
+private const val StaggerBaseMs = 60L
 
 /** Extra delay per revealed element, in ms. */
-private const val StaggerStepMs = 42
+private const val StaggerStepMs = 42L
 
 /**
  * Staggered-reveal wrapper. Fades + rises each child in sequence when the
- * launchpad opens; skipped entirely under reduced motion.
+ * launchpad opens; skipped entirely under reduced motion or when the user
+ * disabled the staggered cascade.
  */
 @Composable
 private fun LaunchStagger(
     index: Int,
     reducedMotion: Boolean,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        if (reducedMotion) {
+        if (reducedMotion || !enabled) {
             progress.snapTo(1f)
         } else {
             delay(StaggerBaseMs + index * StaggerStepMs)
@@ -125,15 +133,44 @@ fun Launchpad(
     navigationState: MainNavigationState,
     homeNavState: HomeNavigationState,
     visible: Boolean,
-    onClose: () -> Unit
+    bubbleCenter: Offset? = null,
+    onClose: () -> Unit,
+    launchpadSettings: LaunchpadSettings = LaunchpadSettings()
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val reducedMotion = LocalAnimationConfig.current.reducedMotion
+    val launchpad = launchpadSettings
+
+    // The launchpad visibly expands from the floating bubble: the scale
+    // transform origin sits at the bubble's position (clamped so the panel
+    // always stays comfortably on screen). Centered placement + scroll keep
+    // the panel inside the screen regardless of the bubble's location.
+    var overlaySize by remember { mutableStateOf(IntSize.Zero) }
+    val origin = remember(bubbleCenter, overlaySize, launchpad.direction) {
+        val bubbleX = bubbleCenter?.x ?: overlaySize.width / 2f
+        val bubbleY = bubbleCenter?.y ?: overlaySize.height / 2f
+        if (overlaySize == IntSize.Zero) {
+            TransformOrigin.Center
+        } else {
+            val x = (bubbleX / overlaySize.width).coerceIn(0.08f, 0.92f)
+            val y = when (launchpad.direction) {
+                LaunchpadDirection.Up -> 1f
+                LaunchpadDirection.Down -> 0f
+                LaunchpadDirection.Auto -> (bubbleY / overlaySize.height).coerceIn(0.08f, 0.92f)
+            }
+            TransformOrigin(x, y)
+        }
+    }
+    val enterSpec = spring<Float>(dampingRatio = 0.72f, stiffness = 260f)
+    // User-configurable launchpad scale: the panel width adapts so scale > 1
+    // never pushes content off screen.
+    val launchpadScale = launchpad.scale.coerceIn(0.7f, 1.2f)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { overlaySize = it }
             .background(Color.Black.copy(alpha = 0.42f))
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
@@ -148,11 +185,13 @@ fun Launchpad(
             visible = visible,
             modifier = Modifier.fillMaxSize(),
             enter = fadeIn(tween(160)) + scaleIn(
-                initialScale = 0.97f,
-                animationSpec = spring(dampingRatio = 0.72f, stiffness = 260f)
+                initialScale = 0.96f,
+                transformOrigin = origin,
+                animationSpec = enterSpec
             ),
             exit = fadeOut(tween(120)) + scaleOut(
-                targetScale = 0.97f,
+                targetScale = 0.96f,
+                transformOrigin = origin,
                 animationSpec = tween(140)
             )
         ) {
@@ -166,8 +205,9 @@ fun Launchpad(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                val panelWidth = (maxWidth * 0.86f).coerceAtMost(860.dp)
-                val columns = ((panelWidth - Dimens.Space8 * 2 - Dimens.Space3) / 128.dp)
+                val panelWidth = ((maxWidth * 0.86f).coerceAtMost(860.dp) * launchpadScale)
+                val tileWidth = 128.dp * launchpad.spacing.coerceIn(0.7f, 1.5f)
+                val columns = ((panelWidth - Dimens.Space8 * 2 - Dimens.Space3) / tileWidth)
                     .toInt()
                     .coerceIn(3, 7)
 
@@ -180,7 +220,7 @@ fun Launchpad(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Wordmark — reveals first.
-                    LaunchStagger(index = 0, reducedMotion = reducedMotion) {
+                    LaunchStagger(index = 0, reducedMotion = reducedMotion, enabled = launchpad.staggeredReveal) {
                         Text(
                             text = "Kaiteyo",
                             style = MaterialTheme.typography.headlineMedium,
@@ -226,8 +266,8 @@ fun Launchpad(
                                 .background(
                                     Brush.verticalGradient(
                                         colors = listOf(
-                                            surfaceColors.surfaceElevated.copy(alpha = 0.92f),
-                                            surfaceColors.surface.copy(alpha = 0.84f)
+                                            surfaceColors.surfaceElevated.copy(alpha = 0.92f * launchpad.opacity.coerceIn(0.6f, 1f)),
+                                            surfaceColors.surface.copy(alpha = 0.84f * launchpad.opacity.coerceIn(0.6f, 1f))
                                         )
                                     )
                                 )
@@ -245,7 +285,7 @@ fun Launchpad(
                             var cascadeIndex = 1
                             sections.forEach { section ->
                                 if (section.title != null) {
-                                    LaunchStagger(index = cascadeIndex++, reducedMotion = reducedMotion) {
+                                    LaunchStagger(index = cascadeIndex++, reducedMotion = reducedMotion, enabled = launchpad.staggeredReveal) {
                                         Text(
                                             text = section.title(),
                                             style = MaterialTheme.typography.labelMedium,
@@ -268,12 +308,13 @@ fun Launchpad(
                                         horizontalArrangement = Arrangement.spacedBy(Dimens.Space3)
                                     ) {
                                         rowItems.forEach { entry ->
-                                            LaunchStagger(
-                                                index = cascadeIndex++,
-                                                reducedMotion = reducedMotion,
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                LaunchpadItem(
+                                    LaunchStagger(
+                                        index = cascadeIndex++,
+                                        reducedMotion = reducedMotion,
+                                        enabled = launchpad.staggeredReveal,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        LaunchpadItem(
                                                     entry = entry,
                                                     columns = columns,
                                                     onClick = {
@@ -289,19 +330,13 @@ fun Launchpad(
                                             }
                                         }
                                     }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(Dimens.Space3)
-                                    ) {
-                                        repeat(columns) { Box(Modifier.weight(1f)) }
-                                    }
                                 }
                             }
                         }
                     }
 
                     // Hint — appears last, after the tile cascade.
-                    LaunchStagger(index = 100, reducedMotion = reducedMotion) {
+                    LaunchStagger(index = 100, reducedMotion = reducedMotion, enabled = launchpad.staggeredReveal) {
                         Text(
                             text = "Press Escape or click outside to close",
                             style = MaterialTheme.typography.labelSmall,

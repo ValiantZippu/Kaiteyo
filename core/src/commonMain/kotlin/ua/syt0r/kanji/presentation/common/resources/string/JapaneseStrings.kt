@@ -74,6 +74,226 @@ object JapaneseStrings : Strings {
 
     override val nav: NavStrings = JapaneseNavStrings
 
+    override val center: SettingsCenterStrings = JapaneseSettingsCenterStrings
+
+}
+
+object JapaneseSettingsCenterStrings : SettingsCenterStrings {
+
+    override val searchPlaceholder: String = "設定を検索"
+    override val searchNoResults: String = "設定が見つかりません"
+    override val searchNoResultsHint: String =
+        "別のキーワードで試してください — 例:「サイドバー」「フォント」「バブル」"
+    override val livePreviewLabel: String = "ライブプレビュー"
+    override val changesApplyInstantly: String =
+        "変更は即座に適用され、自動的に保存されます"
+    override val resetToDefaults: String = "デフォルトに戻す"
+    override val resetConfirmTitle: (category: String) -> String =
+        { "$it の設定をリセットしますか？" }
+    override val resetConfirmMessage: (category: String) -> String = {
+        "$it のすべての設定がデフォルト値に戻ります。"
+    }
+    override val cancel: String = "キャンセル"
+    override val confirm: String = "リセット"
+
+    override val categoryGeneral: String = "一般"
+    override val categoryGeneralSubtitle: String = "起動時の動作、スケジュール、アプリの既定値"
+    override val categoryAppearance: String = "外観"
+    override val categoryAppearanceSubtitle: String = "テーマ、配色、文字、密度"
+    override val categoryNavigation: String = "ナビゲーション"
+    override val categoryNavigationSubtitle: String =
+        "サイドバー、フローティングランチャー、スマホレイアウト"
+    override val categoryStudy: String = "学習"
+    override val categoryStudySubtitle: String = "セッションの動作と練習の既定値"
+    override val categoryWriting: String = "書き取り"
+    override val categoryWritingSubtitle: String = "字画判定と入力モード"
+    override val categoryFlashcards: String = "フラッシュカード"
+    override val categoryFlashcardsSubtitle: String = "カードのレイアウトと回答の動作"
+    override val categoryNotifications: String = "通知"
+    override val categoryNotificationsSubtitle: String = "毎日の学習リマインダー"
+    override val categoryData: String = "データと同期"
+    override val categoryDataSubtitle: String = "バックアップ、復元、同期、アカウント"
+    override val categoryShortcuts: String = "キーボードとショートカット"
+    override val categoryShortcutsSubtitle: String = "グローバルおよび復習のショートカット"
+    override val categoryAbout: String = "このアプリについて"
+    override val categoryAboutSubtitle: String = "アプリ情報、クレジット、フィードバック"
+    override val categoryAccessibility: String = "アクセシビリティ"
+    override val categoryAccessibilitySubtitle: String =
+        "文字サイズ、コントラスト、モーション、タッチ領域"
+
+    override val groupStartup: String = "起動"
+    override val groupSchedule: String = "スケジュール"
+    override val groupStudy: String = "学習"
+    override val groupApplication: String = "アプリ"
+    override val groupAppearance: String = "外観"
+    override val groupTheme: String = "テーマ"
+    override val groupTypography: String = "文字"
+    override val groupMotion: String = "アニメーション"
+    override val groupInput: String = "入力方式"
+    override val groupStroke: String = "字画判定"
+    override val groupFlashcard: String = "フラッシュカード"
+    override val groupRelated: String = "関連"
+    override val groupLayout: String = "レイアウトと拡大縮小"
+    override val groupAdvanced: String = "詳細"
+    override val groupDisplay: String = "表示"
+    override val groupInteraction: String = "操作"
+
+    override val defaultTab: String = "デフォルトのタブ"
+    override val defaultTabDescription: String = "アプリ起動時に表示されるタブ"
+    override val dailyResetTime: String = "日次リセット時刻"
+    override val dailyResetTimeDescription: String =
+        "新しいカードと日次制限がリセットされる時刻"
+    override val dailyLimit: String = "日次制限"
+    override val dailyLimitDescription: String =
+        "1日あたりの新しいカードと復習の数を制限します"
+    override val language: String = "言語"
+    override val languageDescription: String =
+        "インターフェース言語 — システムに従います"
+
+    override val themeMode: String = "テーマモード"
+    override val themeModeDescription: String = "ライト、ダーク、システム、AMOLED"
+    override val accentColor: String = "アクセントカラー"
+    override val accentColorDescription: String =
+        "インターフェース全体で使われるメインカラー"
+    override val cornerRadius: String = "角の丸み"
+    override val cornerRadiusDescription: String =
+        "カード、ボタン、パネルの角の丸み"
+    override val density: String = "密度"
+    override val densityDescription: String =
+        "インターフェース要素の間隔と大きさ"
+    override val animationSpeed: String = "アニメーション速度"
+    override val animationSpeedDescription: String =
+        "インターフェースのアニメーションの速さ"
+    override val reducedMotion: String = "アニメーションを減らす"
+    override val reducedMotionDescription: String =
+        "ほとんどのインターフェースアニメーションを無効化"
+    override val fontScale: String = "文字サイズ"
+    override val fontScaleDescription: String =
+        "アプリ全体の文字サイズを変更します"
+    override val titleScale: String = "見出しサイズ"
+    override val titleScaleDescription: String =
+        "見出し、タイトル、ナビゲーションラベルのサイズを変更します"
+    override val lineHeight: String = "行間"
+    override val lineHeightDescription: String =
+        "本文の縦方向のリズムを調整します"
+    override val letterSpacing: String = "文字間隔"
+    override val letterSpacingDescription: String =
+        "文字間の追加トラッキングを設定します"
+    override val pageTransition: String = "画面遷移"
+    override val pageTransitionDescription: String =
+        "画面を移動するときの遷移方法"
+    override val themeTransition: String = "テーマ遷移"
+    override val themeTransitionDescription: String =
+        "テーマ変更時に色を滑らかにクロスフェードします"
+    override val displayScale: String = "表示スケール"
+    override val displayScaleDescription: String =
+        "インターフェース全体を拡大縮小します（ズーム）"
+    override val buttonScale: String = "ボタンスケール"
+    override val buttonScaleDescription: String =
+        "ボタンとタッチコントロールのサイズを変更します"
+    override val iconScale: String = "アイコンスケール"
+    override val iconScaleDescription: String =
+        "インターフェース全体のアイコンサイズを変更します"
+    override val openThemeStudio: String = "テーマスタジオを開く"
+    override val openThemeStudioDescription: String =
+        "色、グラデーション、モーション、レイアウトを細かく編集"
+
+    override val a11yTextScale: String = "文字の拡大率"
+    override val a11yTextScaleDescription: String =
+        "アプリ全体の文字サイズを変更します"
+    override val a11yLargeIcons: String = "ナビゲーションのアイコンを大きく"
+    override val a11yLargeIconsDescription: String =
+        "サイドバーとフローティングランチャーのアイコンを拡大します"
+    override val a11yLargeHitboxes: String = "タッチ領域を大きく"
+    override val a11yLargeHitboxesDescription: String =
+        "ナビゲーション操作のクリック可能領域を広げます"
+    override val a11yHighContrast: String = "ハイコントラスト"
+    override val a11yHighContrastDescription: String =
+        "ナビゲーション面のコントラストを強めます"
+    override val a11yReduceMotion: String = "ナビゲーションの動きを減らす"
+    override val a11yReduceMotionDescription: String =
+        "ナビゲーションとランチャーのアニメーションを無効化します"
+    override val a11yKeyboardNav: String = "キーボード操作"
+    override val a11yKeyboardNavDescription: String =
+        "矢印キーとショートカットで目的地間を移動します"
+
+    override val resetAllLabel: String = "すべての設定をリセット"
+    override val resetAllDescription: String =
+        "すべてのカテゴリをデフォルト値に戻します"
+    override val resetAllConfirmTitle: String = "すべての設定をリセットしますか？"
+    override val resetAllConfirmMessage: String =
+        "すべてのカテゴリの設定がデフォルトに戻ります。この操作は取り消せません。"
+
+    override val speedOff: String = "オフ"
+    override val speedFast: String = "速い"
+    override val speedNormal: String = "通常"
+    override val speedSlow: String = "遅い"
+    override val densityCompact: String = "コンパクト"
+    override val densityComfortable: String = "標準"
+    override val densitySpacious: String = "ゆったり"
+    override val radiusSquare: String = "角型"
+    override val radiusRounded: String = "丸み"
+    override val radiusVeryRounded: String = "強めの丸み"
+    override val radiusSoft: String = "ソフト"
+    override val newCardsFirst: String = "先頭"
+    override val newCardsLast: String = "末尾"
+    override val newCardsMixed: String = "混在"
+
+    override val shuffle: String = "順序をシャッフル"
+    override val shuffleDescription: String =
+        "練習セッション内の項目の順序をランダムにします"
+    override val newCardsOrder: String = "新しいカードの順序"
+    override val newCardsOrderDescription: String =
+        "セッション内で新しいカードが現れる位置"
+    override val highlightRadicals: String = "部首を強調"
+    override val highlightRadicalsDescription: String =
+        "書き取り中に文字の部首構成を表示します"
+    override val kanaAutoPlay: String = "かな音声の自動再生"
+    override val kanaAutoPlayDescription: String =
+        "練習中にかなの読みを自動で再生します"
+    override val letterPracticeType: String = "文字の練習タイプ"
+    override val letterPracticeTypeDescription: String =
+        "文字ダッシュボードで使う練習モード"
+    override val vocabPracticeType: String = "単語の練習タイプ"
+    override val vocabPracticeTypeDescription: String =
+        "単語ダッシュボードで使う練習モード"
+
+    override val vocabStrictness: String = "単語の字画判定の厳しさ"
+    override val vocabStrictnessDescription: String =
+        "単語の字画認識の許容度を調整します"
+
+    override val romajiFurigana: String = "ローマ字ふりがな"
+    override val romajiFuriganaDescription: String =
+        "読み練習でかなの上にローマ字を表示します"
+
+    override val notificationsHint: String =
+        "毎日の学習リマインダーはAndroidで利用できます"
+
+    override val importExport: String = "インポート / エクスポート"
+    override val importExportDescription: String =
+        "Ankiパッケージなどの転送"
+    override val shortcutsLink: String = "キーボードショートカット"
+    override val shortcutsLinkDescription: String =
+        "復習とナビゲーションのショートカットを確認・変更"
+    override val creditsLink: String = "クレジット"
+    override val creditsLinkDescription: String =
+        "コントリビューター、翻訳者、オープンソースライブラリ"
+    override val feedbackLink: String = "フィードバックを送る"
+    override val feedbackLinkDescription: String =
+        "問題の報告や改善提案"
+    override val aboutLink: String = "Kaiteyoについて"
+    override val aboutLinkDescription: String =
+        "バージョン、プロジェクト情報、ドキュメント"
+    override val accountLink: String = "アカウント"
+    override val accountLinkDescription: String =
+        "プロフィール、サブスクリプション、ログイン"
+    override val syncLink: String = "同期"
+    override val syncLinkDescription: String =
+        "デバイス間で進捗を同期します"
+    override val backupLink: String = "バックアップと復元"
+    override val backupLinkDescription: String =
+        "データベースのバックアップ作成と復元"
+    override val themeStudioTarget: String = "テーマスタジオ"
 }
 
 object JapaneseNavStrings : NavStrings {
@@ -90,9 +310,11 @@ object JapaneseNavStrings : NavStrings {
     override val backupLabel: String = JapaneseBackupStrings.title
     override val syncLabel: String = JapaneseSyncScreenStrings.title
     override val creditsLabel: String = JapaneseCreditsStrings.title
-    override val modeExpandedTooltip: String = "サイドバー表示"
-    override val modeCompactTooltip: String = "コンパクト表示"
-    override val modeBubbleTooltip: String = "フローティングランチャー"
+    override val modeFloatingLabel: String = "フローティング"
+    override val modeSidebarLabel: String = "サイドバー"
+    override val modeSwitchTitle: String = "ナビゲーションモード"
+    override val sidebarExpandedLabel: String = "拡大"
+    override val sidebarCompactLabel: String = "コンパクト"
     override val placementLabel: String = "配置"
     override val settingsLabel: String = "ナビゲーション設定"
     override val kanjiBrowserLabel: String = "漢字ブラウザ"
@@ -107,7 +329,7 @@ object JapaneseNavStrings : NavStrings {
 
     override val generalTabLabel: String = "一般"
     override val sidebarTabLabel: String = "サイドバー"
-    override val bubbleTabLabel: String = "バブル"
+    override val floatingTabLabel: String = "フローティング"
     override val phoneTabLabel: String = "スマホ"
     override val accessibilityTabLabel: String = "アクセシビリティ"
 
@@ -117,6 +339,8 @@ object JapaneseNavStrings : NavStrings {
     override val labelsVisibilityLabel: String = "ラベル表示"
 
     override val bubbleIconSizeLabel: String = "アイコンサイズ"
+    override val snapPositionLabel: String = "スナップ位置"
+    override val sidebarLayoutLabel: String = "サイドバーのレイアウト"
 
     override val phoneNavPositionLabel: String = "ナビゲーション位置"
     override val phoneLauncherPositionLabel: String = "ランチャー位置"
@@ -142,6 +366,8 @@ object JapaneseHomeStrings : HomeStrings {
 }
 
 object JapaneseCommonDashboardStrings : CommonDashboardStrings {
+    override val loadFailedTitle: String = "デッキを読み込めませんでした"
+    override val retryButton: String = "再試行"
     override val emptyScreenMessage: (inlineIconId: String) -> AnnotatedString = {
         buildAnnotatedString {
             append("アプリを使うにはデッキが必要です。")
@@ -170,6 +396,10 @@ object JapaneseCommonDashboardStrings : CommonDashboardStrings {
     override val sortAcceptButton: String = "適用"
     override val sortTitle: String = "デッキの順序を変更"
     override val sortByTimeTitle: String = "最終練習時間で並べ替える"
+
+    override val archiveButton: String = "アーカイブ"
+    override val restoreButton: String = "復元"
+    override val archivedSectionTitle: (Int) -> String = { "アーカイブ ($it)" }
 
     override val itemTimeMessage: (Duration?) -> String = {
         "最終練習日: " + when {
@@ -694,6 +924,18 @@ object JapaneseCommonPracticeStrings : CommonPracticeStrings {
     override val earlyFinishDialogCancelButton: String = "キャンセル"
     override val earlyFinishDialogAcceptButton: String = "終了"
 
+    override val writingStrokeCorrect: String = "正解"
+    override val writingStrokeAlmost: String = "もう少し"
+    override val writingStrokeIncorrect: String = "もう一度"
+
+    override val sequenceIssueWrongOrder: String = "書き順が違います"
+    override val sequenceIssueMissingStroke: String = "書き忘れ"
+    override val sequenceIssueExtraStroke: String = "書き過ぎ"
+
+    override val writingStrokeAccuracyTitle: String = "字画の正確さ"
+    override val writingStrokeAccuracy: (Int) -> String = { "字画の正確さ: $it%" }
+    override val writingWrongOrder: (Int) -> String = { "書き順ミス: $it" }
+
 }
 
 object JapaneseLetterPracticeStrings : LetterPracticeStrings {
@@ -707,6 +949,12 @@ object JapaneseLetterPracticeStrings : LetterPracticeStrings {
     override val inputModeMessage: String = "字画ごとに検証するか、文字全体を検証するかを選択する"
     override val inputModeStroke: String = "字画"
     override val inputModeCharacter: String = "文字"
+    override val evaluationStrictnessTitle: String = "字画判定の厳しさ"
+    override val evaluationStrictnessMessage: String =
+        "字画認識の許容度を調整します — 試験が最も厳しくなります"
+    override val evaluationStrictnessNormal: String = "ふつう"
+    override val evaluationStrictnessHard: String = "難しい"
+    override val evaluationStrictnessExam: String = "試験"
     override val kanaRomajiTitle: String = "ローマ字を表示"
     override val kanaRomajiMessage: String =
         "かなを練習するときは、かなの代わりにローマ字単語を表示する"

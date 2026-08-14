@@ -71,6 +71,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -1781,7 +1782,7 @@ private fun DeckEditDialog(state: AppState, deck: DeckDef, onDismiss: () -> Unit
                 selected = difficulty,
                 options = (1..5).toList(),
                 onSelected = { difficulty = it },
-                labelOf = { "Difficulty: ${\"★\".repeat(it)}" },
+                labelOf = { "Difficulty: ${"★".repeat(it)}" },
                 modifier = Modifier.fillMaxWidth()
             )
             DsTextField(
@@ -1906,7 +1907,7 @@ private fun CreateDeckDialog(state: AppState, onDismiss: () -> Unit, onCreated: 
                 selected = difficulty,
                 options = (1..5).toList(),
                 onSelected = { difficulty = it },
-                labelOf = { "Difficulty: ${\"★\".repeat(it)}" },
+                labelOf = { "Difficulty: ${"★".repeat(it)}" },
                 modifier = Modifier.fillMaxWidth()
             )
             Row(

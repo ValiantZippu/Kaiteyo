@@ -84,12 +84,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.toSp
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.NavPosition
 import ua.syt0r.kanji.desktop.engine.theming.ThemeMapper
 import ua.syt0r.kanji.desktop.engine.theming.colorToHex
+import ua.syt0r.kanji.desktop.engine.theming.hexToColor
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.presentation.common.theme.AllAccentSchemes
@@ -733,6 +733,7 @@ private fun WelcomePill(icon: ImageVector, label: String) {
 @Composable
 private fun StepTheme(state: AppState) {
     val current = ThemeMapper.baseMode(state.themeManager.activeTheme)
+    val sc = surfaceColors()
     Column(verticalArrangement = Arrangement.spacedBy(Wiz.s3)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Wiz.s3)) {
             BaseMode.entries.chunked(2).forEach { pair ->
@@ -852,7 +853,7 @@ private fun StepAccent(state: AppState) {
     }
 
     // Detect which scheme most closely matches the current theme.
-    val currentPrimary = colorToHex(theme.colors.primary)
+    val currentPrimary = colorToHex(hexToColor(theme.colors.primary))
     val selectedIndex = AllAccentSchemes.indexOfFirst { colorToHex(it.primary) == currentPrimary }
         .let { if (it >= 0) it else 0 }
 
@@ -1318,7 +1319,7 @@ private fun StepMotion(state: AppState, ac: KaiteyoAccentScheme) {
                         .background(if (selected) ac.primary else sc.border.copy(alpha = 0.35f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    AnimatedVisibility(
+                    androidx.compose.animation.AnimatedVisibility(
                         visible = selected,
                         enter = scaleIn(animationSpec = spring(dampingRatio = 0.5f, stiffness = 600f)),
                         exit = scaleOut(animationSpec = tween(120))
