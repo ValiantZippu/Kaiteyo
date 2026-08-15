@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><defs><linearGradient id="ogbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#312e81"/></linearGradient></defs><rect width="1200" height="630" fill="url(#ogbg)"/><g transform="translate(500 95) scale(0.28)"><?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="7" fill="#050505" />
+
+  <!-- Simplified single stroke + dot -->
+  <path d="M10,8 Q16,7 20,13 Q22,16 21,20"
+        stroke="#C2FC8B" stroke-width="3" fill="none"
+        stroke-linecap="round" />
+
+  <path d="M11,14 Q16,12 20,16"
+        stroke="#C2FC8B" stroke-width="1.5" fill="none"
+        stroke-linecap="round" opacity="0.7" />
+
+  <circle cx="21" cy="20" r="2" fill="#FEAB57" />
+</svg></g><text x="600" y="520" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#ffffff" letter-spacing="10">KAITEYO</text><text x="600" y="580" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="#c7d2fe" letter-spacing="4">書いてよ — Write. Practice. Master.</text></svg>

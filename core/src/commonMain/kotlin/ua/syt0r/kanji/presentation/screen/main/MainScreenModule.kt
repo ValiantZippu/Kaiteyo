@@ -38,7 +38,9 @@ val mainScreenModule = module {
             reviewHistoryRepository = get(),
             fsrsCardRepository = get(),
             appPreferences = get(),
-            timeUtils = get()
+            timeUtils = get(),
+            letterPracticeRepository = get(),
+            vocabPracticeRepository = get()
         )
     }
 

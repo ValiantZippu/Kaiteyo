@@ -350,14 +350,27 @@ interface MainDestination {
         override fun Content(state: MainNavigationState) {
             DeckBrowserRoute(
                 controller = koinInject(),
-                onClose = { state.navigateBack() }
+                onClose = { state.navigateBack() },
+                onOpenDeck = { deckId ->
+                    deckDetailsFor(deckId)?.let { configuration ->
+                        state.navigate(MainDestination.DeckDetails(configuration))
+                    }
+                },
+                onBrowse = { deckId ->
+                    state.navigate(MainDestination.CardBrowser(deckId = deckId))
+                },
+                onFindContent = {
+                    state.navigate(MainDestination.SearchEngine)
+                }
             )
         }
 
     }
 
     @Serializable
-    object CardBrowser : MainDestination {
+    data class CardBrowser(
+        val deckId: String? = null
+    ) : MainDestination {
 
         override val analyticsName: String = "card_browser"
 
@@ -365,7 +378,8 @@ interface MainDestination {
         override fun Content(state: MainNavigationState) {
             CardBrowserRoute(
                 controller = koinInject(),
-                onClose = { state.navigateBack() }
+                onClose = { state.navigateBack() },
+                initialDeckId = deckId
             )
         }
 
@@ -642,6 +656,41 @@ interface MainDestination {
 
     }
 
+    // ==================== MEDIA CENTRE ====================
+
+    /**
+     * The Media Centre — the immersion workspace (player, subtitles,
+     * dictionary, mining). The desktop app provides the real implementation
+     * via [ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent];
+     * other platforms show an honest "desktop only" screen so the navigation
+     * entry is never a dead link.
+     */
+    @Serializable
+    object Media : MainDestination {
+
+        override val analyticsName: String = "media"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            val content = koinInject<ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent>()
+            content.Content(onClose = { state.navigateBack() })
+        }
+
+    }
+
+}
+
+/**
+ * Maps a Deck Browser row id ("letter:123" / "vocab:123") to the real deck
+ * details configuration so opening a deck opens the actual deck screen.
+ */
+private fun deckDetailsFor(deckId: String): DeckDetailsScreenConfiguration? {
+    val rawId = deckId.removePrefix("letter:").removePrefix("vocab:").toLongOrNull() ?: return null
+    return when {
+        deckId.startsWith("letter:") -> DeckDetailsScreenConfiguration.LetterDeck(rawId)
+        deckId.startsWith("vocab:") -> DeckDetailsScreenConfiguration.VocabDeck(rawId)
+        else -> null
+    }
 }
 
 sealed interface MainDestinationConfiguration<T : MainDestination> {
@@ -706,7 +755,7 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.VocabPractice::class.configuration(),
     MainDestination.Account::class.configuration(),
     MainDestination.DeckBrowser.configuration(),
-    MainDestination.CardBrowser.configuration(),
+    MainDestination.CardBrowser::class.configuration(),
     MainDestination.StatisticsDashboard.configuration(),
     MainDestination.DayPractice::class.configuration(),
     MainDestination.PluginManager.configuration(),
@@ -724,4 +773,5 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.UndoHistory.configuration(),
     MainDestination.KanjiBrowser::class.configuration(),
     MainDestination.Collections.configuration(),
+    MainDestination.Media.configuration(),
 )

@@ -1524,3 +1524,84 @@ Kaiteyo/
 ---
 
 > *"This is not just Kanji Dojo renamed. This is a completely new premium Japanese learning application."*
+
+---
+
+## Appendix: Implementation Status (v2.2.1)
+
+> The vision above is the **brand contract**. What ships today is grounded in real
+> code — this appendix maps each vision area to its implementation so engineers can
+> tell aspirational from shipped. When the docs and code disagree, the code wins.
+
+### Theme & palette — SHIPPED
+
+- Palette lives in `core/.../theme/Color.kt`: `BaseMode` (`Oled`/`Dark`/`Light`/
+  `Sepia`) + `AllAccentSchemes` (7: Signature Pineapple, Cotton Candy, Ocean,
+  Forest, Sunset, Lavender, Monochrome) + semantic colors. The "Signature" theme
+  above = `BaseMode.Oled` + `AllAccentSchemes[0]`.
+- `Theme.kt` provides `KaiteyoThemeState`, `AppTheme`, the CompositionLocals and the
+  **whole-app color crossfade** on theme switch (450ms base, speed-aware).
+- Desktop Theme Studio themes persist to `~/.kaiteyo/themes/` via `ThemeManager`
+  and map onto the shared system through `ThemeMapper`.
+
+### Typography — SHIPPED (Material 3 scale)
+
+- `core/.../theme/Typography.kt` `AppTypography` — Material 3 type scale with the
+  **Japanese locale list** baked in (not the hand-rolled 11–64px scale above).
+- Live user scaling via `TypeScale` (fontScale/titleScale/lineHeight/letterSpacing).
+
+### Window shell — SHIPPED (delivered in `desktopApp/.../KaiteyoWindow.kt`)
+
+| Vision | Reality |
+|--------|---------|
+| Custom borderless window, controls top-right | ✅ 44dp custom title bar, undecorated window |
+| Title bar 32px, #0D0D0D | ✅ 44dp, surface background |
+| 1200×800 default, 900×600 min | ✅ 1200×800 default, **860×600** min |
+| Rounded 24px sidebar/content | ✅ `Dimens.SidebarWidth=260`, `SidebarRadius=24dp`, `ContentRadius=24dp`, `PanelGap=24dp`, `WindowPadding=24dp` |
+| Window position/size remembered | ✅ `WindowStateStore` → `~/.kaiteyo/window.json`, work-area validated |
+| Native drag + snap | ✅ Windows `WM_NCLBUTTONDOWN`/HTCAPTION, Linux EWMH, Compose fallback |
+| 8-zone resize handles | ✅ 5dp edges / 10dp corners, native cursors |
+
+### Sidebar / navigation — SHIPPED (`NavShell.kt`, `WorkspaceShell.kt`)
+
+- **Mobile/shared** `NavShell`: Sidebar (any edge, expanded/compact) or Floating
+  bubble with snap points; `Ctrl+B` toggles; item height 40dp (48dp phone).
+- **Desktop** `WorkspaceShell`: dock rail on any edge in `DsDockIsland` (8dp float
+  ring), `<720dp` falls to a compact tab bar (hysteresis exit 760dp); top bar with
+  palette button; floating launcher/launchpad in bubble mode.
+- Active nav item = accent 14% fill + accent text (matches the vision's active state).
+
+### Components — SHIPPED (`desktopApp/.../designsystem/`)
+
+`DsButton`/`DsIconButton`/`DsTextButton` (5 kinds), `DsCard`/`DsListItem`/
+`DsVirtualList`/`DsSkeleton`/`DsEmptyState`, `DsDialog`/`DsConfirmDialog`/
+`DsPromptDialog`/`DsProgressDialog`, `DsTextField`/`DsSearchField`/`DsNumericField`,
+`DsSelect`/`DsTabRow`/`DsChip`/`DsCategoryBadge`, `DsMenuPanel`/`DsMenuItem`,
+`DsTagChip`/`DsFlagBadge`/`DsPriorityFlag`, `DsToastHost`, `DsToolbar`/`DsSplitPane`,
+`DsBadge`/`DsStatTile`/`DsProgressBar`/`DsToggle`/`DsLink`/`DsSectionHeader`.
+All token-driven (`DsSpacing`/`DsRadius`/`DsType`/`DsMotion`/`DsElevation`/
+`DsSemantic`), adaptive (`DsResponsive` width tiers + `adaptiveDialogWidth`).
+
+### Iconography — PARTIAL
+
+- Brand mark shipped as `BrandMark` (brand asset, used in wizard/launcher); custom
+  `ExtraIcons` set for app-specific glyphs; Material Icons for the rest. The stroke-
+  trio SVG above is the brand concept the mark derives from.
+
+### Theme Studio / Appearance Studio — SHIPPED
+
+- `AppearanceStudio.kt` (shared) + desktop `ThemeStudioView` (`ThemeManager`):
+  Base/Accent/Color/Gradients/Motion/Layout tabs, color wheel + RGB/HSL/HSV/HEX,
+  gradient editor, motion presets, layout controls, JSON export/import, live preview.
+
+### Onboarding wizard — SHIPPED (`desktopApp/.../OnboardingWizard.kt`)
+
+- 8 steps: Welcome → Theme → Accent → UI scaling → Font size → Navigation →
+  Motion → Finish. Live previews, skip-all, re-openable from Settings.
+
+### Not yet shipped (from the vision)
+
+- Branded installer theme steps (installer exists; the themed in-app wizard flow is
+  a concept), system-wide global hotkeys, per-monitor DPI awareness, multiple
+  windows, minimize-to-tray, brush calligraphy/pressure stylus pipeline, animated
+  gradient backgrounds.

@@ -1,8 +1,21 @@
 # Kaiteyo (書いてよ) — Project Vision
 
+> **Revision note (2026-08)**: the product vision has been expanded into the Master
+> Blueprint. **The canonical vision is now [`docs/product/VISION.md`](../product/VISION.md)**
+> and the full specification is [`docs/product/PRODUCT.md`](../product/PRODUCT.md) (MASTER
+> §0–§88). This file keeps the original mission statement and the non-goals, revised
+> below for consistency with the blueprint. Where this file and the blueprint differ,
+> the blueprint wins.
+
 ## What is Kaiteyo?
 
-Kaiteyo is a premium, cross-platform Japanese language learning application. Originally a fork of Kanji Dojo, Kaiteyo has been completely redesigned with a focus on desktop-first UX, beautiful craftsmanship, and a cohesive design system.
+Kaiteyo is a premium, cross-platform Japanese language learning application — a **connected
+Japanese language ecosystem** (dictionary, kanji/kana/vocabulary/grammar/sentence systems,
+learning platform with library + SRS study, media center with Yomitan-style glossing and
+ASBPlayer-style mining, Anki/AnkiConnect integration, statistics, exams, knowledge graph,
+curriculum, and — as target architecture — an actual 3D Japanese-learning game world, the
+Journey). Originally a fork of Kanji Dojo, Kaiteyo has been completely redesigned with a
+focus on desktop-first UX, beautiful craftsmanship, and a cohesive design system.
 
 The name "Kaiteyo" (書いてよ) is Japanese for "write it!" — an invitation to practice and engage with the language actively.
 
@@ -37,10 +50,19 @@ The name "Kaiteyo" (書いてよ) is Japanese for "write it!" — an invitation 
 - v3.x: Cloud sync, community features, shared decks
 - v4.x: AI-assisted learning paths, intelligent review scheduling
 
-## What Kaiteyo is NOT
+## What Kaiteyo is NOT (revised against the Master Blueprint)
 
-- NOT a gamified language app (no points, badges, streaks)
-- NOT a mobile-first app (mobile is supported but desktop is primary)
-- NOT a dictionary app (lookups are contextual, not standalone)
-- NOT a social network (no friend lists, no sharing walls)
-- NOT a replacement for a textbook (it's a supplement, not a course)
+- **NOT a gamified language app** — points/badges/streaks are never the core loop. The
+  Journey is an *actual game* whose mechanics are exploration/discovery/collection —
+  never XP grinding (MASTER §21–§22, NODE §86/§116).
+- **NOT a mobile-first app** — mobile is supported and shares the core engine; desktop is
+  primary.
+- **NOT merely a dictionary app** — the dictionary is a major *subsystem* of the
+  ecosystem, not the whole product (MASTER §11).
+- **NOT a social network** — no friend walls or sharing feeds; community features are
+  strictly opt-in and secondary (MASTER §65).
+- **NOT a replacement for a textbook** — it is a companion that connects media,
+  reference, and practice; the curriculum system grows into structured courses
+  (MASTER §29).
+- **NOT a collection of disconnected applications** — dictionary, media, study, and game
+  share one knowledge model (MASTER §1).

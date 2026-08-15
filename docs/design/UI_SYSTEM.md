@@ -1,201 +1,221 @@
 # Kaiteyo (書いてよ) — UI System
 
-## Component Philosophy
+> This is the **component catalog as implemented**. Every component listed here exists
+> in code — `core/.../presentation/common/` for shared (multi-platform) components and
+> `desktopApp/.../desktop/designsystem/` for the desktop `Ds*` system. Signatures are
+> the real public APIs; where a spec below differs from the code, the code wins.
 
-Every component in Kaiteyo follows these principles:
-1. **Purposeful** — No decorative-only components
-2. **Consistent** — Same component behaves the same everywhere
-3. **Responsive** — Adapts to context and window size
-4. **Accessible** — Keyboard navigable, screen-reader friendly
-5. **Animated** — Smooth transitions for state changes
+## Component philosophy
 
----
+1. **Purposeful** — no decorative-only components (`DsEmptyState`, skeletons and
+   tooltips exist because states need them).
+2. **Consistent** — one `Ds*` component set across the whole desktop suite; shared
+   Material3 components across all platforms.
+3. **Responsive** — surfaces adapt to the window via `DsResponsive` width tiers and
+   `adaptiveDialogWidth` (never fixed-size boxes floating mid-screen).
+4. **Accessible** — keyboard navigable (`DsMenuPanel` grabs focus, ↑/↓ wrap, Esc
+   dismisses), hover + focus states on every interactive element, reduced-motion
+   honored (see `ANIMATION_SYSTEM.md`).
+5. **Token-driven** — no hardcoded colors/spacing/radii in views; everything reads
+   `DsSpacing`, `DsRadius`, `DsType`, `DsMotion`, `DsElevation`, `DsSemantic`
+   (all scaled by the active theme config).
 
-## Buttons
+## Buttons (`DsButtons.kt`)
 
-### Primary Button
-- Solid background using accent primary color
-- White text
-- 8dp corner radius
-- Hover: slight scale-up (1.02x) with glow
-- Press: scale-down (0.98x)
-- Min height: 40dp, horizontal padding: 16dp
+```kotlin
+DsButton(text, onClick, modifier, kind = Primary, icon = null, enabled = true, compact = false)
+```
 
-### Secondary Button
-- Outline style with accent color border
-- Transparent background (filled on hover)
-- Same dimensions as primary
+`kind: DsButtonKind` — `Primary` (accent fill, onPrimary text), `Secondary`
+(surfaceElevated fill), `Ghost` (transparent → surfaceInteractive on hover), `Danger`
+(error fill), `AccentTint` (accent at 16% → 26% on hover).
 
-### Ghost Button
-- No border until hover
-- Subtle background on hover
-- Used for toolbar actions
+Behavior: background `animateColorAsState` (160ms tween), scale spring
+(pressed 0.97 / hovered 1.02, `spring(0.6, 500)`), disabled → muted text, `compact`
+shrinks padding. Radius `DsRadius.Md`, padding `DsSpacing.Md` ×
+`DsSpacing.Xs/Sm`.
 
-### Icon Button
-- 36dp x 36dp size
-- 8dp corner radius
-- No text, only icon
-- Hover: background fill at 10% accent
-- Used for window controls, toolbars
+```kotlin
+DsIconButton(icon, onClick, modifier, contentDescription = null, tint = null, size = 34.dp, enabled = true)
+```
 
----
+36→34dp square icon button; hover background `surfaceInteractive`, hover tint = accent.
+`DsTextButton(text, onClick, ...)` — text-only, accent-colored, 10% accent hover fill.
+`DsButtonRow` — evenly spaced row (used by review grading).
 
-## Cards
+## Cards & lists (`DsCards.kt`)
 
-### Standard Card
-- Background: surface color
-- Corner radius: 12dp
-- Inner padding: 16dp
-- Subtle border: `accent.copy(alpha = 0.05f)`
-- Hover: elevation increase + subtle glow
-- May contain: title, description, metadata, actions
+```kotlin
+DsCard(modifier, elevated = false, onClick = null, content)
+```
 
-### Interactive Card
-- Same as standard card
-- Clickable with ripple/hover effect
-- Cursor changes to pointer
-- Used for: study items, selection grids
+Surface or surfaceElevated fill, `DsRadius.Lg`, optional hover lift
+(`DsElevation.Raised` shadow, 200ms tween) + 2dp accent top line when interactive
+and hovered. `onClick != null` makes it interactive (hoverable, no ripple).
 
-### Preview Card
-- Used in Appearance Studio live preview
-- Slightly elevated shadow
-- Shows a miniature representation of UI
-- 120dp x 80dp minimum size
+```kotlin
+DsListItem(modifier, leading = {}, title, subtitle = null, trailing = {}, onClick = null)
+```
 
----
+40dp row (`padding(Lg, Md)`), hover → `surfaceInteractive`, title `DsType.Body` Medium
+(1 line, ellipsis), subtitle `DsType.Caption` muted.
 
-## Lists
+```kotlin
+DsVirtualList(items, key, modifier, contentPadding, content)  // LazyColumn — 100k+ safe
+DsFavoriteToggle(favorite, onToggle)                          // ★ star, yellow when set
+DsChevron()                                                   // trailing chevron affordance
+```
 
-### Standard List
-- 48dp minimum row height
-- 16dp horizontal padding
-- 4dp vertical gap between items
-- Optional leading icon/image
-- Optional trailing action
+**Loading states** — `DsSkeleton(modifier, width, height, rounded)` pulses
+0.45→1.0 alpha (900ms reverse tween, static under reduced motion); `DsSkeletonCard`
+composes a card-shaped placeholder.
 
-### Compact List
-- 36dp row height
-- Dense layout for settings
-- Used in: settings panels
+**Empty state** — `DsEmptyState(title, message, icon = null, action = {})`: accent
+icon at 60%, title `DsType.BodyLarge`, message muted, optional action composable.
 
----
+## Dialogs (`DsDialog.kt`)
 
-## Dialogs & Modals
+```kotlin
+DsDialog(title, onDismiss, modifier, compact = false, content)
+```
 
-### Dialog
-- Corner radius: 16dp
-- Background: surface elevated color
-- Shadow: elevation level 4 (16dp)
-- Width: 480dp maximum
-- Padding: 24dp
-- Closes on: Escape key, clicking backdrop, explicit close button
+Shared entrance: scale 0.94→1 spring + fade 180ms (`dialogEntranceLayer`). Width via
+`adaptiveDialogWidth` — compact: 0.5 × window, 400–560dp; rich: 0.6 × window,
+480–860dp. Panel `surfaceElevated`, `DsRadius.Xl`, padding `DsSpacing.Xl`, title
+`DsType.Title` SemiBold. `usePlatformDefaultWidth = false` so width follows the window.
 
-### Modal
-- Full-screen overlay for focused tasks
-- Backdrop: 60% opacity black
-- Content centered vertically and horizontally
-- Used for: Theme Studio, detailed editing
+Specializations:
+- `DsConfirmDialog(title, message, confirmText, onConfirm, onDismiss, danger = false)`
+  — message + Cancel (text) + Confirm (primary or danger).
+- `DsPromptDialog(title, placeholder, initialValue, onConfirm, onDismiss)` — single
+  `DsTextField`, Save disabled while blank.
+- `DsProgressDialog(title, message, progress, modifier)` — 6dp track + accent fill +
+  percent label; used by transfers/imports.
 
----
+## Inputs (`DsInputs.kt`)
 
-## Sidebar
+```kotlin
+DsTextField(value, onValueChange, modifier, placeholder = "", label = null, leadingIcon = null, singleLine = true)
+```
 
-### Floating Island
-- Not attached to window edge
-- 8dp gap from edge
-- Corner radius: 16dp
-- Shadow: elevation level 3 (8dp)
-- Width: 280dp expanded, 56dp collapsed
-- Can dock to: left, right, top, bottom
-- Collapse/expand with spring animation
+Row on `surfaceElevated` (`DsRadius.Sm`), `BasicTextField` with accent cursor, 2dp
+bottom hairline — accent when focused, border at 25% otherwise. `DsSearchField(...)` —
+search icon + clear button (canonical search input, optional `autoFocus` via
+`FocusRequester`). `DsNumericField(value, onValueChange, label = null)` — digit-only,
+max 6 chars.
 
-### Navigation Sidebar
-- Contains: app logo, navigation items, user menu
-- Each item: 44dp height, icon + label
-- Active item: accent primary background
-- Collapsed: only icons visible
+## Selects, tabs & chips (`DsSelect.kt`)
 
----
+```kotlin
+DsSelect(selected, options, onSelected, modifier, labelOf, icon = null)
+```
 
-## Inputs
+Combo box: `surfaceElevated` row, chevron rotates 180° on open (spring 0.6/500),
+border accent at 60% when expanded, `DropdownMenu` listing options (selected in
+accent). `DsTabRow(tabs, selectedIndex, onSelect)` — segmented control, selected
+segment accent 16% fill. `DsChip(text, selected, onClick, trailing = null)` — filter
+pill, `DsRadius.Full`, selected accent 20% fill. `DsCategoryBadge(category)` — settings
+category pill.
 
-### Text Field
-- 44dp height
-- 12dp corner radius
-- Border: 1dp, `textSecondary.copy(alpha = 0.3f)`
-- Focus: accent primary border + glow
-- Label above field, helper text below
+## Context menus (`DsMenu.kt`)
 
-### Slider
-- Track height: 4dp
-- Thumb size: 16dp
-- Accent primary color
-- Smooth animation on value change
+```kotlin
+DsContextMenuHost(enabled, menuItems, content)   // right-click (or press) anchor
+DsMenuItem(label, icon = null, shortcutLabel = null, checked = null, danger = false, enabled = true, onAction)
+DsMenuPanel(menuItems, onDismiss)                // the panel itself
+DsMenuItemRow(item, onClick, modifier)           // one row
+DsMenuDivider()
+```
 
-### Toggle/Switch
-- Width: 44dp, height: 24dp
-- Thumb: 20dp circle
-- Active: accent primary
-- Inactive: `textSecondary.copy(alpha = 0.3f)`
+Panel: 240dp, `surfaceInteractive`, keyboard access (grabs focus, ↑/↓ wrap skipping
+disabled, Enter/Space activate, Esc dismiss), selected row highlighted accent 14%.
+Danger rows tint #FF6B6B. `checked` shows an accent ✓; `shortcutLabel` right-aligned.
 
----
+## Tags & flags (`DsTag.kt`)
 
-## Navigation
+```kotlin
+DsTagChip(label, colorHex = "#808080", modifier, selected = false, onClick = null, removable = false, onRemove = null)
+```
 
-### Tab Bar
-- 48dp height
-- Active indicator: 2dp underline with accent primary
-- Hover: subtle background change
-- Optional icon + label layout
+Colored pill: dot + label; background = color at 16% (25% hover, 35% selected);
+text color auto-picks dark/light by `luminance()`. `DsFlagBadge(label, colorHex)` —
+dot + label. `DsPriorityFlag(priority, colorHex)` — colored diamond + "P1". Hex parsing
+via `parseHexColor` (accepts `#RRGGBB` / `#RRGGBBAA`).
 
-### Breadcrumbs
-- 20dp height
-- Separator: ">" in textSecondary
-- Current page: textPrimary, not clickable
+## Toasts (`DsToast.kt`)
 
----
+```kotlin
+DsToastHost { show(text, kind = Info, durationMs = 3500); dismiss(msg) }
+DsToastHostView(host, modifier, content)   // wraps content; host via LocalToastHost
+```
 
-## Progress Indicators
+Bottom-center stack; slide-up/fade entrance (240ms, speed-aware); kind colors:
+Success (dark green bg, lime icon), Warning (dark amber), Error (dark red),
+Info (surfaceInteractive). Icon does a small spring pop on appear (skipped under
+reduced motion/instant speed).
 
-### Linear Progress
-- 4dp height
-- Accent primary color
-- Indeterminate: animated gradient sweep
-- Determinate: smooth fill animation
+## Toolbars & panels (`DsToolbar.kt`)
 
-### Circular Progress
-- 36dp diameter
-- 3dp stroke width
-- Used for: loading states, sync indicators
+```kotlin
+DsToolbar(title, modifier, subtitle = null, actions = {}, backIcon = null, onBack = null)
+DsToolbarDivider()   // 1dp border@40%
+DsSplitPane(modifier, vertical = true, initialFraction = 0.5, dividerWidth = 6.dp, onFractionChanged, first, second)
+```
 
----
+`DsSplitPane` is a resizable split with a draggable divider (accent on hover),
+fraction clamped 0.1–0.9.
 
-## Tooltips
+## Misc primitives (`DsMisc.kt`)
 
-- Appear on hover after 300ms delay
-- Position: above the element
-- Background: surface elevated at 95% opacity
-- Text: 12sp, primary text color
-- Corner radius: 6dp
-- Padding: 8dp horizontal, 4dp vertical
+- `DsBadge(text, tint = accent)` — pill, accent 16% fill, `DsRadius.Full`.
+- `DsStatTile(label, value, delta = null, deltaPositive = true)` — label
+  (uppercase caption) + value (`DsType.Heading` Bold) + optional colored delta.
+- `DsProgressBar(fraction, height = 6.dp, color = accent)` — rounded track/fill.
+- `DsToggle(checked, onCheckedChange, label = null)` — Material Switch + optional
+  label.
+- `DsLink(text, onClick)` — accent text + arrow icon.
+- `DsSectionHeader(title, subtitle = null, action = {})` — the standard view header.
+- `DsNumberLabel(value)` — bold numeric label for grid density controls.
 
----
+## Navigation (`NavShell.kt`, `WorkspaceShell.kt`)
 
-## Interaction Rules
+- **Shared `NavShell`** — docked sidebar (any edge) or floating bubble; expanded/
+  compact; auto-hide; item heights 40dp (desktop) / 48dp (phone); selected item =
+  accent 14% fill + accent text; focus shows 2dp accent border; compact mode shows
+  hover tooltips positioned per edge.
+- **Desktop workspace** — `DsNavRail`/`DsNavBar` inside `DsDockIsland`; `DsTopBar`
+  (title + subtitle + palette button "Search or jump to…" with Ctrl+K hint + settings
+  + panel menu); `DsWorkspaceTabBar` for browser-style tabs; `DsDockColumn` for
+  workspace panels; `DsFloatingLauncher`/launchpad (bubble mode).
+- Below 720dp (`Breakpoints.CompactWindowWidth`): `CompactLayout` with `DsCompactNavBar`
+  (bottom or top), hysteresis exit at 760dp.
 
-| State | Visual Change | Duration | Easing |
-|-------|--------------|----------|--------|
-| Hover | Scale 1.02x, background glow | 150ms | ease-out |
-| Press | Scale 0.98x | 80ms | ease-in |
-| Focus | Outer glow ring | 200ms | ease-out |
-| Disabled | 40% opacity | 200ms | linear |
-| Loading | Skeleton shimmer | 1.5s loop | linear |
+## Interaction rules
 
-## Keyboard Navigation
+| State | Visual change | Duration | Type |
+|-------|---------------|----------|------|
+| Hover | bg fill (surfaceInteractive / accent tint), scale 1.02 (buttons/cards), icon tint → accent | 160ms | tween / spring |
+| Press | scale 0.97 (buttons), 0.97–0.96 (wizard cards) | — | spring |
+| Focus | 2dp accent border | — | — |
+| Disabled | muted text, no interactions | — | — |
+| Loading | skeleton pulse 0.45↔1.0 | 900ms loop | tween reverse |
 
-- Tab: Move focus forward
-- Shift+Tab: Move focus backward
-- Enter/Space: Activate focused element
-- Escape: Close dialog/modal
-- Arrow keys: Navigate within lists, sliders
-- Ctrl+K: Command palette (future)
+All durations honor `DsMotion` (Fast 120 / Normal 240 / Slow 380) × speed multiplier,
+and reduced motion zeroes them.
+
+## Keyboard navigation
+
+- `Tab` / `Shift+Tab` move focus; Enter/Space activate; Esc closes menus/dialogs;
+  ↑/↓ navigate menus and lists (wrapping).
+- Review: `1–4` grade, `Space` reveal, `B` bury, `S` suspend, `R` retry,
+  `Ctrl+Enter` skip, `Ctrl+Z` undo (see `ShortcutRegistry.kt` defaults).
+- Palette: `Ctrl+K` open, `Esc` close, arrows + Enter to run.
+- `Ctrl+B` toggles nav sidebar/floating; `Ctrl+Shift+N` cycles dock layouts
+  (desktop).
+
+## Related
+
+- `docs/design/DESIGN_LANGUAGE.md` — the tokens behind these components
+- `docs/design/THEME_SYSTEM.md` — where the tokens come from
+- `docs/design/ANIMATION_SYSTEM.md` — the motion rules
+- `docs/features/DESKTOP.md` — the desktop window shell

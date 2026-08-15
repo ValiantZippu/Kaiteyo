@@ -303,7 +303,11 @@ fun HistoryRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
 }
 
 @Composable
-fun CardBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
+fun CardBrowserRoute(
+    controller: DeckFeaturesController,
+    onClose: () -> Unit = {},
+    initialDeckId: String? = null
+) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
     if (controller.isLoading) {
@@ -314,8 +318,29 @@ fun CardBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
         ErrorView(onRetry = { scope.launch { controller.loadAll() } })
         return
     }
+    // Catalog = kanji rows (real deck names) + vocabulary rows, optionally
+    // narrowed to a single deck ("letter:N" / "vocab:N") whose name becomes
+    // the initial deck filter so the browser opens pre-filtered. The final
+    // list is derived from controller.cards at composition time so edits made
+    // inside the browser (flags, status, fields) reflect immediately.
+    var parts by remember { mutableStateOf<DeckFeaturesController.BrowserCatalogParts?>(null) }
+    LaunchedEffect(controller.isLoaded) {
+        if (controller.isLoaded) {
+            parts = controller.browserCatalogParts(initialDeckId)
+        }
+    }
+    val catalog = remember(controller.cards, parts) {
+        if (parts == null) return@remember emptyList()
+        val kanjiRows = controller.cards.map { card ->
+            val name = parts!!.deckNameByCharacter[card.id]
+            if (name != null && name != card.deck) card.copy(deck = name) else card
+        }
+        val all = kanjiRows + parts!!.vocabRows
+        parts!!.filterIds?.let { ids -> all.filter { it.id in ids } } ?: all
+    }
     CardBrowserFullScreen(
-        cards = controller.cards,
+        cards = catalog,
+        initialDeckFilter = parts?.filterLabel,
         onFlagCard = { id, flag -> scope.launch { controller.setFlagForCards(listOf(id), flag) } },
         onStatusChange = { id, status -> scope.launch { controller.changeCardStatus(id, status) } },
         onUpdateCard = { card -> scope.launch { controller.updateCardFields(card) } },
@@ -468,7 +493,13 @@ fun AnkiOperationsRoute(controller: DeckFeaturesController, onClose: () -> Unit 
 }
 
 @Composable
-fun DeckBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
+fun DeckBrowserRoute(
+    controller: DeckFeaturesController,
+    onClose: () -> Unit = {},
+    onOpenDeck: (String) -> Unit = {},
+    onBrowse: (String) -> Unit = {},
+    onFindContent: () -> Unit = {}
+) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
     if (controller.isLoading) {
@@ -479,15 +510,28 @@ fun DeckBrowserRoute(controller: DeckFeaturesController, onClose: () -> Unit = {
         ErrorView(onRetry = { scope.launch { controller.loadAll() } })
         return
     }
-    val decks = remember(controller.cards) { buildRealDecks(controller.cards) }
+    LaunchedEffect(controller.isLoading) {
+        if (!controller.isLoading && controller.isLoaded) controller.loadDecks()
+    }
+    // Live counts: any deck/FSRS/review change reloads the summaries so the
+    // browser's new/learning/review/due numbers always match the study screens.
+    LaunchedEffect(Unit) {
+        controller.deckChangesFlow.collect { controller.loadDecks() }
+    }
+    val decks = buildRealDecks(controller.deckSummaries)
     DeckBrowserFullScreen(
         decks = decks,
-        onDeckClick = { deck -> scope.launch { controller.recordHistory(KaiteyoHistoryAction.STUDY, "Opened deck '${deck.name}'") } },
-        onFavorite = { deck -> scope.launch { controller.recordHistory(KaiteyoHistoryAction.DECK, "Toggled favorite on deck '${deck.name}'") } },
-        onArchive = { deck -> scope.launch { controller.recordHistory(KaiteyoHistoryAction.DECK, "Archived deck '${deck.name}'") } },
-        onMerge = { a, b -> scope.launch { controller.recordHistory(KaiteyoHistoryAction.DECK, "Merged deck '${a.name}' into '${b.name}'") } },
-        onMove = { a, b -> scope.launch { controller.recordHistory(KaiteyoHistoryAction.DECK, "Moved deck '${a.name}' under '${b.name}'") } },
-        onCreateDeck = { name, _ -> scope.launch { controller.recordHistory(KaiteyoHistoryAction.DECK, "Created deck '$name'") } },
+        onDeckClick = { deck -> onOpenDeck(deck.id) },
+        onFavorite = { deck -> scope.launch { controller.toggleDeckFavorite(deck.id) } },
+        onPin = { deck -> scope.launch { controller.toggleDeckPin(deck.id) } },
+        onArchive = { deck -> scope.launch { controller.archiveDeck(deck.id, !deck.isArchived) } },
+        onMerge = { a, b -> scope.launch { controller.mergeDeck(a.id, b.id) } },
+        onMove = { a, b -> scope.launch { controller.moveDeck(a.id, b.id) } },
+        onRename = { deck, name -> scope.launch { controller.renameDeck(deck.id, name) } },
+        onDelete = { deck -> scope.launch { controller.deleteDeck(deck.id) } },
+        onCreateDeck = { name, type, _ -> scope.launch { controller.createDeck(name, type) } },
+        onBrowse = { deck -> onBrowse(deck.id) },
+        onFindContent = { onFindContent() },
         onClose = onClose
     )
 }
@@ -980,23 +1024,24 @@ private fun CollectionRow(
     }
 }
 
-private fun buildRealDecks(cards: List<KaiteyoCard>): List<KaiteyoDeck> =
-    cards.groupBy { it.deck.ifBlank { "Ungrouped" } }.map { (name, list) ->
+private fun buildRealDecks(summaries: List<DeckFeaturesController.DeckSummary>): List<KaiteyoDeck> =
+    summaries.map { summary ->
         KaiteyoDeck(
-            id = name,
-            name = name,
-            description = "Auto-built from real card data",
-            cardCount = list.size,
-            newCount = list.count { it.status == CardStatus.New },
-            learningCount = list.count { it.status == CardStatus.Learning },
-            reviewCount = list.count { it.status == CardStatus.Relearning },
-            matureCount = list.count { it.status == CardStatus.Mature },
-            dueCount = list.count {
-                it.status == CardStatus.New || it.status == CardStatus.Learning || it.status == CardStatus.Relearning
-            },
-            accuracy = if (list.isEmpty()) 0f else list.sumOf { it.accuracy.toDouble() }.toFloat() / list.size,
-            retention = if (list.isEmpty()) 0f else list.sumOf { it.accuracy.toDouble() }.toFloat() / list.size,
-            lastStudied = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+            id = summary.id,
+            name = summary.name,
+            description = if (summary.cardCount == 1) "1 card" else "${summary.cardCount} cards",
+            isArchived = summary.isArchived,
+            isFavorite = summary.isFavorite,
+            isPinned = summary.isPinned,
+            cardCount = summary.cardCount,
+            newCount = summary.newCount,
+            learningCount = summary.learningCount,
+            reviewCount = summary.reviewCount,
+            matureCount = summary.reviewCount,
+            dueCount = summary.dueCount,
+            accuracy = 0f,
+            retention = 0f,
+            lastStudied = ""
         )
     }
 

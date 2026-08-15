@@ -99,6 +99,7 @@ import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.theme.neutralButtonColors
 import ua.syt0r.kanji.presentation.common.theme.snapToBiggerContainerCrossfadeTransitionSpec
 import ua.syt0r.kanji.presentation.common.ui.FilledTextField
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import kotlin.math.roundToInt
 import kotlin.time.Duration
 
@@ -227,7 +228,11 @@ fun PracticeConfigurationContainer(
     Column(
         modifier = Modifier.fillMaxSize()
             .wrapContentSize()
-            .widthIn(max = 400.dp)
+            .widthIn(max = rememberAdaptiveContentMaxWidth(
+                phoneMax = 400.dp,
+                mediumMax = 560.dp,
+                wideMax = 720.dp
+            ))
             .padding(horizontal = 20.dp)
             .padding(bottom = 20.dp)
     ) {
@@ -576,7 +581,11 @@ fun PracticeSummaryContainer(
     Column(
         modifier = Modifier.fillMaxSize()
             .wrapContentSize()
-            .widthIn(max = 400.dp)
+            .widthIn(max = rememberAdaptiveContentMaxWidth(
+                phoneMax = 400.dp,
+                mediumMax = 560.dp,
+                wideMax = 720.dp
+            ))
             .padding(bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

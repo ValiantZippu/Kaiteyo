@@ -41,6 +41,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ════════════════════════════════════════════
 // SHARED COMPONENTS
@@ -128,7 +129,7 @@ fun TagCardStatusSelectorDialog(
     onSelect: (CardStatus) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Change Card Status") },
         text = {
@@ -165,7 +166,7 @@ fun TagNoteEditorDialog(
     onDismiss: () -> Unit
 ) {
     var content by remember { mutableStateOf(initialContent) }
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Note") },
         text = {

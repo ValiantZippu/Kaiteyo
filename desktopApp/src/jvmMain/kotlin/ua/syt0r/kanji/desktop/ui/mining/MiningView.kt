@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
@@ -22,16 +21,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
+import ua.syt0r.kanji.desktop.designsystem.DsChip
 import ua.syt0r.kanji.desktop.designsystem.DsConfirmDialog
 import ua.syt0r.kanji.desktop.designsystem.DsDialog
 import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
@@ -50,6 +54,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
+import ua.syt0r.kanji.desktop.engine.mining.CardDestination
 import ua.syt0r.kanji.desktop.engine.mining.MiningPayload
 import ua.syt0r.kanji.desktop.engine.mining.MiningSource
 import ua.syt0r.kanji.desktop.engine.mining.MiningTemplate
@@ -228,8 +233,9 @@ fun MiningDialog(state: AppState) {
 
     DsDialog(
         title = "Mine a new card",
-        onDismiss = { mining.closeMining() },
-        modifier = Modifier.width(560.dp)
+        onDismiss = { mining.closeMining() }
+        // Width is adaptive (DsDialog) — a rich form like this spreads with
+        // the window instead of floating at a fixed 560dp.
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
@@ -297,13 +303,58 @@ fun MiningDialog(state: AppState) {
                 }
                 Text("Example: ${draft.example}", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(1f))
             }
+
+            // Destination — where this mine goes. Anki options are live only
+            // while the AnkiConnect integration is enabled.
+            val ankiEnabled = state.settings.getBool("media.anki.enabled")
+            val anki = state.miningIntegration.anki
+            val ankiAvailable = ankiEnabled && anki.configured
+            var destination by remember { mutableStateOf(mining.defaultDestination()) }
+            Text("Destination", color = sc.textSecondary, fontSize = DsType.Label, fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
+                CardDestination.entries.forEach { d ->
+                    val selectable = d == CardDestination.Kaiteyo || ankiAvailable
+                    DsChip(
+                        text = d.label,
+                        selected = destination == d,
+                        onClick = { if (selectable) destination = d },
+                        modifier = if (selectable) Modifier else Modifier.alpha(0.45f)
+                    )
+                }
+            }
+            val statusText = when {
+                !ankiEnabled -> "AnkiConnect is disabled — enable it in Settings → Media → Integrations."
+                !anki.configured -> "AnkiConnect not configured (set host/port in Settings → Media)."
+                anki.connected -> "AnkiConnect: connected."
+                else -> "AnkiConnect: not detected" + (anki.lastError?.let { " — $it" } ?: "")
+            }
+            Text(statusText, color = sc.textMuted, fontSize = DsType.Caption)
+
+            // Pending Anki exports from previous failed sends — retry without re-mining.
+            if (mining.pendingExportCount > 0) {
+                val scope = rememberCoroutineScope()
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    DsBadge(text = "${mining.pendingExportCount} pending Anki export(s)", tint = sc.textMuted, modifier = Modifier.weight(1f))
+                    DsButton(
+                        text = "Retry now",
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        onClick = { scope.launch(Dispatchers.IO) { mining.retryPendingAnki() } }
+                    )
+                }
+            }
+
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                 DsButton(
                     text = "Create card",
                     icon = Icons.Default.Add,
                     onClick = {
                         if (draft.headword.isNotBlank()) {
-                            mining.mine(draft)
+                            mining.mine(draft, destination)
                             mining.closeMining()
                         }
                     },

@@ -249,7 +249,16 @@ class MpvBackend(
         PlaybackCapability.CanMute,
         PlaybackCapability.CanScreenshot,
         PlaybackCapability.CanChapters,
-        PlaybackCapability.CanLoop
+        PlaybackCapability.CanLoop,
+        PlaybackCapability.CanAspectRatio,
+        PlaybackCapability.CanDisplayMode,
+        PlaybackCapability.CanVideoAdjustments,
+        PlaybackCapability.CanDeinterlace,
+        PlaybackCapability.CanAudioDelay,
+        PlaybackCapability.CanAudioChannel
+        // Note: mpv has no native equalizer — CanEqualizer is deliberately
+        // absent so the UI shows the panel disabled with an explanation
+        // instead of pretending it works.
     )
     override var listener: ((PlaybackEvent) -> Unit)? = null
     override val isAvailable: Boolean get() = File(mpvExecutable).canExecute()
@@ -485,6 +494,90 @@ class MpvBackend(
 
     override fun setSubtitleDelay(delayMs: Long) {
         client?.setProperty("sub-delay", delayMs / 1000.0)
+    }
+
+    // ------------------------------------------------------------
+    // Video rendering (display mode / aspect / adjustments)
+    // ------------------------------------------------------------
+
+    override fun setDisplayMode(mode: VideoDisplayMode) {
+        when (mode) {
+            VideoDisplayMode.Fit -> {
+                client?.setProperty("video-unscaled", "no")
+                client?.setProperty("panscan", 0.0)
+                client?.setProperty("video-aspect-override", "no")
+                client?.setProperty("video-zoom", 0.0)
+            }
+            VideoDisplayMode.Fill -> {
+                client?.setProperty("video-unscaled", "no")
+                client?.setProperty("panscan", 1.0)
+                client?.setProperty("video-aspect-override", "no")
+                client?.setProperty("video-zoom", 0.0)
+            }
+            VideoDisplayMode.Crop -> {
+                // Crops overflow to the surface — panscan 1.0 fills and clips.
+                client?.setProperty("video-unscaled", "no")
+                client?.setProperty("panscan", 1.0)
+                client?.setProperty("video-aspect-override", "no")
+            }
+            VideoDisplayMode.Original -> {
+                client?.setProperty("video-unscaled", "yes")
+                client?.setProperty("panscan", 0.0)
+                client?.setProperty("video-zoom", 0.0)
+            }
+            VideoDisplayMode.Stretch -> {
+                client?.setProperty("video-unscaled", "no")
+                client?.setProperty("panscan", 0.0)
+                client?.setProperty("video-aspect-override", "16:9")
+            }
+        }
+    }
+
+    override fun setAspectRatio(preset: AspectRatioPreset) {
+        client?.setProperty("video-aspect-override", preset.value ?: "no")
+    }
+
+    override fun setVideoAdjustments(adjustments: VideoAdjustments) {
+        // mpv ranges are -100..100 with 0 = neutral; ours are 0..200/100.
+        client?.setProperty("brightness", adjustments.brightness - 100f)
+        client?.setProperty("contrast", adjustments.contrast - 100f)
+        client?.setProperty("saturation", adjustments.saturation - 100f)
+        client?.setProperty("gamma", adjustments.gamma - 100f)
+        client?.setProperty("hue", (adjustments.hue / 180f * 100f))
+        setDeinterlace(adjustments.deinterlace)
+    }
+
+    override fun setDeinterlace(enabled: Boolean) {
+        client?.setProperty("deinterlace", if (enabled) "yes" else "no")
+    }
+
+    // ------------------------------------------------------------
+    // Audio extras (delay / channel — output & EQ unsupported)
+    // ------------------------------------------------------------
+
+    override fun setAudioDelay(delayMs: Long) {
+        client?.setProperty("audio-delay", delayMs / 1000.0)
+    }
+
+    override fun setAudioChannel(channel: AudioChannelPreset) {
+        val value = when (channel) {
+            AudioChannelPreset.Stereo -> "stereo"
+            AudioChannelPreset.ReverseStereo -> "stereo"
+            AudioChannelPreset.Left -> "left"
+            AudioChannelPreset.Right -> "right"
+            AudioChannelPreset.Mono -> "mono"
+            AudioChannelPreset.Headphones -> "stereo"
+        }
+        client?.setProperty("audio-channels", value)
+    }
+
+    override fun bufferedPositionMs(): Long {
+        // mpv demuxer-cache-time is seconds ahead of the playhead; the
+        // observed buffer extends from the current position.
+        val resp = client?.command("get_property", "demuxer-cache-time")
+        val sec = resp?.get("data")?.jsonPrimitive?.doubleOrNull ?: return super.bufferedPositionMs()
+        if (sec <= 0) return super.bufferedPositionMs()
+        return (positionMs + (sec * 1000).toLong()).coerceAtMost(durationMs.coerceAtLeast(positionMs))
     }
 
     override fun frameStepForward(): Boolean {

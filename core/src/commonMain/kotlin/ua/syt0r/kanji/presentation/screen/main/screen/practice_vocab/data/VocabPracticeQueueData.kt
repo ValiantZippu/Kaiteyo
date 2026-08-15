@@ -28,7 +28,8 @@ sealed interface VocabPracticeQueueState {
     data class Review(
         val state: MutableVocabReviewState,
         val progress: PracticeQueueProgress,
-        val answers: PracticeAnswers
+        val answers: PracticeAnswers,
+        val deckId: Long
     ) : VocabPracticeQueueState
 
     data class Summary(

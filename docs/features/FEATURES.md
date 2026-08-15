@@ -112,3 +112,44 @@ exist as prototypes or scaffolds are labeled as such.
 - Sync is desktop-oriented; no end-to-end encryption of gist content.
 - iOS and several platform actuals are verified by build + manual testing, not CI.
 - No automated UI tests yet (see `../testing/README.md`).
+
+## Where things live (code map)
+
+Every row above corresponds to real code. The canonical entry points:
+
+### Shared engine (`core/src/commonMain/kotlin/ua/syt0r/kanji/`)
+
+| Feature | Key files |
+|---|---|
+| Home shell & tabs | `presentation/screen/main/MainScreen.kt`, `screen/main/MainNavigation.kt`, `screen/main/screen/home/HomeScreenData.kt` (`HomeScreenTab`), `presentation/common/nav/NavShell.kt` |
+| Study (letters/vocab) | `screen/main/screen/practice_letter/`, `practice_vocab/`, `deck_details/`, `deck_edit/`, `deck_picker/` |
+| Writing & stroke eval | `core/srs/` + `stroke_evaluator/`; canvas `presentation/common/ui/kanji/`; desktop `desktop/ui/writing/WritingPracticeView.kt` |
+| SRS & review | `core/srs/fsrs/`, `core/srs/Srs...`; `presentation/common/ScreenPracticeType.kt` (Reading/Writing/Flashcard/ReadingPicker) |
+| Decks/tags/flags/bulk | `screen/main/screen/decks/` (`CardManager`, `TagManager`, `FlagManagerScreen`, `BulkActionsScreen`, `KeyboardShortcutsPage`) |
+| Search & text analysis | `screen/main/screen/home/screen/search/SearchScreen.kt`, `screen/main/screen/text_analysis/TextAnalysisScreen.kt` |
+| Statistics & exams | `screen/main/screen/statistics/StatisticsScreen.kt`, `screen/main/features/StatisticsController.kt`, `core/statistics/` (pure calculators); exams `screen/main/screen/exams/` |
+| Achievements | `screen/main/screen/decks/Achievement*.kt` |
+| Import/export/backup | `screen/main/screen/backup/`, `core/backup/`, `core/transfer/` (AnkiPackage), `screen/main/screen/decks/ImportExportSystem.kt` |
+| Sync & account | `core/sync/`, `core/account/`; desktop `desktop/ui/sync/SyncView.kt`, `desktop/ui/account/AccountView.kt` |
+| Settings & theming | `screen/main/screen/home/screen/settings/SettingsScreen.kt`, `settings/AppearanceStudio.kt`, `presentation/common/theme/` |
+| i18n | `presentation/common/resources/string/Strings.kt` + `EnglishStrings.kt` + `JapaneseStrings.kt` |
+
+### Desktop suite (`desktopApp/src/jvmMain/kotlin/ua/syt0r/kanji/desktop/`)
+
+| Feature | Key files |
+|---|---|
+| Window shell | `../desktopApp/KaiteyoWindow.kt`, `Main.kt`, `NativeWindowDrag.kt`, `WindowStateStore.kt` |
+| Workspace shell | `ui/workspace/WorkspaceShell.kt`, `WorkspaceNav.kt`, `PanelHost.kt`, `FloatingLauncher.kt`, `TabBar.kt` |
+| Dictionary | `engine/dictionary/` (Service/Repository/Importer/Deinflect/JapaneseText), `ui/dictionary/` (ManagerView, Popup) |
+| Media | `engine/media/` (MediaEngine, SubtitleEngine, MediaCapture, MediaScanner), `engine/playback/` (backends), `ui/media/` (MediaView, MediaPlayer, MediaTranscript, MediaMiniPlayer) |
+| Mining | `engine/mining/MiningEngine.kt`, `ui/mining/MiningView.kt` + `MiningDialog` |
+| Review (suite) | `ui/review/ReviewView.kt` |
+| Stats (suite) | `ui/stats/StatsView.kt`, `engine/statistics/` |
+| Theming | `engine/theming/` (ThemeManager, ThemeMapper, ThemePresets), `ui/themes/ThemeStudioView.kt` |
+| Settings (suite) | `engine/settings/SettingsEngine.kt` (`SettingCategory`), `ui/settings/SettingsView.kt` |
+| Shortcuts | `engine/shortcuts/ShortcutRegistry.kt`, `ui/shortcuts/ShortcutsView.kt` |
+| Local API / integrations | `engine/api/LocalApiServer.kt`, `ui/api/IntegrationsView.kt` |
+| OCR / browser | `engine/ocr/`, `ui/ocr/OcrView.kt`, `engine/browser/`, `ui/browser_web/LearningBrowserView.kt` |
+| Activity log & AFK | `engine/activity/`, `ui/activity/ActivityLogView.kt`, `AfkRain.kt` |
+| Transfer | `ui/transfer/TransferView.kt` (Export/Import/Backup/Learning data tabs), `engine/transfer/` |
+| AppState (all suite state) | `appstate/AppState.kt` (`WorkspaceView` enum lists every view) |

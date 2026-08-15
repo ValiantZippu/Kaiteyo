@@ -34,6 +34,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // TAG MANAGER — Full UI
@@ -267,7 +268,7 @@ private fun TagEditDialog(
         "#7BC8FF", "#A78BFA", "#B0B0B0", "#808080"
     )
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -342,7 +343,7 @@ private fun TagEditDialog(
     )
 
     if (showParentSelector && tags.isNotEmpty()) {
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showParentSelector = false },
             title = { Text("Select Parent Tag") },
             text = {
@@ -377,7 +378,7 @@ private fun MergeTagsDialog(
     var sourceTagId by remember { mutableStateOf<Long?>(null) }
     var targetTagId by remember { mutableStateOf<Long?>(null) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Merge Tags") },
         text = {

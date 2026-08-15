@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +51,7 @@ import ua.syt0r.kanji.core.statistics.ExamQuestionRecord
 import ua.syt0r.kanji.core.statistics.GradedExam
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 import kotlin.math.roundToInt
 
@@ -286,7 +286,7 @@ fun ExamRunnerScreen(
     }
 
     if (showQuitConfirm) {
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showQuitConfirm = false },
             containerColor = surfaceColors.surface,
             title = { Text("Quit exam?", color = surfaceColors.textPrimary) },

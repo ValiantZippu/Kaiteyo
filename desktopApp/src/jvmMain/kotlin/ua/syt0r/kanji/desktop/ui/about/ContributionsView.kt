@@ -55,6 +55,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 
 // ============================================
 // ABOUT
@@ -124,15 +125,8 @@ private fun HeroCard() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(DsRadius.Xl))
-                    .background(ac.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("K", color = ac.onPrimary, fontSize = DsType.Display, fontWeight = FontWeight.Bold)
-            }
+            // The real Kaiteyo mark — centralized brand asset, not a "K".
+            BrandMark(modifier = Modifier.size(80.dp))
             Text("Kaiteyo", color = sc.textPrimary, fontSize = DsType.Display, fontWeight = FontWeight.Bold)
             Text("Kanji study, rethought.", color = sc.textMuted, fontSize = DsType.BodyLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {

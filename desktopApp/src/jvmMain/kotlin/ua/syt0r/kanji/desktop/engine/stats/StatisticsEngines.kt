@@ -7,6 +7,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
 import ua.syt0r.kanji.desktop.engine.collections.CollectionStore
@@ -116,11 +117,38 @@ object HeatmapEngine {
     ): AlignedGrid {
         val counts = summaries.associate { it.day to (it.newCount + it.reviewCount) }
         val maxCount = (counts.values.maxOrNull() ?: 0).coerceAtLeast(1)
-
         val start = today.minus((weeks * 7 - 1).toLong(), DateTimeUnit.DAY)
+        return buildAlignedFrom(counts, maxCount, start, weeks * 7)
+    }
+
+    /**
+     * Build a full calendar-year grid ([year]-01-01 … [year]-12-31, or the
+     * current day when [year] is this year). Used by the heatmap's year
+     * view so switching years animates as a push/slide between two real
+     * calendars rather than one grid magically changing in place.
+     */
+    fun buildAlignedYear(
+        summaries: List<StudyDaySummary>,
+        year: Int,
+        today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    ): AlignedGrid {
+        val counts = summaries.associate { it.day to (it.newCount + it.reviewCount) }
+        val maxCount = (counts.values.maxOrNull() ?: 0).coerceAtLeast(1)
+        val start = LocalDate(year, kotlinx.datetime.Month.JANUARY, 1)
+        val end = if (today.year == year) today else LocalDate(year, kotlinx.datetime.Month.DECEMBER, 31)
+        val totalDays = start.daysUntil(end) + 1
+        return buildAlignedFrom(counts, maxCount, start, totalDays)
+    }
+
+    private fun buildAlignedFrom(
+        counts: Map<String, Int>,
+        maxCount: Int,
+        start: LocalDate,
+        totalDays: Int
+    ): AlignedGrid {
         val days = mutableListOf<AlignedDay?>()
         var cursor = start
-        repeat(weeks * 7) {
+        repeat(totalDays) {
             val key = cursor.toString()
             val count = counts[key] ?: 0
             days.add(AlignedDay(cursor, count, levelFor(count, maxCount)))
@@ -240,10 +268,9 @@ object GoalsEngine {
     fun progress(goal: GoalDef, summaries: List<StudyDaySummary>, today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())): GoalProgress {
         val (start, end) = periodWindow(goal.period, today)
         val inWindow = summaries.filter { s ->
-            val parts = s.day.split('-')
-            val date = if (parts.size == 3) {
-                kotlinx.datetime.LocalDate(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
-            } else return@filter false
+            // Safe parse — a corrupt/legacy day string must never crash the
+            // dashboard; it is skipped like everywhere else (see AnalyticsEngine.parseDate).
+            val date = AnalyticsEngine.parseDate(s.day) ?: return@filter false
             date >= start && date <= end
         }
         val achieved = when (goal.metric) {
@@ -255,8 +282,13 @@ object GoalsEngine {
         return GoalProgress(goal, achieved, goal.target, fraction, achieved >= goal.target)
     }
 
-    fun defaultGoals(): List<GoalDef> = listOf(
-        GoalDef("goal-daily-reviews", "Daily reviews", GoalPeriod.Daily, 20, GoalMetric.Reviews),
+    /**
+     * The built-in goal set. The daily review goal is the user's configurable
+     * study target (Settings → Statistics → Daily review target) so the
+     * Dashboard study target and the Goals card never disagree.
+     */
+    fun defaultGoals(dailyReviewTarget: Int = 20): List<GoalDef> = listOf(
+        GoalDef("goal-daily-reviews", "Daily reviews", GoalPeriod.Daily, dailyReviewTarget, GoalMetric.Reviews),
         GoalDef("goal-daily-new", "Daily new cards", GoalPeriod.Daily, 5, GoalMetric.NewCards),
         GoalDef("goal-daily-minutes", "Daily study time", GoalPeriod.Daily, 15, GoalMetric.Minutes),
         GoalDef("goal-weekly-reviews", "Weekly reviews", GoalPeriod.Weekly, 150, GoalMetric.Reviews),

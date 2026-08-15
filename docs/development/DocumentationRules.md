@@ -25,6 +25,8 @@ Documentation MUST be updated whenever:
 | Release made | `CHANGELOG.md` (repo root), `docs/planning/COMPLETED.md` |
 | Roadmap changed | `docs/roadmap/ROADMAP.md` |
 | New document created | `docs/README.md` (update documentation map) |
+| Engineering standard / process change | `docs/engineering/ENGINEERING_STANDARDS.md`, `docs/architecture/decisions/` (new ADR) |
+| New feature spec written | `docs/features/` index + `docs/architecture/` spec (`database.md`, `dictionary.md`, …) |
 | Build/setup/toolchain issue solved | `docs/troubleshooting/` issue entry, `docs/maintenance/VersionHistory.md` |
 | Build/setup/toolchain issue remains | `docs/maintenance/KnownLimitations.md` with a status |
 | Dependency changed | `docs/setup/UpdatingDependencies.md`, `docs/maintenance/DependencyUpdates.md` |

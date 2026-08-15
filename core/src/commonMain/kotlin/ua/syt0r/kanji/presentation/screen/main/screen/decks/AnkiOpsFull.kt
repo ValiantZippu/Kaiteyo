@@ -28,6 +28,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // KAITEYO v1.2 — FULL ANKI OPERATIONS
@@ -158,7 +159,7 @@ fun AnkiOperationsFullScreen(
 
     // Operation result toast
     showOperationResult?.let { msg ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showOperationResult = null },
             title = { Text("Operation Complete") },
             text = { Text(msg) },
@@ -696,7 +697,7 @@ private fun StudyByDialog(
     val uniqueTags = remember(cards) { cards.flatMap { it.tagNames }.distinct().sorted() }
     val uniqueDecks = remember(cards) { cards.map { it.deck }.distinct().sorted() }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Study By...") },
         text = {

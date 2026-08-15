@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.BaseMode
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
@@ -90,20 +91,11 @@ fun AppearancePreview(modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy((6 * density).dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        Modifier
-                            .size((22 * density).dp)
-                            .clip(RoundedCornerShape(radius / 2))
-                            .background(accent.primary.copy(alpha = 0.25f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "K",
-                            color = accent.primary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    // The real Kaiteyo mark — centralized brand asset, not a "K".
+                    BrandMark(
+                        modifier = Modifier.size((22 * density).dp),
+                        contentDescription = null
+                    )
                     repeat(4) { index ->
                         Box(
                             Modifier

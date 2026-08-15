@@ -2,19 +2,26 @@
 
 ## Overview
 
-This guide explains the Git and GitHub workflow for Kaiteyo development.
+Kaiteyo uses a simple trunk-based fork of GitFlow: `develop` is the default
+integration branch, `main` holds tagged releases, and feature/fix/docs branches merge
+back to `develop` via squash-merges. Tag pushes trigger the release pipeline
+(`.github/workflows/build-release.yml`).
 
-## Branch Strategy
+## Branch strategy
 
 ```
-main              — Production-ready code, protected
-  └── develop     — Integration branch, default branch
-       ├── feature/*   — New features (feature/floating-sidebar)
-       ├── fix/*       — Bug fixes (fix/window-drag)
-       └── docs/*      — Documentation (docs/architecture)
+main              — production-ready; tags only (vX.Y.Z)
+  └── develop     — default integration branch (origin/develop)
+       ├── feature/*   — new features (feature/floating-sidebar)
+       ├── fix/*       — bug fixes (fix/window-drag)
+       ├── docs/*      — documentation (docs/theme-system)
+       ├── refactor/*  — code restructuring
+       └── release/*   — release preparation (rare; usually tag from develop)
+
+Tags: v1.1.0, v2.0.0, ... (must be 3-part; version source: buildSrc/AppVersion.kt)
 ```
 
-### Branch Naming
+### Branch naming
 
 | Prefix | Purpose | Example |
 |--------|---------|---------|
@@ -22,51 +29,49 @@ main              — Production-ready code, protected
 | `fix/` | Bug fixes | `fix/window-drag-region` |
 | `docs/` | Documentation | `docs/theme-system` |
 | `refactor/` | Code refactoring | `refactor/settings-module` |
-| `release/` | Release preparation | `release/v1.1.0` |
-| `hotfix/` | Emergency fixes | `hotfix/v1.1.1` |
+| `release/` | Release preparation | `release/v2.3.0` |
+| `hotfix/` | Emergency fixes | `hotfix/v2.2.1` |
 
-## Daily Workflow
+## Daily workflow
 
-### Starting a Session
 ```bash
-# Get latest develop
+# Start: sync develop
 git checkout develop
-git pull origin develop
+git pull --rebase
 
-# Create feature branch
+# Create a feature branch
 git checkout -b feature/my-feature
-```
 
-### Making Changes
-```bash
-# Make changes in code
-# Compile to verify
+# Edit, then compile-check frequently
 ./gradlew :desktopApp:compileKotlinJvm
 
-# Stage changes
-git add .
-
-# Commit with conventional message
-git commit -m "feat: add floating window controls"
-
-# Push branch
+# Stage, commit, push
+git add <specific files>
+git commit -m "feat(scope): description"
 git push origin feature/my-feature
 ```
 
-### Creating a Pull Request
-1. Go to GitHub.com → repository → Pull Requests
-2. Click "New Pull Request"
-3. Base: `develop` → Compare: `feature/my-feature`
-4. Write description following PR template
-5. Add reviewers if needed
-6. Click "Create Pull Request"
+> Stage specific files, not `git add .` — never commit `local.properties`, build
+> outputs, or secrets (all gitignored, but be deliberate).
 
-### Merging
-- Squash merge for feature branches
-- Regular merge for release branches
-- Delete branch after merge
+## Pull requests
 
-## Commit Message Convention
+1. Push the branch; open a PR against **`develop`**.
+2. PR description covers: summary, problem, solution, architecture impact,
+   screenshots where relevant, testing performed, known limitations, DB changes,
+   license implications (per `ENGINEERING_STANDARDS.md` §171).
+3. Keep PRs small and reviewable — one coherent change.
+4. Merge with **squash** (feature branches) — commit history on `develop` stays
+   linear-ish and meaningful.
+
+### Fork workflow (external contributors)
+
+1. Fork on GitHub; clone your fork.
+2. `git remote add upstream https://github.com/ValiantZippu/Kaiteyo.git`
+3. `git fetch upstream && git checkout -b feature/x upstream/develop`
+4. Push to your fork; open a PR to `ValiantZippu/Kaiteyo`'s `develop`.
+
+## Commit message convention
 
 ```
 type(scope): description
@@ -76,7 +81,6 @@ type(scope): description
 [optional footer]
 ```
 
-### Types
 | Type | Usage |
 |------|-------|
 | `feat` | New feature |
@@ -84,78 +88,68 @@ type(scope): description
 | `docs` | Documentation |
 | `refactor` | Code restructuring |
 | `perf` | Performance improvement |
-| `test` | Adding/modifying tests |
+| `test` | Tests |
 | `style` | Formatting, styling |
 | `chore` | Build, dependencies, CI |
 
-### Examples
+Examples:
 ```
-feat(window): add floating window controls
-fix(theme): correct animateColorAsState import
-docs(architecture): add module dependency diagram
-refactor(settings): extract AppearanceStudio into separate file
-perf(sidebar): reduce recomposition on hover
+feat(media): add subtitle phrase selection
+fix(nav): preserve bubble position across restarts
+docs(architecture): document knowledge graph
+refactor(statistics): unify dashboards into one screen
 ```
 
-## Fork Workflow (External Contributors)
+## Tags and releases
 
-1. Fork the repository on GitHub
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/kaiteyo.git`
-3. Add upstream: `git remote add upstream https://github.com/ORIGINAL_OWNER/kaiteyo.git`
-4. Fetch upstream: `git fetch upstream`
-5. Sync develop: `git checkout develop && git merge upstream/develop`
-6. Create feature branch from develop
-7. Push to your fork
-8. Open PR from your fork to original repo's develop
-
-## Git Configuration
-
-### Recommended .gitignore
-The project includes `.gitignore` for:
-- Build outputs (`build/`, `out/`)
-- IDE files (`.idea/`, `*.iml`)
-- OS files (`.DS_Store`, `Thumbs.db`)
-- Gradle wrapper jar (but not wrapper properties)
-- Local properties (`local.properties`)
-
-### Recommended Settings
 ```bash
-# Use rebase by default
+# Bump version in buildSrc/AppVersion.kt FIRST (single source of truth)
+git add buildSrc/src/main/kotlin/AppVersion.kt
+git commit -m "chore(release): v2.3.0"
+git push origin develop
+# Then tag (usually from develop, or main after merge)
+git tag v2.3.0
+git push origin v2.3.0
+```
+
+### What the tag push does (`build-release.yml`)
+
+1. `build-all` — reusable workflow: Linux builds `:app:assembleFdroidRelease` +
+   desktop Linux packages; Windows/macOS build `packageDistributionForCurrentOS`.
+2. `stage-and-verify` — `stage-artifacts.sh` collects artifacts into
+   `release/kaiteyo-<ver>` and `verify-artifacts.sh` checks the sha256 manifest;
+   `make-update-manifest.sh` regenerates stable/beta/nightly update feeds against the
+   `update-feed` release.
+3. `create-release` — `softprops/action-gh-release` publishes installers + the
+   artifact manifest, and refreshes the `update-feed` prerelease that the desktop
+   updater reads.
+
+Full detail: `docs/architecture/ci-cd.md`, `docs/releases/RELEASE_PROCESS.md`,
+`docs/releases/RELEASE_CHECKLIST.md`.
+
+## CI checks on PRs
+
+`build-all.yml` (workflow_reuse) compiles/validates the key targets. iOS targets are
+skipped on Windows/most runners (expected). There is no lint/format job — style is
+enforced by convention (`docs/development/CODING_STANDARDS.md`).
+
+## Git configuration tips
+
+```bash
 git config --global pull.rebase true
-
-# Better diff display
 git config --global diff.colorMoved zebra
-
-# Enable long paths on Windows
-git config --global core.longpaths true
+git config --global core.longpaths true   # Windows
 ```
 
-## Tags and Releases
+## Protected branches
 
-### Creating a Tag
-```bash
-# From develop (after merging release branch)
-git checkout main
-git pull origin main
-git tag v1.1.0
-git push origin v1.1.0
-```
+- `main` — protected: PR review + status checks, no direct pushes.
+- `develop` — protected: status checks required, direct pushes restricted for most
+  contributors.
 
-### GitHub Actions
-On tag push, GitHub Actions automatically:
-1. Builds desktop app (MSI, DMG, Deb)
-2. Builds Android app (APK)
-3. Creates GitHub Release
-4. Uploads artifacts
+## Related
 
-## Protected Branches
-
-`main` is protected:
-- Requires PR review
-- Requires status checks
-- No direct pushes
-- Linear history required
-
-`develop` is protected:
-- Requires status checks
-- No direct pushes (enforced for most contributors)
+- `DEVELOPER_GUIDE.md` — build/test commands
+- `docs/releases/RELEASE_PROCESS.md` — end-to-end release workflow
+- `docs/architecture/ci-cd.md` — CI/CD pipeline detail
+- `docs/guides/GIT_GUIDE.md` — beginner Git guide

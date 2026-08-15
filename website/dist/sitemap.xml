@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://valiantzippu.github.io/Kaiteyo/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/about/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/changelog/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/community/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/contributing/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/credits/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/data/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/account/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/data_platform/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/file_structure/</loc></url>
@@ -100,23 +103,42 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/download/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/faq/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/features/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/getting-started/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/how-to-learn-kanji/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/how-to-use-srs/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/kaiteyo-and-anki/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/mining-anime/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/practice-writing/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/guides/understand-statistics/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/install/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/integrations/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/learn/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/license/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/plugins/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/privacy/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/product/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/roadmap/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/screenshots/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/security/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/shortcuts/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/theme-gallery/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/deck-architecture/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/dictionary-import/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/dictionary/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/first-deck/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/learning-browser/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/local-api/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/media-engine/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/media-workspace/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/mining-system/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/mining/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/ocr/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/reading-vs-writing/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/spaced-repetition/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/statistics-engine/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/theme-system/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/wiki/writing-evaluator/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo</loc></url>
 </urlset>

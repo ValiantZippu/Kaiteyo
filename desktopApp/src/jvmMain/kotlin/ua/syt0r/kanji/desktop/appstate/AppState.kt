@@ -5,8 +5,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
-import ua.syt0r.kanji.desktop.data.buildDemoCards
-import ua.syt0r.kanji.desktop.data.buildDemoContentCards
 import ua.syt0r.kanji.desktop.data.buildStressDataset
 import ua.syt0r.kanji.desktop.designsystem.DsToastHost
 import ua.syt0r.kanji.desktop.engine.collections.CollectionStore
@@ -18,10 +16,11 @@ import ua.syt0r.kanji.desktop.engine.settings.SettingsEngine
 import ua.syt0r.kanji.desktop.engine.shortcuts.ShortcutDispatcher
 import ua.syt0r.kanji.desktop.engine.shortcuts.ShortcutRegistry
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.activity.ActivityTracker
+import ua.syt0r.kanji.desktop.engine.activity.SignalContext
 import ua.syt0r.kanji.desktop.engine.sync.CloudSyncCoordinator
 import ua.syt0r.kanji.desktop.engine.sync.SyncEngine
 import ua.syt0r.kanji.desktop.engine.theming.ThemeManager
-import ua.syt0r.kanji.desktop.engine.theming.ThemePresets
 import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryService
 import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryRepository
 import ua.syt0r.kanji.desktop.engine.mining.MiningEngine
@@ -31,14 +30,12 @@ import ua.syt0r.kanji.desktop.engine.browser.BrowserEngine
 import ua.syt0r.kanji.desktop.engine.ocr.OcrEngine
 import ua.syt0r.kanji.desktop.engine.api.LocalApiServer
 import ua.syt0r.kanji.desktop.model.CollectionDef
-import ua.syt0r.kanji.desktop.model.CollectionKind
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.ReviewLogEntry
 import ua.syt0r.kanji.desktop.model.ReviewRating
 import ua.syt0r.kanji.desktop.model.SrsStatus
 import ua.syt0r.kanji.desktop.model.StudyDaySummary
 import ua.syt0r.kanji.desktop.model.StudyMode
-import ua.syt0r.kanji.desktop.model.StudyModeProgress
 import ua.syt0r.kanji.desktop.model.ToastKind
 import ua.syt0r.kanji.desktop.engine.library.LibraryStore
 import ua.syt0r.kanji.desktop.engine.review.ReviewSettings
@@ -51,12 +48,16 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.random.Random
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 /** A single view of the workspace. */
+@Serializable
 enum class WorkspaceView(val label: String, val icon: String) {
     Dashboard("Dashboard", "I"),
     Browser("Browser", "B"),
@@ -67,6 +68,7 @@ enum class WorkspaceView(val label: String, val icon: String) {
     Collections("Collections", "C"),
     Tags("Tags & Flags", "T"),
     Statistics("Statistics", "S"),
+    Mistakes("Mistakes", "!"),
     History("Activity Log", "H"),
     Transfer("Import / Export", "E"),
     Sync("Sync", "Y"),
@@ -79,12 +81,14 @@ enum class WorkspaceView(val label: String, val icon: String) {
     Dictionary("Dictionary", "D"),
     Mining("Mining", "M"),
     Media("Media", "V"),
+    Exams("Exams", "E"),
     LearningBrowser("Web Browser", "W"),
     Ocr("OCR", "O"),
     Integrations("Integrations", "A")
 }
 
 /** Type of browser display. */
+@Serializable
 enum class BrowserViewMode { Grid, List, Details }
 
 /** Edge of the window the navigation dock attaches to. */
@@ -256,6 +260,13 @@ class AppState(
         CloudSyncCoordinator(state = this, account = account)
     }
 
+    /**
+     * Engagement tracker: study time is measured from real interactions
+     * (clicks, keys, grading, writing strokes), never from "app open" time.
+     * Also drives AFK detection and the AFK rain overlay.
+     */
+    val activity = ActivityTracker(settings)
+
 
     /** Reduced motion is the OR of the global preference and the nav-specific one. */
     private fun refreshReducedMotion() {
@@ -267,6 +278,19 @@ class AppState(
     // OCR and the local integration API).
     // ---------------------------------------------------------------
     val dictionary = DictionaryService(DictionaryRepository(dictionaryDir()))
+    /**
+     * Writing evaluation facade — routes through the canonical KanjiVG stack
+     * when a licensed KanjiVG dataset directory is present, otherwise the
+     * built-in common-kanji dataset. Both are real; the source is surfaced
+     * in the UI and never faked.
+     */
+    val writingEvaluator by lazy {
+        ua.syt0r.kanji.desktop.engine.stroke_evaluator.WritingEvaluator(
+            repository = dictionary.repository
+        )
+    }
+    /** Unified learning ecosystem: notes, cards, review events, exams, mistakes, statistics. */
+    val learning = ua.syt0r.kanji.desktop.engine.learning.LearningEngine()
     val miningIntegration = ua.syt0r.kanji.desktop.engine.mining.MiningIntegrationManager(settings)
     val mining = MiningEngine(this)
     /** All-source mining counters (per day + per source) for Statistics/Dashboard. */
@@ -291,7 +315,49 @@ class AppState(
     // ---------------------------------------------------------------
     // Navigation
     // ---------------------------------------------------------------
-    var currentView by mutableStateOf(WorkspaceView.Dashboard)
+    // ---------------------------------------------------------------
+    // Workspace tabs — browser-style multi-instance navigation.
+    // Every view lives in a tab with its own per-instance state; the
+    // whole set persists across restarts (SettingsEngine workspace.tabs).
+    // ---------------------------------------------------------------
+    /** Tabs are optional — disable for the classic single-view shell. */
+    var tabsEnabled by mutableStateOf(settings.getBool("workspace.tabs-enabled", true))
+    /** Open workspace sessions, in display order. */
+    val tabs = mutableStateListOf<WorkspaceTab>()
+    /** The active session — the tab whose view is on screen. */
+    var activeTabId by mutableStateOf<String?>(null)
+
+    /** Resolved active tab, or null when tabs are disabled/empty. */
+    val activeTab: WorkspaceTab? get() = tabs.firstOrNull { it.id == activeTabId }
+
+    /**
+     * The view shown in the active tab. Every navigation assignment routes
+     * through the tab system; with tabs disabled it behaves like the legacy
+     * single-view shell.
+     */
+    var currentView: WorkspaceView
+        get() = activeTab?.view ?: _fallbackView
+        set(value) {
+            if (tabsEnabled && tabs.isNotEmpty()) {
+                setActiveTabView(value)
+            } else {
+                _fallbackView = value
+            }
+        }
+    /** Single-view fallback used while tabs are disabled (or before load). */
+    private var _fallbackView by mutableStateOf(WorkspaceView.Dashboard)
+
+    /** Animated-content target: which tab + view is on screen right now. */
+    val contentTarget: WorkspaceContentTarget
+        get() {
+            val tab = activeTab
+            return if (tabsEnabled && tab != null) {
+                WorkspaceContentTarget(tab.id, tab.view)
+            } else {
+                WorkspaceContentTarget(null, _fallbackView)
+            }
+        }
+
     val openPanels = mutableStateListOf<OpenPanel>()
     var navPosition by mutableStateOf(
         NavPosition.entries.firstOrNull { it.name.lowercase() == settings.getString("navigation.position", "left") }
@@ -361,9 +427,20 @@ init {
         loadOnboardingFlag()
         // The card pool is the user's study data: restore it first so a
         // relaunch continues exactly where the previous session stopped.
-        // On a true first run there is nothing to restore and demo data is
-        // seeded once (see seedDemoData) — never on every launch.
+        // On a true first run there is nothing to restore — the suite starts
+        // empty; nothing demo is ever seeded into the user library.
         library.loadCards()?.let { cards.addAll(it) }
+        // The Kana syllabary is first-class content: the folder, the premade
+        // decks and every kana card are seeded idempotently on every launch
+        // (new installs and upgrades alike — nothing existing is touched).
+        ua.syt0r.kanji.desktop.engine.kana.seedKanaInto(this)
+        // Bundled reference dictionary (offline lookup) — installed once, real
+        // curated data, never study content.
+        seedDictionary()
+        loadWorkspaceTabs()
+        // Bridge the legacy card pool into the unified learning model so new
+        // systems (exams, statistics, mistakes) see the same real data.
+        learning.syncFromLegacy(cards.toList())
         // Study statistics (review log + daily summaries) persist to disk so
         // the dashboards survive restarts — see LibraryStore.statistics.
         library.loadStatistics()?.let { snap ->
@@ -403,6 +480,11 @@ init {
                 "navigation.icon-size" -> navIconSize = NavIconSize.fromName(newValue)
                 "navigation.label-mode" -> navLabelMode = NavLabelMode.fromName(newValue)
                 "navigation.compact-spacing" -> navSpacing = NavSpacing.fromName(newValue)
+                "workspace.tabs-enabled" -> {
+                    val on = newValue.toBooleanStrictOrNull() ?: true
+                    tabsEnabled = on
+                    if (on && tabs.isEmpty()) openTab(currentView, activate = true)
+                }
                 "launcher.enabled" -> {
                     val on = newValue.toBooleanStrictOrNull() ?: false
                     if (on && navLayout != NavLayout.Floating) updateNavLayout(NavLayout.Floating)
@@ -515,6 +597,214 @@ init {
     var browserShowPreview by mutableStateOf(true)
     var selectedCard by mutableStateOf<DesktopCard?>(null)
     val selectedCardIds = mutableStateListOf<String>()
+    /**
+     * Deep link into the Library: when set, the Library opens scoped to this
+     * collection on next composition (consumed and cleared by LibraryView).
+     * Used by Home's collection cards — the Library is the hub, so opening a
+     * collection from anywhere lands inside it.
+     */
+    var pendingCollectionId by mutableStateOf<String?>(null)
+
+    // ---------------------------------------------------------------
+    // Workspace tab lifecycle
+    // ---------------------------------------------------------------
+
+    /** Index of a tab in the open list, or -1. */
+    fun tabIndexOf(id: String?): Int = tabs.indexOfFirst { it.id == id }
+
+    /** Open a fresh session for [view]; activates it by default. */
+    fun openTab(view: WorkspaceView, activate: Boolean = true): String {
+        val normalized = if (view == WorkspaceView.Browser) WorkspaceView.Library else view
+        val tab = WorkspaceTab(id = newTabId(), view = normalized)
+        tabs.add(tab)
+        if (activate) activateTab(tab.id) else persistTabs()
+        return tab.id
+    }
+
+    /** Open a copy of the tab with the given id (tab menu / duplicate). */
+    fun duplicateTab(id: String) {
+        val idx = tabs.indexOfFirst { it.id == id }
+        if (idx < 0) return
+        val copy = tabs[idx].copy(id = newTabId())
+        tabs.add(idx + 1, copy)
+        activateTab(copy.id)
+    }
+
+    /** Make [id] the active tab, snapshotting the outgoing tab's live state. */
+    fun activateTab(id: String) {
+        val idx = tabs.indexOfFirst { it.id == id }
+        if (idx < 0) return
+        val leaving = activeTab
+        if (leaving != null && leaving.id != id) {
+            val li = tabs.indexOfFirst { it.id == leaving.id }
+            if (li >= 0) tabs[li] = snapshotTabState(leaving)
+        }
+        activeTabId = id
+        restoreTabState(tabs[idx])
+        persistTabs()
+    }
+
+    fun closeActiveTab() {
+        activeTab?.let { closeTab(it.id) }
+    }
+
+    /** Close [id]; the right neighbor (or left) becomes active. */
+    fun closeTab(id: String) {
+        val idx = tabs.indexOfFirst { it.id == id }
+        if (idx < 0) return
+        val wasActive = activeTabId == id
+        if (wasActive) {
+            tabs[idx] = snapshotTabState(tabs[idx])
+        }
+        val removed = tabs.removeAt(idx)
+        rememberClosedTab(removed)
+        if (tabs.isEmpty()) {
+            // The workspace never ends up tab-less — a fresh dashboard tab takes over.
+            openTab(WorkspaceView.Dashboard, activate = true)
+            return
+        }
+        if (wasActive) {
+            activateTab(tabs[minOf(idx, tabs.lastIndex)].id)
+        } else {
+            persistTabs()
+        }
+    }
+
+    fun closeOtherTabs(id: String) {
+        val keepIdx = tabs.indexOfFirst { it.id == id }
+        if (keepIdx < 0) return
+        val keep = tabs[keepIdx]
+        val keepSnapshot = if (activeTabId == id) snapshotTabState(keep) else keep
+        tabs.filterNot { it.id == id }.forEach { rememberClosedTab(it) }
+        tabs.clear()
+        tabs.add(keepSnapshot)
+        activeTabId = id
+        restoreTabState(keepSnapshot)
+        persistTabs()
+    }
+
+    fun closeTabsAfter(id: String) {
+        val idx = tabs.indexOfFirst { it.id == id }
+        if (idx < 0 || idx >= tabs.lastIndex) return
+        val keep = tabs[idx]
+        val keepSnapshot = if (activeTabId == id) snapshotTabState(keep) else keep
+        val closing = tabs.drop(idx + 1)
+        closing.forEach { rememberClosedTab(it) }
+        val activeWasClosed = closing.any { it.id == activeTabId }
+        tabs.removeAll { closing.any { c -> c.id == it.id } }
+        if (activeWasClosed) {
+            tabs[idx] = keepSnapshot
+            activeTabId = id
+            restoreTabState(keepSnapshot)
+        }
+        persistTabs()
+    }
+
+    /** Reorder the open tabs (drag on the strip). */
+    fun moveTab(from: Int, to: Int) {
+        if (from == to || from !in tabs.indices || to !in tabs.indices) return
+        val moved = tabs.removeAt(from)
+        tabs.add(to, moved)
+        persistTabs()
+    }
+
+    fun cycleTab(direction: Int) {
+        if (tabs.size < 2) return
+        val idx = tabIndexOf(activeTabId)
+        if (idx < 0) return
+        activateTab(tabs[(idx + direction + tabs.size) % tabs.size].id)
+    }
+
+    fun jumpToTab(index: Int) {
+        tabs.getOrNull(index - 1)?.let { activateTab(it.id) }
+    }
+
+    /** Bounded stack of recently-closed tabs for Ctrl+Shift+T. */
+    private val recentlyClosedTabs = ArrayDeque<WorkspaceTab>()
+
+    private fun rememberClosedTab(tab: WorkspaceTab) {
+        if (recentlyClosedTabs.size >= 10) recentlyClosedTabs.removeFirst()
+        recentlyClosedTabs.addLast(tab)
+    }
+
+    fun reopenClosedTab() {
+        val tab = recentlyClosedTabs.removeLastOrNull() ?: return
+        tabs.add(tab)
+        activateTab(tab.id)
+    }
+
+    private fun newTabId(): String =
+        "tab-${Clock.System.now().toEpochMilliseconds()}-${Random.nextInt(9999)}"
+
+    // ---------------------------------------------------------------
+    // Per-tab state snapshotting (browser / library)
+    // ---------------------------------------------------------------
+
+    private fun snapshotTabState(tab: WorkspaceTab): WorkspaceTab =
+        tab.copy(
+            browserQuery = browserQuery,
+            browserViewMode = browserViewMode,
+            browserShowPreview = browserShowPreview,
+            selectedCardId = selectedCard?.id,
+            selectedCardIds = selectedCardIds.toList()
+        )
+
+    private fun restoreTabState(tab: WorkspaceTab) {
+        browserQuery = tab.browserQuery
+        browserViewMode = tab.browserViewMode
+        browserShowPreview = tab.browserShowPreview
+        selectedCard = tab.selectedCardId?.let { id -> cards.firstOrNull { it.id == id } }
+        selectedCardIds.clear()
+        selectedCardIds.addAll(tab.selectedCardIds)
+    }
+
+    /** Navigate the active tab (the [currentView] setter target). */
+    private fun setActiveTabView(view: WorkspaceView) {
+        val tab = activeTab ?: return
+        val idx = tabs.indexOfFirst { it.id == tab.id }
+        if (idx < 0) return
+        val normalized = if (view == WorkspaceView.Browser) WorkspaceView.Library else view
+        tabs[idx] = snapshotTabState(tab).copy(view = normalized, title = normalized.label)
+        persistTabs()
+    }
+
+    // ---------------------------------------------------------------
+    // Tab persistence (~/.kaiteyo/settings.json → workspace.tabs)
+    // ---------------------------------------------------------------
+
+    private fun persistTabs() {
+        if (!tabsEnabled) return
+        val json = Json { encodeDefaults = true }
+        settings.set("workspace.tabs", json.encodeToString(WorkspaceTabsPayload(tabs.toList(), activeTabId)))
+    }
+
+    private fun loadWorkspaceTabs() {
+        if (!settings.getBool("workspace.tabs-enabled", true)) {
+            tabsEnabled = false
+            return
+        }
+        val stored = settings.getString("workspace.tabs")
+        val decoded = runCatching {
+            Json { ignoreUnknownKeys = true }.decodeFromString<WorkspaceTabsPayload>(stored)
+        }.getOrNull()
+        if (stored.isNotBlank() && decoded != null && decoded.tabs.isNotEmpty()) {
+            tabs.addAll(decoded.tabs)
+            val active = decoded.activeTabId?.takeIf { id -> decoded.tabs.any { it.id == id } }
+                ?: decoded.tabs.first().id
+            activeTabId = active
+            restoreTabState(tabs.first { it.id == active })
+            return
+        }
+        // First run (or a corrupt payload): start on the configured home view.
+        openTab(startupView(), activate = true)
+    }
+
+    private fun startupView(): WorkspaceView = when (settings.getString("general.startup-view", "dashboard").lowercase()) {
+        "browser" -> WorkspaceView.Library
+        "review" -> WorkspaceView.Review
+        "collections" -> WorkspaceView.Collections
+        else -> WorkspaceView.Dashboard
+    }
 
     // ---------------------------------------------------------------
     // Review session state
@@ -525,6 +815,18 @@ init {
     var sessionStartedAt by mutableStateOf(Clock.System.now())
     var answerRevealed by mutableStateOf(false)
     var lastSessionStats by mutableStateOf<ReviewSessionStats?>(null)
+
+    // ---------------------------------------------------------------
+    // Unified review source — when a session was started from the unified
+    // learning store (StudyEngine queue), grading flows through the unified
+    // StudyEngine (full-fidelity events) instead of the legacy pool, while
+    // the existing ReviewSession UI keeps working unchanged.
+    // ---------------------------------------------------------------
+    var unifiedReviewActive by mutableStateOf(false)
+    var unifiedReviewQueue by mutableStateOf<List<ua.syt0r.kanji.desktop.engine.learning.StudyQueueItem>>(emptyList())
+    var unifiedReviewIndex by mutableStateOf(0)
+    var unifiedReviewDeck by mutableStateOf<String?>(null)
+    var unifiedSession by mutableStateOf<ua.syt0r.kanji.desktop.engine.learning.StudySessionRecord?>(null)
 
     // ---------------------------------------------------------------
     // Library study-mode context — when a session was launched from a
@@ -597,6 +899,35 @@ init {
     }
 
     // ---------------------------------------------------------------
+    // Product tutorial state (Settings → General → Product tutorial)
+    // ---------------------------------------------------------------
+    /** True while the product tutorial overlay should be on screen. */
+    var tutorialRequested by mutableStateOf(false)
+
+    /** Open the product tutorial immediately (used from Settings). */
+    fun requestTutorial() {
+        tutorialRequested = true
+    }
+
+    /** Chapters the user has completed, in order — persisted. */
+    fun tutorialCompleted(): List<String> =
+        settings.getString("tutorial.completed", "")
+            .split(',')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+    fun tutorialChapterComplete(chapter: String): Boolean =
+        chapter in tutorialCompleted()
+
+    /** Mark one chapter complete (persisted; idempotent). */
+    fun markTutorialChapterComplete(chapter: String) {
+        val done = tutorialCompleted().toMutableSet()
+        if (done.add(chapter)) {
+            settings.setString("tutorial.completed", done.joinToString(","))
+        }
+    }
+
+    // ---------------------------------------------------------------
     // Sync state
     // ---------------------------------------------------------------
     var syncBusy by mutableStateOf(false)
@@ -612,7 +943,23 @@ init {
 
     fun filterByCollection(def: CollectionDef): List<DesktopCard> {
         val resolved = collections.collections.firstOrNull { it.id == def.id } ?: def
-        return collections.resolveCards(resolved, cards.toList())
+        return collections.resolveCards(resolved, cards.toList(), library)
+    }
+
+    /**
+     * Distinct deck names studied on [date], resolved from real review events
+     * (event → card → deck). Cards whose deck has no user-visible name fall
+     * back to the raw deck id — same convention as the Library view.
+     */
+    fun decksStudiedOn(date: LocalDate, tz: TimeZone = TimeZone.currentSystemDefault()): List<String> {
+        val ids = buildSet {
+            for (entry in reviewLog) {
+                if (entry.reviewedAt.toLocalDateTime(tz).date == date) {
+                    cards.firstOrNull { it.id == entry.cardId }?.deckId?.let { add(it) }
+                }
+            }
+        }
+        return ids.mapNotNull { id -> library.deck(id)?.name ?: id }.sorted()
     }
 
     // ---------------------------------------------------------------
@@ -641,6 +988,7 @@ init {
         }
 
         reviewSettings = settings
+        activity.recordSignal(SignalContext.Study)
         val session = ReviewSession(name = "Review", createdAt = now)
         session.enqueue(queue, shuffle = false)
         reviewSession = session
@@ -663,6 +1011,7 @@ init {
             toastHost.show("Nothing due in \"${deck.name}\" — ${mode.label}", kind = ToastKind.Info)
             return
         }
+        activity.recordSignal(SignalContext.Study)
         val session = ReviewSession(name = "${deck.name} — ${mode.label}", createdAt = now)
         session.enqueue(queue, shuffle = false)
         libraryActiveDeck = deckId
@@ -675,9 +1024,108 @@ init {
         currentView = WorkspaceView.Review
     }
 
+    /**
+     * Start a review session from the unified learning store's real queue
+     * (StudyEngine: due + new, per-deck limits, mode-aware). Grading flows
+     * through the unified StudyEngine so every answer writes a full-fidelity
+     * review event; the legacy ReviewSession UI drives presentation.
+     */
+    fun startUnifiedReview(
+        deckId: String = "",
+        mode: ua.syt0r.kanji.desktop.model.StudyMode = ua.syt0r.kanji.desktop.model.StudyMode.Flashcards,
+        limit: Int = 100
+    ) {
+        val queue = if (deckId.isNotBlank()) {
+            learning.study.buildQueue(deckId = deckId, mode = mode, newLimit = 20, reviewLimit = limit)
+        } else {
+            // All decks: merge per-deck queues (respecting each deck's limits).
+            library.allDecks().filter { !it.archived }.flatMap { deck ->
+                learning.study.buildQueue(deckId = deck.id, mode = mode, newLimit = 10, reviewLimit = limit)
+            }.distinctBy { it.card.id }.take(limit)
+        }
+        if (queue.isEmpty()) {
+            toastHost.show("Nothing due in the unified study queue", kind = ToastKind.Info)
+            return
+        }
+        val legacy = queue.mapNotNull { learning.legacyCardsForDeck(it.card.deckId).firstOrNull { c -> c.id == it.card.id } }
+            .ifEmpty { learning.allLegacyCards().filter { legacy -> queue.any { it.card.id == legacy.id } } }
+        if (legacy.isEmpty()) {
+            // Cards exist only in the unified store — materialize them.
+            learning.syncFromLegacy(queue.mapNotNull { item ->
+                ua.syt0r.kanji.desktop.model.DesktopCard(
+                    id = item.card.id,
+                    character = item.note.expression,
+                    meaning = item.note.meanings.joinToString("; "),
+                    onReadings = item.note.onReadings,
+                    kunReadings = item.note.kunReadings,
+                    status = item.card.status,
+                    intervalDays = item.card.intervalDays,
+                    dueAt = item.card.dueAt,
+                    lapses = item.card.lapses,
+                    reps = item.card.reps,
+                    ease = item.card.ease,
+                    accuracy = item.card.accuracy,
+                    deckId = item.card.deckId,
+                    contentKind = when (item.note.kind) {
+                        ua.syt0r.kanji.desktop.engine.learning.LearningItemKind.Kanji -> ua.syt0r.kanji.desktop.model.ContentKind.Kanji
+                        ua.syt0r.kanji.desktop.engine.learning.LearningItemKind.Vocabulary -> ua.syt0r.kanji.desktop.model.ContentKind.Vocabulary
+                        ua.syt0r.kanji.desktop.engine.learning.LearningItemKind.Kana -> ua.syt0r.kanji.desktop.model.ContentKind.Kana
+                        ua.syt0r.kanji.desktop.engine.learning.LearningItemKind.Radical -> ua.syt0r.kanji.desktop.model.ContentKind.Radical
+                        ua.syt0r.kanji.desktop.engine.learning.LearningItemKind.Grammar -> ua.syt0r.kanji.desktop.model.ContentKind.Grammar
+                        else -> ua.syt0r.kanji.desktop.model.ContentKind.Sentence
+                    }
+                )
+            })
+        }
+        activity.recordSignal(SignalContext.Study)
+        val session = ReviewSession(name = if (deckId.isNotBlank()) "Unified deck study" else "Unified review", createdAt = Clock.System.now())
+        session.enqueue(legacy, shuffle = false)
+        reviewSession = session
+        sessionResults.clear()
+        sessionStartedAt = Clock.System.now()
+        answerRevealed = false
+        libraryActiveDeck = null
+        libraryActiveMode = null
+        unifiedReviewActive = true
+        unifiedReviewQueue = queue
+        unifiedReviewIndex = 0
+        unifiedReviewDeck = deckId
+        unifiedSession = learning.study.openSession(deckId.ifBlank { "all" }, mode)
+        activityLog.record(ActivityCategory.Review, "Started unified review (${queue.size} cards)")
+        currentView = WorkspaceView.Review
+    }
+
+    /** Unified review scoped to one deck's study mode. */
+    fun startUnifiedDeckReview(deckId: String, mode: ua.syt0r.kanji.desktop.model.StudyMode) {
+        startUnifiedReview(deckId = deckId, mode = mode)
+    }
+
+    /** End a unified review session and persist its study-session record. */
+    private fun finishUnifiedReview() {
+        unifiedSession?.let { session ->
+            val completed = sessionResults.size
+            learning.study.finishSession(
+                session.copy(
+                    cardsSeen = completed,
+                    cardsCompleted = completed,
+                    correctCount = sessionResults.count { it.rating != ReviewRating.Again },
+                    againCount = sessionResults.count { it.rating == ReviewRating.Again }
+                )
+            )
+        }
+        unifiedReviewActive = false
+        unifiedReviewQueue = emptyList()
+        unifiedReviewIndex = 0
+        unifiedReviewDeck = null
+        unifiedSession = null
+    }
+
     fun rateCurrent(rating: ReviewRating) {
         val session = reviewSession ?: return
         if (session.isFinished) return
+        // Grading is the strongest engagement signal — it keeps the active
+        // study interval alive (see ActivityTracker).
+        activity.recordSignal(SignalContext.Study)
         val entry = session.current() ?: return
         val card = entry.card
         val beforeStatus = card.status
@@ -686,33 +1134,60 @@ init {
         val updated = session.answer(rating)
         sessionResults.add(ReviewResult(card.id, rating, updated.status, updated.intervalDays))
 
-        val mode = libraryActiveMode
-        if (mode != null) {
-            // Independent per-mode progress.
-            library.recordRating(card.id, mode, rating)
-            activityLog.record(ActivityCategory.Review, "${mode.label}: ${card.character} — ${rating.displayName}")
+        // Unified-source sessions grade through the real StudyEngine so the
+        // answer writes a full-fidelity event and SRS state into the store.
+        if (unifiedReviewActive) {
+            val item = unifiedReviewQueue.getOrNull(unifiedReviewIndex)
+            unifiedReviewIndex += 1
+            if (item != null) {
+                learning.study.grade(
+                    item = item,
+                    rating = rating,
+                    responseTimeMs = 0,
+                    sessionId = unifiedSession?.id.orEmpty(),
+                    now = Clock.System.now()
+                )
+                // Keep the legacy pool's copy of this card in sync so the rest
+                // of the UI (browser, library) sees the new SRS state.
+                val idx = cards.indexOfFirst { it.id == card.id }
+                if (idx >= 0) cards[idx] = updated
+            }
+            activityLog.record(ActivityCategory.Review, "Unified review: ${card.character} — ${rating.displayName}")
         } else {
-            val idx = cards.indexOfFirst { it.id == card.id }
-            if (idx >= 0) cards[idx] = updated
-            activityLog.record(ActivityCategory.Review, "Reviewed ${card.character} — ${rating.displayName}")
-        }
+            val mode = libraryActiveMode
+            if (mode != null) {
+                // Independent per-mode progress.
+                library.recordRating(card.id, mode, rating)
+                activityLog.record(ActivityCategory.Review, "${mode.label}: ${card.character} — ${rating.displayName}")
+            } else {
+                val idx = cards.indexOfFirst { it.id == card.id }
+                if (idx >= 0) cards[idx] = updated
+                activityLog.record(ActivityCategory.Review, "Reviewed ${card.character} — ${rating.displayName}")
+            }
 
-        reviewLog.add(
-            ReviewLogEntry(
-                cardId = card.id,
-                reviewedAt = updated.lastReviewedAt ?: Clock.System.now(),
-                rating = rating,
-                intervalBefore = beforeInterval,
-                intervalAfter = updated.intervalDays,
-                wasNew = beforeStatus == SrsStatus.New,
-                source = mode?.name?.lowercase() ?: "review"
+            reviewLog.add(
+                ReviewLogEntry(
+                    cardId = card.id,
+                    reviewedAt = updated.lastReviewedAt ?: Clock.System.now(),
+                    rating = rating,
+                    intervalBefore = beforeInterval,
+                    intervalAfter = updated.intervalDays,
+                    wasNew = beforeStatus == SrsStatus.New,
+                    source = mode?.name?.lowercase() ?: "review"
+                )
             )
-        )
+            // Keep the unified review-event stream in sync — statistics, exams
+            // and mistakes all read from it.
+            learning.recordLegacyReview(updated, rating)
+        }
         persistStatistics()
-        if (mode == null) persistCards()
+        if (libraryActiveMode == null) persistCards()
 
         answerRevealed = false
-        if (session.isFinished) endReview()
+        if (session.isFinished) {
+            if (unifiedReviewActive) finishUnifiedReview()
+            endReview()
+        }
     }
 
     fun buryCurrent() {
@@ -727,17 +1202,24 @@ init {
         val card = session.current()?.card
         val updated = session.suspend()
         if (card != null) {
-            val mode = libraryActiveMode
-            if (mode != null) {
-                library.suspend(card.id, mode)
-                activityLog.record(ActivityCategory.Review, "Suspended ${card.character} (${mode.label})")
-            } else {
+            if (unifiedReviewActive) {
+                learning.study.suspend(card.id)
                 val idx = cards.indexOfFirst { it.id == card.id }
-                if (idx >= 0) {
-                    cards[idx] = updated
-                    persistCards()
+                if (idx >= 0) cards[idx] = updated
+                persistCards()
+            } else {
+                val mode = libraryActiveMode
+                if (mode != null) {
+                    library.suspend(card.id, mode)
+                    activityLog.record(ActivityCategory.Review, "Suspended ${card.character} (${mode.label})")
+                } else {
+                    val idx = cards.indexOfFirst { it.id == card.id }
+                    if (idx >= 0) {
+                        cards[idx] = updated
+                        persistCards()
+                    }
+                    activityLog.record(ActivityCategory.Review, "Suspended ${card.character}")
                 }
-                activityLog.record(ActivityCategory.Review, "Suspended ${card.character}")
             }
         }
         if (session.isFinished) endReview()
@@ -776,17 +1258,24 @@ init {
         val entry = session.current()
         val updated = session.forget()
         if (entry != null) {
-            val mode = libraryActiveMode
-            if (mode != null) {
-                library.forget(entry.card.id, mode)
-                activityLog.record(ActivityCategory.Review, "Forgot ${entry.card.character} (${mode.label})")
-            } else {
+            if (unifiedReviewActive) {
+                learning.study.forget(entry.card.id)
                 val idx = cards.indexOfFirst { it.id == entry.card.id }
-                if (idx >= 0) {
-                    cards[idx] = updated
-                    persistCards()
+                if (idx >= 0) cards[idx] = updated
+                persistCards()
+            } else {
+                val mode = libraryActiveMode
+                if (mode != null) {
+                    library.forget(entry.card.id, mode)
+                    activityLog.record(ActivityCategory.Review, "Forgot ${entry.card.character} (${mode.label})")
+                } else {
+                    val idx = cards.indexOfFirst { it.id == entry.card.id }
+                    if (idx >= 0) {
+                        cards[idx] = updated
+                        persistCards()
+                    }
+                    activityLog.record(ActivityCategory.Review, "Forgot ${entry.card.character}")
                 }
-                activityLog.record(ActivityCategory.Review, "Forgot ${entry.card.character}")
             }
             session.removeCard(entry.card.id)
         }
@@ -817,7 +1306,10 @@ init {
     }
 
     fun endReview() {
-        val elapsed = Clock.System.now() - sessionStartedAt
+        // Study time is engagement time, never session wall-clock: if the
+        // user walked away mid-session the lapsed intervals are excluded.
+        // Falls back to wall time when tracking is disabled.
+        val elapsed = activity.engagedSince(sessionStartedAt)
         val correct = sessionResults.count { it.rating != ReviewRating.Again }
         val wrong = sessionResults.count { it.rating == ReviewRating.Again }
         val newCount = sessionResults.count { it.newStatus == SrsStatus.Learning }
@@ -838,6 +1330,7 @@ init {
         answerRevealed = false
         libraryActiveDeck = null
         libraryActiveMode = null
+        if (unifiedReviewActive) finishUnifiedReview()
         // Reward the finish: a success toast summarizing the session, with a
         // special line for a perfect run.
         toastHost.show(
@@ -896,7 +1389,7 @@ init {
         val pool = cards.filter { card ->
             card.status != SrsStatus.Suspended &&
                 card.status != SrsStatus.Buried &&
-                card.character.any { it.code in 0x4E00..0x9FFF }
+                isWritableCharacter(card.character)
         }
         val due = pool.filter { it.status != SrsStatus.New && it.dueAt != null && it.dueAt <= now }
         val newCards = if (includeNew) pool.filter { it.status == SrsStatus.New } else emptyList()
@@ -906,10 +1399,11 @@ init {
             .take(limit)
 
         if (queue.isEmpty()) {
-            toastHost.show("No kanji cards available for writing practice", kind = ToastKind.Info)
+            toastHost.show("No writable cards available for writing practice", kind = ToastKind.Info)
             return
         }
 
+        activity.recordSignal(SignalContext.Writing)
         val session = ReviewSession(name = "Writing practice", createdAt = now)
         session.enqueue(queue, shuffle = false)
         writingSession = session
@@ -919,9 +1413,10 @@ init {
         currentView = WorkspaceView.Writing
     }
 
-    fun rateWriting(rating: ReviewRating) {
+    fun rateWriting(rating: ReviewRating, canvas: ua.syt0r.kanji.desktop.ui.writing.WritingCanvasState? = null) {
         val session = writingSession ?: return
         if (session.isFinished) return
+        activity.recordSignal(SignalContext.Writing)
         val entry = session.current() ?: return
         val card = entry.card
         val beforeStatus = card.status
@@ -948,6 +1443,32 @@ init {
                 source = mode?.name?.lowercase() ?: "writing"
             )
         )
+        // Record the writing attempt into the unified store (feeds writing
+        // statistics and the weakest-kanji dashboard). When the canvas has
+        // strokes and the evaluator has canonical data for the character,
+        // the real per-stroke evaluation is stored; otherwise fall back to
+        // the self-grade (Again = miss).
+        val drawn = canvas?.normalizedStrokes().orEmpty()
+        if (drawn.isNotEmpty()) {
+            learning.recordEvaluatedWriting(
+                card = updated,
+                expected = card.character,
+                drawnStrokes = drawn,
+                canvasWidth = canvas?.canvasSize?.width ?: 380f,
+                canvasHeight = canvas?.canvasSize?.height ?: 380f,
+                selfRating = rating,
+                evaluator = writingEvaluator
+            )
+        } else {
+            val correctWriting = rating != ReviewRating.Again
+            learning.recordWritingAttempt(
+                card = updated,
+                expected = card.character,
+                accuracy = if (correctWriting) 1f else 0.3f,
+                mistakeCount = if (correctWriting) 0 else 1,
+                completed = true
+            )
+        }
         activityLog.record(ActivityCategory.Review, "Writing: ${card.character} — ${rating.displayName}")
         if (mode == null) persistCards()
 
@@ -962,8 +1483,35 @@ init {
         if (session.isFinished) endWriting()
     }
 
+    /**
+     * Study the real mistake queue (Again reviews, failed writing attempts,
+     * wrong exam answers, lapsed cards). Cards come from the unified store;
+     * ratings flow through the normal review flow, so SRS and statistics
+     * update exactly like regular study.
+     */
+    fun startMistakesReview(limit: Int = 50) {
+        val cards = learning.mistakeCards(limit)
+        if (cards.isEmpty()) {
+            toastHost.show("No recorded mistakes to study yet — review some cards first", kind = ToastKind.Info)
+            return
+        }
+        val now = Clock.System.now()
+        activity.recordSignal(SignalContext.Study)
+        val session = ReviewSession(name = "Mistakes review", createdAt = now)
+        session.enqueue(cards, shuffle = false)
+        libraryActiveDeck = null
+        libraryActiveMode = null
+        reviewSession = session
+        sessionResults.clear()
+        sessionStartedAt = now
+        answerRevealed = false
+        activityLog.record(ActivityCategory.Review, "Started mistakes review (${cards.size} cards)")
+        currentView = WorkspaceView.Review
+    }
+
     fun endWriting() {
-        val elapsed = Clock.System.now() - writingStartedAt
+        // Same engagement accounting as review sessions.
+        val elapsed = activity.engagedSince(writingStartedAt)
         val correct = writingResults.count { it.rating != ReviewRating.Again }
         val wrong = writingResults.count { it.rating == ReviewRating.Again }
         val newCount = writingResults.count { it.newStatus == SrsStatus.Learning }
@@ -979,7 +1527,7 @@ init {
         // Same accuracy-aware completion toast as review sessions, so both
         // finish flows celebrate identically.
         toastHost.show(
-            completionToastMessage(rated, correct, "kanji", "Writing practice done"),
+            completionToastMessage(rated, correct, "characters", "Writing practice done"),
             kind = ToastKind.Success,
             durationMs = 4200
         )
@@ -998,15 +1546,16 @@ init {
         val pool = projected.filter { card ->
             card.status != SrsStatus.Suspended &&
                 card.status != SrsStatus.Buried &&
-                card.character.any { it.code in 0x4E00..0x9FFF }
+                isWritableCharacter(card.character)
         }
         val due = pool.filter { it.status != SrsStatus.New && it.dueAt != null && it.dueAt <= now }
         val newCards = pool.filter { it.status == SrsStatus.New }
         val queue = (newCards.take(12) + due.take(24)).distinctBy { it.id }.shuffled(Random(11))
         if (queue.isEmpty()) {
-            toastHost.show("No kanji due for writing in \"${deck.name}\"", kind = ToastKind.Info)
+            toastHost.show("No writable characters due in \"${deck.name}\"", kind = ToastKind.Info)
             return
         }
+        activity.recordSignal(SignalContext.Writing)
         val session = ReviewSession(name = "${deck.name} — Writing", createdAt = now)
         session.enqueue(queue, shuffle = false)
         libraryActiveDeck = deckId
@@ -1198,62 +1747,9 @@ init {
     }
 
     // ---------------------------------------------------------------
-    // Demo seeding
+    // Bundled reference content
     // ---------------------------------------------------------------
-    fun seedDemoData() {
-        // Never reseed over a real pool: demo data is only for a true first
-        // run. Imported / edited / reviewed cards must survive every launch.
-        if (cards.isNotEmpty() || library.hasPersistedCards()) return
-        val demo = buildDemoCards()
-        cards.addAll(demo)
-        cards.addAll(buildDemoContentCards())
-        seedSummaries()
-        seedCollections()
-        seedActivity()
-        seedDictionary()
-        seedLibrary()
-        // Persist the seeded stats so they survive restarts instead of being
-        // regenerated on every launch until the first real review.
-        persistStatistics()
-        persistCards()
-    }
-
-    /** Seed the library: per-mode progress for every card + a couple of recent searches. */
-    private fun seedLibrary() {
-        val now = Clock.System.now()
-        val bulk = HashMap<String, Map<StudyMode, StudyModeProgress>>()
-        cards.forEachIndexed { index, card ->
-            val modes = LinkedHashMap<StudyMode, StudyModeProgress>()
-            StudyMode.entries.forEach { mode ->
-                var progress = library.modeProgress(card.id, mode)
-                // Give demo cards a plausible spread of mode progress so
-                // independent tracks are visible from the first run.
-                if (index % 3 == 0 && card.status != SrsStatus.New) {
-                    progress = progress.copy(
-                        status = if (index % 4 == 0) SrsStatus.Learning else SrsStatus.Review,
-                        reps = (index % 9) + 1,
-                        intervalDays = ((index % 7) * 1.5).toDouble(),
-                        accuracy = (0.6f + (index % 35) / 100f).coerceAtMost(0.98f),
-                        streak = index % 6,
-                        bestStreak = (index % 11),
-                        totalReviews = (index % 9) + 1,
-                        totalCorrect = index % 7,
-                        dueAt = if (index % 5 == 0) now else null,
-                        lastReviewedAt = now.minus((index % 9).toLong(), DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                    )
-                }
-                modes[mode] = progress
-            }
-            bulk[card.id] = modes
-        }
-        // Persist once instead of once per card per mode — keeps first launch instant.
-        library.bulkSetProgress(bulk)
-        library.recordSearch("kind:vocabulary")
-        library.recordSearch("jlpt:5")
-        activityLog.record(ActivityCategory.Study, "Library seeded (${library.decks.size} decks, ${cards.size} entries)")
-    }
-
-    /** Install the bundled kanji dictionary on first run. */
+    /** Install the bundled kanji reference dictionary (offline lookup). */
     private fun seedDictionary() {
         if (dictionary.isInstalled(DictionaryService.SEED_DICTIONARY_ID)) return
         dictionary.install(
@@ -1261,68 +1757,6 @@ init {
             DictionaryService.seedEntries(),
             state = this
         )
-    }
-
-    private fun seedSummaries() {
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val now = Clock.System.now()
-        for (offset in 180 downTo 0) {
-            val date = today.minus(offset, DateTimeUnit.DAY)
-            val dayOfWeek = date.dayOfWeek.ordinal
-            val newCount = if (dayOfWeek == 6) 0 else (3 + (offset * 7) % 14)
-            val reviewCount = 10 + (offset * 13) % 40
-            val wrong = reviewCount / 7
-            val correct = reviewCount - wrong
-            val timeMs = (newCount * 45L + reviewCount * 30L) * 1000L
-            summaries.add(
-                StudyDaySummary(
-                    day = date.toString(),
-                    newCount = newCount,
-                    reviewCount = reviewCount,
-                    correctCount = correct,
-                    wrongCount = wrong,
-                    timeSpent = timeMs.milliseconds
-                )
-            )
-        }
-        demoKanji().forEachIndexed { index, seed ->
-            val day = (index * 5) % 5
-            val ts = now.minus(day.toLong(), DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                .minus(index * 23L, DateTimeUnit.MINUTE)
-            val rated = index % 9
-            val status = if (rated < 3) SrsStatus.Learning else SrsStatus.Review
-            reviewLog.add(
-                ReviewLogEntry(
-                    cardId = seed.cardId,
-                    reviewedAt = ts,
-                    rating = ReviewRating.entries[rated % 4],
-                    intervalBefore = 0.0,
-                    intervalAfter = (index % 20).toDouble(),
-                    wasNew = true,
-                    source = "seed"
-                )
-            )
-            if (index % 3 == 0) {
-                activityLog.record(ActivityCategory.Review, "Reviewed ${seed.character} as ${ReviewRating.entries[rated % 4].displayName}")
-            }
-        }
-    }
-
-    private fun seedCollections() {
-        val demoIds = cards.take(14).map { it.id }
-        val first = collections.create("First Week", "The very first kanji you learned", CollectionKind.Manual)
-        collections.update(first.copy(cardIds = demoIds))
-        val favoriteIds = cards.filter { it.favorite }.map { it.id }
-        val fav = collections.create("Favorites", "Kanji you starred", CollectionKind.Manual)
-        collections.update(fav.copy(cardIds = favoriteIds))
-        collections.togglePinned(collections.collections.first { it.id == "smart-due" }.id)
-    }
-
-    private fun seedActivity() {
-        activityLog.record(ActivityCategory.System, "Kaiteyo Desktop started")
-        activityLog.record(ActivityCategory.Study, "Demo dataset loaded (${cards.size} cards)")
-        activityLog.record(ActivityCategory.Theme, "Theme set to ${ThemePresets.default.name}")
-        activityLog.record(ActivityCategory.Import, "Imported demo saved filters")
     }
 }
 
@@ -1336,11 +1770,21 @@ private fun navLayoutFromStored(value: String?): NavLayout? = when (value?.lower
     else -> null
 }
 
-/** Minimal demo-seed mirror so [seedSummaries] can tag its log entries. */
-private data class DemoSeedRef(val character: String, val cardId: String)
-
-private fun demoKanji(): List<DemoSeedRef> =
-    ua.syt0r.kanji.desktop.data.demoKanji.map { DemoSeedRef(it.character, "kanji-${it.character.hashCode().toString(16)}") }
+/**
+ * Whether a character can be graded by the writing engine: a single kanji
+ * or a single kana unit (the built-in evaluator and KanjiVG both cover the
+ * full syllabary). Multi-character clusters like きゃ are studied via the
+ * other modes — their per-character strokes are never guessed here.
+ */
+fun isWritableCharacter(character: String): Boolean {
+    if (character.length != 1) return false
+    val code = character[0].code
+    return code in 0x4E00..0x9FFF || // CJK unified ideographs (kanji)
+        code in 0x3400..0x4DBF ||    // CJK extension A
+        code in 0x3040..0x309F ||    // hiragana
+        code in 0x30A0..0x30FF ||    // katakana
+        code in 0x31F0..0x31FF       // katakana phonetic extensions
+}
 
 /** Builds the accuracy-aware completion toast text shared by review and writing sessions. */
 private fun completionToastMessage(
@@ -1363,4 +1807,10 @@ data class ReviewResult(
     val rating: ReviewRating,
     val newStatus: SrsStatus,
     val newInterval: Double
+)
+
+/** What [AppState.currentView] means right now: an active tab, or the legacy fallback. */
+data class WorkspaceContentTarget(
+    val tabId: String?,
+    val view: WorkspaceView
 )

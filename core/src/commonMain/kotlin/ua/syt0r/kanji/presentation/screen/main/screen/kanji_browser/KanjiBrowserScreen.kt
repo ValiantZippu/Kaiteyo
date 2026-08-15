@@ -414,7 +414,7 @@ fun KanjiBrowserScreen(
             Text(
                 text = "${filteredCards.size} kanji",
                 color = surfaceColors.textMuted,
-                fontSize = 12.sp
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -487,7 +487,7 @@ private fun BrowserHeader(
             Text(
                 text = "Kanji Browser",
                 color = surfaceColors.textPrimary,
-                fontSize = 22.sp,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
         }

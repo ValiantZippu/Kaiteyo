@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">
+  <!-- Background -->
+  <rect width="400" height="120" fill="#050505" rx="24" />
+
+  <!-- Logo Mark (small) -->
+  <g transform="translate(24, 24) scale(0.6)">
+    <defs>
+      <linearGradient id="wstrokeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#C2FC8B;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#9CE85E;stop-opacity:1" />
+      </linearGradient>
+      <filter id="wglow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="4" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+
+    <!-- Main stroke -->
+    <path d="M80,60 Q140,50 180,110 Q210,140 200,200 Q195,220 180,230"
+          stroke="url(#wstrokeGrad)" stroke-width="22" fill="none"
+          stroke-linecap="round" filter="url(#wglow)" />
+    <!-- Secondary stroke -->
+    <path d="M90,140 Q150,110 210,155 Q215,160 210,170"
+          stroke="#C2FC8B" stroke-width="12" fill="none"
+          stroke-linecap="round" opacity="0.85" />
+    <!-- Tertiary flick -->
+    <path d="M180,230 Q195,210 200,190"
+          stroke="#C2FC8B" stroke-width="7" fill="none"
+          stroke-linecap="round" opacity="0.6" />
+    <!-- Accent dot -->
+    <circle cx="200" cy="200" r="13" fill="#FEAB57" />
+  </g>
+
+  <!-- KAITEYO wordmark -->
+  <text x="140" y="78" 
+        font-family="Arial, Helvetica, sans-serif" 
+        font-weight="700" 
+        font-size="36" 
+        fill="#F0F0F0" 
+        letter-spacing="6">
+    KAITEYO
+  </text>
+</svg>

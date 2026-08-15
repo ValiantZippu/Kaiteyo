@@ -55,7 +55,21 @@ object MediaActions {
         MediaAction("next", "Play next", KeyChord("n"), "Next item in the queue or series"),
         MediaAction("previous", "Play previous", KeyChord("v"), "Previous item in the queue"),
         MediaAction("next-cue", "Next subtitle", KeyChord("ArrowRight", shift = true), "Jump to the next subtitle cue"),
-        MediaAction("prev-cue", "Previous subtitle", KeyChord("ArrowLeft", shift = true), "Jump to the previous subtitle cue")
+        MediaAction("prev-cue", "Previous subtitle", KeyChord("ArrowLeft", shift = true), "Jump to the previous subtitle cue"),
+        // ---- Rendering / audio transport ---------------------------
+        MediaAction("mute", "Mute / unmute", KeyChord("q"), "Toggle audio mute"),
+        MediaAction("fullscreen", "Toggle fullscreen", KeyChord("F11"), "Enter or leave fullscreen"),
+        MediaAction("subtitle-delay-back", "Subtitle delay −0.5 s", KeyChord("j"), "Shift subtitles earlier"),
+        MediaAction("subtitle-delay-reset", "Subtitle delay reset", KeyChord("k"), "Clear the subtitle offset"),
+        MediaAction("subtitle-delay-forward", "Subtitle delay +0.5 s", KeyChord("l", shift = true), "Shift subtitles later"),
+        MediaAction("speed-down", "Speed down", KeyChord("openbracket"), "Reduce playback speed"),
+        MediaAction("speed-up", "Speed up", KeyChord("closebracket"), "Increase playback speed"),
+        MediaAction("frame-step-back", "Previous frame", KeyChord("comma"), "Step one frame back where supported"),
+        MediaAction("frame-step-forward", "Next frame", KeyChord("period"), "Step one frame forward where supported"),
+        MediaAction("chapter-previous", "Previous chapter", KeyChord("pageup"), "Jump to the previous chapter"),
+        MediaAction("chapter-next", "Next chapter", KeyChord("pagedown"), "Jump to the next chapter"),
+        MediaAction("cycle-display", "Cycle display mode", KeyChord("i"), "Fit / Fill / Crop / Original / Stretch"),
+        MediaAction("cycle-aspect", "Cycle aspect ratio", KeyChord("o"), "Cycle the forced aspect ratio preset")
     )
 
     fun defaultChord(actionId: String): KeyChord =

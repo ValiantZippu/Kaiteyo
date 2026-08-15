@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,13 @@ import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 @Serializable
 data class ThemeSettings(
     val accentName: String = AllAccentSchemes.first().name,
+    // Custom accent colors (hex). Filled when the Theme Studio applies a
+    // color that no preset defines, so custom themes survive restarts.
+    val customPrimary: String? = null,
+    val customSecondary: String? = null,
+    val customTertiary: String? = null,
+    val customGradientStart: String? = null,
+    val customGradientEnd: String? = null,
     val radiusStyle: CornerRadiusStyle = CornerRadiusStyle.Rounded,
     val radiusCustom: Float? = null,
     val radiusButton: Float? = null,
@@ -59,8 +67,25 @@ data class ThemeSettings(
     val letterSpacing: Float = 0f
 ) {
 
-    fun accentScheme(): KaiteyoAccentScheme =
-        AllAccentSchemes.firstOrNull { it.name == accentName } ?: AllAccentSchemes.first()
+    fun accentScheme(): KaiteyoAccentScheme {
+        AllAccentSchemes.firstOrNull { it.name == accentName }?.let { return it }
+        val customPrimaryColor = customPrimary?.let { parseColorHex(it) }
+            ?: return AllAccentSchemes.first()
+        val customSecondaryColor = customSecondary?.let { parseColorHex(it) } ?: customPrimaryColor
+        return KaiteyoAccentScheme(
+            name = accentName,
+            primary = customPrimaryColor,
+            primaryDark = customPrimaryColor,
+            secondary = customSecondaryColor,
+            secondaryDark = customSecondaryColor,
+            onPrimary = Color(0xFF050505),
+            onSecondary = Color(0xFF050505),
+            tertiary = customTertiary?.let { parseColorHex(it) },
+            previewColors = listOf(customPrimaryColor, customSecondaryColor),
+            gradientStart = customGradientStart?.let { parseColorHex(it) },
+            gradientEnd = customGradientEnd?.let { parseColorHex(it) }
+        )
+    }
 
     fun toRadiusConfig() = RadiusConfig(
         style = radiusStyle,
@@ -112,8 +137,23 @@ data class ThemeSettings(
             val radius = themeState.radiusConfig
             val glow = themeState.glowConfig
             val typeScale = themeState.typeScale
+            val accent = themeState.accentScheme
+            val preset = AllAccentSchemes.firstOrNull { it.name == accent.name }
+            val isCustom = preset == null ||
+                preset.primary != accent.primary ||
+                preset.primaryDark != accent.primaryDark ||
+                preset.secondary != accent.secondary ||
+                preset.secondaryDark != accent.secondaryDark ||
+                preset.tertiary != accent.tertiary ||
+                preset.gradientStart != accent.gradientStart ||
+                preset.gradientEnd != accent.gradientEnd
             return ThemeSettings(
-                accentName = themeState.accentScheme.name,
+                accentName = accent.name,
+                customPrimary = if (isCustom) accent.primary.toHexString() else null,
+                customSecondary = if (isCustom) accent.secondary.toHexString() else null,
+                customTertiary = if (isCustom) accent.tertiary?.toHexString() else null,
+                customGradientStart = if (isCustom) accent.gradientStart?.toHexString() else null,
+                customGradientEnd = if (isCustom) accent.gradientEnd?.toHexString() else null,
                 radiusStyle = radius.style,
                 radiusCustom = radius.customRadius,
                 radiusButton = radius.buttonRadius,

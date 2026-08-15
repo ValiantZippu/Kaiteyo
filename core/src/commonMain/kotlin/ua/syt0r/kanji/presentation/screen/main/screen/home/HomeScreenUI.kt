@@ -36,13 +36,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.More
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.ui.text.font.FontWeight
-import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
-import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
-import ua.syt0r.kanji.presentation.common.theme.Dimens
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -312,6 +311,8 @@ private fun CompactBottomNav(
 ) {
     val visibleTabs = availableTabs.take(4) // Show max 4 tabs
     val hasOverflow = availableTabs.size > 4
+    val overflowTabs = availableTabs.drop(4)
+    val showOverflow = remember { mutableStateOf(false) }
 
     Column(Modifier.shadow(10.dp)) {
         Row(
@@ -330,82 +331,51 @@ private fun CompactBottomNav(
                 )
             }
 
-            // More button for overflow tabs
+            // Overflow button for tabs that don't fit the bar; opens a menu
+            // with every remaining tab so nothing becomes unreachable.
             if (hasOverflow) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(
-                            if (selectedTabState.value in availableTabs.subList(4, availableTabs.size)) {
-                                MaterialTheme.colorScheme.surfaceVariant
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(
+                                if (selectedTabState.value in overflowTabs) {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
+                            )
+                            .clickable { showOverflow.value = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.More,
+                            contentDescription = "More tabs",
+                            tint = if (selectedTabState.value in overflowTabs) {
+                                MaterialTheme.colorScheme.primary
                             } else {
-                                MaterialTheme.colorScheme.surface
+                                MaterialTheme.colorScheme.onSurfaceVariant
                             }
                         )
-                        .clickable {
-                            // TODO: Show overflow menu with remaining tabs
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.More,
-                        contentDescription = "More tabs",
-                        tint = if (selectedTabState.value in availableTabs.subList(4, availableTabs.size)) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    DropdownMenu(
+                        expanded = showOverflow.value,
+                        onDismissRequest = { showOverflow.value = false }
+                    ) {
+                        overflowTabs.forEach { tab ->
+                            DropdownMenuItem(
+                                text = { Text(resolveString(tab.titleResolver)) },
+                                leadingIcon = tab.iconContent,
+                                onClick = {
+                                    showOverflow.value = false
+                                    onTabSelected(tab)
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
-        }
-    }
-}
-
-// Modern floating launcher for compact desktop navigation
-@Composable
-private fun CompactLauncher(
-    compactPosition: String,
-    onOpenSwitcher: () -> Unit,
-    onToggleCollapse: () -> Unit
-) {
-    val accent = LocalKaiteyoAccent.current
-    val surfaceColors = LocalSurfaceColors.current
-
-    Box(
-        modifier = Modifier
-            .size(56.dp)
-            .clip(RoundedCornerShape(Dimens.RadiusXl))
-            .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-            )
-            .shadow(elevation = 8.dp)
-            .clickable { onOpenSwitcher() }
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            IconButton(
-                onClick = onOpenSwitcher,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = "Open workspace switcher",
-                    tint = accent.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Text(
-                text = "+",
-                style = MaterialTheme.typography.titleLarge,
-                color = accent.primary,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
@@ -426,11 +396,6 @@ private fun RowScope.VerticalTabButton(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .weight(1f)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
             .wrapContentWidth()
             .size(48.dp)
             .clip(MaterialTheme.shapes.medium)

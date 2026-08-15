@@ -35,6 +35,7 @@ import ua.syt0r.kanji.presentation.common.ui.CenteredBoxWithSide
 import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.ExpandablePracticeAnswerButtonsRow
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.ExpandableVocabPracticeAnswersRowState
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
@@ -67,7 +68,11 @@ fun VocabPracticeReadingPickerUI(
 
         if (selectedAnswer != null || reviewState.showMeaning) {
             CenteredBoxWithSide(
-                modifier = Modifier.widthIn(max = 400.dp),
+                modifier = Modifier.widthIn(max = rememberAdaptiveContentMaxWidth(
+                    phoneMax = 400.dp,
+                    mediumMax = 480.dp,
+                    wideMax = 560.dp
+                )),
                 placeSideContentAtStart = false,
                 centerContent = {
                     Text(

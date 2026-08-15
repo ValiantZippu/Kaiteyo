@@ -19,6 +19,7 @@ import ua.syt0r.kanji.desktop.engine.theming.ThemeMapper
 import ua.syt0r.kanji.desktop.engine.updates.UpdateChannel
 import ua.syt0r.kanji.desktop.engine.updates.UpdateService
 import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseUpdater
+import ua.syt0r.kanji.desktop.ui.tutorial.TutorialOverlay
 import ua.syt0r.kanji.desktop.ui.workspace.KaiteyoWorkspace
 import ua.syt0r.kanji.desktopApp.OnboardingWizard
 import ua.syt0r.kanji.presentation.common.theme.AppTheme
@@ -37,7 +38,12 @@ import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 // ============================================
 
 @Composable
-fun KaiteyoDesktopSuite() {
+fun KaiteyoDesktopSuite(
+    // Optional window shell mounted *inside* the suite's AppTheme, so the
+    // custom title bar and chrome render with the suite's live theme (never
+    // the untinted OLED default). Defaults to the identity.
+    shell: @Composable (content: @Composable () -> Unit) -> Unit = { content -> content() }
+) {
     val state = remember { AppState() }
 
     // First-run gating: show onboarding when it has never been completed,
@@ -54,7 +60,8 @@ fun KaiteyoDesktopSuite() {
     val kjdUpdater = koinInject<KjdDatabaseUpdater>()
 
     LaunchedEffect(Unit) {
-        state.seedDemoData()
+        // First run starts empty by design — no demo data is ever seeded into
+        // the user library; study content is earned through real activity.
         if (state.settings.getBool("updates.check-on-startup")) {
             updateService.setChannel(
                 UpdateChannel.fromName(state.settings.getString("updates.channel", "stable"))
@@ -134,20 +141,30 @@ fun KaiteyoDesktopSuite() {
         typeScale = ThemeMapper.typeScale(theme),
         typography = ThemeMapper.typography(theme)
     ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = settleScale.value
-                    scaleY = settleScale.value
+        shell {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = settleScale.value
+                        scaleY = settleScale.value
+                    }
+            ) {
+                KaiteyoWorkspace(state = state)
+                if (onboardingVisible) {
+                    OnboardingWizard(
+                        state = state,
+                        onComplete = { showOnboarding = false }
+                    )
                 }
-        ) {
-            KaiteyoWorkspace(state = state)
-            if (onboardingVisible) {
-                OnboardingWizard(
-                    state = state,
-                    onComplete = { showOnboarding = false }
-                )
+                // Product tutorial — opened from Settings → General, layered
+                // above the workspace exactly like the onboarding wizard.
+                if (state.tutorialRequested) {
+                    TutorialOverlay(
+                        state = state,
+                        onClose = { state.tutorialRequested = false }
+                    )
+                }
             }
         }
     }

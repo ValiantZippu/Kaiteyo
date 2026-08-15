@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -66,6 +67,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsPromptDialog
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
+import ua.syt0r.kanji.desktop.designsystem.adaptiveWidth
 import ua.syt0r.kanji.desktop.designsystem.DsSearchField
 import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
@@ -112,11 +114,14 @@ fun CollectionsView(state: AppState) {
 
     val selected = state.collections.collections.firstOrNull { it.id == selectedId }
 
-    Row(Modifier.fillMaxSize()) {
-        // Left: list
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Left: list — a width that follows the window (≈26%, clamped so it
+        // stays usable on small windows and never swallows the detail pane).
+        val listWidth = adaptiveWidth(maxWidth, 0.26f, 260.dp, 400.dp)
+        Row(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .width(300.dp)
+                .width(listWidth)
                 .fillMaxSize()
                 .padding(DsSpacing.Md)
         ) {
@@ -259,6 +264,7 @@ fun CollectionsView(state: AppState) {
                     onMove = { moveDialog = true; selectedIds = setOf(selected.id) }
                 )
             }
+        }
         }
     }
 
@@ -469,7 +475,7 @@ private fun CollectionList(
             def.description.contains(searchQuery, ignoreCase = true)
 
     fun sorted(defs: List<CollectionDef>): List<CollectionDef> {
-        val bySize = { def: CollectionDef -> state.collections.resolveCards(def, state.cards.toList()).size }
+        val bySize = { def: CollectionDef -> state.collections.resolveCards(def, state.cards.toList(), state.library).size }
         return when (sortMode) {
             CollectionSortMode.Name -> defs.sortedBy { it.name.lowercase() }
             CollectionSortMode.Size -> defs.sortedByDescending { bySize(it) }
@@ -492,7 +498,7 @@ private fun CollectionList(
         items(roots.size, key = { roots[it].id }) { index ->
             val def = roots[index]
             val children = state.collections.childrenOf(def.id).filter { !it.archived && matches(it) }
-            val cardsIn = state.collections.resolveCards(def, state.cards.toList())
+            val cardsIn = state.collections.resolveCards(def, state.cards.toList(), state.library)
             val interaction = remember { MutableInteractionSource() }
             val hovered by interaction.collectIsHoveredAsState()
             val selected = def.id == selectedId
@@ -632,7 +638,9 @@ private fun CollectionDetail(
 ) {
     val sc = surfaceColors()
     val ac = accent()
-    val cards = state.collections.resolveCards(def, state.cards.toList())
+    // Deck-owned cards count toward the collection — the Library is the hub.
+    val cards = state.collections.resolveCards(def, state.cards.toList(), state.library)
+    val decks = state.collections.resolveDecks(def, state.library)
 
     var editOpen by remember(def.id) { mutableStateOf(false) }
     var editName by remember(def.id) { mutableStateOf(def.name) }
@@ -786,6 +794,43 @@ private fun CollectionDetail(
                     )
                 }
             }
+        }
+
+        if (decks.isNotEmpty()) {
+            Text("Decks", color = sc.textMuted, fontSize = DsType.Caption, fontWeight = FontWeight.Medium)
+            DsCard {
+                Column(
+                    Modifier.padding(DsSpacing.Sm),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    decks.forEach { deck ->
+                        val deckCards = state.library.cardsIn(deck, state.cards.toList())
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(DsRadius.Md))
+                                .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                                .clickable { state.currentView = WorkspaceView.Library }
+                                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = deck.icon.ifBlank { deck.kind.glyph },
+                                color = ac.primary,
+                                fontSize = DsType.Title,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(36.dp)
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(deck.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
+                                Text("${deck.kind.label} · ${deckCards.size} cards", color = sc.textMuted, fontSize = DsType.Caption)
+                            }
+                            DsBadge(text = deck.kind.label, tint = ac.primary)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(DsSpacing.Sm))
         }
 
         Text("Contents", color = sc.textMuted, fontSize = DsType.Caption, fontWeight = FontWeight.Medium)

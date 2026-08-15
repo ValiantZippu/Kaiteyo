@@ -60,6 +60,7 @@ import ua.syt0r.kanji.presentation.common.AutopaddedScrollableColumn
 import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.ui.CenteredBoxWithSide
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.common.ui.Orientation
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWriter
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWriterDecorations
@@ -140,7 +141,11 @@ fun VocabPracticeWritingUI(
                             modifier = Modifier.fillMaxWidth()
                                 .padding(20.dp)
                                 .wrapContentSize()
-                                .widthIn(max = 400.dp)
+                                .widthIn(max = rememberAdaptiveContentMaxWidth(
+                                    phoneMax = 400.dp,
+                                    mediumMax = 480.dp,
+                                    wideMax = 560.dp
+                                ))
                                 .aspectRatio(1f, matchHeightConstraintsFirst = true)
                         )
                     }
@@ -175,7 +180,11 @@ fun VocabPracticeWritingUI(
                             .fillMaxHeight()
                             .padding(20.dp)
                             .wrapContentSize()
-                            .widthIn(max = 400.dp)
+                            .widthIn(max = rememberAdaptiveContentMaxWidth(
+                                phoneMax = 400.dp,
+                                mediumMax = 480.dp,
+                                wideMax = 560.dp
+                            ))
                             .aspectRatio(1f, matchHeightConstraintsFirst = true)
                     )
 

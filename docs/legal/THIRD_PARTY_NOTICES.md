@@ -34,6 +34,7 @@ rendered in-app on the Credits/About screen via AboutLibraries.
 | Coil 3 | Image loading | Apache-2.0 |
 | reorderable | List reordering | Apache-2.0 |
 | VLCJ | VLC playback binding | GPL-3.0 |
+| mpv (external process) | Optional media playback backend (IPC) | GPL-2.0-or-later, LGPL-2.1-or-later components |
 | sqlite-jdbc | Desktop SQLite | Apache-2.0 |
 | JNA | Native OS calls (window drag, media keys) | Apache-2.0 / LGPL |
 | Firebase (googlePlay flavor only) | Analytics / crash reporting | proprietary ToS |
@@ -47,8 +48,12 @@ AboutLibraries output (`desktopApp/src/jvmMain/composeResources/files/aboutlibra
 - **CC BY-SA 3.0/4.0 and CC BY datasets** require attribution and share-alike on
   derivatives. Kaiteyo's generated database includes per-entity provenance; the app
   credits screen and this page satisfy attribution for the bundled distribution.
-- **GPL components (VLCJ)** — VLCJ is GPL-3.0, compatible with Kaiteyo's GPL-3.0.
-  Source availability applies per the GPL.
+- **GPL components (VLCJ / libVLC)** — VLCJ is GPL-3.0, compatible with Kaiteyo's GPL-3.0.
+  Media playback is powered by libVLC/VLC when installed; VLC itself is LGPL-2.1-or-later
+  with GPL-2.0-or-later plugin components. Source availability applies per the GPL.
+- **mpv backend** — when selected, Kaiteyo drives an installed mpv process over IPC;
+  mpv is GPL-2.0-or-later with LGPL-2.1-or-later components. Kaiteyo does not bundle mpv;
+  the user's system installation is used and its license governs.
 - **OFL fonts** (media generator promo assets) — redistribution permitted with the
   license retained.
 

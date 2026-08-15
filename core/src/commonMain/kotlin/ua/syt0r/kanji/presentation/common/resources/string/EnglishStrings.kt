@@ -78,6 +78,25 @@ object EnglishStrings : Strings {
 
     override val center: SettingsCenterStrings = EnglishSettingsCenterStrings
 
+    override val mediaCentre: MediaCentreStrings = EnglishMediaCentreStrings
+
+}
+
+object EnglishMediaCentreStrings : MediaCentreStrings {
+    override val title: String = "Media Centre"
+    override val desktopOnlyTitle: String = "Media Centre is a desktop feature"
+    override val desktopOnlyMessage: String =
+        "The immersion workspace — player, subtitles, dictionary and mining — runs in the desktop app. Open Kaiteyo on your computer to use it."
+    override val backButton: String = "Back"
+    override val featuresTitle: String = "What you'll find in the desktop Media Centre"
+    override val featurePlayer: String =
+        "Video & audio player (VLC / mpv) with Japanese subtitle support"
+    override val featureLibrary: String =
+        "Media library with folders, playlists and watch progress"
+    override val featureDictionary: String =
+        "Click any word in a subtitle for dictionary, pitch and frequency"
+    override val featureMining: String =
+        "Mine cards with sentence, screenshot and audio — to Kaiteyo decks or Anki"
 }
 
 object EnglishSettingsCenterStrings : SettingsCenterStrings {
@@ -325,9 +344,11 @@ object EnglishNavStrings : NavStrings {
     override val homeLabel: String = "Home"
     override val libraryLabel: String = EnglishHomeStrings.libraryTabLabel
     override val studyLabel: String = "Study"
+    override val browseLabel: String = "Browse"
     override val dictionaryLabel: String = "Dictionary"
     override val statisticsLabel: String = EnglishHomeStrings.statsTabLabel
     override val collectionsLabel: String = "Collections"
+    override val mediaLabel: String = "Media"
 
     override val generalTabLabel: String = "General"
     override val sidebarTabLabel: String = "Sidebar"
@@ -343,6 +364,15 @@ object EnglishNavStrings : NavStrings {
     override val bubbleIconSizeLabel: String = "Icon size"
     override val snapPositionLabel: String = "Snap position"
     override val sidebarLayoutLabel: String = "Sidebar layout"
+    override val holdDurationLabel: String = "Hold duration"
+    override val safeMarginLabel: String = "Safe margin"
+    override val autoHideLabel: String = "Auto-hide"
+    override val autoHideNever: String = "Never"
+    override val autoHideTenSeconds: String = "10 seconds"
+    override val autoHideTwentySeconds: String = "20 seconds"
+    override val autoHideThirtySeconds: String = "30 seconds"
+    override val autoHideOneMinute: String = "1 minute"
+    override val autoHideCustom: String = "Custom"
 
     override val phoneNavPositionLabel: String = "Navigation position"
     override val phoneLauncherPositionLabel: String = "Launcher position"
@@ -943,6 +973,12 @@ object EnglishCommonPracticeStrings : CommonPracticeStrings {
     override val writingStrokeAccuracyTitle: String = "Stroke Accuracy"
     override val writingStrokeAccuracy: (Int) -> String = { "Stroke accuracy: $it%" }
     override val writingWrongOrder: (Int) -> String = { "Wrong order: $it" }
+
+    override val reviewSessionTitle: String = "Session"
+    override val reviewDeckLabel: String = "Deck"
+    override val reviewStreakLabel: String = "Streak"
+    override val reviewProgressPosition: (Int, Int) -> String = { current, total -> "Card $current of $total" }
+    override val reviewStreakDays: (Int) -> String = { "$it day${if (it == 1) "" else "s"}" }
 }
 
 object EnglishLetterPracticeStrings : LetterPracticeStrings {

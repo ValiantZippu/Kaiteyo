@@ -1,231 +1,217 @@
 # Kaiteyo (書いてよ) — Theme System
 
-## Overview
+> This document describes the theme system **as it is implemented** — not the
+> aspirational version. Source of truth: `core/.../presentation/common/theme/`
+> (`Theme.kt`, `Color.kt`, `Typography.kt`, `Dimens.kt`) for the shared engine, and
+> `desktopApp/.../desktop/engine/theming/` (`ThemeManager.kt`, `ThemePresets.kt`,
+> `ThemeStudio.kt`) + `desktopApp/.../desktop/engine/theming/ThemeMapper.kt` for the
+> desktop Theme Studio.
 
-Kaiteyo's theme system is built on a token-based architecture. Every visual property is controlled by a theme token, enabling complete customization through the Appearance Studio.
+## Two theme layers
 
-## Theme Tokens
+Kaiteyo has **two cooperating theme systems**:
 
-### Color Tokens
+1. **Shared engine theme** (`core/.../theme/`) — `BaseMode` + `KaiteyoAccentScheme`
+   + `KaiteyoThemeState`. Used by **all platforms** (Android/iOS/desktop). Persisted
+   via `ThemeSettingsState` (DataStore) on mobile; the desktop app maps its Theme
+   Studio themes onto it through `ThemeMapper`.
+2. **Desktop Theme Studio** (`desktopApp/.../engine/theming/`) — `ThemeManager`
+   owns a full theme library (presets + custom + imported) as `KaiteyoTheme` objects
+   persisted as JSON in `~/.kaiteyo/themes/`. The suite renders through
+   `KaiteyoDesktopSuite` → `AppTheme(...)` fed by `ThemeMapper`.
 
-| Token | Description | Example (Signature Dark) |
-|-------|-------------|--------------------------|
-| `primary` | Primary accent color | `#C2FC8B` (Lime) |
-| `secondary` | Secondary accent color | `#FEAB57` (Orange) |
-| `onPrimary` | Text/icon on primary | `#1A1A1A` |
-| `onSecondary` | Text/icon on secondary | `#1A1A1A` |
-| `background` | Main background | `#1A1A1A` |
-| `surface` | Card/panel background | `#242424` |
-| `surfaceElevated` | Elevated surface | `#2E2E2E` |
-| `surfaceFloating` | Floating elements | `#333333` |
-| `textPrimary` | Primary text | `#FFFFFF` |
-| `textSecondary` | Secondary text | `#A0A0A0` |
-| `border` | Subtle borders | `#333333` |
-| `error` | Error states | `#FF6B6B` |
-| `success` | Success states | `#4CAF50` |
-| `warning` | Warning states | `#FFB74D` |
-| `info` | Information states | `#64B5F6` |
+On desktop the **Theme Studio is the source of truth**; `ThemeMapper` translates a
+`KaiteyoTheme` into `baseMode`, `accentScheme`, `customSurface`, `layoutConfig`,
+`radiusConfig`, `animationConfig`, `typeScale` and `typography` for the shared
+`AppTheme`.
 
-### Gradient Tokens
+## Shared color model (`Color.kt`)
 
-| Token | Description |
-|-------|-------------|
-| `gradientStart` | Start color for accent gradients |
-| `gradientEnd` | End color for accent gradients |
-| `surfaceGradient` | Subtle surface gradient |
+### Base modes
 
-### Glow Tokens
+`enum class BaseMode(val displayName: String)`: `Oled` ("OLED Black", default),
+`Dark` ("Dark Gray"), `Light`, `Sepia` (reading mode).
 
-| Token | Description |
-|-------|-------------|
-| `glowIntensity` | 0.0 to 2.0 multiplier for glow effects |
-| `glowColor` | Color used for glow (usually primary) |
-| `glowSpread` | Radius of glow effect in dp |
+`surfaceForBaseMode(mode)` returns a `SurfaceColors`:
 
-### Radius Tokens
+| Field | Role |
+|-------|------|
+| `background` | Window/screen background |
+| `surface` | Cards, panels |
+| `surfaceElevated` | Elevated surfaces, inputs |
+| `surfaceInteractive` | Hover/press fills |
+| `border` | Hairlines and outlines |
+| `textPrimary` / `textSecondary` / `textMuted` / `textInverse` | Text ramp |
 
-| Token | Description |
-|-------|-------------|
-| `cornerRadius` | Global corner radius multiplier |
-| `customRadius` | Per-component radius override |
+Oled values: background #050505, surface #0D0D0D, elevated #101010, interactive
+#1A1A1A, border #2A2A2A, text #F0F0F0/#A0A0A0/#606060. Sepia swaps in warm paper
+tones (#F5F0E8 background, #3D3028 text).
 
-### Animation Tokens
+### Accent schemes
 
-| Token | Description |
-|-------|-------------|
-| `animationSpeed` | 0 (none) to 3 (bouncy) |
-| `springStiffness` | Spring stiffness for animations |
-| `springDamping` | Spring damping ratio |
-| `transitionDuration` | Base transition duration in ms |
+`KaiteyoAccentScheme(name, primary, primaryDark, secondary, secondaryDark, onPrimary,
+onSecondary, tertiary?, previewColors, gradientStart?, gradientEnd?)`.
 
-### Density Tokens
+`AllAccentSchemes` (in order): **Signature Pineapple** (default; lime #C2FC8B +
+orange #FEAB57), **Cotton Candy**, **Ocean**, **Forest**, **Sunset**, **Lavender**,
+**Monochrome**. Each is a data object with dark variants for light-mode contrast
+(`primaryDark`/`secondaryDark` are used by the light color scheme).
 
-| Token | Description |
-|-------|-------------|
-| `density` | Compact, Comfortable, or Spacious |
-| `spacingMultiplier` | 0.75x, 1.0x, or 1.25x |
+### Semantic colors
 
----
+`semanticSuccess` (#C2FC8B), `semanticWarning` (#FEAB57), `semanticError` (#FF6B6B),
+`semanticInfo` (#7BC8FF), `semanticNew` (#A78BFA), `favoriteYellow` (#FFD93D),
+`dueOrange` (#FF9F43). Theme-aware accessors on `MaterialTheme`
+(`successColor`, `warningColor`, `infoColor`, `newColor`, `dangerColor`,
+`favoriteColor`) and desktop `DsSemantic`.
 
-## Built-in Themes
+### Gradients & glow
 
-### Signature (Default)
-The official Kaiteyo identity. Uses both lime and orange distributed intelligently.
+`KaiteyoGradient(start, end, angle=45°, intensity)` derived per accent; `KaiteyoGlow`
+(color, radius, opacity, intensity) with `primaryGlow()`/`secondaryGlow()` helpers.
 
-| Token | Value |
-|-------|-------|
-| Primary | `#C2FC8B` |
-| Secondary | `#FEAB57` |
-| Background | `#1A1A1A` |
-| Surface | `#242424` |
-| Gradient | Lime → Orange |
+## Theme state (`Theme.kt`)
 
-### OLED Black
-True black background for OLED displays. Maximum contrast.
+`KaiteyoThemeState` holds the live editable state, each field a `mutableStateOf`:
 
-| Token | Value |
-|-------|-------|
-| Primary | `#C2FC8B` |
-| Background | `#000000` |
-| Surface | `#0A0A0A` |
-
-### Dark Gray
-Softer dark mode. Less contrast than OLED, easier on eyes.
-
-| Token | Value |
-|-------|-------|
-| Primary | `#C2FC8B` |
-| Background | `#1E1E1E` |
-| Surface | `#2D2D2D` |
-
-### Light
-Clean light mode for daytime use.
-
-| Token | Value |
-|-------|-------|
-| Primary | `#4CAF50` |
-| Background | `#FAFAFA` |
-| Surface | `#FFFFFF` |
-| Text Primary | `#1A1A1A` |
-
-### Reading
-Warm paper tones for extended reading sessions.
-
-| Token | Value |
-|-------|-------|
-| Primary | `#8B7355` |
-| Background | `#F5F0E8` |
-| Surface | `#EDE5D8` |
-| Text Primary | `#3D3028` |
-| Text Secondary | `#7A6B5D` |
-
-### Cotton Candy
-Soft pastel theme. Playful but not childish.
-
-| Token | Value |
-|-------|-------|
-| Primary | `#FF9EBB` |
-| Secondary | `#B388FF` |
-| Background | `#1A1A2E` |
-| Surface | `#252540` |
-
-### Ocean
-Cool blue tones. Calm and focused.
-
-| Token | Value |
-|-------|-------|
-| Primary | `#4FC3F7` |
-| Secondary | `#81D4FA` |
-| Background | `#0D1B2A` |
-| Surface | `#1B2838` |
-
-### Forest
-Earthy green tones. Natural and grounding.
-
-| Token | Value |
-|-------|-------|
-| Primary | `#81C784` |
-| Secondary | `#A5D6A7` |
-| Background | `#1A2E1A` |
-| Surface | `#243824` |
-
----
-
-## Theme Architecture
-
-```
-ThemeManager
-  └── currentTheme (StateFlow<PreferencesTheme>)
-       └── Maps to BaseMode (Light/Dark/Oled)
-            └── Applies KaiteyoAccentScheme
-                 └── Generates color palette
-                      └── Provides via CompositionLocals
+```kotlin
+class KaiteyoThemeState(
+    var baseMode: BaseMode,
+    var accentScheme: KaiteyoAccentScheme,
+    var animationConfig: AnimationConfig,
+    var radiusConfig: RadiusConfig,
+    var glowConfig: GlowConfig,
+    var layoutConfig: LayoutConfig,
+    var typeScale: TypeScale
+)
 ```
 
-### CompositionLocals
+### Config data classes (all serializable)
+
+- **`AnimationConfig`** — `speed` (`AnimationSpeed`: Slow 1.5× / Normal 1.0× /
+  Fast 0.6× / Instant 0.0×), `reducedMotion`, `springDamping` (0.6), `springStiffness`
+  (300), `defaultDuration` (300ms), `pageTransition`
+  (`PageTransitionType`: Crossfade / Slide / FadeThrough / Scale), `themeTransitionEnabled`.
+- **`RadiusConfig`** — `style` (`CornerRadiusStyle`: Square 0.5× / Rounded 1.0× /
+  Very Rounded 1.5× / Soft 2.0×), `customRadius`, `buttonRadius`.
+- **`GlowConfig`** — `intensity`, `radius`, `opacity` multipliers.
+- **`LayoutConfig`** — `density` (`UIDensity`: Compact 0.7× / Comfortable 1.0× /
+  Spacious 1.3×), `sidebarMode`, `sidebarPosition`, `autoHide`, `collapsed`,
+  `panelWidth` (260dp), `panelHeight`, `floatingOffset`, `accentIndex`,
+  `transparencyEnabled`, `blurEnabled`, `glassOpacity` (0.8), plus scale factors:
+  `displayScale`, `buttonScale`, `iconScale`, `bubbleScale`, `toolbarHeightScale`,
+  `windowPaddingScale`.
+- **`TypeScale`** — `fontScale`, `titleScale`, `lineHeight`, `letterSpacing`.
+
+### Composition locals
 
 | Local | Provides |
 |-------|----------|
-| `LocalKaiteyoThemeState` | Mutable theme state (base mode, accent, glow, radius, animation, density) |
-| `LocalKaiteyoAccent` | Current accent scheme colors |
-| `LocalSurfaceColors` | Surface hierarchy colors |
-| `LocalKaiteyoAccentList` | All available accent schemes |
+| `LocalKaiteyoThemeState` | Mutable `KaiteyoThemeState` |
+| `LocalKaiteyoAccent` | Current accent scheme |
+| `LocalBaseMode` | Current base mode |
+| `LocalSurfaceColors` | Current `SurfaceColors` |
+| `LocalAnimationConfig` / `LocalRadiusConfig` / `LocalGlowConfig` / `LocalLayoutConfig` / `LocalTypeScale` | The five configs |
+| `LocalExtraColors` | Light/dark semantic scheme |
+| `LocalThemeSettingsState` | Persisted settings state (shared engine) |
 
-### Theme State
+Convenience extensions: `MaterialTheme.kaiteyoAccent`, `.baseMode`, `.surfaceColors`,
+`.kaiteyoThemeState`, `.animationConfig`, `.glowConfig`, `.radiusConfig`,
+`.layoutConfig`, plus `.extraColorScheme`.
 
-```kotlin
-class KaiteyoThemeState {
-    var baseMode: BaseMode
-    var accentScheme: KaiteyoAccentScheme
-    var glowConfig: GlowConfig
-    var radiusConfig: RadiusConfig
-    var animationConfig: AnimationConfig
-    var densityConfig: DensityConfig
-}
-```
+## AppTheme (`Theme.kt`)
 
----
+`AppTheme(...)` is the single entry point:
 
-## Custom Themes
+1. Resolves `SurfaceColors` from `baseMode` (or `customSurface`).
+2. Builds the Material `ColorScheme` from the accent + surface (dark or light variant;
+   `primaryContainer` etc. are accent at 15–20% alpha).
+3. Builds `Shapes` from `Dimens` radii × radius multiplier — **every** Material
+   component inherits the user's radius config.
+4. **Theme transition**: when `themeTransitionEnabled` and duration > 0, every color
+   in the scheme, extra scheme, surface colors and accent is wrapped in
+   `animateColorAsState` (450ms base × speed) so a theme switch crossfades the whole
+   UI in place — state preserved because the tree never leaves composition.
+5. Applies live `TypeScale` (`Typography.scaledBy`), wraps MaterialTheme, and provides
+   all locals.
 
-Users can create custom themes through the Appearance Studio:
-1. Start from any built-in theme as a base
-2. Modify individual color tokens
-3. Create gradient stops
-4. Adjust glow, radius, animation, and density
-5. Save as a named preset
-6. Export/import as JSON
+`KaiteyoThemeRoot` (in `KaiteyoApp.kt`) wires the persisted settings into
+`KaiteyoThemeState` on launch and persists every mutation back
+(`ThemeSettings.from(themeState)` → `ThemeSettingsState.accept`), so Theme Studio and
+Settings stay in sync and survive restarts.
 
-### Theme JSON Format
+## Desktop Theme Manager (`ThemeManager.kt`)
+
+- Owns `presets` (from `ThemePresets.all`) + `customThemes` (mutable list) + the
+  active theme id. `revision` bumps on every mutation so derived UI recomposes.
+- **Live editing** — `updateActive(transform)`: if the active theme is a preset it is
+  first **promoted** to a custom copy ("{name} (Custom)") so pristine presets stay
+  intact; every mutation persists immediately to `~/.kaiteyo/themes/custom/<id>.json`
+  and `active.json`.
+- Typed updaters: `updateActiveColors`, `updateActiveGradient`,
+  `updateActiveTypography`, `updateActiveScaling`, `updateActiveAnimation`,
+  `updateActiveSpacing`, `updateActiveCorners`, `updateActiveEffects`,
+  `updateActiveMeta`. `updateActiveColors` keeps the brand gradient stops in step with
+  Primary/Secondary edits unless the user recolored them explicitly.
+- **Library CRUD** — `duplicate`, `rename`, `setDescription`, `setAuthor`,
+  `toggleFavorite`, `deleteTheme` (active falls back to default preset), `resetTheme`,
+  `resetAll`.
+- **Import/export** — `exportJson(id)`, `importJson(text)`, `exportAllJson()` via
+  `ThemeSerializer` (validates on import; imported preset ids are prefixed
+  `imported-`).
+
+### Theme JSON format
+
+A `KaiteyoTheme` serializes to JSON with `id`, `name`, `source` (preset/custom/
+imported), `author`, `description`, `favorite`, `createdAt`, `updatedAt`, and the
+groups:
 
 ```json
 {
-  "name": "My Custom Theme",
-  "base": "signature",
-  "colors": {
-    "primary": "#C2FC8B",
-    "secondary": "#FEAB57",
-    "background": "#1A1A1A"
-  },
-  "gradient": {
-    "start": "#C2FC8B",
-    "end": "#FEAB57"
-  },
-  "glow": {
-    "intensity": 1.0,
-    "spread": 4
-  },
-  "radius": {
-    "cornerRadius": 12,
-    "customRadius": null
-  },
-  "animation": {
-    "speed": 2,
-    "springStiffness": 300,
-    "springDamping": 0.5
-  },
-  "density": {
-    "mode": "comfortable",
-    "spacingMultiplier": 1.0
-  }
+  "colors": { "primary": "#C2FC8B", "secondary": "#FEAB57", "background": "#050505", "surface": "#0D0D0D", "textPrimary": "#F0F0F0", "border": "#2A2A2A" },
+  "gradient": { "enabled": true, "stops": [{ "color": "#C2FC8B", "position": 0.0 }, { "color": "#FEAB57", "position": 1.0 }], "angle": 45 },
+  "typography": { "fontSize": 1.0 },
+  "scaling": { "displayScale": 1.0, "buttonScale": 1.0, "iconScale": 1.0 },
+  "animation": { "speed": 1.0, "reducedMotion": false, "durationMs": 300, "springDamping": 0.6, "springStiffness": 300 },
+  "spacing": { "multiplier": 1.0 },
+  "corners": { "multiplier": 1.0 },
+  "effects": { "glowIntensity": 1.0, "glowRadius": 1.0, "opacity": 1.0, "blurEnabled": false, "transparencyEnabled": false, "glassOpacity": 0.8 }
 }
+```
+
+## ThemeMapper (desktop)
+
+`ThemeMapper` converts a `KaiteyoTheme` into shared `AppTheme` inputs:
+`baseMode(theme)`, `accentScheme(theme)`, `surfaceColors(theme)`,
+`layoutConfig(theme)`, `radiusConfig(theme)`, `animationConfig(theme)`,
+`typeScale(theme)`, `typography(theme)`. It's what makes Theme Studio edits reach
+every `Ds*` component and the window chrome live (through `KaiteyoDesktopSuite`'s
+`shell` slot).
+
+## Persistence summary
+
+| Surface | Where |
+|---------|-------|
+| Shared engine theme settings | DataStore (`ThemeSettingsState`), mobile + desktop |
+| Desktop Theme Studio library | `~/.kaiteyo/themes/` — `active.json` + `custom/<id>.json` |
+| Window geometry | `~/.kaiteyo/window.json` (`WindowStateStore`) |
+| Settings (general) | Desktop `settings.json` via `SettingsEngine`; mobile DataStore |
+
+## Built-in themes (what the user actually sees)
+
+- **Base modes** (4): OLED Black, Dark Gray, Light, Sepia.
+- **Accent schemes** (7): Signature Pineapple, Cotton Candy, Ocean, Forest, Sunset,
+  Lavender, Monochrome.
+- **Desktop presets** (`ThemePresets.all`) — full `KaiteyoTheme` presets that bundle
+  a base mode + colors + motion + layout (the default "Signature" theme is the app's
+  first-run appearance).
+
+Custom themes are created by editing a preset (which auto-promotes it to a custom
+theme), duplicating, or importing JSON.
+
+## Related
+
+- `docs/design/DESIGN_LANGUAGE.md` — tokens and palette values
+- `docs/design/UI_SYSTEM.md` — components consuming the tokens
+- `docs/features/THEMES.md` — Theme Studio user experience
+- `docs/architecture/performance.md` — theme transition performance notes

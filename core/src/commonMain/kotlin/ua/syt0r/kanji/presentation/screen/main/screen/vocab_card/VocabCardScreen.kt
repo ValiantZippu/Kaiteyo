@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import ua.syt0r.kanji.Res
 import ua.syt0r.kanji.core.user_data.database.VocabCardData
@@ -51,6 +52,7 @@ import ua.syt0r.kanji.presentation.common.AppTextField
 import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.neutralButtonColors
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.dialog.SaveWordDialog
 import ua.syt0r.kanji.presentation.getMultiplatformViewModel
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
@@ -407,7 +409,11 @@ private fun ScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentWidth()
-                    .width(Dimens.ScreenWidth)
+                    .widthIn(max = rememberAdaptiveContentMaxWidth(
+                        phoneMax = Dimens.ScreenWidth,
+                        mediumMax = 560.dp,
+                        wideMax = 720.dp
+                    ))
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = Dimens.ContentPadding)
             ) {

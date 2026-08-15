@@ -1,161 +1,191 @@
 # Kaiteyo (書いてよ) — Development Guide
 
+> Grounded in the current build setup. The canonical command library is
+> `COMMANDS.md`; the pinned versions and module list come from `settings.gradle.kts`,
+> `gradle/libs.versions.toml`, `buildSrc/AppVersion.kt` and the module build files.
+
 ## Prerequisites
 
-- **Java 17+** (JDK 17 recommended)
+- **JDK 17** (Temurin recommended; the build uses `jvmToolchain(17)` everywhere —
+  a different major version will fail)
 - **Git**
-- **Gradle** (wrapper included, no manual install needed)
-- **IntelliJ IDEA** (recommended) or VS Code with Kotlin plugin
-- **Android Studio** (for Android builds)
+- **Gradle wrapper** (no manual install; `./gradlew` on macOS/Linux,
+  `.\gradlew.bat` on Windows)
+- **IntelliJ IDEA** (recommended) or **Android Studio** for Android work; VS Code
+  works for docs/web/scripts but Kotlin tooling is weaker
+- **Android SDK** only if building `:app` (see `DEVELOPMENT_SETUP.md`)
 
-## Quick Start
+## Modules
+
+From `settings.gradle.kts`:
+
+| Module | What it is |
+|--------|------------|
+| `:core` | All shared code (UI, domain, data) — the only module with iOS targets |
+| `:desktopApp` | JVM desktop entry point + the desktop suite |
+| `:app` | Android entry point (`googlePlay` / `fdroid` flavors) |
+| `:iosApp` | iOS entry point (Swift project) |
+| `:kjd` | Data platform (generates the bundled language DB, patch updates) |
+| `:mediaGenerator` | JVM utility for media assets |
+
+There is no `:website` Gradle module — the website has a Python build (`build.py`).
+
+## Quick start
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/kaiteyo.git
-cd kaiteyo
-
-# Run the desktop application
+# Run the desktop application (the daily loop)
 ./gradlew :desktopApp:run
 
-# Run Android application
-./gradlew :app:installDebug
+# Compile only (faster)
+./gradlew :desktopApp:compileKotlinJvm
 
-# Run tests
-./gradlew :core:test
+# Tests
+./gradlew :core:allTests        # shared engine (commonTest)
+./gradlew :desktopApp:test      # desktop suite (jvmTest)
+./gradlew :kjd:test             # data platform
 ```
 
-## Project Setup
+Add `-Duser.language=ja -Duser.country=JP` to `:desktopApp:run` for the Japanese UI
+locale.
+
+## Project setup
 
 ### IntelliJ IDEA
-1. Open the project root directory
-2. IntelliJ will automatically detect the Gradle project
-3. Wait for indexing and dependency resolution to complete
-4. Create a run configuration for `:desktopApp:run`
+
+1. Open the repository root; IntelliJ detects the Gradle project.
+2. Wait for indexing + dependency resolution (first import is slow).
+3. Use the Gradle tool window or terminal to run `:desktopApp:run`. No run
+   configurations ship in the repo (the stale `.run/` configs were removed).
 
 ### VS Code
-1. Install the Kotlin extension
-2. Install the Gradle extension
-3. Open the project root directory
-4. Use the Gradle panel to run tasks
+
+1. Install the Kotlin + Gradle for Java extensions.
+2. Open the root; use the Gradle panel to run tasks.
+3. IntelliJ is preferred for Kotlin; VS Code is fine for docs, markdown, scripts.
 
 ## Building
 
 ### Desktop (JVM)
+
 ```bash
-# Compile only
-./gradlew :desktopApp:compileKotlinJvm
-
-# Run
-./gradlew :desktopApp:run
-
-# Build distribution
-./gradlew :desktopApp:packageDistributionForCurrentOS
-
-# Build specific format
-./gradlew :desktopApp:packageMsi
-./gradlew :desktopApp:packageDmg
-./gradlew :desktopApp:packageDeb
+./gradlew :desktopApp:compileKotlinJvm     # compile check
+./gradlew :desktopApp:run                  # run
+./gradlew :desktopApp:packageDistributionForCurrentOS   # CI packaging
+./gradlew :desktopApp:packageMsi           # Windows (run on Windows)
+./gradlew :desktopApp:packageDmg           # macOS (run on macOS)
+./gradlew :desktopApp:packageDeb           # Linux (run on Linux)
 ```
 
 ### Android
+
 ```bash
-# Debug build
-./gradlew :app:assembleDebug
-
-# Release build
-./gradlew :app:assembleRelease
-
-# Install on connected device
-./gradlew :app:installDebug
+./gradlew :app:assembleDebug               # debug APK (ua.syt0r.kanji.dev)
+./gradlew :app:assembleFdroidRelease       # what CI builds (F-Droid flavor)
+./gradlew :app:assembleGooglePlayRelease   # Play flavor (needs secrets for signing)
 ```
+
+Android builds require `ANDROID_HOME`/`ANDROID_SDK_ROOT` and a machine-specific
+`local.properties` with `sdk.dir=...` (never commit it).
 
 ### iOS
-```bash
-# Build framework
-./gradlew :core:linkDebugFrameworkIosArm64
 
-# Open Xcode project
-open iosApp/KaiteyoApp.xcodeproj
+```bash
+./gradlew :core:linkDebugFrameworkIosArm64   # build the shared framework
+open iosApp/KaiteyoApp.xcodeproj             # then build/run from Xcode
 ```
 
-## Common Commands
+iOS targets cannot build on Windows (expected).
+
+## Common commands
 
 ```bash
-# Clean all builds
 ./gradlew clean
-
-# Run tests (shared core + desktop suite + data platform)
 ./gradlew :core:allTests
 ./gradlew :desktopApp:test
 ./gradlew :kjd:test
-
-# Dependency report
+./gradlew :core:generateCommonMainAppDataDatabaseInterface    # after changing .sq
+./gradlew :core:generateCommonMainUserDataDatabaseInterface   # after changing .sq
+./gradlew :core:compileKotlinJvm
 ./gradlew :core:dependencies
+./gradlew tasks --all
 ```
 
-> The canonical command library is `COMMANDS.md`; module list is in
-> `settings.gradle.kts` (`:app :iosApp :desktopApp :core :mediaGenerator :kjd`).
+SQLDelight interfaces are generated from `.sq` schemas — regenerate after any schema
+change, then compile.
 
 ## Debugging
 
 ### Desktop
-- Use `println` or `logger` statements
-- Attach IntelliJ debugger to the JVM process
-- Enable Compose debug layout bounds: `-Dcompose.debug.layout=true`
+
+- Attach the IntelliJ debugger to the JVM process.
+- Compose debug helpers: `-Dcompose.debug.layout=true` (layout bounds), `-Dcompose.ui.graphics.forceSoftwareRendering=true` on quirky GPUs.
+- Window shell diagnostics live in `desktopApp/.../KaiteyoWindow.kt`; media backend
+  probing is exposed in Media → Settings.
+- The `--capture-state=` dev flag pre-opens window states for screenshot capture
+  (`scripts/capture-window-shell.sh`).
 
 ### Android
-- Use Android Studio's built-in debugger
-- Enable Compose layout inspector
-- Use `Log.d` for logging
 
-## Branch Strategy
+- Android Studio debugger + Compose layout inspector; `adb logcat` for logs.
+
+## Branch strategy
 
 ```
-main           — Production-ready code
-├── develop    — Integration branch
-├── feature/*  — New features (feature/sidebar-floating)
-├── fix/*      — Bug fixes (fix/window-drag-region)
-└── docs/*     — Documentation (docs/architecture-guide)
+main          — production-ready, tagged releases
+└── develop   — integration branch (default)
+    ├── feature/*   — new features (feature/floating-sidebar)
+    ├── fix/*       — bug fixes (fix/window-drag-region)
+    ├── docs/*      — documentation (docs/architecture-guide)
+    └── release/*   — release preparation
 ```
 
-## Code Style
+See `GITHUB_WORKFLOW.md` for the full flow (squash merges, tags trigger CI release
+builds).
 
-- Follow Kotlin coding conventions
-- Use 4-space indentation
-- Maximum line length: 120 characters
-- Use explicit imports (no wildcard imports)
-- Use `val` over `var` where possible
-- Use `data class` for state holders
-- Use `sealed class` for sealed hierarchies
+## Code style
 
-## Compose Best Practices
+- Kotlin conventions: 4-space indent, 120-char max line, explicit imports
+- `val` over `var`; `data class` for state; `sealed class` for hierarchies
+- Screen pattern: 4-file (Contract / ViewModel / Module / Screen) — see
+  `AI_CONTEXT.md`
+- Compose: small composables, `remember`/`derivedStateOf`, `@Stable` state holders,
+  modifier order per `CODING_STANDARDS.md`
+- Desktop suite: `Ds*` components + tokens only; view composables read `AppState`
 
-1. **Keep composables small** — One component per file where possible
-2. **Use `@Composable` annotations** — Every composable function must be annotated
-3. **Avoid side effects in composition** — Use `LaunchedEffect`, `DisposableEffect`
-4. **Use `remember`** — Cache expensive computations
-5. **Use `derivedStateOf`** — Derive state from other state
-6. **Use `Modifier`** — Chain modifiers for layout, styling, interaction
-7. **Use `@Stable`** — Mark stable state holders for performance
-8. **Avoid recomposition** — Use `key()` and `remember` strategically
+## Compose best practices
+
+1. Keep composables small — one responsibility per function
+2. No side effects in composition — use `LaunchedEffect`/`DisposableEffect`
+3. `remember` expensive computations; `derivedStateOf` derived values
+4. `key()`/stable keys in lazy lists
+5. `graphicsLayer` for transform animations (never animate layout properties)
+6. Honor `reducedMotion` and the animation config (see `docs/design/ANIMATION_SYSTEM.md`)
 
 ## Testing
 
-### Unit Tests
-- Location: `core/src/commonTest/` (shared), `desktopApp/src/jvmTest/` (desktop suite), `kjd/src/test/` (data platform)
-- Framework: Kotlin Test (JUnit Platform)
-- Run: `./gradlew :core:allTests` (or `:desktopApp:test` / `:kjd:test`)
+- **Locations**: `core/src/commonTest/` (shared), `desktopApp/src/jvmTest/` (suite),
+  `kjd/src/test/` (data platform)
+- **Framework**: kotlin.test on JUnit Platform
+- **Commands**: `:core:allTests`, `:desktopApp:test`, `:kjd:test`
+- Pure domain logic is unit-tested (FSRS scheduler, statistics calculators, deinflect,
+  media selection helpers, media-key mapping). No UI tests yet — see
+  `docs/testing/README.md` for strategy and gaps.
 
-### UI Tests
-- Not yet established (see `../testing/README.md` for the strategy and gaps).
+## Performance checklist
 
-## Performance Checklist
+Before submitting:
 
-Before submitting code:
-- [ ] No unnecessary recompositions
-- [ ] Animations run at 60 FPS
-- [ ] No memory leaks (check for retained references)
-- [ ] Lazy loading for lists
-- [ ] Image caching where applicable
-- [ ] No main thread blocking operations
+- [ ] No unnecessary recomposition (verify with Compose inspector)
+- [ ] Animations at 60 FPS; use `graphicsLayer`, respect reduced motion
+- [ ] No leaks (retained references in `remember`d state)
+- [ ] Lazy lists for unbounded content (`DsVirtualList`/`LazyColumn`)
+- [ ] No main-thread blocking (DB/network on dispatchers)
+- [ ] No full-history loads into Compose (use the controllers/aggregates)
+
+## Related
+
+- `COMMANDS.md` — full command library
+- `DEVELOPMENT_SETUP.md` — from zero to running
+- `VIBE_CODING_GUIDE.md` — AI-assisted workflow
+- `docs/architecture/OVERVIEW.md` — architecture map
+- `docs/planning/ENGINEERING_AUDIT.md` — audit, risks, first milestone

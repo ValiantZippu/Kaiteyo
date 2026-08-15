@@ -89,7 +89,21 @@ interface Strings {
 
     val nav: NavStrings
     val center: SettingsCenterStrings
+    val mediaCentre: MediaCentreStrings
 
+}
+
+/** Media Centre destination strings (placeholder screen shown off desktop). */
+interface MediaCentreStrings {
+    val title: String
+    val desktopOnlyTitle: String
+    val desktopOnlyMessage: String
+    val backButton: String
+    val featuresTitle: String
+    val featurePlayer: String
+    val featureLibrary: String
+    val featureDictionary: String
+    val featureMining: String
 }
 
 interface NavStrings {
@@ -123,9 +137,11 @@ interface NavStrings {
     val homeLabel: String
     val libraryLabel: String
     val studyLabel: String
+    val browseLabel: String
     val dictionaryLabel: String
     val statisticsLabel: String
     val collectionsLabel: String
+    val mediaLabel: String
 
     // Settings tabs
     val generalTabLabel: String
@@ -144,6 +160,15 @@ interface NavStrings {
     val bubbleIconSizeLabel: String
     val snapPositionLabel: String
     val sidebarLayoutLabel: String
+    val holdDurationLabel: String
+    val safeMarginLabel: String
+    val autoHideLabel: String
+    val autoHideNever: String
+    val autoHideTenSeconds: String
+    val autoHideTwentySeconds: String
+    val autoHideThirtySeconds: String
+    val autoHideOneMinute: String
+    val autoHideCustom: String
 
     // Phone settings
     val phoneNavPositionLabel: String
@@ -885,6 +910,13 @@ interface CommonPracticeStrings {
     val writingStrokeAccuracyTitle: String
     val writingStrokeAccuracy: (Int) -> String
     val writingWrongOrder: (Int) -> String
+
+    // Desktop flashcard context panel
+    val reviewSessionTitle: String
+    val reviewDeckLabel: String
+    val reviewStreakLabel: String
+    val reviewProgressPosition: (current: Int, total: Int) -> String
+    val reviewStreakDays: (Int) -> String
 }
 
 interface LetterPracticeStrings {

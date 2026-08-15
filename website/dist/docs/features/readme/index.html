@@ -290,6 +290,48 @@
     <symbol id="icon-bolt" viewBox="0 0 24 24">
       <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
     </symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>
+    </symbol>
+    <symbol id="icon-pen" viewBox="0 0 24 24">
+      <path d="m4 20 1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1Z"/><path d="m14 6.5 3 3"/>
+    </symbol>
+    <symbol id="icon-flip" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="8" rx="2"/><rect x="6" y="16" width="12" height="4" rx="1.5"/>
+      <path d="M6.5 3v2M17.5 3v2"/>
+    </symbol>
+    <symbol id="icon-review" viewBox="0 0 24 24">
+      <path d="M12 3v18"/><path d="m6 7 6 6 6-6"/><path d="M4 21h16"/>
+    </symbol>
+    <symbol id="icon-dark-mode" viewBox="0 0 24 24">
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/>
+    </symbol>
+    <symbol id="icon-offline" viewBox="0 0 24 24">
+      <path d="M12 3a8.5 8.5 0 0 1 8.5 8.5c0 1.6-.4 3-1.2 4.3M3.7 15.5A8.4 8.4 0 0 1 3.5 11.5"/>
+      <path d="M7 21h10"/><path d="M12 13v5"/><path d="M4 4l16 16"/>
+    </symbol>
+    <symbol id="icon-sync" viewBox="0 0 24 24">
+      <path d="M4 10a8 8 0 0 1 14.5-2.5"/><path d="M20 6v4h-4"/>
+      <path d="M20 14a8 8 0 0 1-14.5 2.5"/><path d="M4 18v-4h4"/>
+    </symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5.1 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1c.6.5 1.3.9 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/>
+    </symbol>
+    <symbol id="icon-font" viewBox="0 0 24 24">
+      <path d="M5 6h14"/><path d="M12 6v13"/><path d="M9 19h6"/>
+    </symbol>
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M3 12h18M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9Z"/>
+    </symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24">
+      <path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5"/><path d="M13 16V7"/><path d="M18 16v-3"/>
+    </symbol>
+    <symbol id="icon-api" viewBox="0 0 24 24">
+      <path d="M7 8 3 12l4 4M17 8l4 4-4 4M14 4l-4 16"/>
+    </symbol>
   </defs>
 </svg>
 
@@ -315,10 +357,37 @@
         <ul class="nav-list">
           
           <li>
-            <a class="nav-item" href="/Kaiteyo/"
+            <a class="nav-item" href="/Kaiteyo/try/"
+               data-badge="Web">
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+              <span class="nav-label">Try Kaiteyo</span>
+              <span class="badge badge-muted nav-badge">Web</span>
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/download/"
+               data-badge="v2.2.1">
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
+              <span class="nav-label">Download</span>
+              <span class="badge badge-muted nav-badge">v2.2.1</span>
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/product/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg>
-              <span class="nav-label">Dashboard</span>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Product</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/learn/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-book"/></svg>
+              <span class="nav-label">Learn</span>
               
             </a>
           </li>
@@ -326,7 +395,7 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/features/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
               <span class="nav-label">Features</span>
               
             </a>
@@ -350,15 +419,6 @@
             </a>
           </li>
           
-          <li>
-            <a class="nav-item" href="/Kaiteyo/download/"
-               data-badge="v2.2.1">
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
-              <span class="nav-label">Download</span>
-              <span class="badge badge-muted nav-badge">v2.2.1</span>
-            </a>
-          </li>
-          
         </ul>
       </div>
       
@@ -369,7 +429,7 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/docs/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-book"/></svg>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-file"/></svg>
               <span class="nav-label">Documentation</span>
               
             </a>
@@ -385,10 +445,19 @@
           </li>
           
           <li>
+            <a class="nav-item" href="/Kaiteyo/guides/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Guides</span>
+              
+            </a>
+          </li>
+          
+          <li>
             <a class="nav-item" href="/Kaiteyo/faq/"
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-help"/></svg>
-              <span class="nav-label">FAQ</span>
+              <span class="nav-label">Q&amp;A</span>
               
             </a>
           </li>
@@ -405,7 +474,7 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/roadmap/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
               <span class="nav-label">Roadmap</span>
               
             </a>
@@ -428,6 +497,51 @@
         <ul class="nav-list">
           
           <li>
+            <a class="nav-item" href="/Kaiteyo/integrations/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sync"/></svg>
+              <span class="nav-label">Integrations</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/install/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-monitor"/></svg>
+              <span class="nav-label">Install</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/about/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-users"/></svg>
+              <span class="nav-label">About</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/community/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Community</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/data/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+              <span class="nav-label">Data &amp; Attribution</span>
+              
+            </a>
+          </li>
+          
+          <li>
             <a class="nav-item" href="/Kaiteyo/contributing/"
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
@@ -448,7 +562,7 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/credits/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-users"/></svg>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-heart"/></svg>
               <span class="nav-label">Credits</span>
               
             </a>
@@ -466,8 +580,17 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/privacy/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-shield"/></svg>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-lock"/></svg>
               <span class="nav-label">Privacy Policy</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/security/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-shield"/></svg>
+              <span class="nav-label">Security</span>
               
             </a>
           </li>
@@ -480,7 +603,11 @@
     <div class="nav-divider"></div>
 
     <div class="nav-footer">
-      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/try/">
+        <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+        <span class="nav-cta-label">Try Kaiteyo</span>
+      </a>
+      <a class="btn btn-ghost btn-sm nav-cta" href="/Kaiteyo/download/">
         <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
         <span class="nav-cta-label">Download</span>
       </a>
@@ -522,6 +649,10 @@
       Search
       <kbd>Ctrl K</kbd>
     </button>
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/try/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+      Try Kaiteyo
+    </a>
     <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
       <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
     </button>
@@ -1352,7 +1483,25 @@ into <code>FEATURES.md</code>; the operational status of every feature is tracke
         
         <li>
           
-          <a href="/Kaiteyo/">Dashboard</a>
+          <a href="/Kaiteyo/try/">Try Kaiteyo</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/download/">Download</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/product/">Product</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/learn/">Learn</a>
           
         </li>
         
@@ -1371,12 +1520,6 @@ into <code>FEATURES.md</code>; the operational status of every feature is tracke
         <li>
           
           <a href="/Kaiteyo/theme-gallery/">Theme Gallery</a>
-          
-        </li>
-        
-        <li>
-          
-          <a href="/Kaiteyo/download/">Download</a>
           
         </li>
         
@@ -1401,7 +1544,13 @@ into <code>FEATURES.md</code>; the operational status of every feature is tracke
         
         <li>
           
-          <a href="/Kaiteyo/faq/">FAQ</a>
+          <a href="/Kaiteyo/guides/">Guides</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/faq/">Q&amp;A</a>
           
         </li>
         
@@ -1432,6 +1581,36 @@ into <code>FEATURES.md</code>; the operational status of every feature is tracke
         
         <li>
           
+          <a href="/Kaiteyo/integrations/">Integrations</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/install/">Install</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/about/">About</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/community/">Community</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
+          
+        </li>
+        
+        <li>
+          
           <a href="/Kaiteyo/contributing/">Contributing</a>
           
         </li>
@@ -1457,6 +1636,12 @@ into <code>FEATURES.md</code>; the operational status of every feature is tracke
         <li>
           
           <a href="/Kaiteyo/privacy/">Privacy Policy</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/security/">Security</a>
           
         </li>
         

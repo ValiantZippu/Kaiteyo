@@ -15,17 +15,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import ua.syt0r.kanji.presentation.common.AppListItemDefaults.ListItemDefaultPaddings
 import ua.syt0r.kanji.presentation.common.theme.Dimens
 
 object AppListItemDefaults {
-    val ExtraPaddings = PaddingValues(horizontal = Dimens.SpacingBig)
+    // Single source of row padding — consumed as ListItem contentPadding, so
+    // rows never stack an outer padding on top of Material's own.
+    val ExtraPaddings = PaddingValues(
+        horizontal = Dimens.ContentPaddingSmall,
+        vertical = Dimens.SpacingMid
+    )
     val ListItemDefaultPaddings = PaddingValues(
         horizontal = Dimens.ContentPaddingSmall,
         vertical = Dimens.SpacingMid
     )
     val ClickableTrailingOffset = Dimens.SpacingBig
 }
+
+/**
+ * Rounded, theme-colored row container shared by both [AppListItem]
+ * overloads. Clip comes BEFORE the background so the surface never bleeds
+ * out as square corners behind the rounded shape.
+ */
+@Composable
+private fun Modifier.roundedRowBackground(): Modifier =
+    clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surface)
 
 @Composable
 fun AppListItem(
@@ -42,11 +55,13 @@ fun AppListItem(
 
     ListItem(
         headlineContent = headlineContent,
+        // This Material3 version's ListItem has no `contentPadding` param, so
+        // the row padding is applied on the modifier instead (matching the
+        // Row-based overload below).
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(paddingValues)
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick),
+            .roundedRowBackground()
+            .clickable(onClick)
+            .padding(paddingValues),
         overlineContent = overlineContent,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
@@ -67,11 +82,9 @@ fun AppListItem(
 
     Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(paddingValues)
-            .clip(MaterialTheme.shapes.large)
+            .roundedRowBackground()
             .clickable(onClick)
-            .padding(ListItemDefaultPaddings),
+            .padding(paddingValues),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = horizontalArrangement
     ) {

@@ -151,6 +151,35 @@ cd Kaiteyo
 > First build downloads app data assets (dictionary database + TTS voices) from GitHub
 > releases — network required. See [docs/development/DEVELOPMENT_SETUP.md](docs/development/DEVELOPMENT_SETUP.md).
 
+## Developer CLI (`kaiteyo`)
+
+The repository ships its own developer command center: a single cross-platform
+CLI for the repetitive workflows — Git commits & pushes, Gradle tasks, WSL
+utilities, diagnostics, docs and file browsing. Python 3.9+ only, no
+installation required.
+
+```bash
+# From the repository root (Linux/macOS/WSL) or `kaiteyo.cmd` on Windows
+./kaiteyo --help
+./kaiteyo                        # interactive command center
+./kaiteyo git commit             # status → select → preview → commit → push
+./kaiteyo gradle                 # Gradle Command Center (task discovery + search)
+./kaiteyo doctor                 # environment diagnostics (PASS / WARN / FAIL)
+./kaiteyo info                   # project snapshot
+```
+
+Non-interactive (CI-friendly):
+
+```bash
+./kaiteyo git commit --all --title "Fix library" --push
+./kaiteyo gradle --task :desktopApp:compileKotlinJvm --yes
+./kaiteyo doctor --json
+./kaiteyo wsl --status
+```
+
+For PATH installation, configuration, the full command reference and how to
+add new tools, see [`docs/cli/README.md`](docs/cli/README.md).
+
 ## Repository layout
 
 | Path | What it is |
@@ -164,6 +193,7 @@ cd Kaiteyo
 | `installer/` | Branded installer subsystem (Inno Setup, DMG, AppImage/deb/rpm, update feeds) |
 | `website/` | Static project website (Python build) |
 | `buildSrc/` | Gradle build logic — versions (`AppVersion.kt`) and app assets (`AppAssets.kt`) |
+| `tools/cli/` | **Developer command center** — `kaiteyo` CLI (git, gradle, wsl, doctor, docs, …) |
 
 ## Documentation
 
@@ -173,6 +203,11 @@ documentation site:
 | Area | Location |
 |---|---|
 | 📖 Docs index | [`docs/README.md`](docs/README.md) |
+| 📦 Product blueprint | [`docs/product/PRODUCT.md`](docs/product/PRODUCT.md) (MASTER §0–§88) |
+| 📊 Current state | [`docs/planning/CURRENT_STATE.md`](docs/planning/CURRENT_STATE.md) |
+| 🎮 Game (Journey, target) | [`docs/game/README.md`](docs/game/README.md) |
+| 🤖 AI agent guide | [`docs/ai/AI_AGENT_GUIDE.md`](docs/ai/AI_AGENT_GUIDE.md) |
+| ⌨️ Developer CLI | [`docs/cli/README.md`](docs/cli/README.md) |
 | 🏛️ Architecture (+ ADRs) | [`docs/architecture/`](docs/architecture/OVERVIEW.md) |
 | 🧱 Data & attribution | [`docs/data/README.md`](docs/data/README.md) |
 | 🔌 Integrations | [`docs/integrations/README.md`](docs/integrations/README.md) |

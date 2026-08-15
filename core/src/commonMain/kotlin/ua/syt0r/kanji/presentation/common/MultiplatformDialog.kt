@@ -3,6 +3,7 @@ package ua.syt0r.kanji.presentation.common
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveDialogWidth
 
 @Composable
 fun MultiplatformDialog(
@@ -39,14 +43,20 @@ fun MultiplatformDialog(
 
     Dialog(
         onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         content = {
-            Surface(
-                modifier = Modifier
-                    .width(360.dp)
-                    .clip(MaterialTheme.shapes.large),
-                color = containerColor
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                content()
+                Surface(
+                    modifier = Modifier
+                        .width(rememberAdaptiveDialogWidth(maxWidth))
+                        .clip(MaterialTheme.shapes.large),
+                    color = containerColor
+                ) {
+                    content()
+                }
             }
         }
     )

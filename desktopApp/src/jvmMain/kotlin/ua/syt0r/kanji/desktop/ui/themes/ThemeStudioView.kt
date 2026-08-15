@@ -87,6 +87,7 @@ import ua.syt0r.kanji.desktop.engine.theming.rgbChannels
 import ua.syt0r.kanji.desktop.engine.theming.rgbToHsv
 import ua.syt0r.kanji.desktop.engine.transfer.TransferFilePicker
 import ua.syt0r.kanji.desktop.model.ToastKind
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import kotlin.math.roundToInt
 
 // ============================================
@@ -380,9 +381,9 @@ private fun ThemeEditor(
                 0 -> ThemeColorsEditor(theme, manager)
                 1 -> ThemeTypographyEditor(theme, manager)
                 2 -> ThemeScalingEditor(theme, manager)
-                3 -> ThemeAnimationEditor(theme, manager)
+                3 -> ThemeAnimationEditor(state, theme, manager)
                 4 -> ThemeEffectsEditor(theme, manager)
-                5 -> ThemeAccessibilityEditor(theme, manager)
+                5 -> ThemeAccessibilityEditor(state, theme, manager)
                 else -> ThemePreviewTab(theme, manager)
             }
         }
@@ -1008,7 +1009,7 @@ private fun ThemeScalingEditor(theme: KaiteyoTheme, manager: ThemeManager) {
 // ------------------------------------------------------------
 
 @Composable
-private fun ThemeAnimationEditor(theme: KaiteyoTheme, manager: ThemeManager) {
+private fun ThemeAnimationEditor(state: AppState, theme: KaiteyoTheme, manager: ThemeManager) {
     val a = theme.animation
     var masterOn by remember(theme.id) {
         mutableStateOf(a.hoverEnabled || a.launchpadEnabled || a.sidebarEnabled || a.bubbleEnabled || a.themeTransitionEnabled)
@@ -1057,6 +1058,8 @@ private fun ThemeAnimationEditor(theme: KaiteyoTheme, manager: ThemeManager) {
             StudioSlider("Default duration", a.durationMs.toFloat(), 0f..2000f, "%.0f ms") { v -> manager.updateActiveAnimation { it.copy(durationMs = v.roundToInt()) } }
             SettingToggle("Reduced motion", "Disables all navigation and launcher motion", a.reducedMotion) { on ->
                 manager.updateActiveAnimation { it.copy(reducedMotion = on) }
+                // The settings key mirrors the theme so AppState's nav mirror stays in sync.
+                state.settings.setBool("appearance.reduced-motion", on)
             }
         }
         EditorCard("Categories") {
@@ -1119,7 +1122,7 @@ private fun ThemeEffectsEditor(theme: KaiteyoTheme, manager: ThemeManager) {
 // ------------------------------------------------------------
 
 @Composable
-private fun ThemeAccessibilityEditor(theme: KaiteyoTheme, manager: ThemeManager) {
+private fun ThemeAccessibilityEditor(state: AppState, theme: KaiteyoTheme, manager: ThemeManager) {
     val a = theme.animation
     val t = theme.typography
     val s = theme.scaling
@@ -1163,6 +1166,7 @@ private fun ThemeAccessibilityEditor(theme: KaiteyoTheme, manager: ThemeManager)
             )
             SettingToggle("Reduced motion", "Kills all navigation and launcher animation", a.reducedMotion) { on ->
                 manager.updateActiveAnimation { it.copy(reducedMotion = on) }
+                state.settings.setBool("appearance.reduced-motion", on)
             }
         }
         EditorCard("Scale") {
@@ -1251,11 +1255,11 @@ private fun ThemePreviewTab(theme: KaiteyoTheme, _manager: ThemeManager) {
                             contentAlignment = Alignment.Center
                         ) {
                             ThemeGradientBar(g, Modifier.fillMaxSize())
-                            Text(
-                                "K",
-                                color = Color.Black.copy(alpha = 0.72f),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = DsType.BodyLarge
+                            // The real Kaiteyo mark in the preview mock —
+                            // centralized brand asset, not a "K".
+                            BrandMark(
+                                modifier = Modifier.size(26.dp),
+                                contentDescription = null
                             )
                         }
                         Spacer(Modifier.height(DsSpacing.Sm))

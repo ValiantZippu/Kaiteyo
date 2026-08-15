@@ -38,6 +38,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ════════════════════════════════════════════
 // TAGS SYSTEM — Full nested tag manager
@@ -63,6 +64,7 @@ fun TagManagerScreenFull(
     var showEditDialog by remember { mutableStateOf<CardTag?>(null) }
     var showMergeDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf<CardTag?>(null) }
+    var showBulkDeleteConfirm by remember { mutableStateOf(false) }
     var showApplyDialog by remember { mutableStateOf<CardTag?>(null) }
     var expandedTagIds by remember { mutableStateOf(setOf<Long>()) }
     var selectedTagIds by remember { mutableStateOf(setOf<Long>()) }
@@ -171,6 +173,17 @@ fun TagManagerScreenFull(
                     if (!isSelectionMode) selectedTagIds = emptySet()
                 },
                 selectedCount = selectedTagIds.size,
+                selectedTagIds = selectedTagIds,
+                onMergeSelected = { ids ->
+                    if (ids.size >= 2) {
+                        // Merge every selected tag into the first selected one.
+                        val target = ids.first()
+                        ids.drop(1).forEach { onMergeTags(it, target) }
+                        selectedTagIds = emptySet()
+                        isSelectionMode = false
+                    }
+                },
+                onDeleteSelected = { showBulkDeleteConfirm = true },
                 surfaceColors = surfaceColors,
                 accent = accent
             )
@@ -333,7 +346,7 @@ fun TagManagerScreenFull(
     }
 
     showDeleteConfirm?.let { tag ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
             title = { Text("Delete Tag") },
             text = { Text("Delete \"${tag.name}\"? This will remove it from all cards.") },
@@ -345,6 +358,25 @@ fun TagManagerScreenFull(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showBulkDeleteConfirm) {
+        KaiteyoAlertDialog(
+            onDismissRequest = { showBulkDeleteConfirm = false },
+            title = { Text("Delete Tags") },
+            text = { Text("Delete ${selectedTagIds.size} selected tag(s)? This will remove them from all cards.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedTagIds.forEach { onDeleteTag(it) }
+                    selectedTagIds = emptySet()
+                    isSelectionMode = false
+                    showBulkDeleteConfirm = false
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBulkDeleteConfirm = false }) { Text("Cancel") }
             }
         )
     }
@@ -397,6 +429,9 @@ private fun TagQuickFilters(
     isSelectionMode: Boolean,
     onToggleSelectionMode: () -> Unit,
     selectedCount: Int,
+    selectedTagIds: Set<Long>,
+    onMergeSelected: (Set<Long>) -> Unit,
+    onDeleteSelected: (Set<Long>) -> Unit,
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
@@ -434,10 +469,19 @@ private fun TagQuickFilters(
         Spacer(Modifier.weight(1f))
 
         if (isSelectionMode) {
-            TextButton(onClick = { }, modifier = Modifier.height(28.dp)) {
+            // Bulk actions on the selected tags — real, not decorative.
+            TextButton(
+                onClick = { onMergeSelected(selectedTagIds) },
+                enabled = selectedTagIds.size >= 2,
+                modifier = Modifier.height(28.dp)
+            ) {
                 Text("Merge", fontSize = 11.sp)
             }
-            TextButton(onClick = { }, modifier = Modifier.height(28.dp)) {
+            TextButton(
+                onClick = { onDeleteSelected(selectedTagIds) },
+                enabled = selectedTagIds.isNotEmpty(),
+                modifier = Modifier.height(28.dp)
+            ) {
                 Text("Delete", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
             }
         }

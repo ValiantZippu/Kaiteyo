@@ -135,3 +135,6 @@ scratch/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Kaiteyo CLI — project-local cache (gradle task list, project config)
+.kaiteyo/

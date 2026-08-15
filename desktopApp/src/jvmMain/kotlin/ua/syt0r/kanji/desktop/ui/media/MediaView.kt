@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Bookmarks
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -70,18 +70,22 @@ import ua.syt0r.kanji.desktop.engine.media.AutoPauseMode
 // ============================================
 
 enum class MediaPanel(val label: String) {
-    Player("Player"), Library("Library"), Stats("Stats"), Bookmarks("Bookmarks"), Settings("Settings")
+    Home("Home"), Player("Player"), Library("Library"), Stats("Stats"), Bookmarks("Bookmarks"), Tuning("Video & Audio"), Settings("Settings")
 }
 
 @Composable
-fun MediaView(state: AppState) {
+fun MediaView(state: AppState, onBack: (() -> Unit)? = null) {
     val media = state.media
-    var panel by remember { mutableStateOf(MediaPanel.Player) }
+    var panel by remember { mutableStateOf(MediaPanel.Home) }
+    // Media item currently shown in the detail view (null = normal panels).
+    var detailItemId by remember { mutableStateOf<String?>(null) }
     // The ComposeWindow hosting this workspace (best effort; null in previews).
     // Found via the AWT window list because Compose's LocalWindow is not public
     // API in this version and LocalView no longer exists on desktop.
     val window = remember {
-        java.awt.Window.getWindows().firstOrNull { it is ComposeWindow && it.isShowing } as? ComposeWindow
+        runCatching {
+            java.awt.Window.getWindows().firstOrNull { it is ComposeWindow && it.isShowing } as? ComposeWindow
+        }.getOrNull()
     }
 
     // Drag & drop: dropping a video/audio file opens it, a subtitle file
@@ -89,39 +93,85 @@ fun MediaView(state: AppState) {
     // library. Active only while the Media workspace is composed.
     DisposableEffect(window) {
         val host = window ?: return@DisposableEffect onDispose {}
-        val dropTarget = DropTarget(
-            host.contentPane,
-            object : DropTargetListener {
-                override fun dragEnter(e: DropTargetDragEvent) = e.acceptDrag(DnDConstants.ACTION_COPY)
-                override fun dragOver(e: DropTargetDragEvent) = e.acceptDrag(DnDConstants.ACTION_COPY)
-                override fun dropActionChanged(e: DropTargetDragEvent) = Unit
-                override fun dragExit(e: DropTargetEvent) = Unit
-                override fun drop(e: DropTargetDropEvent) {
-                    e.acceptDrop(DnDConstants.ACTION_COPY)
-                    val files = runCatching {
-                        e.transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
-                    }.getOrNull()
-                    e.dropComplete(true)
-                    if (files != null) handleMediaDrop(state, files.filterIsInstance<File>())
+        // Drag & drop is a nicety — if the AWT drop target cannot be created
+        // (unusual desktop/headless combinations) the workspace still opens.
+        val dropTarget = runCatching {
+            DropTarget(
+                host.contentPane,
+                object : DropTargetListener {
+                    override fun dragEnter(e: DropTargetDragEvent) = e.acceptDrag(DnDConstants.ACTION_COPY)
+                    override fun dragOver(e: DropTargetDragEvent) = e.acceptDrag(DnDConstants.ACTION_COPY)
+                    override fun dropActionChanged(e: DropTargetDragEvent) = Unit
+                    override fun dragExit(e: DropTargetEvent) = Unit
+                    override fun drop(e: DropTargetDropEvent) {
+                        e.acceptDrop(DnDConstants.ACTION_COPY)
+                        val files = runCatching {
+                            e.transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
+                        }.getOrNull()
+                        e.dropComplete(true)
+                        if (files != null) handleMediaDrop(state, files.filterIsInstance<File>())
+                    }
                 }
-            }
-        )
+            )
+        }.getOrNull() ?: return@DisposableEffect onDispose {}
         onDispose { host.contentPane.dropTarget = null }
     }
 
     // The 10 Hz reconciliation loop: position, active subtitle, condensed
     // playback, auto-pause, looping and periodic watch-progress saves.
     LaunchedEffect(Unit) {
-        media.speed = state.settings.getFloat("media.default-speed", 1f).coerceIn(0.25f, 2f)
-        media.seekAmountMs = state.settings.getInt("media.seek-amount-ms", 5000).toLong().coerceAtLeast(1000)
-        media.autoPauseMode = autoPauseFromSettings(state.settings.getString("media.auto-pause", "off"))
-        media.condensedPlayback = state.settings.getBool("media.condensed-playback")
-        media.condensedFastForward = state.settings.getBool("media.condensed-fast-forward")
-        media.annotationMode = annotationFromSettings(state.settings.getString("media.subtitle-annotation", "status"))
-        media.studyMode = state.settings.getBool("media.study-mode-default")
-        media.subtitles.showSecondary = state.settings.getBool("media.dual-subtitles")
-        media.miniPlayerEnabled = state.settings.getBool("media.mini-player")
-        media.resumePromptEnabled = state.settings.getBool("media.resume-prompt")
+        // Restoring preferences must never take the workspace down — every
+        // getter already falls back to a default, and this guard makes a
+        // single unexpected read safe too.
+        runCatching {
+            media.speed = state.settings.getFloat("media.default-speed", 1f).coerceIn(0.25f, 2f)
+            media.seekAmountMs = state.settings.getInt("media.seek-amount-ms", 5000).toLong().coerceAtLeast(1000)
+            media.autoPauseMode = autoPauseFromSettings(state.settings.getString("media.auto-pause", "off"))
+            media.condensedPlayback = state.settings.getBool("media.condensed-playback")
+            media.condensedFastForward = state.settings.getBool("media.condensed-fast-forward")
+            media.annotationMode = annotationFromSettings(state.settings.getString("media.subtitle-annotation", "status"))
+            media.studyMode = state.settings.getBool("media.study-mode-default")
+            media.subtitles.showSecondary = state.settings.getBool("media.dual-subtitles")
+            media.miniPlayerEnabled = state.settings.getBool("media.mini-player")
+            media.resumePromptEnabled = state.settings.getBool("media.resume-prompt")
+            // Rendering + audio preferences restored on launch.
+            media.displayMode = ua.syt0r.kanji.desktop.engine.playback.VideoDisplayMode.entries
+                .firstOrNull { it.name.equals(state.settings.getString("media.display-mode", "fit"), ignoreCase = true) }
+                ?: ua.syt0r.kanji.desktop.engine.playback.VideoDisplayMode.Fit
+            media.aspectRatio = ua.syt0r.kanji.desktop.engine.playback.AspectRatioPreset.entries
+                .firstOrNull { it.name.equals(state.settings.getString("media.aspect-ratio", "auto"), ignoreCase = true) }
+                ?: ua.syt0r.kanji.desktop.engine.playback.AspectRatioPreset.Auto
+            media.videoAdjustments = ua.syt0r.kanji.desktop.engine.playback.VideoAdjustments(
+                brightness = state.settings.getInt("media.video-brightness", 100).toFloat(),
+                contrast = state.settings.getInt("media.video-contrast", 100).toFloat(),
+                saturation = state.settings.getInt("media.video-saturation", 100).toFloat(),
+                gamma = state.settings.getInt("media.video-gamma", 100).toFloat(),
+                hue = state.settings.getInt("media.video-hue", 0).toFloat(),
+                deinterlace = state.settings.getBool("media.video-deinterlace")
+            )
+            media.subtitleDelayMs = state.settings.getInt("media.subtitle-delay-ms", 0).toLong()
+            media.audioDelayMs = state.settings.getInt("media.audio-delay-ms", 0).toLong()
+            media.audioChannel = ua.syt0r.kanji.desktop.engine.playback.AudioChannelPreset.entries
+                .firstOrNull { it.name.equals(state.settings.getString("media.audio-channel", "stereo"), ignoreCase = true) }
+                ?: ua.syt0r.kanji.desktop.engine.playback.AudioChannelPreset.Stereo
+            media.audioOutputId = state.settings.getString("media.audio-output", "").ifBlank { null }
+            val eqPreset = ua.syt0r.kanji.desktop.engine.playback.EqualizerPreset.entries
+                .firstOrNull { it.name.equals(state.settings.getString("media.eq-preset", "flat"), ignoreCase = true) }
+                ?: ua.syt0r.kanji.desktop.engine.playback.EqualizerPreset.Flat
+            val eqBands = state.settings.getString("media.eq-bands-db", "").split(",")
+                .mapNotNull { it.trim().toFloatOrNull() }
+            media.equalizer = if (eqBands.size == 10) {
+                ua.syt0r.kanji.desktop.engine.playback.EqualizerSettings(
+                    preset = eqPreset,
+                    preampDb = state.settings.getFloat("media.eq-preamp-db", eqPreset.preampDb),
+                    bandsDb = eqBands
+                )
+            } else {
+                ua.syt0r.kanji.desktop.engine.playback.EqualizerSettings(preset = eqPreset)
+            }
+        }
+        // The 10 Hz reconciliation loop — media.tick() is engine-hardened and
+        // never throws; delay() cancellation is normal teardown.
         while (true) {
             media.tick()
             delay(100)
@@ -151,22 +201,42 @@ fun MediaView(state: AppState) {
 
     Column(Modifier.fillMaxSize()) {
         if (!media.cinemaMode) {
-            MediaToolbar(state, panel, onSelectPanel = { panel = it })
+            MediaToolbar(state, panel, onSelectPanel = { panel = it }, onBack = onBack)
         }
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            when (panel) {
-                MediaPanel.Player -> MediaPlayerWorkspace(state)
-                MediaPanel.Library -> MediaLibraryPanel(state)
-                MediaPanel.Stats -> MediaStatsPanel(state)
-                MediaPanel.Bookmarks -> MediaBookmarksPanel(state)
-                MediaPanel.Settings -> MediaSettingsPanel(state)
+        // The detail view overlays the panels while an item is open; opening
+        // other media or navigating tabs dismisses it.
+        val detailId = detailItemId
+        val liveItem = detailId?.let { media.library.item(it) }
+        if (liveItem != null) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                MediaDetailPanel(state = state, itemId = liveItem.id, onBack = { detailItemId = null })
+            }
+        } else {
+            if (detailId != null) {
+                LaunchedEffect(detailId) { detailItemId = null }
+            }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (panel) {
+                    MediaPanel.Home -> MediaHomePanel(state, onOpenDetail = { detailItemId = it })
+                    MediaPanel.Player -> MediaPlayerWorkspace(state)
+                    MediaPanel.Library -> MediaLibraryPanel(state)
+                    MediaPanel.Stats -> MediaStatsPanel(state)
+                    MediaPanel.Bookmarks -> MediaBookmarksPanel(state)
+                    MediaPanel.Tuning -> MediaTuningPanel(state)
+                    MediaPanel.Settings -> MediaSettingsPanel(state)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun MediaToolbar(state: AppState, panel: MediaPanel, onSelectPanel: (MediaPanel) -> Unit) {
+private fun MediaToolbar(
+    state: AppState,
+    panel: MediaPanel,
+    onSelectPanel: (MediaPanel) -> Unit,
+    onBack: (() -> Unit)? = null
+) {
     val sc = surfaceColors()
     val media = state.media
     val item = media.currentItem
@@ -179,6 +249,14 @@ private fun MediaToolbar(state: AppState, panel: MediaPanel, onSelectPanel: (Med
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+            if (onBack != null) {
+                DsIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    onClick = onBack,
+                    contentDescription = "Back",
+                    size = 34.dp
+                )
+            }
             Column(Modifier.weight(1f)) {
                 Text("Media", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.SemiBold)
                 Text(
@@ -212,12 +290,13 @@ private fun MediaToolbar(state: AppState, panel: MediaPanel, onSelectPanel: (Med
                 compact = true,
                 onClick = { urlPromptOpen = true }
             )
-            // In-player library search — types land straight in the library panel.
+            // In-player library search — types land in the Media Centre home
+            // (which switches to its Browse view when a query is present).
             DsSearchField(
                 value = media.librarySearchQuery,
                 onValueChange = {
                     media.librarySearchQuery = it
-                    onSelectPanel(MediaPanel.Library)
+                    onSelectPanel(MediaPanel.Home)
                 },
                 placeholder = "Search library…",
                 modifier = Modifier.width(190.dp).onFocusChanged { state.media.textInputFocused = it.isFocused }
@@ -263,6 +342,12 @@ private fun MediaToolbar(state: AppState, panel: MediaPanel, onSelectPanel: (Med
                 icon = Icons.Default.Bookmarks,
                 onClick = { onSelectPanel(MediaPanel.Bookmarks) },
                 contentDescription = "Media bookmarks",
+                size = 34.dp
+            )
+            DsIconButton(
+                icon = Icons.Default.LibraryMusic,
+                onClick = { onSelectPanel(MediaPanel.Tuning) },
+                contentDescription = "Video & audio tuning",
                 size = 34.dp
             )
             DsIconButton(

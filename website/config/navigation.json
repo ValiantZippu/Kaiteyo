@@ -5,34 +5,56 @@
       "id": "learn",
       "title": "Learn",
       "items": [
-        { "id": "home", "title": "Dashboard", "url": "/", "icon": "dashboard" },
-        { "id": "features", "title": "Features", "url": "/features/", "icon": "layers" },
+        { "id": "try", "title": "Try Kaiteyo", "url": "/try/", "icon": "sparkles", "badge": "Web" },
+        { "id": "download", "title": "Download", "url": "/download/", "icon": "download", "badge": "v2.2.1" },
+        { "id": "product", "title": "Product", "url": "/product/", "icon": "layers" },
+        { "id": "learn-hub", "title": "Learn", "url": "/learn/", "icon": "book" },
+        { "id": "features", "title": "Features", "url": "/features/", "icon": "grid" },
         { "id": "screenshots", "title": "Screenshots", "url": "/screenshots/", "icon": "image" },
-        { "id": "theme-gallery", "title": "Theme Gallery", "url": "/theme-gallery/", "icon": "palette" },
-        { "id": "download", "title": "Download", "url": "/download/", "icon": "download", "badge": "v2.2.1" }
+        { "id": "theme-gallery", "title": "Theme Gallery", "url": "/theme-gallery/", "icon": "palette" }
       ]
     },
     {
       "id": "explore",
       "title": "Explore",
       "items": [
-        { "id": "documentation", "title": "Documentation", "url": "/docs/", "icon": "book" },
+        { "id": "documentation", "title": "Documentation", "url": "/docs/", "icon": "file" },
         { "id": "wiki", "title": "Wiki", "url": "/wiki/", "icon": "compass" },
-        { "id": "faq", "title": "FAQ", "url": "/faq/", "icon": "help" },
+        { "id": "guides", "title": "Guides", "url": "/guides/", "icon": "milestone" },
+        { "id": "faq", "title": "Q&A", "url": "/faq/", "icon": "help" },
         { "id": "shortcuts", "title": "Keyboard Shortcuts", "url": "/shortcuts/", "icon": "keyboard" },
-        { "id": "roadmap", "title": "Roadmap", "url": "/roadmap/", "icon": "milestone" },
+        { "id": "roadmap", "title": "Product Roadmap", "url": "/roadmap/", "icon": "milestone" },
         { "id": "changelog", "title": "Changelog", "url": "/changelog/", "icon": "history" }
       ]
     },
     {
-      "id": "project",
-      "title": "Project",
+      "id": "command-center",
+      "title": "Command Center",
       "items": [
-        { "id": "contributing", "title": "Contributing", "url": "/contributing/", "icon": "contribute" },
+        { "id": "project-status", "title": "Project Status", "url": "/project/", "icon": "layers" },
+        { "id": "kanban", "title": "Kanban", "url": "/project/kanban/", "icon": "grid" },
+        { "id": "project-roadmap", "title": "Roadmap", "url": "/project/roadmap/", "icon": "milestone" },
+        { "id": "whiteboard", "title": "Whiteboard", "url": "/project/whiteboard/", "icon": "compass" },
+        { "id": "suggestions", "title": "Suggestions", "url": "/project/suggestions/", "icon": "chat" },
+        { "id": "decisions", "title": "Architecture Decisions", "url": "/project/decisions/", "icon": "scale" },
+        { "id": "activity", "title": "Activity", "url": "/project/activity/", "icon": "history" },
+        { "id": "project-contributing", "title": "Contributing", "url": "/project/contributing/", "icon": "contribute" }
+      ]
+    },
+    {
+      "id": "community",
+      "title": "Community",
+      "items": [
+        { "id": "integrations", "title": "Integrations", "url": "/integrations/", "icon": "sync" },
+        { "id": "install", "title": "Install", "url": "/install/", "icon": "monitor" },
+        { "id": "about", "title": "About", "url": "/about/", "icon": "users" },
+        { "id": "community", "title": "Community", "url": "/community/", "icon": "chat" },
+        { "id": "data", "title": "Data & Attribution", "url": "/data/", "icon": "folder" },
         { "id": "plugins", "title": "Plugins", "url": "/plugins/", "icon": "puzzle" },
-        { "id": "credits", "title": "Credits", "url": "/credits/", "icon": "users" },
+        { "id": "credits", "title": "Credits", "url": "/credits/", "icon": "heart" },
         { "id": "license", "title": "License", "url": "/license/", "icon": "scale" },
-        { "id": "privacy", "title": "Privacy Policy", "url": "/privacy/", "icon": "shield" }
+        { "id": "privacy", "title": "Privacy Policy", "url": "/privacy/", "icon": "lock" },
+        { "id": "security", "title": "Security", "url": "/security/", "icon": "shield" }
       ]
     }
   ],

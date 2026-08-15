@@ -1,0 +1,118 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "status" %}
+{% import "partials/project-macros.html" as pm %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Project</h1>
+  <p class="text-secondary">Kaiteyo's public command center — what is being built, what is planned, what is done. Every status here is rendered from the repository's own documentation (single source of truth).</p>
+</header>
+
+<section class="pulse-grid" aria-label="Project pulse">
+  <div class="card pulse-card">
+    <span class="card-label">Current version</span>
+    <span class="card-value">{{ site.version }}</span>
+    <a class="card-link" href="{{ basePath }}changelog/">Changelog</a>
+  </div>
+  <div class="card pulse-card">
+    <span class="card-label">Open tasks</span>
+    <span class="card-value">{{ open_tasks }}</span>
+    <a class="card-link" href="{{ basePath }}project/kanban/">Board</a>
+  </div>
+  <div class="card pulse-card">
+    <span class="card-label">Systems</span>
+    <span class="card-value">{{ systems|length }}</span>
+    <span class="card-sub">live + planned</span>
+  </div>
+  <div class="card pulse-card">
+    <span class="card-label">Blocked tasks</span>
+    <span class="card-value">{{ blocked_tasks }}</span>
+    <span class="card-sub">mostly platform verification</span>
+  </div>
+  <div class="card pulse-card">
+    <span class="card-label">Architecture decisions</span>
+    <span class="card-value">{{ decisions|length }}</span>
+    <a class="card-link" href="{{ basePath }}project/decisions/">ADRs</a>
+  </div>
+  <div class="card pulse-card">
+    <span class="card-label">Phase</span>
+    <span class="card-value">v2.3</span>
+    <span class="card-sub">Anki interop &amp; persistent data</span>
+  </div>
+</section>
+
+<section class="project-section">
+  <div class="project-section-head">
+    <h2>What is being built</h2>
+    <a class="card-link" href="{{ basePath }}project/kanban/">See the board →</a>
+  </div>
+  <div class="systems-grid">
+    {% for system in systems %}
+    <article class="card system-card">
+      <div class="system-card-top">
+        <h3>{{ system.name }}</h3>
+        {{ pm.status_badge(system.status) }}
+      </div>
+      <p class="card-description">{{ system.summary }}</p>
+      <div class="system-card-foot">
+        <span class="system-where">{{ system.category }}{% if system.where != 'core' %} · {{ system.where }}{% endif %}</span>
+        <a class="card-link" href="{{ pm.doc_href(system.docs) }}">Docs</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="project-section">
+  <div class="project-section-head">
+    <h2>Roadmap preview</h2>
+    <a class="card-link" href="{{ basePath }}project/roadmap/">Full roadmap →</a>
+  </div>
+  <div class="roadmap-preview">
+    {% for phase in roadmap_phases[:2] %}
+    <div class="roadmap-phase">
+      <h3>{{ phase.title }}</h3>
+      <ul class="roadmap-list">
+        {% for item in phase.items[:4] %}
+        <li>
+          <span class="roadmap-item-title">{{ item.title }}</span>
+          {{ pm.status_badge(item.status) }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="project-section">
+  <div class="project-section-head">
+    <h2>Recent changes</h2>
+    <a class="card-link" href="{{ basePath }}project/activity/">Full activity →</a>
+  </div>
+  <ul class="activity-list">
+    {% for event in activity_events[:5] %}
+    <li class="activity-item">
+      <span class="activity-kind activity-kind-{{ event.kind }}">{{ event.kind }}</span>
+      <div>
+        <strong>{{ event.title }}</strong>
+        {% if event.detail %}<p class="text-secondary">{{ event.detail }}</p>{% endif %}
+      </div>
+      <time class="activity-date">{{ event.date }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="project-section">
+  <div class="project-section-head">
+    <h2>Explore the knowledge base</h2>
+  </div>
+  <div class="knowledge-grid">
+    <a class="card card-hover link-card" href="{{ basePath }}docs/"><h3>Documentation</h3><p class="card-description">The full repository documentation, rendered.</p></a>
+    <a class="card card-hover link-card" href="{{ basePath }}wiki/"><h3>Wiki</h3><p class="card-description">Short focused articles about the app and Japanese study.</p></a>
+    <a class="card card-hover link-card" href="{{ basePath }}project/whiteboard/"><h3>Whiteboard</h3><p class="card-description">The whole system as an interactive architecture canvas.</p></a>
+    <a class="card card-hover link-card" href="{{ basePath }}project/decisions/"><h3>Decisions</h3><p class="card-description">Why Kaiteyo is built the way it is.</p></a>
+  </div>
+</section>
+{% endblock %}

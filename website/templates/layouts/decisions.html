@@ -1,0 +1,31 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "decisions" %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Architecture Decisions</h1>
+  <p class="text-secondary">Why Kaiteyo is built the way it is. Every decision records its context,
+    the decision, the alternatives considered, and its consequences — so future contributors never
+    have to guess. Source of truth:
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/architecture/decisions/" target="_blank" rel="noopener">docs/architecture/decisions/</a>.</p>
+</header>
+
+<div class="decision-list">
+  {% for decision in decisions %}
+  <article class="card decision-item">
+    <div class="decision-item-head">
+      <span class="decision-id">{{ decision.id | upper }}</span>
+      <span class="badge {% if 'Accepted' in decision.status %}badge-accent{% elif 'Proposed' in decision.status %}badge-warning{% elif 'Superseded' in decision.status or 'Deprecated' in decision.status %}badge-muted{% else %}badge-info{% endif %}">{{ decision.status }}</span>
+    </div>
+    <h3><a href="{{ basePath }}{{ decision.url }}">{{ decision.title }}</a></h3>
+    <p class="card-description">
+      <a href="{{ basePath }}{{ decision.url }}">Read the full decision</a>
+    </p>
+  </article>
+  {% endfor %}
+</div>
+
+<p class="text-secondary decision-note">Status labels are read from each ADR's front matter / heading.
+  A <em>Proposed</em> decision is architecture under evaluation — see its record for what must happen
+  before it is accepted.</p>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "contributing" %}
+{% import "partials/project-macros.html" as pm %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Contributing</h1>
+  <p class="text-secondary">&ldquo;What can I actually help with?&rdquo; — answered. Start by reading
+    the <a href="{{ basePath }}docs/">documentation</a>, then pick real work from the lists below.
+    Every item is a tracked task from
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/planning/MASTER_TODO.md" target="_blank" rel="noopener">MASTER_TODO.md</a>.</p>
+</header>
+
+<section class="contrib-section">
+  <h2>Start here</h2>
+  <ol class="contrib-steps">
+    <li><strong>Understand Kaiteyo</strong> — <a href="{{ basePath }}product/">product</a> and <a href="{{ basePath }}project/">project status</a>.</li>
+    <li><strong>Explore the map</strong> — the <a href="{{ basePath }}project/whiteboard/">whiteboard</a> shows how everything connects.</li>
+    <li><strong>Read the architecture</strong> — start at <a href="{{ basePath }}docs/architecture/">architecture index</a>.</li>
+    <li><strong>Browse active tasks</strong> — the <a href="{{ basePath }}project/kanban/">kanban</a> is the present.</li>
+    <li><strong>Choose a task</strong> — <a href="#good-first">good first</a> items are marked below.</li>
+    <li><strong>Read dependencies</strong> — each card lists what it depends on.</li>
+    <li><strong>Join the discussion</strong> — comment on the issue or PR.</li>
+    <li><strong>Submit work</strong> — PRs target <code>develop</code>; see the <a href="{{ basePath }}docs/ai/ai_agent_guide/">AI agent guide</a> for the contract.</li>
+  </ol>
+</section>
+
+<section class="contrib-section">
+  <h2>Good first tasks</h2>
+  {% if good_first %}
+  <div class="contrib-card-grid">
+    {% for task in good_first %}
+    <article class="card contrib-card" id="card-{{ task.id|lower }}">
+      <div class="kanban-card-head">
+        <span class="kanban-card-id">{{ task.id }}</span>
+        {% if task.priority %}<span class="badge badge-muted">{{ pm.priority_label(task.priority) }}</span>{% endif %}
+      </div>
+      <h3>{{ task.title }}</h3>
+      <p class="card-description">{{ task.acceptance }}</p>
+      <a class="card-link" href="{{ basePath }}project/kanban/?package={{ task.package }}#card-{{ task.id|lower }}">Open in kanban</a>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-secondary">All good-first tasks are currently claimed or done — check the kanban for the next wave.</p>
+  {% endif %}
+</section>
+
+<section class="contrib-section">
+  <h2>High-priority open work</h2>
+  <div class="contrib-card-grid">
+    {% for task in top_tasks %}
+    <article class="card contrib-card">
+      <div class="kanban-card-head">
+        <span class="kanban-card-id">{{ task.id }}</span>
+        <span class="badge {% if task.priority == 'P0' %}badge-error{% elif task.priority == 'P1' %}badge-warning{% else %}badge-muted{% endif %}">{{ pm.priority_label(task.priority) }}</span>
+      </div>
+      <h3>{{ task.title }}</h3>
+      <p class="card-description">{{ task.acceptance }}</p>
+      <a class="card-link" href="{{ basePath }}project/kanban/?package={{ task.package }}#card-{{ task.id|lower }}">Open in kanban</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="contrib-section">
+  <h2>Knowledge needed per area</h2>
+  <div class="contrib-knowledge">
+    {% for pkg in packages %}
+    {% if pkg.id in package_knowledge %}
+    <article class="card contrib-knowledge-card">
+      <h3>{{ pkg.id }} — {{ pkg.title }}</h3>
+      <p class="card-description">{{ package_knowledge[pkg.id] | join(', ') }}</p>
+    </article>
+    {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card contrib-gates">
+  <h2>Before you submit</h2>
+  <p class="card-description">Kaiteyo is a professional product (see
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/engineering/ENGINEERING_STANDARDS.md" target="_blank" rel="noopener">ENGINEERING_STANDARDS.md</a>):
+    read the documentation first, inspect the code second, plan third, change the smallest correct
+    surface, and never break the never-change zones (SRS scheduling, SQLDelight schemas without
+    request, the <code>ua.syt0r.kanji</code> namespace, Gradle config).</p>
+</section>
+{% endblock %}

@@ -135,10 +135,14 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
         val lettersDecks = deferredLettersDecks.await()
         val vocabDecks = deferredVocabDecks.await()
 
-        val recentDecks = buildList {
+        // Every deck (premade or custom) so Collections can show them all;
+        // Recent decks is the same list re-sorted by recency.
+        val allDecks = buildList {
             addAll(lettersDecks.decks.map { it.toDeckSummary(DashboardDeckCategory.Letters) })
             addAll(vocabDecks.decks.map { it.toDeckSummary(DashboardDeckCategory.Vocabulary) })
-        }.sortedWith(
+        }.sortedBy { it.title }
+
+        val recentDecks = allDecks.sortedWith(
             compareByDescending<DashboardDeckSummary> { it.lastReview }
                 .thenBy { it.title }
         ).take(RECENT_DECKS_LIMIT)
@@ -147,6 +151,7 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             studyTargets = studyTargets,
             stats = deferredStats.await(),
             recentDecks = recentDecks,
+            allDecks = allDecks,
             recentActivity = dataCenter.activity.take(ACTIVITY_LIMIT),
             collections = dataCenter.collections.toList()
         )
@@ -285,9 +290,11 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
 
         val zone = TimeZone.currentSystemDefault()
         val now = Clock.System.now()
-        val weekStart = now - 6.days
-        val weekReviews = reviewHistoryRepository.getReviews(weekStart, now)
-        val reviewsByDate = weekReviews
+        // One query covering the heatmap range (12 weeks) also feeds the
+        // 7-day weekly summary below.
+        val heatmapStart = now - HEATMAP_DAYS.days
+        val heatmapReviews = reviewHistoryRepository.getReviews(heatmapStart, now)
+        val reviewsByDate = heatmapReviews
             .groupBy { it.timestamp.toLocalDateTime(zone).date }
             .mapValues { it.value.size }
 
@@ -298,6 +305,14 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
                 count = reviewsByDate[date] ?: 0
             )
         }.reversed()
+
+        val heatmapSummary = (HEATMAP_DAYS - 1L downTo 0L).map { offset ->
+            val date = currentDate.minus(offset, DateTimeUnit.DAY)
+            DashboardDaySummary(
+                date = date,
+                count = reviewsByDate[date] ?: 0
+            )
+        }
 
         val startOfToday = currentDate.atStartOfDayIn(zone)
         val reviewsToday = reviewHistoryRepository.getReviews(
@@ -313,6 +328,7 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             reviewsToday = reviewsToday,
             totalReviews = totalReviews,
             weeklySummary = weeklySummary,
+            heatmapSummary = heatmapSummary,
             newReviewedToday = 0,
             dueReviewedToday = 0,
             newLeftoverToday = 0,
@@ -328,6 +344,7 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
     companion object {
         private const val RECENT_DECKS_LIMIT = 6
         private const val ACTIVITY_LIMIT = 8
+        private const val HEATMAP_DAYS = 84L
     }
 
 }

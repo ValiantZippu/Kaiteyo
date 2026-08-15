@@ -50,6 +50,9 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -57,6 +60,8 @@ import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.NavPosition
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
+import ua.syt0r.kanji.desktop.engine.activity.SignalContext
+import ua.syt0r.kanji.desktop.ui.activity.AfkRain
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
@@ -82,8 +87,10 @@ import ua.syt0r.kanji.desktop.ui.tags.TagFlagView
 import ua.syt0r.kanji.desktop.ui.themes.ThemeStudioView
 import ua.syt0r.kanji.desktop.ui.transfer.TransferView
 import ua.syt0r.kanji.desktop.ui.dictionary.DictionaryManagerView
+import ua.syt0r.kanji.desktop.ui.exams.ExamView
 import ua.syt0r.kanji.desktop.ui.media.MediaMiniPlayer
 import ua.syt0r.kanji.desktop.ui.media.MediaView
+import ua.syt0r.kanji.desktop.ui.mistakes.MistakesView
 import ua.syt0r.kanji.desktop.ui.browser_web.LearningBrowserView
 import ua.syt0r.kanji.desktop.ui.ocr.OcrView
 import ua.syt0r.kanji.desktop.ui.mining.MiningView
@@ -100,6 +107,22 @@ val LocalAppState = staticCompositionLocalOf<AppState> { error("No AppState in c
 
 @Composable
 fun rememberAppState(): AppState = LocalAppState.current
+
+/**
+ * Adaptive breakpoints shared by the workspace shell and the floating
+ * launcher. Meaningful layout tiers, not arbitrary pixel hacks.
+ */
+object Breakpoints {
+    /** Below this width the desktop dock yields to the compact tab bar. */
+    val CompactWindowWidth = 720.dp
+
+    /**
+     * Hysteresis exit: once compact, stay compact until this width so a
+     * resize hovering around the breakpoint does not flip the shell back
+     * and forth.
+     */
+    val CompactExitWidth = 760.dp
+}
 
 // ============================================
 // KAITEYO WORKSPACE — adaptive shell
@@ -124,9 +147,11 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("open-browser") { state.currentView = WorkspaceView.Browser }
         d.register("open-library") { state.currentView = WorkspaceView.Library }
         d.register("open-review") { state.currentView = WorkspaceView.Review }
+        d.register("open-exams") { state.currentView = WorkspaceView.Exams }
         d.register("open-writing") { state.currentView = WorkspaceView.Writing }
         d.register("open-grammar") { state.currentView = WorkspaceView.Grammar }
         d.register("open-stats") { state.currentView = WorkspaceView.Statistics }
+        d.register("open-mistakes") { state.currentView = WorkspaceView.Mistakes }
         d.register("open-settings") { state.currentView = WorkspaceView.Settings }
         d.register("open-themes") { state.currentView = WorkspaceView.ThemeStudio }
         d.register("open-history") { state.currentView = WorkspaceView.History }
@@ -134,6 +159,14 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("open-dictionary") { state.currentView = WorkspaceView.Dictionary }
         d.register("open-mining") { state.currentView = WorkspaceView.Mining }
         d.register("open-media") { state.currentView = WorkspaceView.Media }
+
+        // Browser-style workspace tabs.
+        d.register("tab-new") { state.openTab(state.currentView, activate = true) }
+        d.register("tab-close") { state.closeActiveTab() }
+        d.register("tab-next") { state.cycleTab(1) }
+        d.register("tab-previous") { state.cycleTab(-1) }
+        d.register("tab-reopen") { state.reopenClosedTab() }
+        (1..9).forEach { index -> d.register("tab-jump-$index") { state.jumpToTab(index) } }
         d.register("open-browser2") { state.currentView = WorkspaceView.LearningBrowser }
         d.register("open-ocr") { state.currentView = WorkspaceView.Ocr }
         d.register("open-integrations") { state.currentView = WorkspaceView.Integrations }
@@ -176,8 +209,16 @@ fun KaiteyoWorkspace(state: AppState) {
                 .fillMaxSize()
                 .focusable()
                 .onKeyEvent { handleGlobalKey(state, it) }
+                .pointerInput(state) { trackGlobalActivity(state) }
         ) {
-            val compact = maxWidth < 720.dp
+            // The shell tiers (desktop dock vs compact tab bar) switch on a
+            // meaningful breakpoint with hysteresis, so a resize hovering
+            // around the boundary settles once instead of flip-flopping.
+            val rawCompact = maxWidth < Breakpoints.CompactWindowWidth
+            var compact by remember { mutableStateOf(rawCompact) }
+            LaunchedEffect(maxWidth) {
+                compact = if (compact) maxWidth < Breakpoints.CompactExitWidth else rawCompact
+            }
             Box(Modifier.fillMaxSize()) {
                 DsToastHostView(host = state.toastHost, modifier = Modifier.fillMaxSize()) {
                     WorkspaceLayout(state, compact = compact, onOpenPalette = { paletteOpen = true })
@@ -203,6 +244,10 @@ fun KaiteyoWorkspace(state: AppState) {
                 if (state.media.miniPlayerOpen && state.currentView != WorkspaceView.Media) {
                     MediaMiniPlayer(state)
                 }
+
+                // AFK rain — ambient, click-through, drawn over content but
+                // below popups/dialogs. Pure decoration; never blocks input.
+                AfkRain(state)
             }
         }
     }
@@ -210,10 +255,21 @@ fun KaiteyoWorkspace(state: AppState) {
 
 @Composable
 private fun WorkspaceLayout(state: AppState, compact: Boolean, onOpenPalette: () -> Unit) {
-    if (compact) {
-        CompactLayout(state, onOpenPalette)
-    } else {
-        DesktopLayout(state, onOpenPalette)
+    // A quick crossfade so crossing the breakpoint reflows instead of
+    // teleporting. It only runs when the tier actually flips (guarded by the
+    // hysteresis above) — never per resize frame. The duration is resolved
+    // here, in the composable body, because transitionSpec lambdas are not
+    // composable and cannot read CompositionLocals.
+    val duration = tweenDuration(LocalAnimationConfig.current, 160)
+    AnimatedContent(
+        targetState = compact,
+        transitionSpec = {
+            (fadeIn(tween(duration)) togetherWith fadeOut(tween(duration)))
+        },
+        label = "workspaceLayout"
+    ) { isCompact ->
+        if (isCompact) CompactLayout(state, onOpenPalette)
+        else DesktopLayout(state, onOpenPalette)
     }
 }
 
@@ -332,6 +388,9 @@ private fun ContentColumn(state: AppState, onOpenPalette: () -> Unit, modifier: 
     Column(modifier) {
         DsTopBar(state = state, onOpenPalette = onOpenPalette)
         DsToolbarDivider()
+        if (state.tabsEnabled) {
+            DsWorkspaceTabBar(state)
+        }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Row(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -344,8 +403,43 @@ private fun ContentColumn(state: AppState, onOpenPalette: () -> Unit, modifier: 
     }
 }
 
+/**
+ * Observes every pointer interaction at the shell root (Initial pass, never
+ * consumed) and feeds the engagement tracker: presses, releases, and mouse
+ * movement beyond a threshold keep the active interval alive. This is what
+ * makes "study time" activity-based instead of app-open time.
+ */
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.trackGlobalActivity(state: AppState) {
+    awaitPointerEventScope {
+        var lastMove = androidx.compose.ui.geometry.Offset.Unspecified
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            when (event.type) {
+                // Clicks and drags are unambiguous interactions.
+                PointerEventType.Press, PointerEventType.Release ->
+                    state.activity.recordSignal(SignalContext.General)
+                // Hover / wheel-scroll movement counts too — reading and
+                // scrolling are activity even without a click. Throttled by
+                // a distance threshold so micro-jitter never spams signals.
+                PointerEventType.Move -> {
+                    val pos = event.changes.firstOrNull()?.position ?: continue
+                    if (lastMove == androidx.compose.ui.geometry.Offset.Unspecified ||
+                        (pos - lastMove).getDistance() > 48f
+                    ) {
+                        lastMove = pos
+                        state.activity.recordSignal(SignalContext.General)
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+}
+
 private fun handleGlobalKey(state: AppState, event: KeyEvent): Boolean {
     if (event.type != KeyEventType.KeyDown) return false
+    // Any keypress is a real interaction — keeps the engagement alive.
+    state.activity.recordSignal(SignalContext.General)
     val name = keyName(event.key)
     // The media workspace owns its immersion hotkeys while it is the active
     // view. Chords are resolved against the configurable media catalog, so
@@ -395,24 +489,28 @@ private fun keyName(key: Key): String = when (key) {
 
 @Composable
 private fun WorkspaceContent(state: AppState) {
-    // Tab switches slide + fade between views. The direction follows the
-    // navigation order — moving forward slides left, moving back slides
-    // right — and the duration honors the animation speed / reduced-motion
-    // configuration.
+    // Every tab is an independent session: switching tabs animates between
+    // them (slide follows tab order), and each tab's subtree is recreated so
+    // per-instance state (browser query, view mode, selection) is restored
+    // from the tab snapshot. The duration honors the animation speed /
+    // reduced-motion configuration.
     val duration = tweenDuration(LocalAnimationConfig.current, 280)
     val slideMotion = tween<IntOffset>(duration)
     val fadeMotion = tween<Float>(duration)
 
     AnimatedContent(
-        targetState = state.currentView,
-        contentKey = { view ->
-            // Browser is a legacy alias for Library — collapse it so
-            // navigating between them doesn't slide identical content.
-            if (view == WorkspaceView.Browser) WorkspaceView.Library else view
-        },
+        targetState = state.contentTarget,
+        contentKey = { target -> "${target.tabId ?: "legacy"}-${normalizedView(target.view).name}" },
         transitionSpec = {
-            val forward = WorkspaceView.entries.indexOf(targetState) >=
-                WorkspaceView.entries.indexOf(initialState)
+            // Direction follows tab order when both sides are tabs; otherwise
+            // fall back to the view order (legacy single-view shell).
+            val fromIdx = state.tabIndexOf(initialState.tabId).takeIf { it >= 0 }
+            val toIdx = state.tabIndexOf(targetState.tabId).takeIf { it >= 0 }
+            val forward = when {
+                fromIdx != null && toIdx != null -> toIdx >= fromIdx
+                else -> WorkspaceView.entries.indexOf(normalizedView(targetState.view)) >=
+                    WorkspaceView.entries.indexOf(normalizedView(initialState.view))
+            }
             val enterSlide =
                 if (forward) slideInHorizontally(slideMotion) { it }
                 else slideInHorizontally(slideMotion) { -it }
@@ -423,8 +521,18 @@ private fun WorkspaceContent(state: AppState) {
                 (exitSlide + fadeOut(fadeMotion))
         },
         label = "workspaceView"
-    ) { view ->
-        when (view) {
+    ) { target ->
+        viewContent(state, target.view)
+    }
+}
+
+/** Browser is a legacy alias for Library — collapse it everywhere. */
+private fun normalizedView(view: WorkspaceView): WorkspaceView =
+    if (view == WorkspaceView.Browser) WorkspaceView.Library else view
+
+@Composable
+private fun viewContent(state: AppState, view: WorkspaceView) {
+    when (view) {
             WorkspaceView.Dashboard -> DashboardView(state)
             // The Library IS the browser — universal search, browsing and
             // editing all live there. Older entry points that navigated to
@@ -438,11 +546,13 @@ private fun WorkspaceContent(state: AppState) {
             WorkspaceView.Ocr -> OcrView(state)
             WorkspaceView.Integrations -> IntegrationsView(state)
             WorkspaceView.Review -> ReviewView(state)
+            WorkspaceView.Exams -> ExamView(state)
             WorkspaceView.Writing -> WritingPracticeView(state)
             WorkspaceView.Grammar -> GrammarPracticeView(state)
             WorkspaceView.Collections -> CollectionsView(state)
             WorkspaceView.Tags -> TagFlagView(state)
             WorkspaceView.Statistics -> StatsView(state)
+            WorkspaceView.Mistakes -> MistakesView(state)
             WorkspaceView.History -> ActivityLogView(state)
             WorkspaceView.Transfer -> TransferView(state)
             WorkspaceView.Sync -> SyncView(state)
@@ -452,7 +562,6 @@ private fun WorkspaceContent(state: AppState) {
             WorkspaceView.Settings -> SettingsView(state)
             WorkspaceView.Account -> AccountView(state)
             WorkspaceView.Contributions -> ContributionsView(state)
-        }
     }
 }
 

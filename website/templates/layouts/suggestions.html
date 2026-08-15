@@ -1,0 +1,95 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "suggestions" %}
+{% import "partials/project-macros.html" as pm %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Suggestions</h1>
+  <p class="text-secondary">Propose a plan for Kaiteyo — a feature, a fix, a refactor, a research
+    question, even an architecture change. The official plan is protected: your proposal never
+    edits the roadmap directly. A maintainer reviews it, and if it is accepted it becomes an
+    official roadmap or kanban item, with your original proposal preserved as provenance.</p>
+</header>
+
+<div class="suggestion-actions">
+  <a class="btn btn-primary" href="https://github.com/ValiantZippu/Kaiteyo/issues/new?template=proposal.md" target="_blank" rel="noopener">
+    Submit a proposal
+  </a>
+  <span class="text-secondary">Today proposals are submitted as GitHub issues (a real, working channel).
+    The interactive backend with per-suggestion states and notifications is a documented
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/website/API.md" target="_blank" rel="noopener">API contract</a>,
+    not faked here.</span>
+</div>
+
+<section class="suggestion-section">
+  <h2>How a proposal moves</h2>
+  <ol class="suggestion-workflow">
+    {% for step in suggestion_workflow %}
+    <li class="suggestion-step">
+      <span class="badge badge-muted">{{ step.label }}</span>
+      <p class="card-description">{{ step.description }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="suggestion-section">
+  <h2>What you can propose</h2>
+  <div class="suggestion-types">
+    {% for type in suggestion_types %}
+    <article class="card suggestion-type">
+      <h3>{{ type.label }}</h3>
+      <p class="card-description">{{ type.description }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="suggestion-section">
+  <h2>Proposal template</h2>
+  <p class="card-description">A good proposal answers every field below — do not file
+    &ldquo;Feature request: add X.&rdquo; The more context, the faster the triage.</p>
+  <div class="card proposal-template">
+    <ol>
+      <li><strong>Title</strong> — one line that names the outcome.</li>
+      <li><strong>Problem</strong> — what is missing or broken, with a real scenario.</li>
+      <li><strong>Proposed solution</strong> — what you would build.</li>
+      <li><strong>Why it matters</strong> — who benefits and how.</li>
+      <li><strong>Affected systems</strong> — e.g. Dictionary, Media, Mining, Game.</li>
+      <li><strong>Possible implementation</strong> — rough approach (no code required).</li>
+      <li><strong>Dependencies</strong> — what it needs to exist first.</li>
+      <li><strong>Potential risks</strong> — what could go wrong.</li>
+      <li><strong>Alternatives</strong> — what else was considered.</li>
+      <li><strong>Screenshots / diagrams</strong> — if they help.</li>
+      <li><strong>Related documentation</strong> — links to existing docs.</li>
+      <li><strong>Priority suggestion</strong> — P0 critical / P1 high / P2 medium / P3 low.</li>
+    </ol>
+  </div>
+</section>
+
+{% if suggestion_items %}
+<section class="suggestion-section">
+  <h2>Open proposals</h2>
+  <div class="suggestion-list">
+    {% for item in suggestion_items %}
+    <article class="card suggestion-item" id="suggestion-{{ item.id }}">
+      <div class="suggestion-item-head">
+        <span class="badge badge-muted">#{{ item.id }}</span>
+        {{ pm.status_badge(item.status) }}
+      </div>
+      <h3>{{ item.title }}</h3>
+      <p class="card-description">{{ item.summary }}</p>
+      {% if item.provenance %}<p class="text-secondary">Provenance: {{ item.provenance }}</p>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<section class="card suggestion-empty">
+  <h2>No open proposals are tracked here yet.</h2>
+  <p class="card-description">Active proposals live in the GitHub issue tracker until the
+    suggestions backend ships. <a href="https://github.com/ValiantZippu/Kaiteyo/issues" target="_blank" rel="noopener">Browse them</a>,
+    or be the first to submit one.</p>
+</section>
+{% endif %}
+{% endblock %}

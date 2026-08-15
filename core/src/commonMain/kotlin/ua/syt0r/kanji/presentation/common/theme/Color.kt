@@ -1,6 +1,44 @@
 package ua.syt0r.kanji.presentation.common.theme
 
 import androidx.compose.ui.graphics.Color
+import kotlin.math.roundToInt
+
+// ============================================
+// KMP-SAFE COLOR CODECS
+// Used by the persisted ThemeSettings (custom
+// accent colors survive restarts) and the Theme
+// Studio export/import (clipboard JSON). No
+// java.* / JVM-only APIs — safe on all targets.
+// ============================================
+
+/** `#RRGGBB` (optionally `#RRGGBBAA`) — KMP-safe, no String.format. */
+fun Color.toHexString(includeAlpha: Boolean = false): String {
+    fun byte(value: Float): String =
+        (value * 255).roundToInt().coerceIn(0, 255).toString(16).padStart(2, '0').uppercase()
+    val base = "#${byte(red)}${byte(green)}${byte(blue)}"
+    return if (includeAlpha) "$base${byte(alpha)}" else base
+}
+
+/** Parses `#RRGGBB` / `#RRGGBBAA` back into a [Color], or null on garbage. */
+fun parseColorHex(hex: String): Color? {
+    val h = hex.removePrefix("#")
+    val value = h.toLongOrNull(16) ?: return null
+    return when (h.length) {
+        6 -> Color(
+            ((value shr 16) and 0xFF) / 255f,
+            ((value shr 8) and 0xFF) / 255f,
+            (value and 0xFF) / 255f
+        )
+        8 -> Color(
+            ((value shr 24) and 0xFF) / 255f,
+            ((value shr 16) and 0xFF) / 255f,
+            ((value shr 8) and 0xFF) / 255f,
+            (value and 0xFF) / 255f
+        )
+        else -> null
+    }
+}
+
 
 // ============================================
 // KAITEYO v1.2.0 — Color System

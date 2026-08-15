@@ -50,6 +50,7 @@ import ua.syt0r.kanji.presentation.common.clickable
 import ua.syt0r.kanji.presentation.common.detectUrlClick
 import ua.syt0r.kanji.presentation.common.jsonSaver
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.DeckPickerScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerCategory
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerDeck
@@ -140,7 +141,11 @@ private fun LoadedState(
     LazyColumn(
         modifier = Modifier.fillMaxSize()
             .wrapContentWidth()
-            .widthIn(max = 400.dp)
+            .widthIn(max = rememberAdaptiveContentMaxWidth(
+                phoneMax = 400.dp,
+                mediumMax = 520.dp,
+                wideMax = 640.dp
+            ))
             .padding(horizontal = 10.dp)
     ) {
 

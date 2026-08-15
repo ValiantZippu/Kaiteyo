@@ -23,6 +23,7 @@ import ua.syt0r.kanji.core.transfer.ImportPreview
 import ua.syt0r.kanji.core.transfer.ImportResult
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // PLUGIN FOUNDATION SYSTEM
@@ -143,7 +144,12 @@ fun PluginManagerScreen(
                     IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") }
                 },
                 actions = {
-                    IconButton(onClick = { }) { Icon(Icons.Default.Refresh, "Refresh") }
+                    // Re-register the built-in plugin set, restoring any that
+                    // were removed, and reset per-plugin error state.
+                    IconButton(onClick = {
+                        pluginManager.registerBuiltins()
+                        pluginManager.getAllPlugins().forEach { it.errorCount = 0; it.lastError = null }
+                    }) { Icon(Icons.Default.Refresh, "Refresh") }
                 }
             )
         }
@@ -185,6 +191,11 @@ fun PluginManagerScreen(
                 if (plugin.enabled) pluginManager.disable(plugin.manifest.id)
                 else pluginManager.enable(plugin.manifest.id)
                 showDetail = null
+            },
+            onApplyConfig = { key, value ->
+                pluginManager.updateConfig(plugin.manifest.id, key, value)
+                plugin.lastError = null
+                plugin.errorCount = 0
             },
             onDismiss = { showDetail = null }
         )
@@ -275,12 +286,13 @@ private fun PluginListItem(
 private fun PluginDetailDialog(
     plugin: PluginRuntime,
     onToggle: () -> Unit,
+    onApplyConfig: (String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var configKey by remember { mutableStateOf("") }
     var configValue by remember { mutableStateOf("") }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(plugin.manifest.name) },
         text = {
@@ -315,22 +327,35 @@ private fun PluginDetailDialog(
                     }
                 }
 
-                // Config (simplified)
-                if (plugin.config.isNotEmpty() || true) {
-                    Text("Configuration", style = MaterialTheme.typography.labelMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        OutlinedTextField(value = configKey, onValueChange = { configKey = it },
-                            placeholder = { Text("Key") }, modifier = Modifier.weight(1f), singleLine = true)
-                        OutlinedTextField(value = configValue, onValueChange = { configValue = it },
-                            placeholder = { Text("Value") }, modifier = Modifier.weight(1f), singleLine = true)
+                // Config — key/value pairs are stored on the plugin runtime.
+                Text("Configuration", style = MaterialTheme.typography.labelMedium)
+                if (plugin.config.isNotEmpty()) {
+                    plugin.config.forEach { (key, value) ->
+                        Text("$key = $value", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedTextField(value = configKey, onValueChange = { configKey = it },
+                        placeholder = { Text("Key") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(value = configValue, onValueChange = { configValue = it },
+                        placeholder = { Text("Value") }, modifier = Modifier.weight(1f), singleLine = true)
                 }
 
                 Text("Extension Point: ${plugin.manifest.extensionPoint.displayName}",
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+        confirmButton = {
+            TextButton(
+                enabled = configKey.isNotBlank() && configValue.isNotBlank(),
+                onClick = {
+                    onApplyConfig(configKey.trim(), configValue.trim())
+                    configKey = ""
+                    configValue = ""
+                }
+            ) { Text("Apply") }
+            TextButton(onClick = onDismiss) { Text("Done") }
+        }
     )
 }
 

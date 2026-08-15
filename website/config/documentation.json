@@ -166,6 +166,17 @@
       "directory": "troubleshooting"
     },
     {
+      "id": "website",
+      "title": "Website & Command Center",
+      "description": "The website architecture, the public project command center, its data model, and the interactive API contracts.",
+      "files": [
+        "website/README.md",
+        "website/ARCHITECTURE.md",
+        "website/DATA_MODEL.md",
+        "website/API.md"
+      ]
+    },
+    {
       "id": "contributing",
       "title": "Contributing",
       "description": "How to contribute to Kaiteyo.",

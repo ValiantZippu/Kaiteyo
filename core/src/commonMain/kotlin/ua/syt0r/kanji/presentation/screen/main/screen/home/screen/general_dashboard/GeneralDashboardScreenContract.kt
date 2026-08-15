@@ -24,6 +24,7 @@ interface GeneralDashboardScreenContract {
             val studyTargets: MutableState<List<StudyTargetState>>,
             val stats: GeneralDashboardStats,
             val recentDecks: List<DashboardDeckSummary>,
+            val allDecks: List<DashboardDeckSummary>,
             val recentActivity: List<KaiteyoActivity>,
             val collections: List<KaiteyoCollection>
         ) : ScreenState

@@ -753,6 +753,14 @@
 },
 {
 "type": "faq",
+"title": "Can I use Kaiteyo with Anki?",
+"url": "/Kaiteyo/faq/#faq-anki",
+"section": "Study & review",
+"excerpt": "Yes, in two real ways. .apkg import/export works on every platform — bring an Anki collection into Kaiteyo (deck hierarchy, notes, cards, tags and scheduling carry over; media is extracted and references repaired) or export Kaiteyo decks to Anki. AnkiConnect (",
+"icon": "help"
+},
+{
+"type": "faq",
 "title": "Can I back up my study data?",
 "url": "/Kaiteyo/faq/#faq-backup",
 "section": "Data & privacy",
@@ -769,10 +777,42 @@
 },
 {
 "type": "faq",
+"title": "How do exams work, and how are they different from reviews?",
+"url": "/Kaiteyo/faq/#faq-exams",
+"section": "Study & review",
+"excerpt": "Exams are generated from your actually studied content — kanji you've studied (with radicals/stroke counts) and vocabulary from your decks — with JLPT distribution, production (free-text) and recognition (multiple-choice) question types, valid distractors, and",
+"icon": "help"
+},
+{
+"type": "faq",
 "title": "Is Kaiteyo free?",
 "url": "/Kaiteyo/faq/#faq-free",
 "section": "Getting started",
 "excerpt": "Yes — entirely. Kaiteyo is free and open-source software released under the GPL-3.0 license. There is no premium tier, no subscriptions, and no paid features planned. The source code is public on GitHub(https://github.com/ValiantZippu/Kaiteyo), and releases ar",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "What formats can Kaiteyo import and export?",
+"url": "/Kaiteyo/faq/#faq-import-export",
+"section": "Data & privacy",
+"excerpt": "Kaiteyo imports and exports JSON, CSV, TSV and TXT decks, plus Anki .apkg packages on every platform — with preview, validation, and conflict policies (Skip / Update / Duplicate). Profile backups archive your data, settings, and window state into a single rest",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "Where does Kaiteyo's kanji and vocabulary data come from?",
+"url": "/Kaiteyo/faq/#faq-kanji-data",
+"section": "Learning",
+"excerpt": "From openly licensed datasets, processed by Kaiteyo's own data pipeline (KJD): KanjiVG for stroke paths and radicals (CC BY-SA 3.0), KANJIDIC for kanji meanings/readings/classifications, JMdict for vocabulary entries, JmdictFurigana for reading segmentation, T",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "How does media mining work, and on which platforms?",
+"url": "/Kaiteyo/faq/#faq-media-mining",
+"section": "Media & mining",
+"excerpt": "The Media Centre (desktop) plays local video and audio through VLC, mpv, or the built-in audio engine. With Japanese subtitles (SRT/ASS/SSA/VTT), you select subtitle text, look it up in the built-in dictionary, and mine it into a deck — the card keeps the sent",
 "icon": "help"
 },
 {
@@ -805,6 +845,38 @@
 "url": "/Kaiteyo/faq/#faq-stroke-grading",
 "section": "Study & review",
 "excerpt": "When you draw a kanji, the app compares your strokes against the reference stroke data (from KanjiVG) in real time. Strokes are graded as you write, and the recognized drawing is matched against the expected character. You can practice with the stroke-order di",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "Is there an account or cloud sync?",
+"url": "/Kaiteyo/faq/#faq-sync-account",
+"section": "Data & privacy",
+"excerpt": "No account is required — Kaiteyo is offline-first and everything works without one. Sync is currently desktop-first and gist-based: an opt-in GitHub gist transport (OAuth device flow) exists in the desktop suite, but there is no central Kaiteyo service. Backup",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "Can I customize how Kaiteyo looks?",
+"url": "/Kaiteyo/faq/#faq-themes",
+"section": "Customization",
+"excerpt": "Yes. Kaiteyo ships base modes (OLED black, dark, light, and sepia reading mode) with seven signature accent schemes, plus configurable animation speed and display density. On desktop there's a full Theme Studio — color editor, gradients, motion presets, layout",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "What is the web trial, and what does it store?",
+"url": "/Kaiteyo/faq/#faq-trial",
+"section": "Getting started",
+"excerpt": "The web trial(/try/) is a working slice of Kaiteyo that runs entirely in your browser — study flashcards, browse kanji and vocabulary, practice writing strokes, and see progress. It uses a small sample dataset (a taste of the bundled N5 data), and every intera",
+"icon": "help"
+},
+{
+"type": "faq",
+"title": "Where can I get help when something doesn't work?",
+"url": "/Kaiteyo/faq/#faq-troubleshooting",
+"section": "Getting started",
+"excerpt": "Start with the FAQ(/faq/), the Documentation(/docs/), and the troubleshooting documentation(/docs/troubleshooting/). For unresolved issues, open a bug report on GitHub issues(https://github.com/ValiantZippu/Kaiteyo/issues) with your platform, app version, and ",
 "icon": "help"
 },
 {
@@ -1089,6 +1161,22 @@
 },
 {
 "type": "wiki",
+"title": "How decks work",
+"url": "/Kaiteyo/wiki/deck-architecture/",
+"section": "",
+"excerpt": "The data model behind collections, decks, cards, and the scheduler state that drives every screen.",
+"icon": "file"
+},
+{
+"type": "wiki",
+"title": "How decks work",
+"url": "/Kaiteyo/wiki/deck-architecture/",
+"section": "Wiki",
+"excerpt": "Decks are the organizing unit of everything you study. This article is how the deck/card data model works.",
+"icon": "compass"
+},
+{
+"type": "wiki",
 "title": "Importing dictionaries",
 "url": "/Kaiteyo/wiki/dictionary-import/",
 "section": "",
@@ -1169,6 +1257,22 @@
 },
 {
 "type": "wiki",
+"title": "How the Media Centre works",
+"url": "/Kaiteyo/wiki/media-engine/",
+"section": "",
+"excerpt": "The media engine — playback backends, subtitle parsing, dictionary integration, and the watch→lookup→mine loop.",
+"icon": "file"
+},
+{
+"type": "wiki",
+"title": "How the Media Centre works",
+"url": "/Kaiteyo/wiki/media-engine/",
+"section": "Wiki",
+"excerpt": "The Media Centre turns your local video and audio into an immersion workspace. This article is how it works.",
+"icon": "compass"
+},
+{
+"type": "wiki",
 "title": "Media workspace",
 "url": "/Kaiteyo/wiki/media-workspace/",
 "section": "",
@@ -1181,6 +1285,22 @@
 "url": "/Kaiteyo/wiki/media-workspace/",
 "section": "Wiki",
 "excerpt": "The Media workspace turns your study materials into a mining source. Open a file and extract sentences, save audio clips, and look up vocabulary as you go.",
+"icon": "compass"
+},
+{
+"type": "wiki",
+"title": "How mining works",
+"url": "/Kaiteyo/wiki/mining-system/",
+"section": "",
+"excerpt": "The mining pipeline — how a word encountered in media becomes a card in your deck.",
+"icon": "file"
+},
+{
+"type": "wiki",
+"title": "How mining works",
+"url": "/Kaiteyo/wiki/mining-system/",
+"section": "Wiki",
+"excerpt": "Mining is the pipeline that turns Japanese you encounter (in media, the browser, OCR, or the clipboard) into study cards. This article is how it works.",
 "icon": "compass"
 },
 {
@@ -1248,6 +1368,182 @@
 "icon": "compass"
 },
 {
+"type": "wiki",
+"title": "How statistics work",
+"url": "/Kaiteyo/wiki/statistics-engine/",
+"section": "",
+"excerpt": "The architecture behind Kaiteyo's numbers — what's recorded, how it's aggregated, and what each metric means.",
+"icon": "file"
+},
+{
+"type": "wiki",
+"title": "How statistics work",
+"url": "/Kaiteyo/wiki/statistics-engine/",
+"section": "Wiki",
+"excerpt": "Every statistic in Kaiteyo is computed from real database records — nothing is hardcoded or fabricated. This article is the architecture behind the numbers.",
+"icon": "compass"
+},
+{
+"type": "wiki",
+"title": "How theming works",
+"url": "/Kaiteyo/wiki/theme-system/",
+"section": "",
+"excerpt": "The theme architecture — base modes, accent schemes, the Theme Studio, and how a theme is stored.",
+"icon": "file"
+},
+{
+"type": "wiki",
+"title": "How theming works",
+"url": "/Kaiteyo/wiki/theme-system/",
+"section": "Wiki",
+"excerpt": "Kaiteyo's theming isn't a light/dark toggle with a tint — it's a small design system with base modes, accent schemes, and an optional full editor.",
+"icon": "compass"
+},
+{
+"type": "wiki",
+"title": "The writing evaluator",
+"url": "/Kaiteyo/wiki/writing-evaluator/",
+"section": "",
+"excerpt": "How Kaiteyo grades handwriting — stroke matching, direction, order, and strictness.",
+"icon": "file"
+},
+{
+"type": "wiki",
+"title": "The writing evaluator",
+"url": "/Kaiteyo/wiki/writing-evaluator/",
+"section": "Wiki",
+"excerpt": "When you draw a kanji in Kaiteyo, the evaluator compares your strokes against the reference stroke data in real time. This article is how that works under the hood.",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "Getting started with Japanese",
+"url": "/Kaiteyo/guides/getting-started/",
+"section": "",
+"excerpt": "A calm, realistic on-ramp — how to begin learning Japanese with Kaiteyo, and what order to do things in.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "Getting started with Japanese",
+"url": "/Kaiteyo/guides/getting-started/",
+"section": "Guides",
+"excerpt": "Learning Japanese is a long road, and the first month matters more than the first hour. This guide is the on-ramp we'd recommend to a friend: what to learn first, what to install, and how to make the habit stick without burning out.",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "How to learn kanji",
+"url": "/Kaiteyo/guides/how-to-learn-kanji/",
+"section": "",
+"excerpt": "Kanji isn't memorisation by brute force — it's a loop of seeing, writing, and meeting characters again. How to run that loop in Kaiteyo.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "How to learn kanji",
+"url": "/Kaiteyo/guides/how-to-learn-kanji/",
+"section": "Guides",
+"excerpt": "There are thousands of kanji, which sounds like a wall. But you don't need thousands — you need the first two hundred done properly, and then the system carries you. This guide is how to learn kanji with Kaiteyo's loop: see it, write it, meet it again.",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "How to use spaced repetition",
+"url": "/Kaiteyo/guides/how-to-use-srs/",
+"section": "",
+"excerpt": "SRS is the engine under everything — how to grade honestly, trust the intervals, and keep the queue healthy.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "How to use spaced repetition",
+"url": "/Kaiteyo/guides/how-to-use-srs/",
+"section": "Guides",
+"excerpt": "Spaced repetition (SRS) is why you can learn hundreds of characters without drowning in reviews. It's simple in principle: show a card right before you'd forget it. This guide is how to use the scheduler in Kaiteyo — grading honestly, trusting the intervals, a",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "Kaiteyo and Anki",
+"url": "/Kaiteyo/guides/kaiteyo-and-anki/",
+"section": "",
+"excerpt": "How to run Kaiteyo alongside an existing Anki workflow — apkg import/export, AnkiConnect, and which tool does what.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "Kaiteyo and Anki",
+"url": "/Kaiteyo/guides/kaiteyo-and-anki/",
+"section": "Guides",
+"excerpt": "If you already have years of Anki history, the last thing you want is a tool that makes you start over — or one that pretends Anki doesn't exist. Kaiteyo's approach is honest: it's a complete learning environment with its own scheduler and data, and it interop",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "How to mine anime",
+"url": "/Kaiteyo/guides/mining-anime/",
+"section": "",
+"excerpt": "The immersion loop — watch Japanese media, look up words, and turn them into cards without breaking the episode.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "How to mine anime",
+"url": "/Kaiteyo/guides/mining-anime/",
+"section": "Guides",
+"excerpt": "Mining is the skill of turning the Japanese you encounter in the wild into cards you'll actually review. Anime with subtitles is the classic source, and Kaiteyo's Media Centre makes the loop: watch → understand → look up → mine → review.",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "How to practice writing",
+"url": "/Kaiteyo/guides/practice-writing/",
+"section": "",
+"excerpt": "Stroke-order practice is Kaiteyo's secret weapon — how the evaluator grades you, how strictness works, and how to build the writing habit.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "How to practice writing",
+"url": "/Kaiteyo/guides/practice-writing/",
+"section": "Guides",
+"excerpt": "Reading kanji is recognition; writing kanji is ownership. Kaiteyo's writing practice turns handwriting into a graded, trackable skill — every stroke evaluated in real time, every attempt feeding your statistics. Here's how to use it properly.",
+"icon": "compass"
+},
+{
+"type": "guide",
+"title": "Understanding your statistics",
+"url": "/Kaiteyo/guides/understand-statistics/",
+"section": "",
+"excerpt": "Every statistic in Kaiteyo answers a question. Here's what the numbers mean and how to use them without obsessing.",
+"icon": "file"
+},
+{
+"type": "guide",
+"title": "Understanding your statistics",
+"url": "/Kaiteyo/guides/understand-statistics/",
+"section": "Guides",
+"excerpt": "Kaiteyo's statistics are computed from your actual review history — no fabricated charts, no numbers that contradict the rest of the app. This guide is what each group of numbers is actually telling you.",
+"icon": "compass"
+},
+{
+"type": "page",
+"title": "About",
+"url": "/Kaiteyo/about/",
+"section": "",
+"excerpt": "What Kaiteyo is, why it exists, and the philosophy behind it — an independent, connected, offline-first Japanese-learning environment.",
+"icon": "file"
+},
+{
+"type": "page",
+"title": "Community",
+"url": "/Kaiteyo/community/",
+"section": "",
+"excerpt": "Where Kaiteyo lives — GitHub, discussions, contributing, and how to get involved.",
+"icon": "file"
+},
+{
 "type": "page",
 "title": "Contributing",
 "url": "/Kaiteyo/contributing/",
@@ -1265,10 +1561,18 @@
 },
 {
 "type": "page",
+"title": "Data & Attribution",
+"url": "/Kaiteyo/data/",
+"section": "",
+"excerpt": "The open datasets Kaiteyo uses, their licenses, sources, and how each one is used.",
+"icon": "file"
+},
+{
+"type": "page",
 "title": "Download",
 "url": "/Kaiteyo/download/",
 "section": "",
-"excerpt": "Get Kaiteyo for Windows, macOS, Linux, Android, or iOS — free and open source.",
+"excerpt": "Get Kaiteyo for Windows, macOS, Linux, Android, or iOS — free and open source. Stable and beta channels, all architectures.",
 "icon": "file"
 },
 {
@@ -1289,6 +1593,30 @@
 },
 {
 "type": "page",
+"title": "Install",
+"url": "/Kaiteyo/install/",
+"section": "",
+"excerpt": "Install Kaiteyo on Windows, macOS, Linux, Android or iOS — plus how to try it in the browser first.",
+"icon": "file"
+},
+{
+"type": "page",
+"title": "Integrations",
+"url": "/Kaiteyo/integrations/",
+"section": "",
+"excerpt": "How Kaiteyo works with Anki, Yomitan dictionaries, media players, browser tools, and its own local API — what exists today, and what is planned.",
+"icon": "file"
+},
+{
+"type": "page",
+"title": "Learn",
+"url": "/Kaiteyo/learn/",
+"section": "",
+"excerpt": "The Kaiteyo learning hub — guides, getting-started material, and links to the Wiki, FAQ and documentation.",
+"icon": "file"
+},
+{
+"type": "page",
 "title": "License",
 "url": "/Kaiteyo/license/",
 "section": "",
@@ -1300,7 +1628,7 @@
 "title": "Plugins",
 "url": "/Kaiteyo/plugins/",
 "section": "",
-"excerpt": "Kaiteyo's plugin plans and the extension points on the roadmap.",
+"excerpt": "Kaiteyo's plugin plans and current extension points — an honest status of what exists today and what is planned.",
 "icon": "file"
 },
 {
@@ -1309,6 +1637,14 @@
 "url": "/Kaiteyo/privacy/",
 "section": "",
 "excerpt": "Kaiteyo is offline-first — your study data never leaves your device.",
+"icon": "file"
+},
+{
+"type": "page",
+"title": "Product",
+"url": "/Kaiteyo/product/",
+"section": "",
+"excerpt": "The full Kaiteyo story — learning, writing, decks, media, mining, statistics, exams and customization, explained as one connected system.",
 "icon": "file"
 },
 {
@@ -1329,10 +1665,26 @@
 },
 {
 "type": "page",
+"title": "Security",
+"url": "/Kaiteyo/security/",
+"section": "",
+"excerpt": "How Kaiteyo handles security — reporting vulnerabilities, our security posture, and what the app does and doesn't do with your data.",
+"icon": "file"
+},
+{
+"type": "page",
 "title": "Theme Gallery",
 "url": "/Kaiteyo/theme-gallery/",
 "section": "",
 "excerpt": "Every theme, base mode, and accent — applied live, the way you will find them in the app.",
 "icon": "file"
+},
+{
+"type": "page",
+"title": "Try Kaiteyo — Web Trial",
+"url": "/Kaiteyo/try/",
+"section": "Learn",
+"excerpt": "A working slice of Kaiteyo in your browser — flashcards, kanji, vocabulary, writing practice, and progress. Sample data, nothing leaves your device.",
+"icon": "sparkles"
 }
 ]

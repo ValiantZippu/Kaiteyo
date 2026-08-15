@@ -76,6 +76,25 @@ object JapaneseStrings : Strings {
 
     override val center: SettingsCenterStrings = JapaneseSettingsCenterStrings
 
+    override val mediaCentre: MediaCentreStrings = JapaneseMediaCentreStrings
+
+}
+
+object JapaneseMediaCentreStrings : MediaCentreStrings {
+    override val title: String = "メディアセンター"
+    override val desktopOnlyTitle: String = "メディアセンターはデスクトップ限定機能です"
+    override val desktopOnlyMessage: String =
+        "プレイヤー・字幕・辞書・マイニングを備えたイマージョンワークスペースはデスクトップアプリで利用できます。パソコンでKaiteyoを開いてお使いください。"
+    override val backButton: String = "戻る"
+    override val featuresTitle: String = "デスクトップのメディアセンターでできること"
+    override val featurePlayer: String =
+        "日本語字幕対応の動画・音声プレイヤー（VLC / mpv）"
+    override val featureLibrary: String =
+        "フォルダ・プレイリスト・視聴進捗に対応したメディアライブラリ"
+    override val featureDictionary: String =
+        "字幕の単語をクリックして辞書・アクセント・頻度を表示"
+    override val featureMining: String =
+        "センテンス・スクリーンショット・音声付きでカードを作成（KaiteyoデッキまたはAnkiへ）"
 }
 
 object JapaneseSettingsCenterStrings : SettingsCenterStrings {
@@ -323,9 +342,11 @@ object JapaneseNavStrings : NavStrings {
     override val homeLabel: String = "ホーム"
     override val libraryLabel: String = JapaneseHomeStrings.libraryTabLabel
     override val studyLabel: String = "学習"
+    override val browseLabel: String = "ブラウズ"
     override val dictionaryLabel: String = "辞書"
     override val statisticsLabel: String = JapaneseHomeStrings.statsTabLabel
     override val collectionsLabel: String = "コレクション"
+    override val mediaLabel: String = "メディア"
 
     override val generalTabLabel: String = "一般"
     override val sidebarTabLabel: String = "サイドバー"
@@ -341,6 +362,15 @@ object JapaneseNavStrings : NavStrings {
     override val bubbleIconSizeLabel: String = "アイコンサイズ"
     override val snapPositionLabel: String = "スナップ位置"
     override val sidebarLayoutLabel: String = "サイドバーのレイアウト"
+    override val holdDurationLabel: String = "長押し時間"
+    override val safeMarginLabel: String = "セーフマージン"
+    override val autoHideLabel: String = "自動非表示"
+    override val autoHideNever: String = "なし"
+    override val autoHideTenSeconds: String = "10秒"
+    override val autoHideTwentySeconds: String = "20秒"
+    override val autoHideThirtySeconds: String = "30秒"
+    override val autoHideOneMinute: String = "1分"
+    override val autoHideCustom: String = "カスタム"
 
     override val phoneNavPositionLabel: String = "ナビゲーション位置"
     override val phoneLauncherPositionLabel: String = "ランチャー位置"
@@ -935,6 +965,12 @@ object JapaneseCommonPracticeStrings : CommonPracticeStrings {
     override val writingStrokeAccuracyTitle: String = "字画の正確さ"
     override val writingStrokeAccuracy: (Int) -> String = { "字画の正確さ: $it%" }
     override val writingWrongOrder: (Int) -> String = { "書き順ミス: $it" }
+
+    override val reviewSessionTitle: String = "セッション"
+    override val reviewDeckLabel: String = "デッキ"
+    override val reviewStreakLabel: String = "連続記録"
+    override val reviewProgressPosition: (Int, Int) -> String = { current, total -> "$current / $total 枚目" }
+    override val reviewStreakDays: (Int) -> String = { "$it 日" }
 
 }
 

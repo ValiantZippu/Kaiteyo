@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.BuildConfig
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.dialog.VersionChangeDialog
 
@@ -93,6 +94,9 @@ fun AboutScreenUI(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // The Kaiteyo mark — centralized brand asset (theme-aware).
+                BrandMark(modifier = Modifier.size(72.dp))
+                Spacer(Modifier.height(12.dp))
                 Text(
                     text = resolveString { appName },
                     style = MaterialTheme.typography.headlineMedium,

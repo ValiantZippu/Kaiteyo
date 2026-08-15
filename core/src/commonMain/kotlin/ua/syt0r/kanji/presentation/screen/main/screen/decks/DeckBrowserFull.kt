@@ -25,6 +25,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // KAITEYO v1.2 — FULL DECK BROWSER
@@ -38,10 +39,15 @@ fun DeckBrowserFullScreen(
     decks: List<KaiteyoDeck>,
     onDeckClick: (KaiteyoDeck) -> Unit = {},
     onFavorite: (KaiteyoDeck) -> Unit = {},
+    onPin: (KaiteyoDeck) -> Unit = {},
     onArchive: (KaiteyoDeck) -> Unit = {},
     onMerge: (KaiteyoDeck, KaiteyoDeck) -> Unit = { _, _ -> },
     onMove: (KaiteyoDeck, KaiteyoDeck) -> Unit = { _, _ -> },
-    onCreateDeck: (String, String?) -> Unit = { _, _ -> },
+    onRename: (KaiteyoDeck, String) -> Unit = { _, _ -> },
+    onDelete: (KaiteyoDeck) -> Unit = {},
+    onCreateDeck: (String, String, String?) -> Unit = { _, _, _ -> },
+    onBrowse: (KaiteyoDeck) -> Unit = {},
+    onFindContent: (KaiteyoDeck) -> Unit = {},
     onClose: () -> Unit = {}
 ) {
     val surfaceColors = LocalSurfaceColors.current
@@ -187,6 +193,7 @@ fun DeckBrowserFullScreen(
                                     },
                                     onSelect = { selectedDeckId = it.deck.id; onDeckClick(it.deck) },
                                     onFavorite = { onFavorite(it) },
+                                    onPin = { onPin(it) },
                                     onArchive = { onArchive(it) },
                                     onDragStart = { deck -> isDragging = true; draggedDeck = deck },
                                     onDragOver = { id -> dragOverDeckId = id },
@@ -205,6 +212,7 @@ fun DeckBrowserFullScreen(
                                     onEdit = { showEditDialog = it },
                                     onDelete = { showDeleteConfirm = it },
                                     onMerge = { source -> mergeSource = source; showMergeDialog = true },
+                                    onBrowse = { onBrowse(it) },
                                     surfaceColors = surfaceColors,
                                     accent = accent
                                 )
@@ -220,9 +228,11 @@ fun DeckBrowserFullScreen(
                                     isDragOver = node.deck.id == dragOverDeckId,
                                     onClick = { selectedDeckId = node.deck.id; onDeckClick(node.deck) },
                                     onFavorite = { onFavorite(node.deck) },
+                                    onPin = { onPin(node.deck) },
                                     onArchive = { onArchive(node.deck) },
                                     onEdit = { showEditDialog = node.deck },
                                     onDelete = { showDeleteConfirm = node.deck },
+                                    onBrowse = { onBrowse(node.deck) },
                                     surfaceColors = surfaceColors,
                                     accent = accent
                                 )
@@ -250,6 +260,8 @@ fun DeckBrowserFullScreen(
                     DeckDetailBar(
                         deck = selectedDeck,
                         onClose = { selectedDeckId = null },
+                        onBrowse = { onBrowse(selectedDeck) },
+                        onFindContent = { onFindContent(selectedDeck) },
                         surfaceColors = surfaceColors,
                         accent = accent
                     )
@@ -262,7 +274,7 @@ fun DeckBrowserFullScreen(
     if (showCreateDialog) {
         DeckCreateDialog(
             decks = decks,
-            onConfirm = { name, parentId -> onCreateDeck(name, parentId); showCreateDialog = false },
+            onConfirm = { name, type, parentId -> onCreateDeck(name, type, parentId); showCreateDialog = false },
             onDismiss = { showCreateDialog = false }
         )
     }
@@ -270,7 +282,8 @@ fun DeckBrowserFullScreen(
     showEditDialog?.let { deck ->
         DeckEditDialog(
             deck = deck,
-            onConfirm = { name, description ->
+            onConfirm = { name, _ ->
+                onRename(deck, name)
                 showEditDialog = null
             },
             onDismiss = { showEditDialog = null }
@@ -291,11 +304,16 @@ fun DeckBrowserFullScreen(
     }
 
     showDeleteConfirm?.let { deck ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
             title = { Text("Delete Deck") },
-            text = { Text("Delete \"${deck.name}\" and all ${deck.cardCount} cards?") },
-            confirmButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
+            text = { Text("Delete \"${deck.name}\" and its ${deck.cardCount} cards? This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete(deck)
+                    showDeleteConfirm = null
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
             dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("Cancel") } }
         )
     }
@@ -450,6 +468,7 @@ private fun DeckTreeRow(
     onToggleExpand: (String) -> Unit,
     onSelect: (DeckTreeItem) -> Unit,
     onFavorite: (KaiteyoDeck) -> Unit,
+    onPin: (KaiteyoDeck) -> Unit = {},
     onArchive: (KaiteyoDeck) -> Unit,
     onDragStart: (KaiteyoDeck) -> Unit,
     onDragOver: (String) -> Unit,
@@ -457,6 +476,7 @@ private fun DeckTreeRow(
     onEdit: (KaiteyoDeck) -> Unit,
     onDelete: (KaiteyoDeck) -> Unit,
     onMerge: (KaiteyoDeck) -> Unit,
+    onBrowse: (KaiteyoDeck) -> Unit = {},
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
@@ -575,6 +595,16 @@ private fun DeckTreeRow(
                         leadingIcon = { Icon(if (deck.isFavorite) Icons.Default.StarBorder else Icons.Default.Star, null, Modifier.size(18.dp)) }
                     )
                     DropdownMenuItem(
+                        text = { Text(if (deck.isPinned) "Unpin" else "Pin") },
+                        onClick = { showMenu = false; onPin(deck) },
+                        leadingIcon = { Icon(Icons.Default.PushPin, null, Modifier.size(18.dp)) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("View Cards") },
+                        onClick = { showMenu = false; onBrowse(deck) },
+                        leadingIcon = { Icon(Icons.Default.ViewList, null, Modifier.size(18.dp)) }
+                    )
+                    DropdownMenuItem(
                         text = { Text(if (deck.isArchived) "Unarchive" else "Archive") },
                         onClick = { showMenu = false; onArchive(deck) },
                         leadingIcon = { Icon(Icons.Default.Archive, null, Modifier.size(18.dp)) }
@@ -602,6 +632,7 @@ private fun DeckTreeRow(
                     onToggleExpand = onToggleExpand,
                     onSelect = onSelect,
                     onFavorite = onFavorite,
+                    onPin = onPin,
                     onArchive = onArchive,
                     onDragStart = onDragStart,
                     onDragOver = onDragOver,
@@ -609,6 +640,7 @@ private fun DeckTreeRow(
                     onEdit = onEdit,
                     onDelete = onDelete,
                     onMerge = onMerge,
+                    onBrowse = onBrowse,
                     surfaceColors = surfaceColors,
                     accent = accent
                 )
@@ -630,9 +662,11 @@ private fun DeckListItem(
     isDragOver: Boolean,
     onClick: () -> Unit,
     onFavorite: () -> Unit,
+    onPin: () -> Unit = {},
     onArchive: () -> Unit,
     onEdit: (KaiteyoDeck) -> Unit,
     onDelete: (KaiteyoDeck) -> Unit,
+    onBrowse: (KaiteyoDeck) -> Unit = {},
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
@@ -673,6 +707,10 @@ private fun DeckListItem(
                     leadingIcon = { Icon(Icons.Default.Edit, null, Modifier.size(18.dp)) })
                 DropdownMenuItem(text = { Text("Favorite") }, onClick = { showMenu = false; onFavorite() },
                     leadingIcon = { Icon(Icons.Default.Star, null, Modifier.size(18.dp)) })
+                DropdownMenuItem(text = { Text("Pin") }, onClick = { showMenu = false; onPin() },
+                    leadingIcon = { Icon(Icons.Default.PushPin, null, Modifier.size(18.dp)) })
+                DropdownMenuItem(text = { Text("View Cards") }, onClick = { showMenu = false; onBrowse(deck) },
+                    leadingIcon = { Icon(Icons.Default.ViewList, null, Modifier.size(18.dp)) })
                 DropdownMenuItem(text = { Text("Archive") }, onClick = { showMenu = false; onArchive() },
                     leadingIcon = { Icon(Icons.Default.Archive, null, Modifier.size(18.dp)) })
                 HorizontalDivider()
@@ -730,6 +768,8 @@ private fun DeckCompactItem(
 private fun DeckDetailBar(
     deck: KaiteyoDeck,
     onClose: () -> Unit,
+    onBrowse: (KaiteyoDeck) -> Unit = {},
+    onFindContent: (KaiteyoDeck) -> Unit = {},
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
@@ -738,10 +778,11 @@ private fun DeckDetailBar(
         color = surfaceColors.surfaceElevated,
         shadowElevation = 8.dp
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             Column(Modifier.weight(1f)) {
                 Text(deck.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = surfaceColors.textPrimary)
                 Text(deck.description, fontSize = 11.sp, color = surfaceColors.textMuted, maxLines = 1)
@@ -769,6 +810,35 @@ private fun DeckDetailBar(
             IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
                 Icon(Icons.Default.Close, "Close", Modifier.size(18.dp))
             }
+            }
+            // Empty deck: real next action instead of a dead end. "Browse
+            // Content" opens the library search to add kanji/vocabulary;
+            // "View Cards" still opens the (empty) card browser for context.
+            if (deck.cardCount == 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info, null,
+                        modifier = Modifier.size(16.dp),
+                        tint = accent.primary
+                    )
+                    Text(
+                        "This deck is empty — add kanji or vocabulary to start studying.",
+                        fontSize = 11.sp,
+                        color = surfaceColors.textMuted,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = { onFindContent(deck) }) {
+                        Text("Browse Content", fontSize = 12.sp)
+                    }
+                    TextButton(onClick = { onBrowse(deck) }) {
+                        Text("View Cards", fontSize = 12.sp)
+                    }
+                }
+            }
         }
     }
 }
@@ -780,16 +850,17 @@ private fun DeckDetailBar(
 @Composable
 private fun DeckCreateDialog(
     decks: List<KaiteyoDeck>,
-    onConfirm: (String, String?) -> Unit,
+    onConfirm: (String, String, String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
+    var deckType by remember { mutableStateOf("kanji") }
     var parentId by remember { mutableStateOf<String?>(null) }
     var description by remember { mutableStateOf("") }
 
     val rootDecks = decks.filter { it.parentId == null && !it.isArchived }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create Deck") },
         text = {
@@ -801,6 +872,19 @@ private fun DeckCreateDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                // Deck type decides which real repository owns the deck:
+                // kanji decks hold characters, vocabulary decks hold words.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Type", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(52.dp))
+                    listOf("kanji" to "Kanji", "vocabulary" to "Vocabulary").forEach { (value, label) ->
+                        FilterChip(
+                            selected = deckType == value,
+                            onClick = { deckType = value },
+                            label = { Text(label, fontSize = 12.sp) },
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
@@ -830,7 +914,7 @@ private fun DeckCreateDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(name, parentId) }, enabled = name.isNotBlank()) { Text("Create") } },
+        confirmButton = { TextButton(onClick = { onConfirm(name, deckType, parentId) }, enabled = name.isNotBlank()) { Text("Create") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
@@ -844,7 +928,7 @@ private fun DeckEditDialog(
     var name by remember { mutableStateOf(deck.name) }
     var description by remember { mutableStateOf(deck.description) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Deck") },
         text = {
@@ -867,7 +951,7 @@ private fun DeckMergeDialog(
 ) {
     var targetId by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Merge Deck") },
         text = {

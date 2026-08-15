@@ -116,7 +116,10 @@ data class VocabExampleSentence(
 data class VocabPracticeReviewState(
     val progress: PracticeQueueProgress,
     val reviewState: VocabReviewState,
-    val answers: PracticeAnswers
+    val answers: PracticeAnswers,
+    // Desktop context panel data (loaded by the ViewModel once per session).
+    val deckTitle: String? = null,
+    val currentStreak: Int = 0
 )
 
 data class VocabSummaryItem(

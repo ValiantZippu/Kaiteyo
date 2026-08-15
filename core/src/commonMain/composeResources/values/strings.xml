@@ -23,12 +23,20 @@
     <string name="general_dashboard_header_streak_longest">Longest Streak</string>
     <string name="general_dashboard_header_reviews">Reviews Today</string>
     <string name="general_dashboard_header_total_reviews">Total Reviews</string>
+    <string name="general_dashboard_header_decks">Decks</string>
+    <string name="general_dashboard_header_new">New</string>
+    <string name="general_dashboard_header_learning">Learning</string>
+    <string name="general_dashboard_header_due">Due</string>
 
     <string name="general_dashboard_continue_studying">Continue Studying</string>
     <string name="general_dashboard_continue_studying_subtitle">%1$s cards ready for today</string>
     <string name="general_dashboard_study_now">Study Now</string>
     <string name="general_dashboard_today_progress">Today\'s Progress</string>
     <string name="general_dashboard_weekly_summary">Last 7 Days</string>
+    <string name="general_dashboard_activity">Activity</string>
+    <string name="general_dashboard_activity_less">Less</string>
+    <string name="general_dashboard_activity_more">More</string>
+    <string name="general_dashboard_your_decks">Your Decks</string>
     <string name="general_dashboard_recent_decks">Recent Decks</string>
     <string name="general_dashboard_recent_activity">Recent Activity</string>
     <string name="general_dashboard_quick_actions">Quick Actions</string>

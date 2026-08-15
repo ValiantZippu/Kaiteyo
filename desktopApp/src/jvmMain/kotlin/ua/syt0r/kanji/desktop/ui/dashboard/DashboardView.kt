@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,13 +32,18 @@ import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
@@ -56,16 +62,20 @@ import ua.syt0r.kanji.desktop.designsystem.dueColor
 import ua.syt0r.kanji.desktop.designsystem.errorColor
 import ua.syt0r.kanji.desktop.designsystem.infoColor
 import ua.syt0r.kanji.desktop.designsystem.newColor
+import ua.syt0r.kanji.desktop.designsystem.rememberWidthTier
 import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.engine.media.MediaEngine
+import ua.syt0r.kanji.desktop.engine.settings.SettingsEngine
 import ua.syt0r.kanji.desktop.engine.stats.GoalsEngine
 import ua.syt0r.kanji.desktop.engine.stats.HeatmapEngine
+import ua.syt0r.kanji.desktop.engine.stats.KnowledgeProfileEngine
 import ua.syt0r.kanji.desktop.engine.stats.LearningCurveEngine
 import ua.syt0r.kanji.desktop.engine.stats.HeatmapCell
 import ua.syt0r.kanji.desktop.engine.stats.WeakSpotEngine
 import ua.syt0r.kanji.desktop.model.CollectionDef
+import ua.syt0r.kanji.desktop.model.CollectionKind
 import ua.syt0r.kanji.desktop.model.SrsStatus
 import ua.syt0r.kanji.desktop.model.StudyMode
 import kotlinx.datetime.Clock
@@ -145,6 +155,9 @@ fun DashboardView(state: AppState) {
             }
         }
 
+        // Study target — the user's configured daily review goal, live.
+        StudyTargetCard(state)
+
         // Quick actions
         DsCard {
             Row(
@@ -189,11 +202,11 @@ fun DashboardView(state: AppState) {
                     onClick = { state.newCard() }
                 )
                 DsButton(
-                    text = "Collections",
+                    text = "Library",
                     icon = Icons.Default.Folder,
                     kind = DsButtonKind.Secondary,
                     compact = true,
-                    onClick = { state.currentView = WorkspaceView.Collections }
+                    onClick = { state.currentView = WorkspaceView.Library }
                 )
             }
         }
@@ -262,6 +275,10 @@ fun DashboardView(state: AppState) {
             )
         }
 
+        // Knowledge snapshot — study-based estimate of what the learner
+        // can currently handle (kana / kanji / vocabulary / writing).
+        KnowledgeSnapshotCard(state)
+
         // Immersion: media activity today
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
@@ -321,133 +338,47 @@ fun DashboardView(state: AppState) {
             }
         }
 
-        // Heatmap + curve row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
-        ) {
-            DsCard(modifier = Modifier.weight(1.35f)) {
-                Column(Modifier.padding(DsSpacing.Lg)) {
-                    DsSectionHeader(
-                        title = "Activity Heatmap",
-                        subtitle = "${HeatmapEngine.currentStreak(state.summaries)} day streak",
-                        action = {
-                            DsBadge(text = "last 52 weeks")
-                        }
-                    )
-                    Spacer(Modifier.height(DsSpacing.Lg))
-                    HeatmapChart(state.summaries)
-                }
-            }
-            DsCard(modifier = Modifier.weight(1f)) {
-                Column(Modifier.padding(DsSpacing.Lg)) {
-                    DsSectionHeader(
-                        title = "Review Pace",
-                        subtitle = "Daily reviews, last 30 days"
-                    )
-                    Spacer(Modifier.height(DsSpacing.Lg))
-                    ReviewPaceChart(state.summaries)
-                }
-            }
-        }
-
-        // Goals + weak spots row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
-        ) {
-            DsCard(modifier = Modifier.weight(1f)) {
-                Column(Modifier.padding(DsSpacing.Lg)) {
-                    DsSectionHeader(
-                        title = "Goals",
-                        subtitle = "Progress toward your targets",
-                        action = {
-                            androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Statistics }) {
-                                androidx.compose.material3.Text("All stats", color = accent().primary)
-                            }
-                        }
-                    )
-                    Spacer(Modifier.height(DsSpacing.Md))
-                    GoalsEngine.defaultGoals().take(4).forEach { goal ->
-                        val progress = GoalsEngine.progress(goal, state.summaries)
-                        Column(Modifier.padding(vertical = DsSpacing.Sm)) {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = goal.name,
-                                    color = sc.textPrimary,
-                                    fontSize = DsType.Body,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = "${progress.achieved} / ${progress.target}",
-                                    color = if (progress.complete) successColor() else sc.textMuted,
-                                    fontSize = DsType.Caption,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Spacer(Modifier.height(4.dp))
-                            DsProgressBar(
-                                fraction = progress.fraction,
-                                color = if (progress.complete) successColor() else Color.Unspecified
-                            )
-                        }
+        // Lower cards: 2-up normally; above 1440dp the cards flow into more
+        // columns (charts + goals 3-up, deck lists 4-up) so a wide window is
+        // actually used instead of parking cards in the middle.
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val wide = rememberWidthTier(maxWidth) >= 3
+            Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
+                if (wide) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        HeatmapCard(state, Modifier.weight(1.4f))
+                        ReviewPaceCard(state, Modifier.weight(1f))
+                        GoalsCard(state, Modifier.weight(1f))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        WeakSpotsCard(state, Modifier.weight(1f))
+                        WritingPracticeCard(state, Modifier.weight(1f))
+                        JlptCoverageCard(state, Modifier.weight(1.2f))
+                        DueForecastCard(state, Modifier.weight(1f))
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        HeatmapCard(state, Modifier.weight(1.35f))
+                        ReviewPaceCard(state, Modifier.weight(1f))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        GoalsCard(state, Modifier.weight(1f))
+                        WeakSpotsCard(state, Modifier.weight(1f))
+                        WritingPracticeCard(state, Modifier.weight(1f))
                     }
                 }
-            }
-            DsCard(modifier = Modifier.weight(1f)) {
-                Column(Modifier.padding(DsSpacing.Lg)) {
-                    DsSectionHeader(
-                        title = "Weak Spots",
-                        subtitle = "Cards that need attention"
-                    )
-                    Spacer(Modifier.height(DsSpacing.Md))
-                    val difficult = WeakSpotEngine.mostDifficult(cards.toList(), limit = 4)
-                    difficult.forEach { card ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(DsRadius.Md))
-                                .background(sc.surfaceInteractive.copy(alpha = 0.4f))
-                                .clickable { state.selectedCard = card; state.currentView = WorkspaceView.Browser }
-                                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = card.character,
-                                color = sc.textPrimary,
-                                fontSize = DsType.Title,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.width(48.dp)
-                            )
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    text = card.meaning,
-                                    color = sc.textSecondary,
-                                    fontSize = DsType.Body,
-                                    maxLines = 1
-                                )
-                                Text(
-                                    text = "${card.lapses} lapses · ${(card.accuracy * 100).toInt()}% acc",
-                                    color = sc.textMuted,
-                                    fontSize = DsType.Caption
-                                )
-                            }
-                            DsBadge(text = card.status.name, tint = accent().primary)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                    }
-                    if (difficult.isEmpty()) {
-                        Text(
-                            text = "Nothing to fix yet — keep reviewing!",
-                            color = sc.textMuted,
-                            fontSize = DsType.Body,
-                            modifier = Modifier.padding(DsSpacing.Sm)
-                        )
-                    }
-                }
-            }
-        }
 
         // Recent activity
         DsCard {
@@ -492,25 +423,680 @@ fun DashboardView(state: AppState) {
             }
         }
 
+                // JLPT coverage + due forecast: 2-up on narrow windows; the
+                // wide tier already showed them in the learning row above.
+                if (!wide) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        JlptCoverageCard(state, Modifier.weight(1.2f))
+                        DueForecastCard(state, Modifier.weight(1f))
+                    }
+                }
+
         // Study recommendations
         StudyRecommendationsCard(state)
 
-        // Pinned decks + recent imports
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
-        ) {
-            PinnedDecksCard(state, Modifier.weight(1f))
-            RecentImportsCard(state, Modifier.weight(1f))
-        }
+                // Deck + import lists: 2-up normally, 4-up on wide windows.
+                if (wide) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        PinnedDecksCard(state, Modifier.weight(1f))
+                        RecentImportsCard(state, Modifier.weight(1f))
+                        RecentDecksCard(state, Modifier.weight(1f))
+                        RecentlyAddedCard(state, Modifier.weight(1f))
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        PinnedDecksCard(state, Modifier.weight(1f))
+                        RecentImportsCard(state, Modifier.weight(1f))
+                    }
 
-        // Recent decks + recently added cards
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                    ) {
+                        RecentDecksCard(state, Modifier.weight(1f))
+                        RecentlyAddedCard(state, Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// LOWER CARD SLOTS — individual cards so the
+// wide tier can re-flow them into more columns
+// ============================================
+
+@Composable
+private fun HeatmapCard(state: AppState, modifier: Modifier = Modifier) {
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg)) {
+            DsSectionHeader(
+                title = "Activity Heatmap",
+                subtitle = "${HeatmapEngine.currentStreak(state.summaries)} day streak",
+                action = {
+                    DsBadge(text = "last 52 weeks")
+                }
+            )
+            Spacer(Modifier.height(DsSpacing.Lg))
+            HeatmapChart(state.summaries)
+        }
+    }
+}
+
+@Composable
+private fun ReviewPaceCard(state: AppState, modifier: Modifier = Modifier) {
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg)) {
+            DsSectionHeader(
+                title = "Review Pace",
+                subtitle = "Daily reviews, last 30 days"
+            )
+            Spacer(Modifier.height(DsSpacing.Lg))
+            ReviewPaceChart(state.summaries)
+        }
+    }
+}
+
+/**
+ * Read a settings int as Compose state that updates live: registers a
+ * [SettingsEngine] observer for [key] and refreshes whenever the value
+ * actually changes (including restores), instead of a one-shot read at
+ * composition time. The unsubscribe lambda returned by [SettingsEngine.observe]
+ * is invoked on dispose so navigation away never leaks listeners.
+ */
+@Composable
+private fun rememberSettingsInt(settings: SettingsEngine, key: String, default: Int): Int {
+    var value by remember(settings, key) { mutableStateOf(settings.getInt(key, default)) }
+    DisposableEffect(settings, key) {
+        val unsubscribe = settings.observe { changedKey, _, _ ->
+            if (changedKey == key) value = settings.getInt(key, default)
+        }
+        onDispose(unsubscribe)
+    }
+    return value
+}
+
+@Composable
+private fun GoalsCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg)) {
+            DsSectionHeader(
+                title = "Goals",
+                subtitle = "Progress toward your targets",
+                action = {
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Statistics }) {
+                        androidx.compose.material3.Text("All stats", color = accent().primary)
+                    }
+                }
+            )
+            Spacer(Modifier.height(DsSpacing.Md))
+            val dailyTarget = rememberSettingsInt(state.settings, "stats.daily-target", 20).coerceIn(1, 999)
+            GoalsEngine.defaultGoals(dailyReviewTarget = dailyTarget).take(4).forEach { goal ->
+                val progress = GoalsEngine.progress(goal, state.summaries)
+                Column(Modifier.padding(vertical = DsSpacing.Sm)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = goal.name,
+                            color = sc.textPrimary,
+                            fontSize = DsType.Body,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${progress.achieved} / ${progress.target}",
+                            color = if (progress.complete) successColor() else sc.textMuted,
+                            fontSize = DsType.Caption,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    DsProgressBar(
+                        fraction = progress.fraction,
+                        color = if (progress.complete) successColor() else Color.Unspecified
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// STUDY TARGET — TODAY x / target, remaining,
+// one-click study. Real numbers from today's
+// summaries; the target is configured in
+// Settings → Statistics → Daily review target.
+// ============================================
+
+@Composable
+private fun StudyTargetCard(state: AppState) {
+    val sc = surfaceColors()
+    val target = rememberSettingsInt(state.settings, "stats.daily-target", 20).coerceIn(1, 999)
+    val todayKey = Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
+    val done = state.summaries.firstOrNull { it.day == todayKey }?.reviewCount ?: 0
+    val remaining = (target - done).coerceAtLeast(0)
+    val complete = done >= target
+    val fraction = (done.toFloat() / target).coerceIn(0f, 1f)
+
+    DsCard(elevated = true) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
         ) {
-            RecentDecksCard(state, Modifier.weight(1f))
-            RecentlyAddedCard(state, Modifier.weight(1f))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                ) {
+                    Text(
+                        text = "TODAY",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.5.sp
+                    )
+                    Text(
+                        text = "$done / $target",
+                        color = sc.textPrimary,
+                        fontSize = DsType.Title,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "reviews",
+                        color = sc.textMuted,
+                        fontSize = DsType.Body
+                    )
+                }
+                DsProgressBar(
+                    fraction = fraction,
+                    color = if (complete) successColor() else Color.Unspecified,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = if (complete) {
+                        "Target complete — keep the streak alive!"
+                    } else {
+                        "$remaining review${if (remaining == 1) "" else "s"} remaining to hit your target"
+                    },
+                    color = if (complete) successColor() else sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
+            DsButton(
+                text = if (complete) "Extra review" else "Study now",
+                icon = Icons.Default.PlayArrow,
+                onClick = { state.startReview() }
+            )
+        }
+    }
+}
+
+// ============================================
+// KNOWLEDGE SNAPSHOT — a study-based estimate of
+// what the learner can currently handle. Honest
+// language only: coverage, never fake JLPT scores.
+// ============================================
+
+@Composable
+private fun KnowledgeSnapshotCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val profile = remember(state.learning.revision) { KnowledgeProfileEngine.profile(state) }
+
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+            DsSectionHeader(
+                title = "Knowledge snapshot",
+                subtitle = "Study-based estimate · confidence: ${profile.confidence}",
+                action = {
+                    DsButton(
+                        text = "Full stats",
+                        icon = Icons.Default.BarChart,
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        onClick = { state.currentView = WorkspaceView.Statistics }
+                    )
+                }
+            )
+            if (profile.dimensions.isEmpty()) {
+                Text(
+                    text = "Study something to build your profile — kana, kanji and vocabulary coverage appears here.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                ) {
+                    profile.dimensions.forEach { dim ->
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = dim.label,
+                                    color = sc.textPrimary,
+                                    fontSize = DsType.Body,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    text = "${dim.knownPercent}%",
+                                    color = sc.textMuted,
+                                    fontSize = DsType.Caption,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            DsProgressBar(
+                                fraction = dim.fraction,
+                                color = when {
+                                    dim.fraction >= 0.7f -> successColor()
+                                    dim.fraction >= 0.3f -> warningColor()
+                                    else -> dueColor()
+                                }
+                            )
+                            Text(
+                                text = "${dim.known}/${dim.total} known" +
+                                    (dim.accuracy?.let { " · ${(it * 100).toInt()}% acc" } ?: ""),
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Deck & collection progress — real counts from the library and
+            // collection stores. "Mastered" uses the app-wide convention:
+            // Review status with ≥ 21-day intervals. Smart collections are
+            // dynamic filters, so only Manual/Automatic collections show.
+            Spacer(Modifier.height(DsSpacing.Sm))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(sc.border.copy(alpha = 0.3f))
+            )
+            Spacer(Modifier.height(DsSpacing.Md))
+
+            val deckProgress = remember(state.library.revision, state.cards.size) {
+                buildDeckProgress(state)
+            }
+            val collectionProgress = remember(state.collections.collections, state.cards.size) {
+                buildCollectionProgress(state)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Deck progress",
+                        color = sc.textSecondary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (deckProgress.isEmpty()) {
+                        Text(
+                            text = "No decks with cards yet — import or create one and progress appears here.",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    } else {
+                        deckProgress.forEach { row -> KnowledgeProgressRow(row) }
+                    }
+                }
+                Spacer(Modifier.width(DsSpacing.Md))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Collection progress",
+                        color = sc.textSecondary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (collectionProgress.isEmpty()) {
+                        Text(
+                            text = "No collections yet — build one in Collections and its cards show progress here.",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    } else {
+                        collectionProgress.forEach { row -> KnowledgeProgressRow(row) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** One deck/collection progress line for the knowledge snapshot. */
+private data class KnowledgeProgress(
+    val label: String,
+    val total: Int,
+    val mastered: Int
+)
+
+/** Top decks by card count (masters = Review with ≥ 21-day intervals). */
+private fun buildDeckProgress(state: AppState): List<KnowledgeProgress> {
+    val cards = state.cards.toList()
+    return state.library.allDecks()
+        .map { deck -> deck to state.library.cardsIn(deck, cards).size }
+        .filter { it.second > 0 }
+        .sortedByDescending { it.second }
+        .take(4)
+        .map { (deck, total) ->
+            KnowledgeProgress(
+                label = deck.name,
+                total = total,
+                mastered = state.library.deckStats(deck, cards).anyCompleted
+            )
+        }
+}
+
+/** Top user collections (Manual/Automatic) by resolved card count. */
+private fun buildCollectionProgress(state: AppState): List<KnowledgeProgress> {
+    val cards = state.cards.toList()
+    return state.collections.collections
+        .filter { !it.archived && (it.kind == CollectionKind.Manual || it.kind == CollectionKind.Automatic) }
+        .map { def ->
+            val resolved = state.collections.resolveCards(def, cards, state.library)
+            def to resolved
+        }
+        .filter { it.second.isNotEmpty() }
+        .sortedByDescending { it.second.size }
+        .take(4)
+        .map { (def, resolved) ->
+            KnowledgeProgress(
+                label = def.name,
+                total = resolved.size,
+                mastered = resolved.count { it.status == SrsStatus.Review && it.intervalDays >= 21 }
+            )
+        }
+}
+
+@Composable
+private fun KnowledgeProgressRow(line: KnowledgeProgress) {
+    val sc = surfaceColors()
+    val fraction = if (line.total == 0) 0f else line.mastered.toFloat() / line.total
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = line.label,
+                color = sc.textSecondary,
+                fontSize = DsType.Body,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(DsSpacing.Sm))
+            Text(
+                text = "${line.mastered}/${line.total} mastered",
+                color = sc.textMuted,
+                fontSize = DsType.Caption,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        DsProgressBar(
+            fraction = fraction,
+            color = when {
+                line.total == 0 -> Color.Unspecified
+                fraction >= 0.7f -> successColor()
+                fraction >= 0.3f -> warningColor()
+                else -> dueColor()
+            }
+        )
+    }
+}
+
+// ============================================
+// WRITING PRACTICE — surfaces the weakest kanji
+// from real writing attempts with an honest
+// empty state when there is no data yet.
+// ============================================
+
+@Composable
+private fun WritingPracticeCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    DsCard(modifier = modifier) {
+        Column(
+            Modifier.padding(DsSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            DsSectionHeader(
+                title = "Writing practice",
+                subtitle = "Weakest area from your real attempts"
+            )
+            val weakest = remember(state.learning.revision) { state.learning.weakestKanji(limit = 1).firstOrNull() }
+            val allWriting = remember(state.learning.revision) { state.learning.writingStats(limit = 100) }
+            if (weakest == null) {
+                Text(
+                    text = "No writing data yet — practice writing and your weakest kanji will show up here.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    Text(
+                        text = weakest.expression,
+                        color = sc.textPrimary,
+                        fontSize = DsType.Display,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(56.dp)
+                    )
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "Weakest area",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Accuracy ${(weakest.accuracy * 100).toInt()}% · ${weakest.correct}/${weakest.attempts} attempts",
+                            color = sc.textPrimary,
+                            fontSize = DsType.Body,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+            if (allWriting.isNotEmpty()) {
+                val totalCorrect = allWriting.sumOf { it.correct }
+                val totalAttempts = allWriting.sumOf { it.attempts }
+                Text(
+                    text = "Overall writing accuracy: ${totalCorrect * 100 / totalAttempts.coerceAtLeast(1)}%",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
+            DsButton(
+                text = "Practice writing",
+                icon = Icons.Default.Create,
+                onClick = { state.startWritingPractice() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeakSpotsCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg)) {
+            DsSectionHeader(
+                title = "Weak Spots",
+                subtitle = "Cards that need attention"
+            )
+            Spacer(Modifier.height(DsSpacing.Md))
+            val difficult = WeakSpotEngine.mostDifficult(state.cards.toList(), limit = 4)
+            difficult.forEach { card ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                        .clickable { state.selectedCard = card; state.currentView = WorkspaceView.Browser }
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = card.character,
+                        color = sc.textPrimary,
+                        fontSize = DsType.Title,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(48.dp)
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = card.meaning,
+                            color = sc.textSecondary,
+                            fontSize = DsType.Body,
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "${card.lapses} lapses · ${(card.accuracy * 100).toInt()}% acc",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    DsBadge(text = card.status.name, tint = accent().primary)
+                }
+                Spacer(Modifier.height(4.dp))
+            }
+            if (difficult.isEmpty()) {
+                Text(
+                    text = "Nothing to fix yet — keep reviewing!",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body,
+                    modifier = Modifier.padding(DsSpacing.Sm)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun JlptCoverageCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val jlptCoverage = remember(state.learning.revision) { state.learning.jlptCoverage() }
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "JLPT coverage",
+                subtitle = "Estimated study coverage from real SRS stages — not a prediction",
+                action = {
+                    DsButton(
+                        text = "Study JLPT",
+                        icon = Icons.Default.PlayArrow,
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        onClick = { state.startUnifiedReview() }
+                    )
+                }
+            )
+            if (jlptCoverage.isEmpty()) {
+                Text(
+                    text = "No JLPT-tagged content yet — import or mine kanji/vocabulary to see coverage.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body,
+                    modifier = Modifier.padding(vertical = DsSpacing.Sm)
+                )
+            } else {
+                jlptCoverage.forEach { level ->
+                    val fraction = level.introducedFraction
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "N${level.level}",
+                            color = sc.textPrimary,
+                            fontSize = DsType.Body,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.width(40.dp)
+                        )
+                        DsProgressBar(
+                            fraction = fraction,
+                            modifier = Modifier.weight(1f),
+                            color = when {
+                                fraction >= 0.7f -> successColor()
+                                fraction >= 0.3f -> warningColor()
+                                else -> dueColor()
+                            }
+                        )
+                        Text(
+                            text = "${level.known + level.learning}/${level.total} · ${level.due} due",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            modifier = Modifier.width(132.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = "Established = review interval ≥ 21 days · Learning = in progress · Unseen = never studied.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DueForecastCard(state: AppState, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val forecast = remember(state.learning.revision) { state.learning.forecast(14) }
+    DsCard(modifier = modifier) {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsSectionHeader(
+                title = "Due forecast",
+                subtitle = "Expected review workload, next 14 days"
+            )
+            if (forecast.isEmpty()) {
+                Text("Nothing scheduled.", color = sc.textMuted, fontSize = DsType.Body)
+            } else {
+                forecast.forEach { point ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = point.date.toString().substring(5),
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            modifier = Modifier.width(64.dp)
+                        )
+                        DsProgressBar(
+                            fraction = (point.due.toFloat() / (forecast.maxOfOrNull { it.due } ?: 1).coerceAtLeast(1)).coerceIn(0f, 1f),
+                            modifier = Modifier.weight(1f),
+                            color = if (point.due > 0) accent().primary else Color.Unspecified
+                        )
+                        Text(
+                            text = point.due.toString(),
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            modifier = Modifier.width(32.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.End
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -738,31 +1324,37 @@ private fun RecentDecksCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
             DsSectionHeader(
-                title = "Recent decks",
+                title = "Collections",
                 action = {
-                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Collections }) {
-                        androidx.compose.material3.Text("All", color = accent().primary)
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Library }) {
+                        androidx.compose.material3.Text("Library", color = accent().primary)
                     }
                 }
             )
             if (recent.isEmpty()) {
                 Text(
-                    text = "No collections yet — create one from the Collections view.",
+                    text = "No collections yet — open the Library and create one.",
                     color = sc.textMuted,
                     fontSize = DsType.Body
                 )
             }
             recent.forEach { def ->
-                val cardCount = state.collections.resolveCards(def, state.cards.toList()).size
+                val decks = state.collections.resolveDecks(def, state.library)
+                val cardsInCollection = state.collections.resolveCards(def, state.cards.toList(), state.library)
+                val due = decks.sumOf {
+                    val s = state.library.deckStats(it, state.cards.toList())
+                    s.anyDue + s.anyNew
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(DsRadius.Md))
                         .background(sc.surfaceInteractive.copy(alpha = 0.4f))
                         .clickable {
-                            state.selectedCardIds.clear()
-                            state.selectedCard = null
-                            state.currentView = WorkspaceView.Collections
+                            // The Library is the hub: opening a collection from
+                            // Home lands inside the Library scoped to it.
+                            state.pendingCollectionId = def.id
+                            state.currentView = WorkspaceView.Library
                         }
                         .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
                     verticalAlignment = Alignment.CenterVertically
@@ -776,7 +1368,14 @@ private fun RecentDecksCard(state: AppState, modifier: Modifier = Modifier) {
                     Spacer(Modifier.width(DsSpacing.Sm))
                     Column(Modifier.weight(1f)) {
                         Text(def.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium)
-                        Text("$cardCount cards", color = sc.textMuted, fontSize = DsType.Caption)
+                        Text(
+                            text = "${decks.size} deck${if (decks.size == 1) "" else "s"} · ${cardsInCollection.size} cards",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    if (due > 0) {
+                        DsBadge(text = "$due due", tint = dueColor())
                     }
                     DsButton(
                         text = "Study",

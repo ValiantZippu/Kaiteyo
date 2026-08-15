@@ -4,6 +4,7 @@ package ua.syt0r.kanji.presentation.screen.main.screen.library
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,20 +23,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -44,14 +54,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import org.koin.compose.koinInject
+import ua.syt0r.kanji.core.app_data.AppDataRepository
+import ua.syt0r.kanji.core.app_data.WordClassification
+import ua.syt0r.kanji.core.app_data.data.JapaneseWord
 import ua.syt0r.kanji.core.srs.LetterPracticeType
 import ua.syt0r.kanji.core.srs.LetterSrsDeck
 import ua.syt0r.kanji.core.srs.LetterSrsDecksData
@@ -72,18 +91,23 @@ import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoCollection
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.data.DeckDetailsScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerScreenConfiguration
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.letters_dashboard.LettersDashboardScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.VocabDashboardScreen
+import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardFlagType
+import ua.syt0r.kanji.presentation.screen.main.screen.decks.KaiteyoCard
+import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenData
+import ua.syt0r.kanji.presentation.screen.main.screen.info.toInfoScreenData
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.data.VocabPracticeScreenConfiguration
 
 // ============================================
-// LIBRARY — the central hub
-// Users immediately understand:
-//   · what they own      → decks, collections, stats
-//   · what they study    → due/new counts everywhere
-//   · where to continue  → Continue Studying + deck rows
+// LIBRARY — the single discovery surface
+// One place for everything the learner owns
+// and studies:
+//   · unified search  → kanji, vocabulary, decks
+//   · mode chips      → All · Decks · Kanji ·
+//                       Vocabulary · Due · Favorites
+//   · Manage menu     → deck/card/tag/flag/stats
+//                       tools (one menu, not a
+//                       wall of cards)
 // ============================================
 
 @Composable
@@ -91,37 +115,16 @@ fun LibraryScreen(navigationState: MainNavigationState) {
     val dataCenter = koinInject<KaiteyoDataCenter>()
     val letterSrsManager = koinInject<LetterSrsManager>()
     val vocabSrsManager = koinInject<VocabSrsManager>()
+    val appDataRepository = koinInject<AppDataRepository>()
     LaunchedEffect(Unit) { dataCenter.ensureLoaded() }
 
-    var view by remember { mutableStateOf<LibraryView>(LibraryView.Hub) }
-
-    when (view) {
-        LibraryView.Hub -> LibraryHub(
-            navigationState = navigationState,
-            dataCenter = dataCenter,
-            letterSrsManager = letterSrsManager,
-            vocabSrsManager = vocabSrsManager,
-            onOpenKanjiDecks = { view = LibraryView.KanjiDecks },
-            onOpenVocab = { view = LibraryView.Vocabulary },
-            onOpenWordSearch = { view = LibraryView.WordSearch }
-        )
-        LibraryView.KanjiDecks -> DrillDownScaffold(title = "字  Kanji Decks", onBack = { view = LibraryView.Hub }) {
-            LettersDashboardScreen(mainNavigationState = navigationState)
-        }
-        LibraryView.Vocabulary -> DrillDownScaffold(title = "語  Vocabulary", onBack = { view = LibraryView.Hub }) {
-            VocabDashboardScreen(mainNavigationState = navigationState)
-        }
-        LibraryView.WordSearch -> DrillDownScaffold(title = "🔎  Word & Sentence Search", onBack = { view = LibraryView.Hub }) {
-            SearchScreen(mainNavigationState = navigationState)
-        }
-    }
-}
-
-private sealed interface LibraryView {
-    data object Hub : LibraryView
-    data object KanjiDecks : LibraryView
-    data object Vocabulary : LibraryView
-    data object WordSearch : LibraryView
+    LibraryHub(
+        navigationState = navigationState,
+        dataCenter = dataCenter,
+        letterSrsManager = letterSrsManager,
+        vocabSrsManager = vocabSrsManager,
+        appDataRepository = appDataRepository
+    )
 }
 
 private enum class DeckCategory { Letters, Vocabulary }
@@ -140,33 +143,51 @@ private data class LibraryDecksState(
     val vocab: VocabSrsDecksData
 )
 
-@Composable
-private fun DrillDownScaffold(
-    title: String,
-    onBack: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val surfaceColors = LocalSurfaceColors.current
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, "Back", tint = surfaceColors.textSecondary)
-            }
-            Text(
-                text = title,
-                color = surfaceColors.textPrimary,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Box(Modifier.fillMaxSize()) { content() }
+private enum class LibraryMode(val label: String) {
+    All("All"),
+    Decks("Decks"),
+    Kanji("Kanji"),
+    Vocabulary("Vocabulary"),
+    Due("Due"),
+    Favorites("Favorites")
+}
+
+// A single flat, keyboard-navigable view of every unified-search hit, in
+// display order (decks → kanji → vocabulary) so arrow keys walk the same
+// list the user sees.
+private sealed interface SearchEntry {
+    data class Deck(val deck: UnifiedDeck) : SearchEntry
+    data class Kanji(val card: KaiteyoCard) : SearchEntry
+    data class Vocab(val word: JapaneseWord) : SearchEntry
+
+    fun key(): String = when (this) {
+        is Deck -> "deck-${deck.category}-${deck.deckId}"
+        is Kanji -> "kanji-${card.id}"
+        is Vocab -> "vocab-${word.id}"
     }
+}
+
+private fun SearchEntry.sectionTitle(): String = when (this) {
+    is SearchEntry.Deck -> "DECKS"
+    is SearchEntry.Kanji -> "KANJI"
+    is SearchEntry.Vocab -> "VOCABULARY"
+}
+
+// LazyColumn index of the row for `selectedIndex` in the unified results list,
+// accounting for the leading "Results for" item and per-section headers.
+private fun searchListIndex(entries: List<SearchEntry>, selectedIndex: Int): Int {
+    var index = 1 // item 0 is the "Results for" header
+    var lastSection: String? = null
+    entries.forEachIndexed { i, entry ->
+        val section = entry.sectionTitle()
+        if (section != lastSection) {
+            index++
+            lastSection = section
+        }
+        if (i == selectedIndex) return index
+        index++
+    }
+    return index
 }
 
 @Composable
@@ -175,29 +196,40 @@ private fun LibraryHub(
     dataCenter: KaiteyoDataCenter,
     letterSrsManager: LetterSrsManager,
     vocabSrsManager: VocabSrsManager,
-    onOpenKanjiDecks: () -> Unit,
-    onOpenVocab: () -> Unit,
-    onOpenWordSearch: () -> Unit
+    appDataRepository: AppDataRepository
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
 
-    var radicalCount by remember { mutableStateOf<Int?>(null) }
-    LaunchedEffect(Unit) {
-        radicalCount = runCatching { dataCenter.loadRadicals().size }.getOrNull()
+    var mode by remember { mutableStateOf(LibraryMode.All) }
+
+    // Unified search — while anything is typed, the Library body becomes
+    // live results across kanji, vocabulary and decks (no separate screens).
+    var query by remember { mutableStateOf("") }
+    var vocabMatches by remember { mutableStateOf<List<JapaneseWord>>(emptyList()) }
+    var vocabSearching by remember { mutableStateOf(false) }
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.isBlank()) {
+            vocabMatches = emptyList()
+            vocabSearching = false
+            return@LaunchedEffect
+        }
+        vocabSearching = true
+        delay(200) // debounce the dictionary query
+        vocabMatches = appDataRepository.getWordsWithText(q, limit = 8)
+        vocabSearching = false
     }
 
-    val decksState by produceState<LibraryDecksState?>(null, letterSrsManager, vocabSrsManager) {
-        suspend fun reload() {
-            value = LibraryDecksState(
-                letters = letterSrsManager.getDecks(),
-                vocab = vocabSrsManager.getDecks()
-            )
-        }
-        reload()
-        launch {
-            merge(letterSrsManager.dataChangeFlow, vocabSrsManager.dataChangeFlow)
-                .collect { reload() }
+    val kanjiMatches by remember(dataCenter.cards, query) {
+        derivedStateOf {
+            val q = query.trim()
+            if (q.isBlank()) emptyList()
+            else dataCenter.cards.filter { card ->
+                card.character.contains(q) ||
+                    card.reading.contains(q, ignoreCase = true) ||
+                    card.meaning.contains(q, ignoreCase = true)
+            }.take(8)
         }
     }
 
@@ -224,12 +256,25 @@ private fun LibraryHub(
         return
     }
 
+    val decksState by produceState<LibraryDecksState?>(null, letterSrsManager, vocabSrsManager) {
+        suspend fun reload() {
+            value = LibraryDecksState(
+                letters = letterSrsManager.getDecks(),
+                vocab = vocabSrsManager.getDecks()
+            )
+        }
+        reload()
+        launch {
+            merge(letterSrsManager.dataChangeFlow, vocabSrsManager.dataChangeFlow)
+                .collect { reload() }
+        }
+    }
+
     val letterDecks = decksState?.letters?.decks ?: emptyList()
     val vocabDecks = decksState?.vocab?.decks ?: emptyList()
 
     val totalNew = letterDecks.sumOf { it.totalNew() } + vocabDecks.sumOf { it.totalNew() }
     val totalDue = letterDecks.sumOf { it.totalDue() } + vocabDecks.sumOf { it.totalDue() }
-    val totalReady = totalNew + totalDue
 
     val unifiedDecks = buildList {
         letterDecks.forEach { add(it.toUnified(DeckCategory.Letters)) }
@@ -239,48 +284,413 @@ private fun LibraryHub(
             .thenBy { it.title }
     )
 
-    val favorites = dataCenter.favorites.value.size
-    val collections = dataCenter.collections.size
+    val deckMatches = remember(unifiedDecks, query) {
+        val q = query.trim()
+        if (q.isBlank()) emptyList()
+        else unifiedDecks.filter { it.title.contains(q, ignoreCase = true) }.take(5)
+    }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        item(key = "header") {
-            Column(Modifier.padding(top = 8.dp, bottom = 2.dp)) {
+    // Flat, ordered list of every visible result — the single source of truth
+    // for both the rendered sections and arrow-key navigation.
+    val searchEntries = remember(deckMatches, kanjiMatches, vocabMatches) {
+        buildList {
+            deckMatches.forEach { add(SearchEntry.Deck(it)) }
+            kanjiMatches.forEach { add(SearchEntry.Kanji(it)) }
+            vocabMatches.forEach { add(SearchEntry.Vocab(it)) }
+        }
+    }
+    var selectedIndex by remember { mutableStateOf(0) }
+
+    val openKanji: (String) -> Unit = {
+        navigationState.navigate(MainDestination.Info(InfoScreenData.Letter(it)))
+    }
+    val openVocab: (JapaneseWord) -> Unit = {
+        navigationState.navigate(MainDestination.Info(it.toInfoScreenData()))
+    }
+    val openDeck: (UnifiedDeck) -> Unit = { deck ->
+        val configuration = when (deck.category) {
+            DeckCategory.Letters -> DeckDetailsScreenConfiguration.LetterDeck(deck.deckId)
+            DeckCategory.Vocabulary -> DeckDetailsScreenConfiguration.VocabDeck(deck.deckId)
+        }
+        navigationState.navigate(MainDestination.DeckDetails(configuration))
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        // ---- Header: title + Manage menu --------------------------------
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 4.dp, top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = "Library",
                     color = surfaceColors.textPrimary,
-                    fontSize = 26.sp,
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Everything you own and study — in one place",
+                    text = "Search, browse and study — everything in one place",
                     color = surfaceColors.textMuted,
-                    fontSize = 13.sp
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall
                 )
             }
+            ManageMenu(navigationState = navigationState, accent = accent, surfaceColors = surfaceColors)
         }
 
-        item(key = "search") {
-            SearchBarCard(
-                onClick = { navigationState.navigate(MainDestination.SearchEngine) },
+        // ---- Unified search field (always visible) --------------------
+        // Arrow keys move the selection through the live results; Enter opens
+        // the selected one; Escape clears the query. Attached to an ancestor
+        // of the text field so it works the moment the field has focus.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionDown -> {
+                            if (searchEntries.isNotEmpty()) {
+                                selectedIndex = (selectedIndex + 1) % searchEntries.size
+                            }
+                            true
+                        }
+                        Key.DirectionUp -> {
+                            if (searchEntries.isNotEmpty()) {
+                                selectedIndex = (selectedIndex - 1 + searchEntries.size) % searchEntries.size
+                            }
+                            true
+                        }
+                        Key.Enter -> {
+                            val entry = searchEntries.getOrNull(selectedIndex)
+                            if (entry != null) {
+                                when (entry) {
+                                    is SearchEntry.Deck -> openDeck(entry.deck)
+                                    is SearchEntry.Kanji -> openKanji(entry.card.id)
+                                    is SearchEntry.Vocab -> openVocab(entry.word)
+                                }
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        Key.Escape -> {
+                            if (query.isNotBlank()) {
+                                query = ""
+                                selectedIndex = 0
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        else -> false
+                    }
+                }
+        ) {
+            LibrarySearchField(
+                value = query,
+                onValueChange = { query = it; selectedIndex = 0 },
+                placeholder = "Search kanji, vocabulary, decks…",
                 accent = accent,
                 surfaceColors = surfaceColors
             )
         }
 
+        if (query.isNotBlank()) {
+            // ---- Unified search results --------------------------------
+            UnifiedSearchResults(
+                dataCenter = dataCenter,
+                query = query.trim(),
+                entries = searchEntries,
+                vocabSearching = vocabSearching,
+                selectedIndex = selectedIndex,
+                onOpenKanji = openKanji,
+                onOpenVocab = openVocab,
+                onOpenDeck = openDeck,
+                onOpenFullSearch = {
+                    navigationState.navigate(MainDestination.SearchEngine)
+                },
+                onSuggestionClick = { query = it; selectedIndex = 0 },
+                onClear = { query = ""; selectedIndex = 0 },
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+            return@Column
+        }
+
+        // ---- Mode chips ------------------------------------------------
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            LibraryMode.entries.forEach { candidate ->
+                ModeChip(
+                    label = candidate.label,
+                    selected = mode == candidate,
+                    onClick = { mode = candidate },
+                    accent = accent,
+                    surfaceColors = surfaceColors
+                )
+            }
+        }
+
+        // ---- Mode content ----------------------------------------------
+        when (mode) {
+            LibraryMode.All -> LibraryList(
+                navigationState = navigationState,
+                dataCenter = dataCenter,
+                unifiedDecks = unifiedDecks,
+                totalNew = totalNew,
+                totalDue = totalDue,
+                decksState = decksState,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Decks -> DecksList(
+                navigationState = navigationState,
+                unifiedDecks = unifiedDecks,
+                totalNew = totalNew,
+                totalDue = totalDue,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Kanji -> KanjiBrowse(
+                navigationState = navigationState,
+                dataCenter = dataCenter,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Vocabulary -> VocabularyBrowse(
+                navigationState = navigationState,
+                appDataRepository = appDataRepository,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Due -> DueList(
+                navigationState = navigationState,
+                unifiedDecks = unifiedDecks,
+                totalNew = totalNew,
+                totalDue = totalDue,
+                decksState = decksState,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Favorites -> FavoritesList(
+                navigationState = navigationState,
+                dataCenter = dataCenter,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+        }
+    }
+}
+
+// ============================================
+// Unified search results
+// ============================================
+
+@Composable
+private fun UnifiedSearchResults(
+    dataCenter: KaiteyoDataCenter,
+    query: String,
+    entries: List<SearchEntry>,
+    vocabSearching: Boolean,
+    selectedIndex: Int,
+    onOpenKanji: (String) -> Unit,
+    onOpenVocab: (JapaneseWord) -> Unit,
+    onOpenDeck: (UnifiedDeck) -> Unit,
+    onOpenFullSearch: () -> Unit,
+    onSuggestionClick: (String) -> Unit,
+    onClear: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val isEmpty = entries.isEmpty() && !vocabSearching
+
+    // Keep the arrow-selected row visible as the selection moves.
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedIndex, entries) {
+        if (entries.isNotEmpty() && selectedIndex in entries.indices) {
+            listState.animateScrollToItem(searchListIndex(entries, selectedIndex))
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item(key = "search-query") {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Results for \"$query\"",
+                        color = surfaceColors.textPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onClear) {
+                        Text("Clear", color = accent.primary, fontSize = 12.sp)
+                    }
+                }
+                if (entries.isNotEmpty()) {
+                    Text(
+                        text = "↑/↓ navigate · Enter open · Esc clear",
+                        color = surfaceColors.textMuted,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+        }
+
+        if (isEmpty) {
+            item(key = "search-empty") {
+                EmptySearchState(query = query, onSuggestionClick = onSuggestionClick, accent = accent, surfaceColors = surfaceColors)
+            }
+        } else {
+            var lastSection: String? = null
+            entries.forEachIndexed { index, entry ->
+                val section = entry.sectionTitle()
+                if (section != lastSection) {
+                    item(key = "${entry.key()}-header") { ResultSectionTitle(section, accent, surfaceColors) }
+                    lastSection = section
+                }
+                val selected = index == selectedIndex
+                item(key = entry.key()) {
+                    when (entry) {
+                        is SearchEntry.Deck -> SearchDeckRow(
+                            deck = entry.deck,
+                            selected = selected,
+                            onClick = { onOpenDeck(entry.deck) },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                        is SearchEntry.Kanji -> KanjiRow(
+                            card = entry.card,
+                            dataCenter = dataCenter,
+                            selected = selected,
+                            onClick = { onOpenKanji(entry.card.id) },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                        is SearchEntry.Vocab -> VocabRow(
+                            word = entry.word,
+                            selected = selected,
+                            onClick = { onOpenVocab(entry.word) },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
+            }
+            if (vocabSearching) {
+                item(key = "vocab-loading") {
+                    Text("Searching vocabulary…", color = surfaceColors.textMuted, fontSize = 12.sp)
+                }
+            }
+            item(key = "open-full") {
+                TextButton(
+                    onClick = onOpenFullSearch,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Open full search (words, sentences, radicals)", color = accent.primary, fontSize = 13.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptySearchState(
+    query: String,
+    onSuggestionClick: (String) -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(surfaceColors.surface)
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Nothing found for \"$query\"",
+            color = surfaceColors.textPrimary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = "Try a kanji, a reading or an English meaning. Here are a few common searches:",
+            color = surfaceColors.textMuted,
+            fontSize = 12.sp
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf("日", "食べる", "学校", "water", "JLPT").forEach { suggestion ->
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accent.primary.copy(alpha = 0.10f))
+                        .clickable { onSuggestionClick(suggestion) }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(suggestion, color = accent.primary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultSectionTitle(title: String, accent: KaiteyoAccentScheme, surfaceColors: SurfaceColors) {
+    Text(
+        text = title,
+        color = accent.primary,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(top = 4.dp)
+    )
+}
+
+// ============================================
+// All / Decks modes
+// ============================================
+
+@Composable
+private fun LibraryList(
+    navigationState: MainNavigationState,
+    dataCenter: KaiteyoDataCenter,
+    unifiedDecks: List<UnifiedDeck>,
+    totalNew: Int,
+    totalDue: Int,
+    decksState: LibraryDecksState?,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
         item(key = "continue") {
             ContinueStudyingCard(
                 totalNew = totalNew,
                 totalDue = totalDue,
-                onStudy = {
-                    startStudy(
-                        navigationState = navigationState,
-                        decksState = decksState
-                    )
-                },
+                onStudy = { startStudy(navigationState, decksState) },
                 onCreateLetterDeck = {
                     navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
                 },
@@ -297,7 +707,7 @@ private fun LibraryHub(
                 items = listOf(
                     StatData("Decks", unifiedDecks.size),
                     StatData("Kanji", dataCenter.cards.size),
-                    StatData("Favorites", favorites),
+                    StatData("Favorites", dataCenter.favorites.value.size),
                     StatData("Reviews", dataCenter.totalReviews.value.toInt())
                 ),
                 accent = accent,
@@ -323,7 +733,7 @@ private fun LibraryHub(
         } else {
             item(key = "decks-list") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    unifiedDecks.take(6).forEach { deck ->
+                    unifiedDecks.forEach { deck ->
                         DeckRow(
                             deck = deck,
                             onClick = {
@@ -337,157 +747,1159 @@ private fun LibraryHub(
                             surfaceColors = surfaceColors
                         )
                     }
-                    if (unifiedDecks.size > 6) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            TextButton(
-                                onClick = { navigationState.navigate(MainDestination.DeckBrowser) }
-                            ) {
-                                Text(
-                                    text = "Browse all ${unifiedDecks.size} decks",
-                                    color = accent.primary,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }
 
-        item(key = "manage-title") { SectionTitle("MANAGE", accent, surfaceColors) }
-
-        item(key = "manage-grid") {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionCard(
-                    glyph = "🗂",
-                    title = "Deck Browser",
-                    subtitle = "Create, rename, merge, archive & delete decks",
-                    onClick = { navigationState.navigate(MainDestination.DeckBrowser) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "🃏",
-                    title = "Card Browser",
-                    subtitle = "Search, filter & bulk-edit every card",
-                    onClick = { navigationState.navigate(MainDestination.CardBrowser) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "#",
-                    title = "Tags",
-                    subtitle = "Organize cards with nested tags",
-                    count = dataCenter.tags.size,
-                    onClick = { navigationState.navigate(MainDestination.TagManager) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "🚩",
-                    title = "Flags",
-                    subtitle = "Mark and filter flagged cards",
-                    count = dataCenter.flags.size,
-                    onClick = { navigationState.navigate(MainDestination.FlagManager) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "📊",
-                    title = "Statistics",
-                    subtitle = "Study history, streaks & progress charts",
-                    onClick = { navigationState.navigate(MainDestination.StatisticsDashboard) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "⇄",
-                    title = "Import / Export",
-                    subtitle = "Move decks and cards in or out of Kaiteyo",
-                    onClick = { navigationState.navigate(MainDestination.ImportExport) },
+        if (dataCenter.collections.isNotEmpty()) {
+            item(key = "collections-title") { SectionTitle("COLLECTIONS", accent, surfaceColors) }
+            item(key = "collections") {
+                CollectionsSection(
+                    collections = dataCenter.collections.toList(),
+                    onOpenCollections = { navigationState.navigate(MainDestination.Collections) },
                     accent = accent,
                     surfaceColors = surfaceColors
                 )
             }
-        }
-
-        item(key = "study-title") { SectionTitle("STUDY", accent, surfaceColors) }
-
-        item(key = "study-items") {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionCard(
-                    glyph = "字",
-                    title = "Kanji",
-                    subtitle = "Browse, filter & review all kanji",
-                    count = dataCenter.cards.size,
-                    onClick = { navigationState.navigate(MainDestination.KanjiBrowser()) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "📚",
-                    title = "Kanji Decks",
-                    subtitle = "Letter decks & spaced repetition",
-                    onClick = onOpenKanjiDecks,
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "語",
-                    title = "Vocabulary",
-                    subtitle = "Words, terms & vocab decks",
-                    onClick = onOpenVocab,
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "文",
-                    title = "Grammar",
-                    subtitle = "Particles & grammar terms",
-                    onClick = onOpenVocab,
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "例",
-                    title = "Sentences",
-                    subtitle = "Example sentences (Tatoeba)",
-                    onClick = onOpenWordSearch,
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-                SectionCard(
-                    glyph = "部",
-                    title = "Radicals",
-                    subtitle = radicalCount?.let { "$it radicals — search by parts" }
-                        ?: "Search by radical parts",
-                    onClick = { navigationState.navigate(MainDestination.KanjiBrowser()) },
-                    accent = accent,
-                    surfaceColors = surfaceColors
-                )
-            }
-        }
-
-        item(key = "collections-title") { SectionTitle("COLLECTIONS", accent, surfaceColors) }
-
-        item(key = "collections") {
-            CollectionsSection(
-                collections = dataCenter.collections.toList(),
-                onOpenCollections = { navigationState.navigate(MainDestination.Collections) },
-                accent = accent,
-                surfaceColors = surfaceColors
-            )
         }
 
         item(key = "spacer") { Spacer(Modifier.height(8.dp)) }
     }
 }
 
+@Composable
+private fun DecksList(
+    navigationState: MainNavigationState,
+    unifiedDecks: List<UnifiedDeck>,
+    totalNew: Int,
+    totalDue: Int,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item(key = "decks-header") {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Decks",
+                        color = surfaceColors.textPrimary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (totalNew + totalDue == 0) "All caught up"
+                        else "$totalNew new · $totalDue due across ${unifiedDecks.size} decks",
+                        color = surfaceColors.textMuted,
+                        fontSize = 12.sp
+                    )
+                }
+                TextButton(onClick = {
+                    navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
+                }) {
+                    Text("+ Kanji", color = accent.primary, fontSize = 12.sp)
+                }
+                TextButton(onClick = {
+                    navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Vocab))
+                }) {
+                    Text("+ Vocab", color = accent.primary, fontSize = 12.sp)
+                }
+            }
+        }
+
+        if (unifiedDecks.isEmpty()) {
+            item(key = "decks-empty") {
+                EmptyDecksCard(
+                    onCreateLetterDeck = {
+                        navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
+                    },
+                    onCreateVocabDeck = {
+                        navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Vocab))
+                    },
+                    accent = accent,
+                    surfaceColors = surfaceColors
+                )
+            }
+        } else {
+            items(unifiedDecks, key = { "deck-${it.category}-${it.deckId}" }) { deck ->
+                DeckRow(
+                    deck = deck,
+                    onClick = {
+                        val configuration = when (deck.category) {
+                            DeckCategory.Letters -> DeckDetailsScreenConfiguration.LetterDeck(deck.deckId)
+                            DeckCategory.Vocabulary -> DeckDetailsScreenConfiguration.VocabDeck(deck.deckId)
+                        }
+                        navigationState.navigate(MainDestination.DeckDetails(configuration))
+                    },
+                    accent = accent,
+                    surfaceColors = surfaceColors
+                )
+            }
+        }
+    }
+}
+
 // ============================================
-// Pieces
+// Kanji / Vocabulary browsing modes
+// ============================================
+
+@Composable
+private fun KanjiBrowse(
+    navigationState: MainNavigationState,
+    dataCenter: KaiteyoDataCenter,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    var query by remember { mutableStateOf("") }
+    var jlptLevels by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var grades by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var frequencyBand by remember { mutableStateOf<Int?>(null) }
+    var selectedIndex by remember { mutableStateOf(0) }
+
+    val hasFilters = jlptLevels.isNotEmpty() || grades.isNotEmpty() || frequencyBand != null
+
+    val filtered by remember(dataCenter.cards, query, jlptLevels, grades, frequencyBand) {
+        derivedStateOf {
+            val q = query.trim()
+            var list: List<KaiteyoCard> = if (q.isBlank()) dataCenter.cards
+            else dataCenter.cards.filter { card ->
+                card.character.contains(q) ||
+                    card.reading.contains(q, ignoreCase = true) ||
+                    card.meaning.contains(q, ignoreCase = true)
+            }
+            if (jlptLevels.isNotEmpty()) {
+                list = list.filter { card ->
+                    val classes = dataCenter.classifications[card.id].orEmpty()
+                    jlptLevels.any { level -> classes.contains("n$level") }
+                }
+            }
+            if (grades.isNotEmpty()) {
+                list = list.filter { card ->
+                    val classes = dataCenter.classifications[card.id].orEmpty()
+                    grades.any { grade -> classes.contains("o$grade") }
+                }
+            }
+            frequencyBand?.let { maxRank ->
+                list = list.filter { (dataCenter.frequencies[it.id] ?: Int.MAX_VALUE) <= maxRank }
+            }
+            list.sortedBy { dataCenter.frequencies[it.id] ?: Int.MAX_VALUE }
+        }
+    }
+
+    // Keep the arrow-selected row visible as the selection moves.
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedIndex, filtered.size) {
+        if (filtered.isNotEmpty()) {
+            listState.animateScrollToItem(selectedIndex.coerceIn(0, filtered.lastIndex))
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Kanji",
+                    color = surfaceColors.textPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (hasFilters) "${filtered.size} kanji · ${jlptLevels.size + grades.size + (if (frequencyBand != null) 1 else 0)} filter${if (jlptLevels.size + grades.size + (if (frequencyBand != null) 1 else 0) == 1) "" else "s"} active"
+                    else "${filtered.size} kanji · ordered by frequency",
+                    color = surfaceColors.textMuted,
+                    fontSize = 12.sp
+                )
+            }
+            TextButton(onClick = { navigationState.navigate(MainDestination.KanjiBrowser()) }) {
+                Text("Full browser", color = accent.primary, fontSize = 12.sp)
+            }
+        }
+
+        // Arrow keys move the selection through the results; Enter opens the
+        // selected one; Escape clears the query. Attached to an ancestor of the
+        // text field so it works the moment the field has focus.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionDown -> {
+                            if (filtered.isNotEmpty()) {
+                                selectedIndex = (selectedIndex + 1) % filtered.size
+                            }
+                            true
+                        }
+                        Key.DirectionUp -> {
+                            if (filtered.isNotEmpty()) {
+                                selectedIndex = (selectedIndex - 1 + filtered.size) % filtered.size
+                            }
+                            true
+                        }
+                        Key.Enter -> {
+                            filtered.getOrNull(selectedIndex)?.let { card ->
+                                navigationState.navigate(MainDestination.Info(InfoScreenData.Letter(card.id)))
+                            }
+                            filtered.isNotEmpty()
+                        }
+                        Key.Escape -> {
+                            if (query.isNotBlank()) {
+                                query = ""
+                                selectedIndex = 0
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        else -> false
+                    }
+                }
+        ) {
+            LibrarySearchField(
+                value = query,
+                onValueChange = { query = it; selectedIndex = 0 },
+                placeholder = "Filter kanji…",
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            FilterBarHeader(
+                hasFilters = hasFilters,
+                onClear = { jlptLevels = emptySet(); grades = emptySet(); frequencyBand = null; selectedIndex = 0 },
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+            LibraryFilterGroup("JLPT") {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items((5 downTo 1).toList()) { level ->
+                        LibraryFilterChip(
+                            label = "N$level",
+                            selected = level in jlptLevels,
+                            onClick = {
+                                jlptLevels = if (level in jlptLevels) jlptLevels - level else jlptLevels + level
+                            },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
+            }
+            LibraryFilterGroup("Grade") {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(kanjiGradeOptions) { grade ->
+                        LibraryFilterChip(
+                            label = grade.label,
+                            selected = grade.value in grades,
+                            onClick = {
+                                grades = if (grade.value in grades) grades - grade.value else grades + grade.value
+                            },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
+            }
+            LibraryFilterGroup("Frequency") {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(frequencyBandOptions) { band ->
+                        LibraryFilterChip(
+                            label = band.label,
+                            selected = frequencyBand == band.maxRank,
+                            onClick = {
+                                frequencyBand = if (frequencyBand == band.maxRank) null else band.maxRank
+                            },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = when {
+                        query.isNotBlank() -> "No kanji match \"$query\""
+                        hasFilters -> "No kanji match these filters"
+                        else -> "No kanji found"
+                    },
+                    color = surfaceColors.textMuted,
+                    fontSize = 13.sp
+                )
+            }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val selectedId = filtered.getOrNull(selectedIndex)?.id
+                items(filtered, key = { it.id }) { card ->
+                    KanjiRow(
+                        card = card,
+                        dataCenter = dataCenter,
+                        selected = card.id == selectedId,
+                        onClick = {
+                            navigationState.navigate(MainDestination.Info(InfoScreenData.Letter(card.id)))
+                        },
+                        accent = accent,
+                        surfaceColors = surfaceColors
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VocabularyBrowse(
+    navigationState: MainNavigationState,
+    appDataRepository: AppDataRepository,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    var query by remember { mutableStateOf("") }
+    var words by remember { mutableStateOf<List<JapaneseWord>>(emptyList()) }
+    var searching by remember { mutableStateOf(false) }
+    var jlptLevels by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var topics by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var loadingDeck by remember { mutableStateOf<String?>(null) }
+    var selectedIndex by remember { mutableStateOf(0) }
+
+    // Ids for each classification, loaded lazily from the bundled data — the
+    // same source that powers the JLPT / topic import decks. A word belongs to
+    // a filter if its id appears in any selected classification's card list.
+    val deckIdSets = remember { mutableStateMapOf<String, Set<Long>>() }
+    val scope = rememberCoroutineScope()
+
+    fun loadDeck(classification: WordClassification) {
+        if (classification.dbValue in deckIdSets) return
+        scope.launch {
+            loadingDeck = classification.dbValue
+            deckIdSets[classification.dbValue] = appDataRepository
+                .getImportDeckWords(classification.dbValue)
+                .map { it.id }
+                .toSet()
+            loadingDeck = null
+        }
+    }
+
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.isBlank()) {
+            words = emptyList()
+            searching = false
+            return@LaunchedEffect
+        }
+        searching = true
+        delay(200)
+        words = appDataRepository.getWordsWithText(q, limit = 50)
+        searching = false
+    }
+
+    val hasFilters = jlptLevels.isNotEmpty() || topics.isNotEmpty()
+
+    val activeDeckIds = remember(jlptLevels, topics, deckIdSets) {
+        buildSet {
+            jlptLevels.forEach { level -> deckIdSets["n$level"]?.let { addAll(it) } }
+            topics.forEach { index -> deckIdSets["o$index"]?.let { addAll(it) } }
+        }
+    }
+
+    val visibleWords = remember(words, activeDeckIds) {
+        if (activeDeckIds.isEmpty()) words
+        else words.filter { it.id in activeDeckIds }
+    }
+
+    // Keep the arrow-selected row visible as the selection moves.
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedIndex, visibleWords.size) {
+        if (visibleWords.isNotEmpty()) {
+            listState.animateScrollToItem(selectedIndex.coerceIn(0, visibleWords.lastIndex))
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Vocabulary",
+                    color = surfaceColors.textPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (hasFilters) "${visibleWords.size} words · ${jlptLevels.size + topics.size} filter${if (jlptLevels.size + topics.size == 1) "" else "s"} active"
+                    else "Search words, terms and readings",
+                    color = surfaceColors.textMuted,
+                    fontSize = 12.sp
+                )
+            }
+            TextButton(onClick = { navigationState.navigate(MainDestination.SearchEngine) }) {
+                Text("Full search", color = accent.primary, fontSize = 12.sp)
+            }
+        }
+
+        // Arrow keys move the selection through the results; Enter opens the
+        // selected one; Escape clears the query. Attached to an ancestor of the
+        // text field so it works the moment the field has focus.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionDown -> {
+                            if (visibleWords.isNotEmpty()) {
+                                selectedIndex = (selectedIndex + 1) % visibleWords.size
+                            }
+                            true
+                        }
+                        Key.DirectionUp -> {
+                            if (visibleWords.isNotEmpty()) {
+                                selectedIndex = (selectedIndex - 1 + visibleWords.size) % visibleWords.size
+                            }
+                            true
+                        }
+                        Key.Enter -> {
+                            visibleWords.getOrNull(selectedIndex)?.let { word ->
+                                navigationState.navigate(MainDestination.Info(word.toInfoScreenData()))
+                            }
+                            visibleWords.isNotEmpty()
+                        }
+                        Key.Escape -> {
+                            if (query.isNotBlank()) {
+                                query = ""
+                                selectedIndex = 0
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        else -> false
+                    }
+                }
+        ) {
+            LibrarySearchField(
+                value = query,
+                onValueChange = { query = it; selectedIndex = 0 },
+                placeholder = "Search vocabulary…",
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            FilterBarHeader(
+                hasFilters = hasFilters,
+                onClear = { jlptLevels = emptySet(); topics = emptySet(); selectedIndex = 0 },
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+            LibraryFilterGroup("JLPT") {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items((5 downTo 1).toList()) { level ->
+                        LibraryFilterChip(
+                            label = "N$level",
+                            selected = level in jlptLevels,
+                            onClick = {
+                                if (level in jlptLevels) {
+                                    jlptLevels = jlptLevels - level
+                                } else {
+                                    jlptLevels = jlptLevels + level
+                                    loadDeck(WordClassification.JLPT(level))
+                                }
+                            },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
+            }
+            LibraryFilterGroup("Topic") {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(vocabTopicOptions) { topic ->
+                        LibraryFilterChip(
+                            label = topic.label,
+                            selected = topic.index in topics,
+                            onClick = {
+                                if (topic.index in topics) {
+                                    topics = topics - topic.index
+                                } else {
+                                    topics = topics + topic.index
+                                    loadDeck(WordClassification.Other(topic.index))
+                                }
+                            },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
+            }
+            if (loadingDeck != null) {
+                Text(
+                    text = "Loading filter…",
+                    color = surfaceColors.textMuted,
+                    fontSize = 11.sp
+                )
+            }
+        }
+
+        when {
+            searching -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text("Searching…", color = surfaceColors.textMuted, fontSize = 13.sp)
+            }
+            query.isBlank() -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    "Type a word, reading or meaning — for example 食べる, たべる or \"to eat\".",
+                    color = surfaceColors.textMuted,
+                    fontSize = 13.sp
+                )
+            }
+            visibleWords.isEmpty() -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = if (hasFilters) "No words match these filters" else "No words match \"$query\"",
+                    color = surfaceColors.textMuted,
+                    fontSize = 13.sp
+                )
+            }
+            else -> LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val selectedWordId = visibleWords.getOrNull(selectedIndex)?.id
+                items(visibleWords, key = { it.id }) { word ->
+                    VocabRow(
+                        word = word,
+                        selected = word.id == selectedWordId,
+                        onClick = {
+                            navigationState.navigate(MainDestination.Info(word.toInfoScreenData()))
+                        },
+                        accent = accent,
+                        surfaceColors = surfaceColors
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================
+// Filter chips (in-place browsers)
+// ============================================
+
+private data class GradeOption(val value: Int, val label: String)
+
+private val kanjiGradeOptions = listOf(
+    GradeOption(1, "1"), GradeOption(2, "2"), GradeOption(3, "3"),
+    GradeOption(4, "4"), GradeOption(5, "5"), GradeOption(6, "6"),
+    GradeOption(8, "Secondary"), GradeOption(9, "Names"), GradeOption(10, "Names Var.")
+)
+
+private data class FrequencyBandOption(val maxRank: Int, val label: String)
+
+private val frequencyBandOptions = listOf(
+    FrequencyBandOption(500, "Top 500"),
+    FrequencyBandOption(1000, "Top 1000"),
+    FrequencyBandOption(2000, "Top 2000"),
+    FrequencyBandOption(5000, "Top 5000")
+)
+
+private data class VocabTopicOption(val index: Int, val label: String)
+
+private val vocabTopicOptions = listOf(
+    VocabTopicOption(1, "Time"), VocabTopicOption(2, "Week"), VocabTopicOption(3, "Verbs"),
+    VocabTopicOption(4, "Colors"), VocabTopicOption(5, "Food"), VocabTopicOption(6, "Japanese Food"),
+    VocabTopicOption(7, "Grammar"), VocabTopicOption(8, "Animals"), VocabTopicOption(9, "Body"),
+    VocabTopicOption(10, "Places"), VocabTopicOption(11, "Cities"), VocabTopicOption(12, "Transport")
+)
+
+@Composable
+private fun FilterBarHeader(
+    hasFilters: Boolean,
+    onClear: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "FILTERS",
+            color = accent.primary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(Modifier.weight(1f))
+        if (hasFilters) {
+            TextButton(
+                onClick = onClear,
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                Text("Clear", color = accent.primary, fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryFilterGroup(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            color = surfaceColors.textMuted,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium
+        )
+        content()
+    }
+}
+
+@Composable
+private fun LibraryFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val bg by animateColorAsState(
+        targetValue = if (selected) accent.primary.copy(alpha = 0.14f) else surfaceColors.surfaceInteractive,
+        label = "filterChipBg"
+    )
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(bg)
+            .border(1.dp, if (selected) accent.primary.copy(alpha = 0.4f) else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = if (selected) accent.primary else surfaceColors.textSecondary,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
+        )
+    }
+}
+
+// ============================================
+// Due / Favorites modes
+// ============================================
+
+@Composable
+private fun DueList(
+    navigationState: MainNavigationState,
+    unifiedDecks: List<UnifiedDeck>,
+    totalNew: Int,
+    totalDue: Int,
+    decksState: LibraryDecksState?,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val dueDecks = unifiedDecks
+        .filter { it.newCount > 0 || it.dueCount > 0 }
+        .sortedWith(compareByDescending<UnifiedDeck> { it.dueCount }.thenByDescending { it.newCount })
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item(key = "due-header") {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Due",
+                    color = surfaceColors.textPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                ContinueStudyingCard(
+                    totalNew = totalNew,
+                    totalDue = totalDue,
+                    onStudy = { startStudy(navigationState, decksState) },
+                    onCreateLetterDeck = {
+                        navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
+                    },
+                    onCreateVocabDeck = {
+                        navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Vocab))
+                    },
+                    accent = accent,
+                    surfaceColors = surfaceColors
+                )
+            }
+        }
+
+        if (dueDecks.isEmpty()) {
+            item(key = "due-empty") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(surfaceColors.surface)
+                        .padding(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "All caught up 🎉",
+                        color = surfaceColors.textPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Nothing is due today. Study some new cards or browse content to keep building your knowledge.",
+                        color = surfaceColors.textMuted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            item(key = "due-title") { SectionTitle("WITH DUE OR NEW CARDS", accent, surfaceColors) }
+            items(dueDecks, key = { "due-${it.category}-${it.deckId}" }) { deck ->
+                DeckRow(
+                    deck = deck,
+                    onClick = {
+                        val configuration = when (deck.category) {
+                            DeckCategory.Letters -> DeckDetailsScreenConfiguration.LetterDeck(deck.deckId)
+                            DeckCategory.Vocabulary -> DeckDetailsScreenConfiguration.VocabDeck(deck.deckId)
+                        }
+                        navigationState.navigate(MainDestination.DeckDetails(configuration))
+                    },
+                    accent = accent,
+                    surfaceColors = surfaceColors
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FavoritesList(
+    navigationState: MainNavigationState,
+    dataCenter: KaiteyoDataCenter,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val favoriteCards = remember(dataCenter.favorites.value) {
+        dataCenter.favorites.value.mapNotNull { dataCenter.cardById(it) }
+            .sortedBy { it.id }
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item(key = "fav-header") {
+            Text(
+                text = "Favorites",
+                color = surfaceColors.textPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (favoriteCards.isEmpty()) {
+            item(key = "fav-empty") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(surfaceColors.surface)
+                        .padding(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No favorites yet",
+                        color = surfaceColors.textPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Tap the ★ on any kanji or word detail page to keep it here.",
+                        color = surfaceColors.textMuted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            items(favoriteCards, key = { it.id }) { card ->
+                KanjiRow(
+                    card = card,
+                    dataCenter = dataCenter,
+                    onClick = {
+                        navigationState.navigate(MainDestination.Info(InfoScreenData.Letter(card.id)))
+                    },
+                    accent = accent,
+                    surfaceColors = surfaceColors
+                )
+            }
+        }
+    }
+}
+
+// ============================================
+// Shared pieces
+// ============================================
+
+@Composable
+private fun LibrarySearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(surfaceColors.surfaceInteractive)
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = surfaceColors.textMuted,
+            modifier = Modifier.size(19.dp)
+        )
+        androidx.compose.foundation.text.BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = androidx.compose.ui.text.TextStyle(
+                color = surfaceColors.textPrimary,
+                fontSize = 14.sp
+            ),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(accent.primary),
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+            decorationBox = { inner ->
+                if (value.isEmpty()) {
+                    Text(placeholder, color = surfaceColors.textMuted, fontSize = 14.sp)
+                }
+                inner()
+            }
+        )
+        if (value.isNotEmpty()) {
+            IconButton(onClick = { onValueChange("") }, modifier = Modifier.size(22.dp)) {
+                Icon(Icons.Default.Close, "Clear", tint = surfaceColors.textMuted, modifier = Modifier.size(15.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModeChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        targetValue = when {
+            selected -> accent.primary.copy(alpha = 0.16f)
+            hovered -> surfaceColors.surfaceInteractive
+            else -> surfaceColors.surface
+        },
+        label = "modeChipBg"
+    )
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(background)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .hoverable(interactionSource)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = if (selected) accent.primary else surfaceColors.textSecondary,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun ManageMenu(
+    navigationState: MainNavigationState,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    var open by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(Icons.Default.MoreVert, "Manage", tint = surfaceColors.textSecondary)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            ManageItem("Deck Browser", "Create, rename, merge & delete decks", { open = false; navigationState.navigate(MainDestination.DeckBrowser) })
+            ManageItem("Card Browser", "Search, filter & bulk-edit every card", { open = false; navigationState.navigate(MainDestination.CardBrowser()) })
+            ManageItem("Tags", "Organize cards with nested tags", { open = false; navigationState.navigate(MainDestination.TagManager) })
+            ManageItem("Flags", "Mark and filter flagged cards", { open = false; navigationState.navigate(MainDestination.FlagManager) })
+            ManageItem("Statistics", "Study history, streaks & progress charts", { open = false; navigationState.navigate(MainDestination.StatisticsDashboard) })
+            ManageItem("Import / Export", "Move decks and cards in or out of Kaiteyo", { open = false; navigationState.navigate(MainDestination.ImportExport) })
+            ManageItem("Collections", "Smart collections & filtered decks", { open = false; navigationState.navigate(MainDestination.Collections) })
+        }
+    }
+}
+
+@Composable
+private fun ManageItem(
+    label: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = {
+            Column {
+                Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(description, fontSize = 11.sp, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        onClick = onClick
+    )
+}
+
+// ============================================
+// Row composables
+// ============================================
+
+@Composable
+private fun SearchDeckRow(
+    deck: UnifiedDeck,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        when {
+            selected -> accent.primary.copy(alpha = 0.16f)
+            hovered -> surfaceColors.surfaceInteractive
+            else -> surfaceColors.surface
+        }
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .hoverable(interactionSource)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(accent.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(if (deck.category == DeckCategory.Letters) "字" else "語", fontSize = 15.sp)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = deck.title,
+                color = surfaceColors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = deck.categoryName(),
+                color = surfaceColors.textMuted,
+                fontSize = 11.sp
+            )
+        }
+        if (deck.newCount > 0 || deck.dueCount > 0) {
+            MiniCountBadge(deck.newCount + deck.dueCount, accent.primary)
+        }
+    }
+}
+
+@Composable
+private fun KanjiRow(
+    card: KaiteyoCard,
+    dataCenter: KaiteyoDataCenter,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        when {
+            selected -> accent.primary.copy(alpha = 0.16f)
+            hovered -> surfaceColors.surfaceInteractive
+            else -> surfaceColors.surface
+        }
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .hoverable(interactionSource)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = card.character,
+            fontSize = 22.sp,
+            color = surfaceColors.textPrimary,
+            modifier = Modifier.width(40.dp)
+        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = card.reading.ifBlank { "—" },
+                color = surfaceColors.textSecondary,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = card.meaning.take(60).ifBlank { "No meaning" },
+                color = surfaceColors.textMuted,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            dataCenter.classifications[card.id].orEmpty()
+                .firstOrNull { it.startsWith("n") }
+                ?.let { level ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(accent.primary.copy(alpha = 0.12f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(level.uppercase(), color = accent.primary, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            card.flag.takeIf { it != CardFlagType.None }?.let { flag ->
+                Box(Modifier.size(8.dp).clip(CircleShape).background(flag.colorFromHex()))
+            }
+            if (card.isFavorite) {
+                Text("★", color = androidx.compose.ui.graphics.Color(0xFFFFB300), fontSize = 14.sp)
+            }
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = surfaceColors.textMuted,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun VocabRow(
+    word: JapaneseWord,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        when {
+            selected -> accent.primary.copy(alpha = 0.16f)
+            hovered -> surfaceColors.surfaceInteractive
+            else -> surfaceColors.surface
+        }
+    )
+    val expression = word.reading.kanjiReading ?: word.reading.kanaReading
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .hoverable(interactionSource)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = expression,
+                color = surfaceColors.textPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${word.reading.kanaReading} · ${word.combinedGlossary().take(50)}",
+                color = surfaceColors.textMuted,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = surfaceColors.textMuted,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+// ============================================
+// Legacy pieces preserved from the original hub
 // ============================================
 
 private fun LetterSrsDeck.totalNew(): Int = progressMap.values.sumOf { it.dailyNew.size }
@@ -606,50 +2018,6 @@ private fun buildVocabCards(
         VocabPracticeScreenConfiguration.Card(cardId, deckId)
     }
     return newCards + dueCards
-}
-
-@Composable
-private fun SearchBarCard(
-    onClick: () -> Unit,
-    accent: KaiteyoAccentScheme,
-    surfaceColors: SurfaceColors
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-    val background by animateColorAsState(
-        if (hovered) surfaceColors.surfaceInteractive else surfaceColors.surface
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(background)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .hoverable(interactionSource)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            tint = surfaceColors.textMuted,
-            modifier = Modifier.size(20.dp)
-        )
-        Text(
-            text = "Search cards, kanji, words, sentences…",
-            color = surfaceColors.textMuted,
-            fontSize = 14.sp
-        )
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = "Search",
-            color = accent.primary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
 }
 
 @Composable
@@ -1028,73 +2396,4 @@ private fun SectionTitle(title: String, accent: KaiteyoAccentScheme, surfaceColo
         fontWeight = FontWeight.Medium,
         modifier = Modifier.padding(top = 8.dp)
     )
-}
-
-@Composable
-private fun SectionCard(
-    glyph: String,
-    title: String,
-    subtitle: String,
-    count: Int? = null,
-    onClick: (() -> Unit)?,
-    accent: KaiteyoAccentScheme,
-    surfaceColors: SurfaceColors
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-    val background by animateColorAsState(
-        if (hovered) surfaceColors.surfaceInteractive else surfaceColors.surface
-    )
-
-    val base = Modifier
-        .fillMaxWidth()
-        .clip(RoundedCornerShape(16.dp))
-        .background(background)
-
-    val clickable = if (onClick != null) {
-        base
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .hoverable(interactionSource)
-    } else {
-        base
-    }
-
-    Row(
-        modifier = clickable.padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .background(accent.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(glyph, fontSize = 20.sp)
-        }
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = title,
-                color = surfaceColors.textPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                color = surfaceColors.textMuted,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        if (count != null) {
-            Text(
-                text = count.toString(),
-                color = accent.primary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
 }

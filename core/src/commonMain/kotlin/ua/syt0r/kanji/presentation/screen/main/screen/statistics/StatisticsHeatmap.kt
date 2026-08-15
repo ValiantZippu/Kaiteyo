@@ -47,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -60,7 +59,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import kotlinx.coroutines.delay
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
@@ -72,20 +70,32 @@ import ua.syt0r.kanji.core.statistics.HeatmapYear
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import kotlin.math.roundToInt
 
 // ============================================================
-// CINEMATIC YEARLY HEATMAP
+// YEARLY ACTIVITY HEATMAP — the classic contribution grid,
+// revamped for Kaiteyo.
 //
-// • Floating tooltip that follows the cursor over the hovered
-//   cell (clamped to the container, entrance is a quick fade+pop).
-// • Cells sweep in with a left→right wave (staggered alpha+scale)
-//   every time the year changes.
-// • Header counters count up to their real values.
-// • Year switches animate directionally — the new year slides in
-//   from the direction you navigated.
-// • Tap a day for the full report (every card practiced that day).
+// • Fixed-size square cells in a Mon→Sun week layout, like the
+//   Anki heatmap addon / GitHub contribution graph.
+// • A discrete 5-level intensity ramp (empty → full accent)
+//   instead of a washed-out continuous gradient.
+// • Month labels run across the top where each month starts;
+//   Mon / Wed / Fri anchor the weekday gutter.
+// • Year navigation with animated counters (active days,
+//   reviews, streak), a cursor-following tooltip, and tap for
+//   the full day report.
 // ============================================================
+
+private val HeatmapCellSize = 16.dp
+private val HeatmapCellGap = 3.dp
+private val HeatmapWeekGap = 3.dp
+private val HeatmapMonthRowHeight = 18.dp
+private val HeatmapGutterWidth = 28.dp
+
+/** Discrete level alphas on the accent — level 0 is the neutral empty cell. */
+private val HeatmapLevelAlphas = floatArrayOf(0.28f, 0.48f, 0.72f, 1f)
 
 @Composable
 fun StatisticsHeatmap(
@@ -205,55 +215,20 @@ fun StatisticsHeatmap(
                     it.reviews + it.writingAttempts + it.examsTaken * 20
                 } ?: 1).coerceAtLeast(1)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(scrollState),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    // Weekday gutter
-                    Column(Modifier.width(24.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        listOf("", "Mon", "", "Wed", "", "Fri", "").forEach {
-                            Text(it, fontSize = 9.sp, color = surfaceColors.textMuted, modifier = Modifier.height(14.dp))
-                        }
-                    }
-                    Spacer(Modifier.width(6.dp))
-                    // Week columns with month labels
-                    Column {
-                        Row {
-                            weeks.forEach { week ->
-                                val label = week.firstOrNull()?.monthLabel() ?: ""
-                                Text(
-                                    label, fontSize = 9.sp, color = surfaceColors.textMuted,
-                                    modifier = Modifier.width(14.dp), maxLines = 1
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(3.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            weeks.forEachIndexed { weekIndex, week ->
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    (0 until 7).forEach { dow ->
-                                        val date = week.getOrNull(dow) ?: return@forEach
-                                        val activity = target.cells[date]
-                                        HeatmapCellBox(
-                                            date = date,
-                                            activity = activity,
-                                            accent = accent.primary,
-                                            maxTotal = maxTotal,
-                                            staggerDelayMs = ((weekIndex * 3) + dow) * 4L,
-                                            reducedMotion = reducedMotion,
-                                            onHover = { hoveredDay = it },
-                                            onClick = { day ->
-                                                hoveredDay = null
-                                                onDayClick(day)
-                                            },
-                                            onPositioned = { d, coords -> coordsByDate[d] = coords }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                HeatmapGrid(
+                    weeks = weeks,
+                    cells = target.cells,
+                    accent = accent.primary,
+                    surfaceColors = surfaceColors,
+                    maxTotal = maxTotal,
+                    scrollState = scrollState,
+                    onHover = { hoveredDay = it },
+                    onClick = { day ->
+                        hoveredDay = null
+                        onDayClick(day)
+                    },
+                    onPositioned = { d, coords -> coordsByDate[d] = coords }
+                )
             }
 
             // ── Floating cursor-following tooltip ──
@@ -284,7 +259,158 @@ fun StatisticsHeatmap(
 }
 
 // ============================================================
-// Individual cell with wave-staggered entrance animation
+// Grid — month labels · weekday gutter · fixed square cells
+// ============================================================
+
+@Composable
+private fun HeatmapGrid(
+    weeks: List<List<LocalDate?>>,
+    cells: Map<LocalDate, DailyActivity>,
+    accent: Color,
+    surfaceColors: SurfaceColors,
+    maxTotal: Int,
+    scrollState: androidx.compose.foundation.ScrollState,
+    onHover: (DailyActivity?) -> Unit,
+    onClick: (DailyActivity) -> Unit,
+    onPositioned: (LocalDate, LayoutCoordinates) -> Unit
+) {
+    val shape = RoundedCornerShape(4.dp)
+    val emptyColor = surfaceColors.textMuted.copy(alpha = 0.10f)
+
+    Row(verticalAlignment = Alignment.Top) {
+        // Weekday gutter — Mon / Wed / Fri, aligned with the cell rows and
+        // pushed below the month-label row so the grid lines up.
+        Column(
+            Modifier
+                .width(HeatmapGutterWidth)
+                .padding(top = HeatmapMonthRowHeight + 4.dp),
+            verticalArrangement = Arrangement.spacedBy(HeatmapCellGap)
+        ) {
+            (0 until 7).forEach { dow ->
+                val label = when (dow) {
+                    1 -> "Mon"
+                    3 -> "Wed"
+                    5 -> "Fri"
+                    else -> ""
+                }
+                Text(
+                    label,
+                    fontSize = 9.sp,
+                    color = surfaceColors.textMuted,
+                    modifier = Modifier
+                        .width(HeatmapGutterWidth)
+                        .height(HeatmapCellSize),
+                    maxLines = 1
+                )
+            }
+        }
+        Spacer(Modifier.width(6.dp))
+        Row(Modifier.horizontalScroll(scrollState), verticalAlignment = Alignment.Top) {
+            Column {
+                // Month labels — shown at the week column where each month starts
+                // (its day 1), falling back to the week's first date when a week
+                // contains no 1st.
+                Row {
+                    var prevMonth: Int? = null
+                    weeks.forEach { week ->
+                        val labelMonth = week.firstOrNull { it?.dayOfMonth == 1 }?.monthNumber
+                            ?: week.firstOrNull()?.monthNumber
+                        val label = if (labelMonth != null && labelMonth != prevMonth) {
+                            Month.entries[labelMonth - 1].name.take(3)
+                        } else {
+                            ""
+                        }
+                        if (labelMonth != null) prevMonth = labelMonth
+                        Text(
+                            label,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = surfaceColors.textMuted,
+                            modifier = Modifier
+                                .width(HeatmapCellSize)
+                                .height(HeatmapMonthRowHeight),
+                            maxLines = 1
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(HeatmapWeekGap)) {
+                    weeks.forEach { week ->
+                        Column(verticalArrangement = Arrangement.spacedBy(HeatmapCellGap)) {
+                            (0 until 7).forEach { dow ->
+                                val date = week.getOrNull(dow) ?: return@forEach
+                                val activity = cells[date]
+                                HeatmapCell(
+                                    date = date,
+                                    activity = activity,
+                                    accent = accent,
+                                    maxTotal = maxTotal,
+                                    emptyColor = emptyColor,
+                                    shape = shape,
+                                    onHover = onHover,
+                                    onClick = onClick,
+                                    onPositioned = { coords -> onPositioned(date, coords) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeatmapCell(
+    date: LocalDate,
+    activity: DailyActivity?,
+    accent: Color,
+    maxTotal: Int,
+    emptyColor: Color,
+    shape: androidx.compose.ui.graphics.Shape,
+    onHover: (DailyActivity?) -> Unit,
+    onClick: (DailyActivity) -> Unit,
+    onPositioned: (LayoutCoordinates) -> Unit
+) {
+    var isHovered by remember(date) { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .size(HeatmapCellSize)
+            .clip(shape)
+            .background(activity?.heatmapLevelColor(accent, maxTotal, emptyColor) ?: Color.Transparent)
+            .border(
+                width = 1.dp,
+                color = if (isHovered) accent.copy(alpha = 0.9f) else Color.Transparent,
+                shape = shape
+            )
+            .onGloballyPositioned(onPositioned)
+            .pointerInput(date, activity) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        when (event.type) {
+                            PointerEventType.Enter -> {
+                                isHovered = true
+                                onHover(activity)
+                            }
+                            PointerEventType.Exit -> {
+                                isHovered = false
+                                onHover(null)
+                            }
+                            else -> {}
+                        }
+                    }
+                }
+            }
+            .clickable(enabled = activity != null && !activity.isEmpty) {
+                activity?.let(onClick)
+            }
+    )
+}
+
+// ============================================================
+// Floating tooltip
 // ============================================================
 
 @Composable
@@ -338,76 +464,6 @@ private fun HoveredDayTooltip(
         )
     }
 }
-
-@Composable
-private fun HeatmapCellBox(
-    date: LocalDate,
-    activity: DailyActivity?,
-    accent: Color,
-    maxTotal: Int,
-    staggerDelayMs: Long,
-    reducedMotion: Boolean,
-    onHover: (DailyActivity?) -> Unit,
-    onClick: (DailyActivity) -> Unit,
-    onPositioned: (LocalDate, LayoutCoordinates) -> Unit
-) {
-    val shape = RoundedCornerShape(3.dp)
-    var isHovered by remember { mutableStateOf(false) }
-    val anim = remember { Animatable(if (reducedMotion) 1f else 0f) }
-
-    LaunchedEffect(date.year, date) {
-        if (reducedMotion) {
-            anim.snapTo(1f)
-            return@LaunchedEffect
-        }
-        delay(staggerDelayMs)
-        anim.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
-    }
-
-    Box(
-        modifier = Modifier
-            .size(14.dp)
-            .graphicsLayer {
-                val a = anim.value
-                alpha = a
-                scaleX = 0.55f + 0.45f * a
-                scaleY = 0.55f + 0.45f * a
-            }
-            .clip(shape)
-            .background(activity?.heatmapColor(accent, maxTotal) ?: Color.Transparent)
-            .border(
-                width = 1.dp,
-                color = if (isHovered) accent.copy(alpha = 0.9f) else Color.Transparent,
-                shape = shape
-            )
-            .onGloballyPositioned { onPositioned(date, it) }
-            .pointerInput(date, activity) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        when (event.type) {
-                            PointerEventType.Enter -> {
-                                isHovered = true
-                                onHover(activity)
-                            }
-                            PointerEventType.Exit -> {
-                                isHovered = false
-                                onHover(null)
-                            }
-                            else -> {}
-                        }
-                    }
-                }
-            }
-            .clickable(enabled = activity != null && !activity.isEmpty) {
-                activity?.let(onClick)
-            }
-    )
-}
-
-// ============================================================
-// Floating tooltip
-// ============================================================
 
 @Composable
 private fun FloatingDayTooltip(day: DailyActivity, modifier: Modifier = Modifier) {
@@ -498,7 +554,15 @@ private fun HeatmapLegend(muted: Color, accent: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Less", fontSize = 9.sp, color = muted)
         Spacer(Modifier.width(4.dp))
-        listOf(0.05f, 0.3f, 0.55f, 0.75f, 0.95f).forEach { alpha ->
+        // Level 0 (empty) plus the four intensity levels.
+        Box(
+            Modifier
+                .size(10.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(muted.copy(alpha = 0.10f))
+        )
+        Spacer(Modifier.width(2.dp))
+        HeatmapLevelAlphas.forEach { alpha ->
             Box(
                 Modifier
                     .size(10.dp)
@@ -512,13 +576,23 @@ private fun HeatmapLegend(muted: Color, accent: Color) {
     }
 }
 
-/** Continuous intensity gradient: the busiest day of the year is full strength. */
-private fun DailyActivity.heatmapColor(accent: Color, maxTotal: Int): Color {
+/** Discrete 5-level ramp: empty → four accent intensities by share of the busiest day. */
+private fun DailyActivity.heatmapLevelColor(
+    accent: Color,
+    maxTotal: Int,
+    emptyColor: Color
+): Color {
     val total = reviews + writingAttempts + examsTaken * 20
-    if (total <= 0) return accent.copy(alpha = 0.05f)
-    if (maxTotal <= 0) return accent.copy(alpha = 0.3f)
-    val ratio = (total.toFloat() / maxTotal).coerceIn(0f, 1f)
-    return accent.copy(alpha = 0.22f + ratio * 0.73f)
+    if (total <= 0) return emptyColor
+    if (maxTotal <= 0) return accent.copy(alpha = HeatmapLevelAlphas[0])
+    val ratio = total.toFloat() / maxTotal
+    val index = when {
+        ratio <= 0.25f -> 0
+        ratio <= 0.5f -> 1
+        ratio <= 0.75f -> 2
+        else -> 3
+    }
+    return accent.copy(alpha = HeatmapLevelAlphas[index])
 }
 
 private fun minutesLabel(minutes: Long): String = when {
@@ -548,5 +622,4 @@ private fun buildYearWeeks(year: Int): List<List<LocalDate?>> {
     return weeks
 }
 
-private fun LocalDate.monthLabel(): String =
-    if (dayOfMonth == 1) Month.entries[monthNumber - 1].name.take(3) else ""
+

@@ -41,6 +41,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ── Tag Create Dialog ──
 
@@ -61,7 +62,7 @@ fun TagCreateDialog(
         "#FFFFFFFF", "#FF4CAF50", "#FFFF9800", "#FF2196F3"
     )
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create Tag") },
         text = {
@@ -170,7 +171,7 @@ fun TagEditDialog(
         "#FFFFFFFF", "#FF4CAF50", "#FFFF9800", "#FF2196F3"
     )
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Tag") },
         text = {
@@ -225,7 +226,7 @@ fun TagMergeDialog(
     var sourceId by remember { mutableStateOf<Long?>(null) }
     var targetId by remember { mutableStateOf<Long?>(null) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Merge Tags") },
         text = {
@@ -296,7 +297,7 @@ fun TagApplyDialog(
         else cards.filter { it.character.contains(searchQuery) || it.meaning.contains(searchQuery) || it.deck.contains(searchQuery) }
     }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Apply \"${tag.name}\" to Cards") },
         text = {

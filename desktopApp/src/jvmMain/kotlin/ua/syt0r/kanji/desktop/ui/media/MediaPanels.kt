@@ -32,7 +32,10 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -81,6 +84,11 @@ import ua.syt0r.kanji.desktop.engine.media.MediaCapture
 import ua.syt0r.kanji.desktop.engine.media.MediaCoverageStats
 import ua.syt0r.kanji.desktop.engine.media.MediaEngine
 import ua.syt0r.kanji.desktop.engine.media.MediaItem
+import ua.syt0r.kanji.desktop.engine.playback.AspectRatioPreset
+import ua.syt0r.kanji.desktop.engine.playback.AudioChannelPreset
+import ua.syt0r.kanji.desktop.engine.playback.EqualizerPreset
+import ua.syt0r.kanji.desktop.engine.playback.PlaybackCapability
+import ua.syt0r.kanji.desktop.engine.playback.VideoDisplayMode
 import ua.syt0r.kanji.desktop.engine.mining.MiningMode
 import ua.syt0r.kanji.desktop.engine.shortcuts.KeyChord
 import ua.syt0r.kanji.desktop.designsystem.DsPromptDialog
@@ -110,6 +118,10 @@ fun MediaLibraryPanel(state: AppState) {
     // either place filters the same list, in both directions.
     val query = media.librarySearchQuery
     var collection by remember { mutableStateOf("") }
+    // Playlist creation / rename dialog state.
+    var createPlaylistOpen by remember { mutableStateOf(false) }
+    var newPlaylistName by remember { mutableStateOf("") }
+    var renameTarget by remember { mutableStateOf<ua.syt0r.kanji.desktop.engine.media.MediaPlaylist?>(null) }
 
     Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
         DsSectionHeader(
@@ -228,6 +240,39 @@ fun MediaLibraryPanel(state: AppState) {
             }
         }
 
+        DsCard {
+            Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Playlists", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "Named, reorderable playlists that persist in the library — create one, add items, then play it as a queue.",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    if (library.playlists.isNotEmpty()) {
+                        DsButton(text = "New", icon = Icons.Default.Add, kind = DsButtonKind.Secondary, compact = true, onClick = { newPlaylistName = "" ; createPlaylistOpen = true })
+                    }
+                }
+                if (library.playlists.isEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Text(
+                            "No playlists yet.",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DsButton(text = "Create playlist", icon = Icons.Default.Add, compact = true, onClick = { newPlaylistName = "" ; createPlaylistOpen = true })
+                    }
+                } else {
+                    library.playlists.forEach { playlist ->
+                        PlaylistCard(state, playlist, onRename = { renameTarget = it })
+                    }
+                }
+            }
+        }
+
         if (library.folders.isNotEmpty()) {
             DsCard {
                 Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
@@ -266,6 +311,145 @@ fun MediaLibraryPanel(state: AppState) {
                             else "Watcher active · scanning every ~45 s",
                             color = successColor(),
                             fontSize = DsType.Caption
+                        )
+                    }
+                }
+            }
+        }
+
+        if (createPlaylistOpen) {
+            DsPromptDialog(
+                title = "Create playlist",
+                placeholder = "Playlist name",
+                initialValue = newPlaylistName,
+                onConfirm = { name ->
+                    val id = library.createPlaylist(name)
+                    if (id.isNotBlank()) state.toastHost.show("Playlist \"${name.trim()}\" created", kind = ToastKind.Success)
+                    createPlaylistOpen = false
+                },
+                onDismiss = { createPlaylistOpen = false }
+            )
+        }
+        renameTarget?.let { playlist ->
+            DsPromptDialog(
+                title = "Rename playlist",
+                placeholder = "Playlist name",
+                initialValue = playlist.name,
+                onConfirm = { name ->
+                    if (library.renamePlaylist(playlist.id, name)) {
+                        state.toastHost.show("Playlist renamed", kind = ToastKind.Success)
+                    } else {
+                        state.toastHost.show("Name invalid or already in use", kind = ToastKind.Warning)
+                    }
+                    renameTarget = null
+                },
+                onDismiss = { renameTarget = null }
+            )
+        }
+    }
+}
+
+/** Dropdown listing every playlist — one click adds the item to it. */
+@Composable
+private fun AddToPlaylistMenu(state: AppState, item: MediaItem) {
+    val media = state.media
+    val library = media.library
+    val sc = surfaceColors()
+    var open by remember { mutableStateOf(false) }
+    Box {
+        DsIconButton(
+            icon = Icons.Default.VideoLibrary,
+            onClick = { open = true },
+            contentDescription = "Add to playlist",
+            size = 26.dp
+        )
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            modifier = Modifier.background(sc.surfaceElevated)
+        ) {
+            if (library.playlists.isEmpty()) {
+                DropdownMenuItem(
+                    text = { Text("No playlists — create one in the Playlists section", color = sc.textMuted, fontSize = DsType.Caption) },
+                    onClick = { open = false }
+                )
+            } else {
+                library.playlists.forEach { playlist ->
+                    val alreadyIn = playlist.itemIds.contains(item.id)
+                    DropdownMenuItem(
+                        text = { Text((if (alreadyIn) "✓ " else "") + playlist.name, color = sc.textPrimary, fontSize = DsType.Body) },
+                        onClick = {
+                            if (alreadyIn) library.removeFromPlaylist(playlist.id, item.id)
+                            else {
+                                library.addToPlaylist(playlist.id, item.id)
+                                state.toastHost.show("Added to \"${playlist.name}\"", kind = ToastKind.Success)
+                            }
+                            open = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** One named playlist: play / queue / rename / delete, with its item list. */
+@Composable
+private fun PlaylistCard(
+    state: AppState,
+    playlist: ua.syt0r.kanji.desktop.engine.media.MediaPlaylist,
+    onRename: (ua.syt0r.kanji.desktop.engine.media.MediaPlaylist) -> Unit
+) {
+    val media = state.media
+    val library = media.library
+    val sc = surfaceColors()
+    val items = library.playlistItems(playlist)
+
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = accent().primary, modifier = Modifier.size(16.dp))
+            Text(
+                playlist.name,
+                color = sc.textPrimary,
+                fontSize = DsType.Body,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Text("${items.size} item${if (items.size == 1) "" else "s"}", color = sc.textMuted, fontSize = DsType.Caption)
+            DsButton(text = "Play", icon = Icons.Default.PlayArrow, compact = true, enabled = items.isNotEmpty(), onClick = { media.playPlaylist(playlist) })
+            DsButton(text = "Queue", kind = DsButtonKind.Ghost, compact = true, enabled = items.isNotEmpty(), onClick = { media.queuePlaylist(playlist) })
+            DsButton(text = "Rename", kind = DsButtonKind.Ghost, compact = true, onClick = { onRename(playlist) })
+            DsButton(
+                text = "Delete",
+                kind = DsButtonKind.Ghost,
+                compact = true,
+                onClick = {
+                    library.deletePlaylist(playlist.id)
+                    state.toastHost.show("Playlist \"${playlist.name}\" deleted", kind = ToastKind.Info)
+                }
+            )
+        }
+        if (items.isEmpty()) {
+            Text("Empty — add items from the library below", color = sc.textMuted, fontSize = DsType.Caption)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                items.forEachIndexed { index, item ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Text("${index + 1}", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(22.dp))
+                        Text(item.name, color = sc.textSecondary, fontSize = DsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        DsIconButton(
+                            icon = Icons.Default.SkipNext,
+                            onClick = { media.playPlaylist(playlist, item.id) },
+                            contentDescription = "Play from here",
+                            size = 20.dp
+                        )
+                        DsIconButton(
+                            icon = Icons.Default.Delete,
+                            onClick = { library.removeFromPlaylist(playlist.id, item.id) },
+                            contentDescription = "Remove from playlist",
+                            size = 20.dp
                         )
                     }
                 }
@@ -356,12 +540,15 @@ private fun MediaItemRow(state: AppState, item: MediaItem, prominent: Boolean = 
         if (missing) {
             DsButton(text = "Relink", kind = DsButtonKind.Ghost, compact = true, onClick = { relinkItemDialog(state, item) })
         } else {
-            DsIconButton(
-                icon = Icons.Default.SkipNext,
-                onClick = { media.addToQueue(item) },
-                contentDescription = "Add to queue",
-                size = 26.dp
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                DsIconButton(
+                    icon = Icons.Default.SkipNext,
+                    onClick = { media.addToQueue(item) },
+                    contentDescription = "Add to queue",
+                    size = 26.dp
+                )
+                AddToPlaylistMenu(state, item)
+            }
         }
         Icon(
             if (item.favorite) Icons.Default.Star else Icons.Default.StarBorder,
@@ -374,7 +561,7 @@ private fun MediaItemRow(state: AppState, item: MediaItem, prominent: Boolean = 
 
 /** Load a cached poster frame from disk onto the composition (never blocks). */
 @Composable
-private fun ThumbnailImage(path: String, modifier: Modifier = Modifier) {
+internal fun ThumbnailImage(path: String, modifier: Modifier = Modifier) {
     var bitmap by remember(path) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(path) {
         bitmap = withContext(Dispatchers.IO) {
@@ -385,13 +572,266 @@ private fun ThumbnailImage(path: String, modifier: Modifier = Modifier) {
 }
 
 /** Ask the user where a moved file currently lives, then relink it. */
-private fun relinkItemDialog(state: AppState, item: MediaItem) {
+internal fun relinkItemDialog(state: AppState, item: MediaItem) {
     val chooser = javax.swing.JFileChooser().apply {
         dialogTitle = "Relink \"${item.name}\" — choose its current location"
         fileSelectionMode = javax.swing.JFileChooser.FILES_ONLY
     }
     if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
         state.media.relinkItem(item.id, chooser.selectedFile)
+    }
+}
+
+// ============================================
+// MEDIA TUNING PANEL — Video & Audio
+// Display mode, aspect ratio, video adjustments,
+// equalizer, audio delay / channel / output.
+// Every control gates on the backend's real
+// capabilities — nothing decorative.
+// ============================================
+
+@Composable
+fun MediaTuningPanel(state: AppState) {
+    val media = state.media
+    val sc = surfaceColors()
+    val caps = media.activeBackend?.capabilities ?: emptySet()
+
+    Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
+        DsSectionHeader(
+            title = "Video & audio",
+            subtitle = if (media.currentItem != null) "Tune ${media.currentItem!!.name}" else "Open media to adjust playback — every control is wired to the live backend"
+        )
+
+        DsCard {
+            Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                Text("Display", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    TuningSelect(
+                        label = "Display mode",
+                        selected = media.displayMode,
+                        options = VideoDisplayMode.entries,
+                        onSelected = { media.updateDisplayMode(it) },
+                        labelOf = { "${it.label} — ${it.description}" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    TuningSelect(
+                        label = "Aspect ratio",
+                        selected = media.aspectRatio,
+                        options = AspectRatioPreset.entries,
+                        onSelected = { media.updateAspectRatio(it) },
+                        labelOf = { it.label },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (PlaybackCapability.CanVideoAdjustments !in caps) {
+                    Text(
+                        "This backend (${media.backendKind.name}) does not expose video adjustments — the sliders below are hidden, not faked.",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+            }
+        }
+
+        if (PlaybackCapability.CanVideoAdjustments in caps) {
+            DsCard {
+                Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Video adjustments", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        DsButton(
+                            text = "Reset",
+                            kind = DsButtonKind.Ghost,
+                            compact = true,
+                            enabled = !media.videoAdjustments.neutral(),
+                            onClick = { media.resetVideoAdjustments() }
+                        )
+                    }
+                    TuningSlider(label = "Brightness", value = media.videoAdjustments.brightness, range = 0f..200f, neutral = 100f, onValue = { media.updateVideoAdjustment { a -> a.withBrightness(it) } })
+                    TuningSlider(label = "Contrast", value = media.videoAdjustments.contrast, range = 0f..200f, neutral = 100f, onValue = { media.updateVideoAdjustment { a -> a.withContrast(it) } })
+                    TuningSlider(label = "Saturation", value = media.videoAdjustments.saturation, range = 0f..200f, neutral = 100f, onValue = { media.updateVideoAdjustment { a -> a.withSaturation(it) } })
+                    TuningSlider(label = "Gamma", value = media.videoAdjustments.gamma, range = 0f..200f, neutral = 100f, onValue = { media.updateVideoAdjustment { a -> a.withGamma(it) } })
+                    TuningSlider(label = "Hue", value = media.videoAdjustments.hue, range = -180f..180f, neutral = 0f, onValue = { media.updateVideoAdjustment { a -> a.withHue(it) } })
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Deinterlace", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
+                        DsToggle(
+                            checked = media.videoAdjustments.deinterlace,
+                            onCheckedChange = { media.updateVideoAdjustment { it.withDeinterlace(!it.deinterlace) } },
+                            label = ""
+                        )
+                    }
+                }
+            }
+        }
+
+        if (PlaybackCapability.CanChangeSpeed in caps || media.speed != 1f) {
+            DsCard {
+                Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    Text("Playback", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                        Text("Speed", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(110.dp))
+                        Text(
+                            "${media.speed}×",
+                            color = accent().primary,
+                            fontSize = DsType.Label,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.width(56.dp)
+                        )
+                        Slider(
+                            value = media.speed,
+                            onValueChange = { media.updateSpeed(it) },
+                            valueRange = 0.25f..2f,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DsButton(text = "1×", kind = DsButtonKind.Ghost, compact = true, enabled = media.speed != 1f, onClick = { media.updateSpeed(1f) })
+                    }
+                }
+            }
+        }
+
+        DsCard {
+            Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                Text("Audio", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    TuningSelect(
+                        label = "Channel preset",
+                        selected = media.audioChannel,
+                        options = AudioChannelPreset.entries,
+                        onSelected = { media.updateAudioChannel(it) },
+                        labelOf = { it.label },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                TuningStepper(
+                    label = "Audio delay",
+                    value = media.audioDelayMs,
+                    format = { "${it} ms" },
+                    enabled = PlaybackCapability.CanAudioDelay in caps || media.audioDelayMs != 0L,
+                    onDelta = { media.adjustAudioDelay(it) },
+                    onReset = { media.updateAudioDelay(0) }
+                )
+            }
+        }
+
+        if (PlaybackCapability.CanEqualizer in caps) {
+            DsCard {
+                Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Equalizer", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        DsButton(text = "Off", kind = DsButtonKind.Ghost, compact = true, enabled = media.equalizer.active, onClick = { media.disableEqualizer() })
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                        Text("Preset", color = sc.textSecondary, fontSize = DsType.Body)
+                        DsSelect(
+                            selected = media.equalizer.preset,
+                            options = EqualizerPreset.entries,
+                            onSelected = { media.setEqualizerPreset(it) },
+                            labelOf = { it.label },
+                            modifier = Modifier.width(220.dp)
+                        )
+                    }
+                    TuningSlider(
+                        label = "Preamp",
+                        value = media.equalizer.preampDb,
+                        range = -20f..20f,
+                        neutral = 0f,
+                        step = 0.5f,
+                        format = { "${it} dB" },
+                        onValue = { media.updateEqualizerPreamp(it) }
+                    )
+                    Text("Bands (${ua.syt0r.kanji.desktop.engine.playback.EQUALIZER_BAND_FREQUENCIES_HZ.first()} Hz – ${ua.syt0r.kanji.desktop.engine.playback.EQUALIZER_BAND_FREQUENCIES_HZ.last() / 1000} kHz)", color = sc.textSecondary, fontSize = DsType.Caption)
+                    media.equalizer.normalizedBands().forEachIndexed { index, db ->
+                        val hz = ua.syt0r.kanji.desktop.engine.playback.EQUALIZER_BAND_FREQUENCIES_HZ[index]
+                        val label = if (hz >= 1000) "${(hz / 1000).toInt()} kHz" else "${hz.toInt()} Hz"
+                        TuningSlider(
+                            label = label,
+                            value = db,
+                            range = -20f..20f,
+                            neutral = 0f,
+                            step = 0.5f,
+                            format = { "${it} dB" },
+                            onValue = { media.updateEqualizerBand(index, it) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A labeled enum selector used by the tuning panel. */
+@Composable
+private fun <T> TuningSelect(
+    label: String,
+    selected: T,
+    options: List<T>,
+    onSelected: (T) -> Unit,
+    labelOf: (T) -> String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, color = ua.syt0r.kanji.desktop.designsystem.surfaceColors().textSecondary, fontSize = DsType.Caption)
+        DsSelect(
+            selected = selected,
+            options = options,
+            onSelected = onSelected,
+            labelOf = labelOf
+        )
+    }
+}
+
+/** A labeled slider with a neutral reset indicator. */
+@Composable
+internal fun TuningSlider(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    neutral: Float,
+    step: Float = 0f,
+    format: (Float) -> String = { it.toInt().toString() },
+    onValue: (Float) -> Unit
+) {
+    val sc = ua.syt0r.kanji.desktop.designsystem.surfaceColors()
+    val ac = ua.syt0r.kanji.desktop.designsystem.accent()
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+        Text(label, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(110.dp))
+        Slider(
+            value = value.coerceIn(range.start, range.endInclusive),
+            onValueChange = onValue,
+            valueRange = range,
+            steps = if (step > 0f) ((range.endInclusive - range.start) / step).toInt() - 1 else 0,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            format(value),
+            color = if (value == neutral) sc.textMuted else ac.primary,
+            fontSize = DsType.Caption,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(56.dp)
+        )
+    }
+}
+
+/** A − / + stepper with a reset (used for audio delay). */
+@Composable
+private fun TuningStepper(
+    label: String,
+    value: Long,
+    format: (Long) -> String,
+    enabled: Boolean,
+    onDelta: (Long) -> Unit,
+    onReset: () -> Unit
+) {
+    val sc = ua.syt0r.kanji.desktop.designsystem.surfaceColors()
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+        Text(label, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
+        DsButton(text = "−50", kind = DsButtonKind.Ghost, compact = true, enabled = enabled, onClick = { onDelta(-50) })
+        DsButton(text = "−500", kind = DsButtonKind.Ghost, compact = true, enabled = enabled, onClick = { onDelta(-500) })
+        Text(format(value), color = ua.syt0r.kanji.desktop.designsystem.accent().primary, fontSize = DsType.Label, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(80.dp))
+        DsButton(text = "+500", kind = DsButtonKind.Ghost, compact = true, enabled = enabled, onClick = { onDelta(500) })
+        DsButton(text = "+50", kind = DsButtonKind.Ghost, compact = true, enabled = enabled, onClick = { onDelta(50) })
+        if (value != 0L) {
+            DsButton(text = "Reset", kind = DsButtonKind.Ghost, compact = true, onClick = onReset)
+        }
     }
 }
 

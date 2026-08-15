@@ -17,9 +17,13 @@ import ua.syt0r.kanji.desktop.engine.dictionary.SegmentToken
 import ua.syt0r.kanji.desktop.engine.dictionary.WordStatus
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
 import ua.syt0r.kanji.desktop.engine.mining.MiningPayload
+import ua.syt0r.kanji.desktop.engine.playback.AspectRatioPreset
+import ua.syt0r.kanji.desktop.engine.playback.AudioChannelPreset
 import ua.syt0r.kanji.desktop.engine.playback.BackendKind
 import ua.syt0r.kanji.desktop.engine.playback.BackendManager
 import ua.syt0r.kanji.desktop.engine.playback.BackendProbe
+import ua.syt0r.kanji.desktop.engine.playback.EqualizerPreset
+import ua.syt0r.kanji.desktop.engine.playback.EqualizerSettings
 import ua.syt0r.kanji.desktop.engine.playback.MediaTrackInfo
 import ua.syt0r.kanji.desktop.engine.playback.PlaybackBackend
 import ua.syt0r.kanji.desktop.engine.playback.PlaybackCapability
@@ -28,6 +32,8 @@ import ua.syt0r.kanji.desktop.engine.playback.PlaybackError
 import ua.syt0r.kanji.desktop.engine.playback.PlaybackEvent
 import ua.syt0r.kanji.desktop.engine.playback.PlaybackEventType
 import ua.syt0r.kanji.desktop.engine.playback.TrackKind
+import ua.syt0r.kanji.desktop.engine.playback.VideoAdjustments
+import ua.syt0r.kanji.desktop.engine.playback.VideoDisplayMode
 import ua.syt0r.kanji.desktop.model.DesktopCard
 import ua.syt0r.kanji.desktop.model.ToastKind
 import java.io.File
@@ -277,6 +283,22 @@ class MediaEngine(private val state: AppState) {
     var muted by mutableStateOf(false)
     var buffering by mutableStateOf(false)
     var playbackError by mutableStateOf<PlaybackError?>(null)
+
+    // ---- Video rendering (display mode / aspect / adjustments) ------
+    var displayMode by mutableStateOf(VideoDisplayMode.Fit)
+    var aspectRatio by mutableStateOf(AspectRatioPreset.Auto)
+    var videoAdjustments by mutableStateOf(VideoAdjustments())
+
+    /** How far ahead of the playhead the backend has buffered (timeline region). */
+    var bufferedPositionMs by mutableStateOf(0L)
+
+    // ---- Audio extras ----------------------------------------------
+    /** Subtitle timing offset in ms (+ later, − earlier). */
+    var subtitleDelayMs by mutableStateOf(0L)
+    var audioDelayMs by mutableStateOf(0L)
+    var audioChannel by mutableStateOf(AudioChannelPreset.Stereo)
+    var audioOutputId by mutableStateOf<String?>(null)
+    var equalizer by mutableStateOf(EqualizerSettings())
     var lastScreenshotPath by mutableStateOf<String?>(null)
     var lastAudioClipPath by mutableStateOf<String?>(null)
     var lastVideoClipPath by mutableStateOf<String?>(null)
@@ -376,6 +398,47 @@ class MediaEngine(private val state: AppState) {
         if (queueIndex == -1) queueIndex = 0
         persistQueue()
         state.toastHost.show("\"${item.name}\" added to queue", kind = ToastKind.Info)
+    }
+
+    /** Replace the queue with a playlist's items and start playing from [startId]. */
+    fun playPlaylist(playlist: MediaPlaylist, startId: String? = null) {
+        val items = library.playlistItems(playlist)
+        if (items.isEmpty()) {
+            state.toastHost.show("Playlist is empty", kind = ToastKind.Info)
+            return
+        }
+        playQueue.clear()
+        playQueue.addAll(items)
+        queueIndex = items.indexOfFirst { it.id == startId }.coerceAtLeast(0)
+        persistQueue()
+        openItem(playQueue[queueIndex])
+        state.toastHost.show("Playing playlist \"${playlist.name}\"", kind = ToastKind.Info)
+    }
+
+    /** Replace the queue with a shuffled playlist and start playing from the top. */
+    fun playShuffled(playlist: MediaPlaylist) {
+        val items = library.playlistItems(playlist).shuffled()
+        if (items.isEmpty()) {
+            state.toastHost.show("Playlist is empty", kind = ToastKind.Info)
+            return
+        }
+        playQueue.clear()
+        playQueue.addAll(items)
+        queueIndex = 0
+        persistQueue()
+        openItem(playQueue[0])
+        state.toastHost.show("Playing \"${playlist.name}\" shuffled (${items.size} items)", kind = ToastKind.Info)
+    }
+
+    /** Queue a whole playlist after the current position (no auto-play). */
+    fun queuePlaylist(playlist: MediaPlaylist) {
+        val items = library.playlistItems(playlist)
+        if (items.isEmpty()) return
+        val before = playQueue.size
+        items.forEach { if (playQueue.none { q -> q.id == it.id }) playQueue.add(it) }
+        if (queueIndex == -1) queueIndex = before
+        persistQueue()
+        state.toastHost.show("\"${playlist.name}\" queued (${items.size} items)", kind = ToastKind.Info)
     }
 
     fun removeFromQueue(index: Int) {
@@ -565,9 +628,13 @@ class MediaEngine(private val state: AppState) {
     val currentCoverage: Float
         get() {
             val cue = activeCue ?: return 0f
-            return ua.syt0r.kanji.desktop.engine.dictionary.JapaneseSegmenter.coverage(
-                cue.text, state.dictionary.repository, state.cards.toList()
-            )
+            // Composition reads this every frame — a segmentation hiccup must
+            // degrade to 0 rather than take the window down with it.
+            return runCatching {
+                ua.syt0r.kanji.desktop.engine.dictionary.JapaneseSegmenter.coverage(
+                    cue.text, state.dictionary.repository, state.cards.toList()
+                )
+            }.getOrDefault(0f)
         }
 
     /** Number of cards mined from the current media item. */
@@ -591,8 +658,10 @@ class MediaEngine(private val state: AppState) {
      * a selected range…). Statuses come from the live card pool.
      */
     fun coverageFor(text: String): MediaCoverageStats {
-        val tokens = JapaneseSegmenter.segment(text, state.dictionary.repository, state.cards.toList())
-            .filter { it.isJapanese }
+        val tokens = runCatching {
+            JapaneseSegmenter.segment(text, state.dictionary.repository, state.cards.toList())
+                .filter { it.isJapanese }
+        }.getOrDefault(emptyList())
         var known = 0
         var learning = 0
         var unknown = 0
@@ -620,9 +689,11 @@ class MediaEngine(private val state: AppState) {
         val cues = subtitles.activeTrack?.track?.cues ?: return MediaCoverageStats(0, 0, 0, 0, 0, 0)
         val seen = LinkedHashSet<String>()
         cues.forEach { cue ->
-            JapaneseSegmenter.segment(displayTextFor(cue), state.dictionary.repository)
-                .filter { it.isJapanese }
-                .forEach { seen.add(it.surface) }
+            runCatching {
+                JapaneseSegmenter.segment(displayTextFor(cue), state.dictionary.repository)
+                    .filter { it.isJapanese }
+                    .forEach { seen.add(it.surface) }
+            }
         }
         var known = 0
         var learning = 0
@@ -748,8 +819,33 @@ class MediaEngine(private val state: AppState) {
             volume.let { backend.setVolume(it) }
             muted.let { backend.setMuted(it) }
             backend.setPerformanceProfile(state.settings.getString("media.perf-profile", "balanced"))
+            // Restore the user's rendering / audio preferences onto the new media.
+            applyVideoSettings()
+            applyAudioSettings()
+            if (subtitleDelayMs != 0L) backend.setSubtitleDelay(subtitleDelayMs)
             state.activityLog.record(ActivityCategory.Study, "Opened media \"${item.name}\"", details = item.kind.name)
         }
+    }
+
+    /**
+     * Open an item and jump straight to [positionMs] (used by the detail view
+     * "Open at …" actions and mined-card source links).
+     */
+    fun openItemAt(item: MediaItem, positionMs: Long = 0L, play: Boolean = true) {
+        openItem(item, resume = false)
+        if (positionMs > 0) {
+            seekTo(positionMs)
+            if (play) this.play()
+        }
+    }
+
+    /** Toggle the watch-later tag on a library item. */
+    fun toggleWatchLater(itemId: String) {
+        library.toggleWatchLater(itemId)
+        state.toastHost.show(
+            if (library.isWatchLater(itemId)) "Added to Watch later" else "Removed from Watch later",
+            kind = ToastKind.Info
+        )
     }
 
     fun openSubtitleFile(file: File) {
@@ -889,6 +985,139 @@ class MediaEngine(private val state: AppState) {
         activeBackend?.setLoop(loop)
     }
 
+    // ------------------------------------------------------------
+    // Video rendering (display mode / aspect / adjustments)
+    // ------------------------------------------------------------
+
+    /** Apply the current rendering preferences to the active backend. */
+    fun applyVideoSettings() {
+        val backend = activeBackend ?: return
+        if (PlaybackCapability.CanDisplayMode in backend.capabilities) backend.setDisplayMode(displayMode)
+        if (PlaybackCapability.CanAspectRatio in backend.capabilities) backend.setAspectRatio(aspectRatio)
+        if (PlaybackCapability.CanVideoAdjustments in backend.capabilities) backend.setVideoAdjustments(videoAdjustments)
+        if (PlaybackCapability.CanDeinterlace in backend.capabilities) backend.setDeinterlace(videoAdjustments.deinterlace)
+    }
+
+    fun updateDisplayMode(mode: VideoDisplayMode) {
+        displayMode = mode
+        activeBackend?.let { if (PlaybackCapability.CanDisplayMode in it.capabilities) it.setDisplayMode(mode) }
+        state.settings.set("media.display-mode", mode.name.lowercase())
+    }
+
+    fun cycleDisplayMode() {
+        val next = VideoDisplayMode.entries[(VideoDisplayMode.entries.indexOf(displayMode) + 1) % VideoDisplayMode.entries.size]
+        updateDisplayMode(next)
+        state.toastHost.show("Display: ${next.label} — ${next.description}", kind = ToastKind.Info)
+    }
+
+    fun updateAspectRatio(preset: AspectRatioPreset) {
+        aspectRatio = preset
+        activeBackend?.let { if (PlaybackCapability.CanAspectRatio in it.capabilities) it.setAspectRatio(preset) }
+        state.settings.set("media.aspect-ratio", preset.name.lowercase())
+    }
+
+    fun cycleAspectRatio() {
+        val next = AspectRatioPreset.entries[(AspectRatioPreset.entries.indexOf(aspectRatio) + 1) % AspectRatioPreset.entries.size]
+        updateAspectRatio(next)
+        state.toastHost.show("Aspect ratio: ${next.label}", kind = ToastKind.Info)
+    }
+
+    /** Update one video adjustment and push it to the backend immediately. */
+    fun updateVideoAdjustment(transform: (VideoAdjustments) -> VideoAdjustments) {
+        videoAdjustments = transform(videoAdjustments)
+        activeBackend?.let { if (PlaybackCapability.CanVideoAdjustments in it.capabilities) it.setVideoAdjustments(videoAdjustments) }
+        persistVideoAdjustments()
+    }
+
+    fun resetVideoAdjustments() {
+        videoAdjustments = VideoAdjustments()
+        activeBackend?.let { if (PlaybackCapability.CanVideoAdjustments in it.capabilities) it.setVideoAdjustments(videoAdjustments) }
+        state.settings.set("media.video-brightness", 100)
+        state.settings.set("media.video-contrast", 100)
+        state.settings.set("media.video-saturation", 100)
+        state.settings.set("media.video-gamma", 100)
+        state.settings.set("media.video-hue", 0)
+        state.settings.setBool("media.video-deinterlace", false)
+        state.toastHost.show("Video adjustments reset", kind = ToastKind.Info)
+    }
+
+    fun toggleDeinterlace() {
+        updateVideoAdjustment { it.withDeinterlace(!it.deinterlace) }
+    }
+
+    private fun persistVideoAdjustments() {
+        state.settings.set("media.video-brightness", videoAdjustments.brightness.toInt())
+        state.settings.set("media.video-contrast", videoAdjustments.contrast.toInt())
+        state.settings.set("media.video-saturation", videoAdjustments.saturation.toInt())
+        state.settings.set("media.video-gamma", videoAdjustments.gamma.toInt())
+        state.settings.set("media.video-hue", videoAdjustments.hue.toInt())
+        state.settings.setBool("media.video-deinterlace", videoAdjustments.deinterlace)
+    }
+
+    // ------------------------------------------------------------
+    // Audio extras (delay / channel / output / equalizer)
+    // ------------------------------------------------------------
+
+    /** Apply audio preferences to the active backend. */
+    fun applyAudioSettings() {
+        val backend = activeBackend ?: return
+        if (PlaybackCapability.CanAudioDelay in backend.capabilities) backend.setAudioDelay(audioDelayMs)
+        if (PlaybackCapability.CanAudioChannel in backend.capabilities) backend.setAudioChannel(audioChannel)
+        if (PlaybackCapability.CanAudioOutput in backend.capabilities) backend.setAudioOutput(audioOutputId)
+        if (PlaybackCapability.CanEqualizer in backend.capabilities) backend.setEqualizer(equalizer)
+    }
+
+    fun updateAudioDelay(ms: Long) {
+        audioDelayMs = ms.coerceIn(-10000, 10000)
+        activeBackend?.let { if (PlaybackCapability.CanAudioDelay in it.capabilities) it.setAudioDelay(audioDelayMs) }
+        state.settings.set("media.audio-delay-ms", audioDelayMs)
+        if (ms != 0L) {
+            state.toastHost.show("Audio delay ${if (ms > 0) "+" else ""}${ms} ms", kind = ToastKind.Info)
+        }
+    }
+
+    fun adjustAudioDelay(deltaMs: Long) {
+        updateAudioDelay(audioDelayMs + deltaMs)
+    }
+
+    fun updateAudioChannel(channel: AudioChannelPreset) {
+        audioChannel = channel
+        activeBackend?.let { if (PlaybackCapability.CanAudioChannel in it.capabilities) it.setAudioChannel(channel) }
+        state.settings.set("media.audio-channel", channel.name.lowercase())
+    }
+
+    fun updateAudioOutput(deviceId: String?) {
+        audioOutputId = deviceId
+        activeBackend?.let { if (PlaybackCapability.CanAudioOutput in it.capabilities) it.setAudioOutput(deviceId) }
+        state.settings.set("media.audio-output", deviceId.orEmpty())
+    }
+
+    fun setEqualizerPreset(preset: EqualizerPreset) {
+        equalizer = equalizer.withPreset(preset)
+        activeBackend?.let { if (PlaybackCapability.CanEqualizer in it.capabilities) it.setEqualizer(equalizer) }
+        state.settings.set("media.eq-preset", preset.name.lowercase())
+        state.toastHost.show("Equalizer: ${preset.label}", kind = ToastKind.Info)
+    }
+
+    fun updateEqualizerPreamp(db: Float) {
+        equalizer = equalizer.withPreamp(db)
+        activeBackend?.let { if (PlaybackCapability.CanEqualizer in it.capabilities) it.setEqualizer(equalizer) }
+        state.settings.set("media.eq-preamp-db", db)
+    }
+
+    fun updateEqualizerBand(index: Int, db: Float) {
+        equalizer = equalizer.withBand(index, db)
+        activeBackend?.let { if (PlaybackCapability.CanEqualizer in it.capabilities) it.setEqualizer(equalizer) }
+        state.settings.set("media.eq-bands-db", equalizer.bandsDb.joinToString(",") { it.toString() })
+    }
+
+    fun disableEqualizer() {
+        equalizer = EqualizerSettings()
+        activeBackend?.let { if (PlaybackCapability.CanEqualizer in it.capabilities) it.setEqualizer(null) }
+        state.settings.set("media.eq-preset", "flat")
+        state.toastHost.show("Equalizer off", kind = ToastKind.Info)
+    }
+
     fun selectSubtitleTrack(trackId: String?) {
         activeBackend?.selectTrack(trackId)
     }
@@ -898,8 +1127,10 @@ class MediaEngine(private val state: AppState) {
     }
 
     fun setSubtitleDelay(delayMs: Long) {
-        activeBackend?.setSubtitleDelay(delayMs)
-        subtitles.setOffset(delayMs)
+        subtitleDelayMs = delayMs.coerceIn(-10000, 10000)
+        activeBackend?.setSubtitleDelay(subtitleDelayMs)
+        subtitles.setOffset(subtitleDelayMs)
+        state.settings.set("media.subtitle-delay-ms", subtitleDelayMs)
     }
 
     fun adjustSubtitleDelay(deltaMs: Long) {
@@ -975,13 +1206,17 @@ class MediaEngine(private val state: AppState) {
             state.toastHost.show("The ${backend.kind.name} backend cannot capture screenshots", kind = ToastKind.Warning)
             return null
         }
-        val dir = MediaCapture.ensureCache()
-        val target = File(dir, "shot-${System.currentTimeMillis()}.png")
+        // Configurable folder + format (Kaiteyo_AnimeName_00-18-42.png).
+        val dir = File(
+            state.settings.getString("media.screenshot-folder", "").ifBlank { MediaCapture.ensureCache().absolutePath }
+        ).apply { mkdirs() }
+        val format = state.settings.getString("media.screenshot-format", "png").lowercase().takeIf { it == "jpg" || it == "jpeg" || it == "png" } ?: "png"
+        val target = File(dir, screenshotFileName(currentItem?.name.orEmpty(), positionMs, format))
         val result = backend.snapshot(target)
         result.onSuccess {
             lastScreenshotPath = it
             state.activityLog.record(ActivityCategory.Study, "Captured video screenshot", details = currentItem?.name.orEmpty())
-            state.toastHost.show("Screenshot saved", kind = ToastKind.Success)
+            state.toastHost.show("Screenshot saved to ${target.name}", kind = ToastKind.Success)
         }.onFailure {
             state.toastHost.show("Screenshot failed: ${it.message}", kind = ToastKind.Warning)
         }
@@ -1508,7 +1743,9 @@ class MediaEngine(private val state: AppState) {
 
     /** Segmented tokens of the active cue, annotated with word status. */
     fun tokensFor(cue: SubtitleCue): List<SegmentToken> =
-        JapaneseSegmenter.segment(displayTextFor(cue), state.dictionary.repository, state.cards.toList())
+        runCatching {
+            JapaneseSegmenter.segment(displayTextFor(cue), state.dictionary.repository, state.cards.toList())
+        }.getOrDefault(emptyList())
 
     /** Build a fully-populated mining payload from a cue + target token. */
     fun payloadForCue(
@@ -1735,7 +1972,51 @@ class MediaEngine(private val state: AppState) {
     // Tick — called from the UI at ~10 Hz
     // ------------------------------------------------------------
 
+    /**
+     * Tick — called from the UI at ~10 Hz on the composition's coroutine
+     * scope, so it MUST never throw: an uncaught exception here would tear
+     * down the whole window. Every backend/subtitle/settings interaction
+     * therefore funnels through [tickInternal]; a failure is surfaced as a
+     * throttled toast + activity-log entry instead of propagating.
+     */
     fun tick() {
+        try {
+            tickInternal()
+        } catch (e: Throwable) {
+            onTickFailure(e)
+        }
+    }
+
+    private var lastTickFailureMs = 0L
+
+    /** React to a tick failure without killing the application. */
+    private fun onTickFailure(e: Throwable) {
+        val now = System.currentTimeMillis()
+        if (now - lastTickFailureMs > 10_000) {
+            lastTickFailureMs = now
+            state.activityLog.record(
+                ActivityCategory.System,
+                "Media tick recovered: ${e.message ?: e.javaClass.simpleName}"
+            )
+            state.toastHost.show(
+                "Media engine hiccup: ${e.message?.take(80) ?: e.javaClass.simpleName}",
+                kind = ToastKind.Warning
+            )
+        }
+        // A backend that died mid-stream would poison every subsequent tick —
+        // drop it so the next user action re-initializes from a clean slate.
+        val backend = activeBackend
+        if (backend != null && !backend.isAvailable) {
+            runCatching { backend.close() }
+            activeBackend = null
+            backendKind = BackendKind.None
+            if (playbackError == null) {
+                playbackError = PlaybackError.Other(e.message ?: "Playback engine stopped unexpectedly")
+            }
+        }
+    }
+
+    private fun tickInternal() {
         // Keep the system tray in sync — started on the first loaded media
         // (guarded, so unsupported desktops never see it), then cheap updates.
         val item = currentItem
@@ -1768,6 +2049,7 @@ class MediaEngine(private val state: AppState) {
         val dur = backend.durationMs()
         positionMs = pos
         if (dur > 0) durationMs = dur
+        bufferedPositionMs = backend.bufferedPositionMs().coerceIn(pos, durationMs.coerceAtLeast(pos))
 
         // Current subtitle follows playback (binary search, no polling of the file).
         val cueIdx = subtitles.cueIndexAt(pos)
@@ -1983,7 +2265,37 @@ class MediaEngine(private val state: AppState) {
             "previous" -> playPrevious()
             "next-cue" -> replayNextCue()
             "prev-cue" -> replayPreviousCue()
+            // ---- Rendering / audio transport ---------------------------
+            "mute" -> toggleMute()
+            "fullscreen" -> toggleFullscreen()
+            "subtitle-delay-back" -> adjustSubtitleDelay(-500)
+            "subtitle-delay-reset" -> setSubtitleDelay(0)
+            "subtitle-delay-forward" -> adjustSubtitleDelay(500)
+            "speed-down" -> cycleSpeed(-1)
+            "speed-up" -> cycleSpeed(1)
+            "frame-step-back" -> frameStepBackward()
+            "frame-step-forward" -> frameStepForward()
+            "chapter-previous" -> previousChapter()
+            "chapter-next" -> nextChapter()
+            "cycle-display" -> cycleDisplayMode()
+            "cycle-aspect" -> cycleAspectRatio()
         }
+    }
+
+    // ------------------------------------------------------------
+    // Rendering / audio extras (shortcut targets)
+    // ------------------------------------------------------------
+
+    /** Step through the standard speed ladder; 1x is one key away. */
+    private fun cycleSpeed(dir: Int) {
+        val ladder = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+        val idx = ladder.indexOfFirst { it >= speed - 0.001f }
+        val next = when {
+            idx < 0 -> if (dir > 0) 0 else ladder.lastIndex
+            else -> (idx + dir).coerceIn(0, ladder.lastIndex)
+        }
+        updateSpeed(ladder[next])
+        state.toastHost.show("Speed: ${ladder[next]}×", kind = ToastKind.Info)
     }
 
     private fun toggleDictionary() {
@@ -2091,5 +2403,24 @@ class MediaEngine(private val state: AppState) {
 
         fun durationForRate(ms: Long, rate: Float): Long =
             (ms / rate.coerceAtLeast(0.1f)).roundToInt().toLong()
+
+        /**
+         * Canonical screenshot filename: Kaiteyo_<media>_<HH-MM-SS>.<ext>.
+         * The media name is sanitized to letters/numbers/space/_/-, and
+         * "jpeg" normalizes to the .jpg extension.
+         */
+        fun screenshotFileName(mediaName: String, positionMs: Long, format: String): String {
+            val ext = when (format.lowercase()) {
+                "jpg", "jpeg" -> "jpg"
+                "png" -> "png"
+                else -> "png"
+            }
+            val name = mediaName.substringBeforeLast('.')
+                .replace(Regex("[^\\p{L}\\p{N} _-]"), "")
+                .trim()
+                .ifBlank { "media" }
+            val stamp = formatTime(positionMs).replace(":", "-")
+            return "Kaiteyo_${name}_$stamp.$ext"
+        }
     }
 }

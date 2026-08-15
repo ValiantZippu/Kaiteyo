@@ -1,5 +1,12 @@
 package ua.syt0r.kanji.desktop.ui.stats
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -80,19 +87,58 @@ private val WeekdayLabels = listOf("Mon", "", "Wed", "", "Fri", "", "")
 private val cellSize = 14.dp
 private val cellGap = 3.dp
 
+private data class HeatmapViewKey(val scope: String, val year: Int)
+
 @Composable
 fun HeatmapPanel(state: AppState, summaries: List<StudyDaySummary>) {
     val sc = surfaceColors()
     val ac = accent()
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    val grid = remember(summaries) { HeatmapEngine.buildAligned(summaries, today) }
+
+    // View scope: null = rolling 52 weeks; otherwise a full calendar year.
+    var yearScope by remember { mutableStateOf<Int?>(null) }
+    // Years offered: the current year plus the three previous ones (any of
+    // them may be empty — blank cells are honest).
+    val availableYears = remember(today.year) { (today.year downTo today.year - 3).toList() }
+    val key = HeatmapViewKey(if (yearScope == null) "weeks" else "year", yearScope ?: today.year)
 
     var hoveredDate by remember { mutableStateOf<LocalDate?>(null) }
     val cellPositions = remember { mutableStateMapOf<String, IntOffset>() }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    val reducedMotion = state.navReducedMotion || state.settings.getBool("appearance.reduced-motion")
+    val transitionMs = if (reducedMotion) 0 else 300
+    val slideMotion = tween<IntOffset>(transitionMs)
+    val fadeMotion = tween<Float>(transitionMs)
 
     Box(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            // Scope chips: rolling 52 weeks ↔ calendar years. Switching years
+            // animates as a push/slide between two real calendars.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HeatmapScopeChip(
+                    label = "52 weeks",
+                    selected = yearScope == null,
+                    onClick = { yearScope = null }
+                )
+                availableYears.forEach { year ->
+                    HeatmapScopeChip(
+                        label = year.toString(),
+                        selected = yearScope == year,
+                        onClick = { yearScope = year }
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "${HeatmapEngine.currentStreak(summaries)}-day streak · ${summaries.size} active days",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+            }
+
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                 Column(verticalArrangement = Arrangement.spacedBy(cellGap), modifier = Modifier.padding(top = DsSpacing.Sm)) {
                     WeekdayLabels.forEachIndexed { index, label ->
@@ -108,12 +154,31 @@ fun HeatmapPanel(state: AppState, summaries: List<StudyDaySummary>) {
                         )
                     }
                 }
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    verticalAlignment = Alignment.Top
-                ) {
-                        grid.weeks.forEachIndexed { index, week ->
-                            val label = if (index == 0 || week.monthLabel != grid.weeks[index - 1].monthLabel) week.monthLabel else ""
+                AnimatedContent(
+                    targetState = key,
+                    transitionSpec = {
+                        val forward = targetState.year > initialState.year ||
+                            (initialState.scope == "weeks" && targetState.scope == "year")
+                        if (forward) {
+                            (slideInHorizontally(slideMotion) { it } + fadeIn(fadeMotion)) togetherWith
+                                (slideOutHorizontally(slideMotion) { -it / 3 } + fadeOut(fadeMotion))
+                        } else {
+                            (slideInHorizontally(slideMotion) { -it } + fadeIn(fadeMotion)) togetherWith
+                                (slideOutHorizontally(slideMotion) { it / 3 } + fadeOut(fadeMotion))
+                        }
+                    },
+                    label = "heatmapYear"
+                ) { targetKey ->
+                    val targetGrid = remember(targetKey) {
+                        if (targetKey.scope == "weeks") HeatmapEngine.buildAligned(summaries, today)
+                        else HeatmapEngine.buildAlignedYear(summaries, targetKey.year, today)
+                    }
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        targetGrid.weeks.forEachIndexed { index, week ->
+                            val label = if (index == 0 || week.monthLabel != targetGrid.weeks[index - 1].monthLabel) week.monthLabel else ""
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = label,
@@ -138,6 +203,7 @@ fun HeatmapPanel(state: AppState, summaries: List<StudyDaySummary>) {
                             }
                         }
                     }
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
                 Text("Less", color = sc.textMuted, fontSize = DsType.Caption)
@@ -150,12 +216,6 @@ fun HeatmapPanel(state: AppState, summaries: List<StudyDaySummary>) {
                     )
                 }
                 Text("More", color = sc.textMuted, fontSize = DsType.Caption)
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = "${HeatmapEngine.currentStreak(summaries)}-day streak · ${summaries.size} active days",
-                    color = sc.textMuted,
-                    fontSize = DsType.Caption
-                )
             }
         }
 
@@ -454,6 +514,28 @@ private fun RatingPanel(breakdown: RatingBreakdown) {
 // ============================================
 // HELPERS
 // ============================================
+
+/** Scope chip for the heatmap's 52-week ↔ year switching. */
+@Composable
+private fun HeatmapScopeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val sc = surfaceColors()
+    val ac = accent()
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (selected) ac.primary.copy(alpha = 0.16f) else sc.surfaceElevated)
+            .clickable(onClick = onClick)
+            .padding(horizontal = DsSpacing.Md, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = if (selected) ac.primary else sc.textSecondary,
+            fontSize = DsType.Caption,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
+}
 
 @Composable
 internal fun heatColor(level: Int, sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme): Color = when (level) {

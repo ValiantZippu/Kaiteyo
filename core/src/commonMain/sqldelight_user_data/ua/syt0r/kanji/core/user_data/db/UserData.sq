@@ -1,4 +1,4 @@
-PRAGMA user_version = 12;
+PRAGMA user_version = 16;
 
 getLastInsertRowId:
 SELECT last_insert_rowid();

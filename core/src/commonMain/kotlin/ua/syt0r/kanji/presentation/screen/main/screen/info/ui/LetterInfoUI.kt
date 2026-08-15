@@ -29,12 +29,17 @@ import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableSection
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableSentenceSection
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableVocabSection
+import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningAction
+import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningStatusSection
+import ua.syt0r.kanji.presentation.screen.main.screen.info.use_case.ItemLearningState
 
 @Composable
 fun LetterInfoUI(
     letterData: LetterInfoData,
     listState: LazyListState,
     listSpacerState: ExtraListSpacerState,
+    learningState: ItemLearningState?,
+    learningActions: List<LearningAction>,
     onFuriganaClick: (String) -> Unit,
     onWordClick: (JapaneseWord) -> Unit
 ) {
@@ -113,6 +118,15 @@ fun LetterInfoUI(
 
             letterHeading(letterData)
 
+            if (learningState != null) {
+                item(key = "learning-status") {
+                    LearningStatusSection(
+                        state = learningState,
+                        actions = learningActions
+                    )
+                }
+            }
+
             infoScreenExpandableVocabSection(
                 expanded = vocabExpanded,
                 paginateable = vocab,
@@ -153,6 +167,15 @@ fun LetterInfoUI(
                     .weight(1f)
                     .fillMaxHeight()
             ) {
+
+                if (learningState != null) {
+                    item(key = "learning-status") {
+                        LearningStatusSection(
+                            state = learningState,
+                            actions = learningActions
+                        )
+                    }
+                }
 
                 infoScreenExpandableVocabSection(
                     expanded = vocabExpanded,

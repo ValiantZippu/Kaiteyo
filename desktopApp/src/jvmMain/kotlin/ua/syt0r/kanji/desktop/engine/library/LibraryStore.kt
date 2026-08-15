@@ -104,9 +104,6 @@ class LibraryStore(
         runCatching { cardsFile.writeText(json.encodeToString(cards)) }
     }
 
-    /** True once a pool has ever been persisted (first-run detection). */
-    fun hasPersistedCards(): Boolean = cardsFile.exists()
-
     private fun bump() {
         revision++
     }
@@ -328,8 +325,12 @@ class LibraryStore(
         deck.cardIds.contains(card.id) ||
             (deck.filterQuery.isNotBlank() && SearchEngine.matches(card, deck.filterQuery))
 
+    /** Every non-archived deck whose membership (explicit or filter) includes [card]. */
+    fun decksContaining(card: DesktopCard, cards: List<DesktopCard>): List<DeckDef> =
+        decks.filter { !it.archived && contains(it, card, cards) }
+
     fun deckIdFor(card: DesktopCard, cards: List<DesktopCard>): String? =
-        decks.firstOrNull { it.archived.not() && contains(it, card, cards) }?.id
+        decksContaining(card, cards).firstOrNull()?.id
 
     // ------------------------------------------------------------
     // Membership mutations
@@ -725,7 +726,7 @@ class LibraryStore(
         }
     }
 
-    private fun saveDecks() {
+    fun saveDecks() {
         runCatching { deckFile.writeText(json.encodeToString(decks.toList())) }
     }
 

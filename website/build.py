@@ -60,6 +60,15 @@ if not BASE_PATH.endswith("/"):
 
 YEAR = date.today().year
 
+# Captions for the desktop gallery (docs/screenshots). Files without an
+# entry fall back to a prettified filename.
+DESKTOP_SHOT_CAPTIONS = {
+    "window-shell": "Window shell — custom title bar and floating launcher",
+    "launcher-menu": "Launcher quick controls",
+    "launchpad-overlay": "Launchpad tile grid",
+    "launchpad-window-strip": "Launchpad window controls",
+}
+
 # Phone screenshots copied from the repository by copy_assets().
 SCREENSHOTS = {
     "phone": [
@@ -76,14 +85,10 @@ SCREENSHOTS = {
             start=1,
         )
     ],
-    # Desktop screenshots generated from docs/screenshots by copy_assets();
-    # captured with scripts/capture-window-shell.sh.
-    "desktop": [
-        {"file": "window-shell.png", "caption": "Window shell — custom title bar and floating launcher"},
-        {"file": "launcher-menu.png", "caption": "Launcher quick controls"},
-        {"file": "launchpad-overlay.png", "caption": "Launchpad tile grid"},
-        {"file": "launchpad-window-strip.png", "caption": "Launchpad window controls"},
-    ],
+    # Desktop screenshots generated from docs/screenshots by copy_assets()
+    # (captured with scripts/capture-window-shell.sh). The list is refreshed
+    # after copying so the gallery only ever shows files that exist.
+    "desktop": [],
 }
 
 
@@ -172,12 +177,22 @@ def resolve_doc_link(href: str, source_rel: str) -> str:
         return href
     if href.startswith("/"):
         return url(href.lstrip("/"))
-    source_dir = pathlib.Path(source_rel).parent
+    # source_rel is relative to DOCS_SOURCE, so resolve the target against
+    # the docs root — not the build's cwd — or doc-to-doc links break.
+    source_dir = (DOCS_SOURCE / pathlib.Path(source_rel).parent).resolve()
     target = (source_dir / href.split("#")[0]).resolve()
     try:
         target = target.relative_to(DOCS_SOURCE.resolve())
     except ValueError:
-        return href
+        # Link leaves the docs tree (e.g. ../CONTRIBUTING.md at the repo
+        # root). Point it at the repository instead of leaving it broken.
+        try:
+            outside = target.relative_to(DOCS_SOURCE.resolve().parent)
+        except ValueError:
+            return href
+        return SITE["repository"] + "/blob/develop/" + str(outside).replace("\\", "/") + (
+            ("#" + href.split("#", 1)[1]) if "#" in href else ""
+        )
     if str(target) in DOC_PAGES:
         return DOC_PAGES[str(target)] + ("#" + href.split("#", 1)[1] if "#" in href else "")
     raw_root = DOCUMENTATION.get("rawLinkRoot", "")
@@ -541,6 +556,80 @@ def build_wiki():
     return articles
 
 
+def build_guides():
+    """Editorial learning guides — content/guides/*.md, rendered with an
+    index page and prev/next navigation like the wiki."""
+    guides_dir = CONTENT_DIR / "guides"
+    articles = []
+    for md_file in sorted(guides_dir.glob("*.md")):
+        text = md_file.read_text(encoding="utf-8")
+        frontmatter, md_text = parse_frontmatter(text)
+        slug = md_file.stem.lower().replace("_", "-")
+        title = frontmatter.get("title") or prettify_title(md_file.stem)
+        description = frontmatter.get("description", "")
+        body, toc, _ = render_markdown(md_text)
+        articles.append(
+            {
+                "slug": slug,
+                "title": title,
+                "description": description,
+                "excerpt": first_paragraph_plain(md_text),
+                "body": body,
+                "toc": toc,
+                "frontmatter": frontmatter,
+            }
+        )
+
+    if not articles:
+        return []
+
+    # Guides index page.
+    render_page(
+        "guides/",
+        title="Guides",
+        description="Editorial guides for learning Japanese with Kaiteyo — from your first kana to mining anime and reading your statistics.",
+        layout="page.html",
+        content_html="\n".join(
+            f"<a class='card card-hover link-card' href='{url('guides/') + a['slug']}/' style='display:block; padding: var(--space-5); margin-bottom: var(--space-4); text-decoration:none'>"
+            f"<div class='card-title' style='margin-bottom: var(--space-2)'>{html.escape(a['title'])}</div>"
+            f"<p class='card-description'>{html.escape(a['excerpt'])}</p></a>"
+            for a in articles
+        ),
+        search=False,
+    )
+
+    for index, article in enumerate(articles):
+        prev = articles[index - 1] if index > 0 else None
+        next_page = articles[index + 1] if index < len(articles) - 1 else None
+        render_page(
+            f"guides/{article['slug']}/",
+            title=article["title"],
+            description=article["description"],
+            layout="page.html",
+            content_html=article["body"],
+            toc=article["toc"],
+            breadcrumbs=[
+                {"title": "Guides", "url": "guides/"},
+                {"title": article["title"], "url": None},
+            ],
+            prev={"title": prev["title"], "url": f"guides/{prev['slug']}/"} if prev else None,
+            next_page={"title": next_page["title"], "url": f"guides/{next_page['slug']}/"} if next_page else None,
+            search=True,
+            search_type="guide",
+        )
+        SEARCH_INDEX.append(
+            {
+                "type": "guide",
+                "title": article["title"],
+                "url": url(f"guides/{article['slug']}/"),
+                "section": "Guides",
+                "excerpt": article["excerpt"],
+                "icon": "compass",
+            }
+        )
+    return articles
+
+
 def build_shortcuts():
     shortcuts_path = CONTENT_DIR / "shortcuts.json"
     if not shortcuts_path.is_file():
@@ -610,13 +699,368 @@ def build_changelog():
 
 
 # ---------------------------------------------------------------------------
+# Project command center
+# ---------------------------------------------------------------------------
+# Renders the public project surfaces (status, kanban, roadmap, whiteboard,
+# suggestions, decisions, activity, contributing) from real repository data.
+# The kanban derives from docs/planning/MASTER_TODO.md (single source of
+# truth, MASTER §44) — nothing is duplicated by hand. Read-only for now:
+# the interactive layer's API contracts are documented in
+# docs/website/API.md (MASTER §70/§74 — never fake persistence).
+
+PROJECT_DIR = ROOT / "config" / "project"
+MASTER_TODO_SOURCE = DOCS_SOURCE / "planning" / "MASTER_TODO.md"
+DECISIONS_DIR = DOCS_SOURCE / "architecture" / "decisions"
+
+STATUS_EMOJI = {
+    "✅": "DONE",
+    "🚧": "IN_PROGRESS",
+    "🔬": "TARGET",
+    "📋": "PLANNED",
+    "🔍": "RESEARCH",
+    "⛔": "BLOCKED",
+    "💀": "PLACEHOLDER",
+}
+PRIORITY_EMOJI = {"🔴": "P0", "🟡": "P1", "🟢": "P2", "🔵": "P3"}
+
+# Kanban columns: only columns that actually hold tasks are rendered
+# (the spec forbids meaningless columns; no fabricated READY/REVIEW yet).
+KANBAN_COLUMNS = [
+    ("Backlog", ["PLANNED", "RESEARCH", "PLACEHOLDER"]),
+    ("Planned (target)", ["TARGET"]),
+    ("In progress", ["IN_PROGRESS"]),
+    ("Blocked", ["BLOCKED"]),
+    ("Completed", ["DONE"]),
+]
+
+# Primary documentation for a work package (epic) — used for card links.
+PACKAGE_DOCS = {
+    "P0": "/docs/architecture/decisions/0017-one-product-architecture/",
+    "P2": "/docs/architecture/database/",
+    "P3": "/docs/architecture/dictionary/",
+    "P4": "/docs/architecture/language-model/",
+    "P6": "/docs/architecture/language-model/",
+    "P7": "/docs/features/library/",
+    "P8": "/docs/architecture/study-engine/",
+    "P9": "/docs/architecture/statistics/",
+    "P10": "/docs/architecture/exams/",
+    "P11": "/docs/architecture/media/",
+    "P12": "/docs/architecture/mining/",
+    "P14": "/docs/integrations/anki/",
+    "P15": "/docs/integrations/anki/",
+    "P16": "/docs/website/readme/",
+    "P17": "/docs/platform/android/",
+    "P18": "/docs/platform/windows/",
+    "P19": "/docs/architecture/decisions/0018-game-engine-evaluation/",
+    "P20": "/docs/architecture/node_architecture/",
+    "P21": "/docs/architecture/node_architecture/",
+    "P22": "/docs/architecture/node_architecture/",
+    "P32": "/docs/testing/",
+    "P36": "/docs/",
+}
+
+# Required knowledge per package, shown on the contributor page.
+PACKAGE_KNOWLEDGE = {
+    "P2": ["SQLDelight", "SQLite", "migrations", "SQLDelight .sq files"],
+    "P3": ["dictionary formats (JMdict/Yomitan)", "indexing (FTS/trigram)", "search ranking"],
+    "P4": ["kanji data (KanjiVG/KANJIDIC)", "stroke rendering"],
+    "P8": ["SRS (FSRS)", "Kotlin", "SQLDelight"],
+    "P9": ["event-driven design", "statistics aggregation"],
+    "P11": ["media playback", "subtitle parsing", "dictionary", "UI", "async programming"],
+    "P12": ["subtitle formats", "dictionary lookup", "card model"],
+    "P19": ["game engines", "3D rendering", "performance profiling"],
+    "P20": ["content packages", "world streaming", "LOD"],
+    "P36": ["Python", "Jinja2", "static site builds", "JavaScript"],
+}
+
+
+def load_project_json(name: str) -> dict:
+    path = PROJECT_DIR / name
+    if not path.is_file():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def parse_master_todo() -> tuple[list, list]:
+    """Parse docs/planning/MASTER_TODO.md into tasks and packages (epics)."""
+    text = MASTER_TODO_SOURCE.read_text(encoding="utf-8")
+    packages: list[dict] = []
+    tasks: list[dict] = []
+    current_package = None
+    row_re = re.compile(
+        r"^\|\s*(KT-[A-Z0-9]+-\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|$"
+    )
+    for line in text.splitlines():
+        pkg = re.match(r"^## (P\d+)\s*[—-]\s*(.+?)\s*$", line)
+        if pkg:
+            current_package = {
+                "id": pkg.group(1),
+                "title": pkg.group(2),
+                "docs": PACKAGE_DOCS.get(pkg.group(1)),
+            }
+            packages.append(current_package)
+            continue
+        m = row_re.match(line)
+        if m and current_package:
+            id_, title, status_raw, pri_raw, deps_raw, accept_raw = m.groups()
+            tasks.append({
+                "id": id_,
+                "title": title,
+                "status": STATUS_EMOJI.get(status_raw, "UNKNOWN"),
+                "priority": PRIORITY_EMOJI.get(pri_raw, ""),
+                "deps": deps_raw,
+                "acceptance": accept_raw,
+                "package": current_package["id"],
+            })
+    for pkg in packages:
+        pkg_tasks = [t for t in tasks if t["package"] == pkg["id"]]
+        pkg["taskCount"] = len(pkg_tasks)
+        pkg["openCount"] = sum(1 for t in pkg_tasks if t["status"] != "DONE")
+        pkg["doneCount"] = pkg["taskCount"] - pkg["openCount"]
+    return tasks, packages
+
+
+def build_decisions() -> list:
+    """Index ADRs (docs/architecture/decisions) and link the rendered docs pages."""
+    decisions = []
+    if not DECISIONS_DIR.is_dir():
+        return decisions
+    for md_file in sorted(DECISIONS_DIR.glob("*.md")):
+        if md_file.name == "README.md":
+            continue
+        text = md_file.read_text(encoding="utf-8")
+        title = ""
+        status = "Unknown"
+        for line in text.splitlines()[:8]:
+            m = re.match(r"^# (ADR-\d+)[:：]?\s*(.*)$", line)
+            if m and not title:
+                title = (m.group(2).strip() or m.group(1))
+            s = re.match(r"^\*\*Status\*\*:\s*(.+)$", line)
+            if s:
+                status = s.group(1).strip()
+        stem = md_file.stem.lower()
+        decisions.append({
+            "id": stem,
+            "title": title or md_file.stem,
+            "status": status,
+            "url": f"docs/decisions/{stem}/",
+        })
+    return decisions
+
+
+def build_project(tasks: list, packages: list, decisions: list):
+    systems = load_project_json("systems.json").get("systems", [])
+    whiteboard = load_project_json("whiteboard.json")
+    roadmap = load_project_json("roadmap.json")
+    suggestions = load_project_json("suggestions.json")
+    activity = load_project_json("activity.json")
+
+    columns = []
+    for label, statuses in KANBAN_COLUMNS:
+        cards = [t for t in tasks if t["status"] in statuses]
+        if cards:
+            columns.append({"label": label, "cards": cards, "count": len(cards)})
+
+    open_tasks = [t for t in tasks if t["status"] != "DONE"]
+    blocked = [t for t in tasks if t["status"] == "BLOCKED"]
+    high_priority = [t for t in open_tasks if t["priority"] == "P0"]
+    top_tasks = sorted(
+        [t for t in open_tasks if t["priority"]],
+        key=lambda t: t["priority"],
+    )[:8]
+    good_first = [
+        t for t in open_tasks
+        if t["package"] in ("P16", "P29", "P30", "P32", "P36")
+    ][:6]
+
+    whiteboard_json = json.dumps(whiteboard, ensure_ascii=False)
+
+    common = {
+        "systems": systems,
+        "packages": packages,
+        "columns": columns,
+        "roadmap_phases": roadmap.get("phases", []),
+        "suggestion_workflow": suggestions.get("workflow", []),
+        "suggestion_types": suggestions.get("types", []),
+        "suggestion_items": suggestions.get("items", []),
+        "activity_events": activity.get("events", []),
+        "activity_captured": activity.get("captured", ""),
+        "decisions": decisions,
+        "open_tasks": len(open_tasks),
+        "blocked_tasks": len(blocked),
+        "high_priority": len(high_priority),
+        "top_tasks": top_tasks,
+        "good_first": good_first,
+        "package_knowledge": PACKAGE_KNOWLEDGE,
+    }
+
+    render_page(
+        "project/",
+        title="Project",
+        description="Kaiteyo's public command center — what is being built, what is planned, and what is done.",
+        layout="project-index.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        **common,
+    )
+    render_page(
+        "project/kanban/",
+        title="Kanban",
+        description="What is happening now — the live task board derived from docs/planning/MASTER_TODO.md.",
+        layout="kanban.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        **common,
+    )
+    render_page(
+        "project/roadmap/",
+        title="Roadmap",
+        description="Where Kaiteyo is going — the forward-looking plan, linked to kanban and documentation.",
+        layout="roadmap.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        **common,
+    )
+    render_page(
+        "project/whiteboard/",
+        title="Whiteboard",
+        description="The Kaiteyo system, visually — an interactive architecture canvas. Pan, zoom, explore.",
+        layout="whiteboard.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        whiteboard_json=whiteboard_json,
+        **common,
+    )
+    render_page(
+        "project/suggestions/",
+        title="Suggestions",
+        description="Propose plans for Kaiteyo. The official plan is protected — accepted proposals become tracked work with provenance.",
+        layout="suggestions.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        **common,
+    )
+    render_page(
+        "project/decisions/",
+        title="Architecture Decisions",
+        description="Why Kaiteyo is built the way it is — every recorded ADR.",
+        layout="decisions.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        **common,
+    )
+    render_page(
+        "project/activity/",
+        title="Activity",
+        description="The project evolving — commits, decisions, releases, and documentation changes.",
+        layout="activity.html",
+        search=False,
+        **common,
+    )
+    render_page(
+        "project/contributing/",
+        title="Contributing",
+        description="What can you actually help with? Start here.",
+        layout="contributing.html",
+        search=True,
+        search_type="page",
+        search_section="Project",
+        **common,
+    )
+
+    # Search index entries for project objects (real data only).
+    for task in top_tasks + good_first:
+        SEARCH_INDEX.append({
+            "type": "task",
+            "title": f"{task['id']} — {task['title']}",
+            "url": url("project/kanban/") + f"#card-{task['id'].lower()}",
+            "section": "Kanban",
+            "excerpt": task["acceptance"][:160],
+            "icon": "grid",
+        })
+    for system in systems:
+        SEARCH_INDEX.append({
+            "type": "system",
+            "title": system["name"],
+            "url": url("project/"),
+            "section": "Project",
+            "excerpt": system["summary"],
+            "icon": "layers",
+        })
+    for decision in decisions:
+        SEARCH_INDEX.append({
+            "type": "decision",
+            "title": decision["title"],
+            "url": url(decision["url"]),
+            "section": "Decisions",
+            "excerpt": decision["status"],
+            "icon": "scale",
+        })
+    for phase in roadmap.get("phases", []):
+        for item in phase["items"]:
+            SEARCH_INDEX.append({
+                "type": "roadmap",
+                "title": item["title"],
+                "url": url("project/roadmap/") + f"#item-{item['id'].lower()}",
+                "section": "Roadmap",
+                "excerpt": item.get("note", "")[:160],
+                "icon": "milestone",
+            })
+
+    print("  project command center: "
+          f"{len(systems)} systems | {len(tasks)} tasks | {len(packages)} packages | "
+          f"{len(decisions)} decisions | {len(roadmap.get('phases', []))} roadmap phases")
+
+
+# ---------------------------------------------------------------------------
 # Builder
 # ---------------------------------------------------------------------------
+
+BRAND_MARK_SOURCE = ROOT.parent / "installer" / "assets" / "brand" / "kaiteyo-mark.svg"
+
+
+def write_brand_images(target: pathlib.Path):
+    """Synthesize the site's favicon, app mark and social cover from the real
+    Kaiteyo brand mark (installer/assets/brand/kaiteyo-mark.svg). The
+    website/assets/images/ dir is gitignored and empty, so without this step
+    every page ships broken image links."""
+    images = target / "assets" / "images"
+    images.mkdir(parents=True, exist_ok=True)
+    if BRAND_MARK_SOURCE.is_file():
+        mark = BRAND_MARK_SOURCE.read_text(encoding="utf-8")
+        (images / "kaiteyo-mark.svg").write_text(mark, encoding="utf-8")
+        (images / "favicon.svg").write_text(mark, encoding="utf-8")
+        # Social cover: mark centered on the brand gradient with the wordmark.
+        (images / "og-cover.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">'
+            '<defs><linearGradient id="ogbg" x1="0" y1="0" x2="1" y2="1">'
+            '<stop offset="0%" stop-color="#4f46e5"/><stop offset="100%" stop-color="#312e81"/>'
+            '</linearGradient></defs>'
+            '<rect width="1200" height="630" fill="url(#ogbg)"/>'
+            '<g transform="translate(500 95) scale(0.28)">'
+            + mark.replace('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">', "<svg xmlns='http://www.w3.org/2000/svg' width='1024' height='1024' viewBox='0 0 1024 1024'>")
+            + '</g>'
+            '<text x="600" y="520" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
+            'font-size="64" font-weight="700" fill="#ffffff" letter-spacing="10">KAITEYO</text>'
+            '<text x="600" y="580" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" '
+            'font-size="28" fill="#c7d2fe" letter-spacing="4">書いてよ — Write. Practice. Master.</text>'
+            '</svg>',
+            encoding="utf-8",
+        )
+        print("  brand images synthesized (kaiteyo-mark, favicon, og-cover)")
+
 
 def copy_assets():
     target = DIST_DIR / "assets"
     shutil.rmtree(target, ignore_errors=True)
     shutil.copytree(ASSET_DIR, target)
+    write_brand_images(DIST_DIR)
 
     # Phone screenshots from the repository (fastlane metadata).
     phone_source = (
@@ -639,8 +1083,53 @@ def copy_assets():
     desktop_target = target / "screenshots" / "desktop"
     desktop_target.mkdir(parents=True, exist_ok=True)
     if desktop_source.is_dir():
-        for png in sorted(desktop_source.glob("*.png")):
-            shutil.copy2(png, desktop_target / png.name)
+        for image in sorted(desktop_source.glob("*")):
+            if image.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp", ".svg"):
+                shutil.copy2(image, desktop_target / image.name)
+
+    # Refresh the desktop gallery from what actually exists (the repo may
+    # only contain a subset — window-shell.svg today).
+    desktop_gallery = []
+    if desktop_target.is_dir():
+        for image in sorted(desktop_target.iterdir()):
+            desktop_gallery.append({
+                "file": image.name,
+                "caption": DESKTOP_SHOT_CAPTIONS.get(image.stem, image.stem.replace("-", " ").title()),
+            })
+    SCREENSHOTS["desktop"] = desktop_gallery
+
+def make_env() -> Environment:
+    env = Environment(
+        loader=FileSystemLoader([str(TEMPLATE_DIR), str(TEMPLATE_DIR / "layouts")]),
+        autoescape=select_autoescape(["html", "xml"]),
+    )
+    env.globals.update(
+        basePath=BASE_PATH,
+        site=SITE,
+        navigation=NAVIGATION,
+        themes=THEMES,
+        year=YEAR,
+        footer_columns=[
+            {
+                "title": group["title"],
+                "items": [
+                    {"title": item["title"], "url": item["url"], "external": False}
+                    for item in group["items"]
+                ],
+            }
+            for group in NAVIGATION["groups"]
+        ]
+        + [
+            {
+                "title": "Community",
+                "items": [
+                    {"title": item["title"], "url": item["url"], "external": True}
+                    for item in NAVIGATION["external"]
+                ],
+            }
+        ],
+    )
+    return env
 
 
 def build():
@@ -664,6 +1153,9 @@ def build():
 
     wiki_articles = build_wiki()
     print(f"  wiki: {len(wiki_articles)} articles")
+
+    guide_articles = build_guides()
+    print(f"  guides: {len(guide_articles)} articles")
 
     # --- Content pages ---
     page_dir = CONTENT_DIR / "pages"
@@ -722,45 +1214,13 @@ def build():
         faq_categories=faq_categories,
     )
 
-    # --- Search index ---
-    search_path = DIST_DIR / "assets" / "search"
-    search_path.mkdir(parents=True, exist_ok=True)
-    (search_path / "index.json").write_text(
-        json.dumps(SEARCH_INDEX, ensure_ascii=False, indent=0), encoding="utf-8"
-    )
-    print(f"  search index: {len(SEARCH_INDEX)} entries")
+    # --- Project command center ---
+    tasks, packages = parse_master_todo()
+    decisions = build_decisions()
+    build_project(tasks, packages, decisions)
 
     # --- Templates ---
-    env = Environment(
-        loader=FileSystemLoader([str(TEMPLATE_DIR), str(TEMPLATE_DIR / "layouts")]),
-        autoescape=select_autoescape(["html", "xml"]),
-    )
-    env.globals.update(
-        basePath=BASE_PATH,
-        site=SITE,
-        navigation=NAVIGATION,
-        themes=THEMES,
-        year=YEAR,
-        footer_columns=[
-            {
-                "title": group["title"],
-                "items": [
-                    {"title": item["title"], "url": item["url"], "external": False}
-                    for item in group["items"]
-                ],
-            }
-            for group in NAVIGATION["groups"]
-        ]
-        + [
-            {
-                "title": "Community",
-                "items": [
-                    {"title": item["title"], "url": item["url"], "external": True}
-                    for item in NAVIGATION["external"]
-                ],
-            }
-        ],
-    )
+    env = make_env()
 
     def canonical_path(page):
         return url(page["url"]) if page["url"] != "index.html" else url("")
@@ -787,6 +1247,31 @@ def build():
     )
     (DIST_DIR / "docs" / "index.html").parent.mkdir(parents=True, exist_ok=True)
     (DIST_DIR / "docs" / "index.html").write_text(docs_index, encoding="utf-8")
+
+    # --- Web Trial (standalone fullscreen page) ---
+    trial_template = env.get_template("layouts/trial.html")
+    trial_html = trial_template.render(site=SITE, basePath=BASE_PATH)
+    (DIST_DIR / "try" / "index.html").parent.mkdir(parents=True, exist_ok=True)
+    (DIST_DIR / "try" / "index.html").write_text(trial_html, encoding="utf-8")
+    SEARCH_INDEX.append(
+        {
+            "type": "page",
+            "title": "Try Kaiteyo — Web Trial",
+            "url": url("try/"),
+            "section": "Learn",
+            "excerpt": "A working slice of Kaiteyo in your browser — flashcards, kanji, vocabulary, writing practice, and progress. Sample data, nothing leaves your device.",
+            "icon": "sparkles",
+        }
+    )
+    print("  web trial: /try/")
+
+    # --- Search index (after every page has registered) ---
+    search_path = DIST_DIR / "assets" / "search"
+    search_path.mkdir(parents=True, exist_ok=True)
+    (search_path / "index.json").write_text(
+        json.dumps(SEARCH_INDEX, ensure_ascii=False, indent=0), encoding="utf-8"
+    )
+    print(f"  search index: {len(SEARCH_INDEX)} entries")
 
     # --- Static output files ---
     write_static_outputs(env)
@@ -825,6 +1310,18 @@ def write_static_outputs(env: Environment):
         site=SITE, basePath=BASE_PATH, year=YEAR
     )
     (DIST_DIR / "404.html").write_text(not_found, encoding="utf-8")
+
+    # 500 page
+    server_error = env.get_template("500.html").render(
+        site=SITE, basePath=BASE_PATH, year=YEAR
+    )
+    (DIST_DIR / "500.html").write_text(server_error, encoding="utf-8")
+
+    # Offline page
+    offline = env.get_template("offline.html").render(
+        site=SITE, basePath=BASE_PATH, year=YEAR
+    )
+    (DIST_DIR / "offline.html").write_text(offline, encoding="utf-8")
 
     # RSS (changelog)
     changelog_html = (DIST_DIR / "changelog" / "index.html").read_text(encoding="utf-8")

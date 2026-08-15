@@ -20,6 +20,7 @@ class UserDataDatabaseMigrationProvider(
         UserDataDatabaseMigrationAfter10(preferences, appDataRepository, observable),
         UserDataDatabaseMigrationAfter13(),
         UserDataDatabaseMigrationAfter14(),
+        UserDataDatabaseMigrationAfter15(),
     ).map { migration ->
         AfterVersion(migration.version) {
             // For safety and to be able to use last_insert_rowid

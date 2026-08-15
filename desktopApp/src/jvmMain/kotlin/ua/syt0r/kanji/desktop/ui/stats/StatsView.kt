@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,8 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -35,14 +39,17 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import ua.syt0r.kanji.desktop.appstate.AppState
+import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsCard
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
+import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsStatTile
 import ua.syt0r.kanji.desktop.designsystem.DsTabRow
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.dueColor
 import ua.syt0r.kanji.desktop.designsystem.errorColor
 import ua.syt0r.kanji.desktop.designsystem.infoColor
 import ua.syt0r.kanji.desktop.designsystem.newColor
@@ -54,12 +61,16 @@ import ua.syt0r.kanji.desktop.engine.stats.BreakdownEngine
 import ua.syt0r.kanji.desktop.engine.stats.CardInsightEngine
 import ua.syt0r.kanji.desktop.engine.stats.ForecastEngine
 import ua.syt0r.kanji.desktop.engine.stats.GoalsEngine
+import ua.syt0r.kanji.desktop.engine.stats.KnowledgeProfileEngine
 import ua.syt0r.kanji.desktop.engine.stats.LearningCurveEngine
 import ua.syt0r.kanji.desktop.engine.stats.MilestoneEngine
 import ua.syt0r.kanji.desktop.engine.stats.ReviewDistributionEngine
 import ua.syt0r.kanji.desktop.engine.stats.StatsPeriod
 import ua.syt0r.kanji.desktop.engine.stats.StreakEngine
 import ua.syt0r.kanji.desktop.engine.stats.WeakSpotEngine
+import ua.syt0r.kanji.desktop.engine.learning.LearningItemKind
+import ua.syt0r.kanji.desktop.engine.learning.LearningStage
+import ua.syt0r.kanji.desktop.engine.learning.StatsPeriod as LearningStatsPeriod
 import ua.syt0r.kanji.desktop.model.SrsStatus
 
 // ============================================
@@ -204,6 +215,527 @@ fun StatsView(state: AppState) {
             DsStatTile("Learning speed", "%.1f".format(current.learningSpeed) + "/day", Modifier.weight(1f))
         }
 
+        // UNIFIED LEARNING OVERVIEW — every number here is derived from the
+        // immutable review-event stream, writing attempts and exam results in
+        // the LearningStore, never from current card state alone.
+        val learning = state.learning
+        val learnToday = learning.periodStats(LearningStatsPeriod.Today)
+        val learnAll = learning.periodStats(LearningStatsPeriod.All)
+        val streaks = learning.streaks()
+        val goals = learning.goalProgress()
+        val mistakes = learning.mistakeSnapshot()
+        val weakKanji = learning.weakestKanji(5)
+        val coverage = learning.jlptCoverage()
+        val charProgress = learning.characterProgress()
+        val learningForecast = learning.forecast(14)
+        // Kana is its own learning domain — counts straight from the store.
+        val kanaNotes = learning.notes.filter { it.kind == LearningItemKind.Kana }
+        val kanaEstablished = learning.cards.count { card ->
+            kanaNotes.any { it.id == card.noteId } &&
+                (card.stage == LearningStage.Established || card.stage == LearningStage.Mature)
+        }
+
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Learning Overview",
+                    subtitle = "Due, streaks, goals, writing, mistakes and coverage — from real review events"
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    DsStatTile("Due now", learning.dueToday().toString(), Modifier.weight(1f))
+                    DsStatTile("Streak", "${streaks.current}d", Modifier.weight(1f))
+                    DsStatTile("Longest", "${streaks.longest}d", Modifier.weight(1f))
+                    DsStatTile("Study time (all)", formatDuration(learnAll.studyTimeMs.milliseconds), Modifier.weight(1f))
+                    DsStatTile("Writing attempts", learnAll.writingAttempts.toString(), Modifier.weight(1f))
+                    DsStatTile("Writing accuracy", "${(learnAll.writingAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(DsSpacing.Md))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    DsStatTile("Reviews today", learnToday.reviews.toString(), Modifier.weight(1f))
+                    DsStatTile("Accuracy today", "${(learnToday.accuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile("Kanji studied", charProgress.uniqueKanjiStudied.toString(), Modifier.weight(1f))
+                    DsStatTile("Kanji established", charProgress.uniqueKanjiEstablished.toString(), Modifier.weight(1f))
+                    DsStatTile("Vocabulary", charProgress.uniqueVocabulary.toString(), Modifier.weight(1f))
+                    DsStatTile("Vocab established", charProgress.uniqueVocabularyEstablished.toString(), Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(DsSpacing.Md))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    DsStatTile("Kana studied", kanaNotes.size.toString(), Modifier.weight(1f))
+                    DsStatTile("Kana established", kanaEstablished.toString(), Modifier.weight(1f))
+                    DsStatTile("Kana writing accuracy", kanaWritingAccuracyLabel(learning), Modifier.weight(1f))
+                }
+
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Text("Daily goals", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(DsSpacing.Sm))
+                goals.take(3).forEach { gp ->
+                    Column(Modifier.padding(vertical = DsSpacing.Sm)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(gp.goal.name, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
+                            Text("${gp.achieved} / ${gp.goal.target}", color = if (gp.complete) successColor() else sc.textMuted, fontSize = DsType.Caption)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        DsProgressBar(fraction = gp.fraction, color = if (gp.complete) successColor() else Color.Unspecified)
+                    }
+                }
+
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xl)) {
+                    MediaStatPill("Again reviews", mistakes.againEvents.toString())
+                    MediaStatPill("Writing mistakes", mistakes.writingMistakes.toString())
+                    MediaStatPill("Exam mistakes", mistakes.examMistakes.toString())
+                    MediaStatPill("Lapsed cards", mistakes.lapsedCards.toString())
+                }
+
+                if (weakKanji.isNotEmpty()) {
+                    Spacer(Modifier.height(DsSpacing.Lg))
+                    Text("Weakest writing", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(DsSpacing.Sm))
+                    weakKanji.forEach { row ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text(row.expression, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.width(60.dp))
+                            DsProgressBar(fraction = row.accuracy, modifier = Modifier.weight(1f), color = if (row.accuracy >= 0.7f) successColor() else if (row.accuracy >= 0.5f) warningColor() else errorColor())
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text("${(row.accuracy * 100).toInt()}%", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(44.dp))
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Text("JLPT coverage (stage-based)", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(DsSpacing.Sm))
+                if (coverage.isEmpty()) {
+                    Text("No JLPT-classified notes yet.", color = sc.textMuted, fontSize = DsType.Body)
+                } else {
+                    coverage.forEach { c ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text("N${c.level}", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(36.dp))
+                            DsProgressBar(fraction = c.introducedFraction, modifier = Modifier.weight(1f), color = jlptColor(c.level))
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text("${(c.introducedFraction * 100).toInt()}% introduced · ${(c.establishedFraction * 100).toInt()}% established", color = sc.textMuted, fontSize = DsType.Caption)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Text("Due forecast (14 days)", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(DsSpacing.Sm))
+                val maxDue = (learningForecast.maxOfOrNull { it.due } ?: 0).coerceAtLeast(1)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
+                    learningForecast.forEach { point ->
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth(if (maxDue == 0) 0.04f else point.due.toFloat() / maxDue)
+                                    .height(18.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(if (point.due > 0) accent().primary else sc.surfaceInteractive)
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(point.date.dayOfMonth.toString(), color = sc.textMuted, fontSize = DsType.Caption)
+                        }
+                    }
+                }
+            }
+        }
+
+        // KNOWLEDGE PROFILE — a study-based estimate of what the learner can
+        // actually handle: kana / kanji / vocabulary coverage, writing
+        // accuracy, theoretical JLPT coverage and frequency coverage. Honest
+        // language throughout — this estimates readiness, it never certifies.
+        val knowledge = remember(learning.revision) { KnowledgeProfileEngine.profile(state) }
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Knowledge Profile",
+                    subtitle = "Study-based estimate from real stages and events — not a certification",
+                    action = {
+                        DsBadge(
+                            text = "Confidence: ${knowledge.confidence}",
+                            tint = when (knowledge.confidence) {
+                                "High" -> successColor()
+                                "Medium" -> warningColor()
+                                else -> infoColor()
+                            }
+                        )
+                    }
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Overall estimated coverage",
+                        color = sc.textSecondary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "${(knowledge.overallFraction * 100).toInt()}%",
+                        color = accent().primary,
+                        fontSize = DsType.Title,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                DsProgressBar(fraction = knowledge.overallFraction, color = accent().primary)
+                Spacer(Modifier.height(DsSpacing.Lg))
+
+                if (knowledge.dimensions.isEmpty()) {
+                    Text(
+                        "No learning data yet — study kana, kanji and vocabulary and your profile fills in here.",
+                        color = sc.textMuted,
+                        fontSize = DsType.Body
+                    )
+                } else {
+                    knowledge.dimensions.forEach { dim ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                dim.label,
+                                color = sc.textSecondary,
+                                fontSize = DsType.Body,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.width(180.dp)
+                            )
+                            DsProgressBar(
+                                fraction = dim.fraction,
+                                modifier = Modifier.weight(1f),
+                                color = when {
+                                    dim.fraction >= 0.7f -> successColor()
+                                    dim.fraction >= 0.3f -> warningColor()
+                                    else -> dueColor()
+                                }
+                            )
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text(
+                                text = if (dim.accuracy != null) {
+                                    "${dim.known}/${dim.total} · ${(dim.accuracy * 100).toInt()}% acc"
+                                } else {
+                                    "${dim.known}/${dim.total}"
+                                },
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.width(150.dp)
+                            )
+                        }
+                    }
+                }
+
+                if (knowledge.writingAttempts > 0) {
+                    Spacer(Modifier.height(DsSpacing.Sm))
+                    Text(
+                        "Writing: ${(knowledge.writingAccuracy!! * 100).toInt()}% accuracy over ${knowledge.writingAttempts} real stroke evaluations",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Text("Theoretical JLPT coverage", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Cumulative study-based coverage against approximate reference band sizes — a readiness estimate, not an official score.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+                Spacer(Modifier.height(DsSpacing.Sm))
+                knowledge.jlpt.forEach { est ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                        Text("N${est.level}", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(36.dp))
+                        DsProgressBar(
+                            fraction = est.kanjiKnown.toFloat() / est.kanjiTotal.coerceAtLeast(1),
+                            modifier = Modifier.weight(1f),
+                            color = jlptColor(est.level)
+                        )
+                        Spacer(Modifier.width(DsSpacing.Sm))
+                        Text(
+                            "${est.kanjiKnown}/${est.kanjiTotal} kanji · ${est.vocabKnown}/${est.vocabTotal} vocab",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            modifier = Modifier.width(200.dp)
+                        )
+                    }
+                }
+
+                if (knowledge.frequency.isNotEmpty()) {
+                    Spacer(Modifier.height(DsSpacing.Lg))
+                    Text("Vocabulary frequency coverage", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Words you have established within each frequency band (from corpus-linked vocabulary in your pool).",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                    Spacer(Modifier.height(DsSpacing.Sm))
+                    knowledge.frequency.forEach { freq ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Top ${freq.band}", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(90.dp))
+                            DsProgressBar(
+                                fraction = freq.known.toFloat() / freq.total.coerceAtLeast(1),
+                                modifier = Modifier.weight(1f),
+                                color = accent().primary.copy(alpha = 0.6f)
+                            )
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text("${freq.known}/${freq.total}", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(72.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // WRITING STATISTICS — per-attempt history with stroke detail and a
+        // per-character accuracy trend, all from real WritingAttemptEvents.
+        val recentWriting = learning.recentWritingAttempts(14)
+        val writingCharacters = recentWriting.map { it.expected }.distinct().take(5)
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Writing History",
+                    subtitle = "Real stroke evaluations per attempt — shape, direction and order mistakes",
+                    action = {
+                        Text(
+                            text = "${learnAll.writingAttempts} attempts total",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                if (recentWriting.isEmpty()) {
+                    Text(
+                        "No writing attempts recorded yet — practice writing a kanji and your stroke evaluations land here.",
+                        color = sc.textMuted,
+                        fontSize = DsType.Body
+                    )
+                } else {
+                    recentWriting.take(8).forEach { attempt ->
+                        val char = attempt.expected
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = char,
+                                color = sc.textPrimary,
+                                fontSize = DsType.BodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.width(44.dp)
+                            )
+                            Text(
+                                text = attempt.attemptedAt.toString().substring(0, 16).replace('T', ' '),
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.width(130.dp)
+                            )
+                            if (attempt.strokes.isNotEmpty()) {
+                                Text(
+                                    text = attempt.strokes.count { it.correct }.let { "$it/${attempt.strokes.size} strokes" },
+                                    color = sc.textSecondary,
+                                    fontSize = DsType.Caption,
+                                    modifier = Modifier.width(96.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = if (attempt.completed) "self-graded" else "incomplete",
+                                    color = sc.textMuted,
+                                    fontSize = DsType.Caption,
+                                    modifier = Modifier.width(96.dp)
+                                )
+                            }
+                            DsProgressBar(
+                                fraction = attempt.accuracy,
+                                modifier = Modifier.weight(1f),
+                                color = if (attempt.accuracy >= 0.7f) successColor() else if (attempt.accuracy >= 0.5f) warningColor() else errorColor()
+                            )
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text(
+                                "${(attempt.accuracy * 100).toInt()}%",
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.width(44.dp)
+                            )
+                        }
+                    }
+
+                    if (writingCharacters.isNotEmpty()) {
+                        Spacer(Modifier.height(DsSpacing.Lg))
+                        Text("Accuracy trend by character", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(DsSpacing.Sm))
+                        writingCharacters.forEach { char ->
+                            val trend = learning.writingAccuracyTrend(char, 30)
+                            Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                                Text(char, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.width(44.dp))
+                                Text(
+                                    text = "${trend.size} attempts",
+                                    color = sc.textMuted,
+                                    fontSize = DsType.Caption,
+                                    modifier = Modifier.width(80.dp)
+                                )
+                                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
+                                    trend.takeLast(14).forEach { (_, acc) ->
+                                        Box(
+                                            Modifier
+                                                .weight(1f)
+                                                .height(16.dp)
+                                                .clip(RoundedCornerShape(2.dp))
+                                                .background(
+                                                    when {
+                                                        acc >= 0.7f -> successColor()
+                                                        acc >= 0.5f -> warningColor()
+                                                        else -> errorColor()
+                                                    }
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // EXAM ANALYTICS — real results from the unified store: study-vs-exam
+        // gap, accuracy by question type and the exam history.
+        val gap = learning.studyVsExamGap()
+        val examAggregates = learning.examAggregates()
+        val examByType = learning.examAccuracyByExamType()
+        val examHistory = learning.examHistory(10)
+        val examTrend = learning.examTrend(14)
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Exam Analytics",
+                    subtitle = "Study vs exam performance — recognition vs production, from real exam results",
+                    action = {
+                        DsBadge(text = "${examAggregates.count} exams · ${examAggregates.totalQuestions} questions")
+                    }
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    DsStatTile("Exams taken", examAggregates.count.toString(), Modifier.weight(1f))
+                    DsStatTile("Average score", "${examAggregates.averageScore}%", Modifier.weight(1f))
+                    DsStatTile("Best / worst", "${examAggregates.bestScore}% / ${examAggregates.worstScore}%", Modifier.weight(1f))
+                    DsStatTile("Study accuracy", "${(gap.studyAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile("Exam recognition", "${(gap.examRecognitionAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile("Exam production", "${(gap.examProductionAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile("Exam writing", "${(gap.examWritingAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                }
+
+                if (examByType.isNotEmpty()) {
+                    Spacer(Modifier.height(DsSpacing.Lg))
+                    Text("Accuracy by exam type", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(DsSpacing.Sm))
+                    examByType.toList().sortedBy { it.second }.forEach { (type, acc) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text(type, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(180.dp))
+                            DsProgressBar(
+                                fraction = acc,
+                                modifier = Modifier.weight(1f),
+                                color = when {
+                                    acc >= 0.8f -> successColor()
+                                    acc >= 0.6f -> warningColor()
+                                    else -> errorColor()
+                                }
+                            )
+                            Spacer(Modifier.width(DsSpacing.Sm))
+                            Text("${(acc * 100).toInt()}%", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(44.dp))
+                        }
+                    }
+                }
+
+                if (examTrend.isNotEmpty()) {
+                    Spacer(Modifier.height(DsSpacing.Lg))
+                    Text("Score trend", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(DsSpacing.Sm))
+                    val maxTrend = (examTrend.maxOfOrNull { it.second } ?: 100).coerceAtLeast(1)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
+                        examTrend.forEach { (label, score) ->
+                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth(score.toFloat() / maxTrend.coerceAtLeast(1))
+                                        .height(22.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(if (score >= 60) successColor() else errorColor())
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(label.substring(5), color = sc.textMuted, fontSize = DsType.Caption)
+                            }
+                        }
+                    }
+                }
+
+                if (examHistory.isNotEmpty()) {
+                    Spacer(Modifier.height(DsSpacing.Lg))
+                    Text("Recent exams", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(DsSpacing.Sm))
+                    examHistory.take(6).forEach { exam ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text(exam.title, color = sc.textSecondary, fontSize = DsType.Body, maxLines = 1, modifier = Modifier.weight(1f))
+                            Text("${exam.correctCount}/${exam.questionCount}", color = sc.textMuted, fontSize = DsType.Caption)
+                            Spacer(Modifier.width(DsSpacing.Md))
+                            DsBadge(
+                                text = "${exam.percentage}%",
+                                tint = if (exam.percentage >= 60) successColor() else errorColor()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // CARD HISTORY — drill into any card's full review timeline.
+        val historyCardIds = cards.take(60).map { it.id }
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Card History",
+                    subtitle = "Review timeline for recently seen cards — every entry is a real review event"
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                var historyCardId by remember { mutableStateOf<String?>(null) }
+                val targetId = historyCardId ?: historyCardIds.firstOrNull()
+                val historyRows = targetId?.let { learning.cardHistory(it, 30) }.orEmpty()
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
+                    DsSelect(
+                        selected = targetId ?: "",
+                        options = historyCardIds,
+                        onSelected = { historyCardId = it },
+                        labelOf = { id -> cards.firstOrNull { c -> c.id == id }?.character ?: id.take(12) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (historyRows.isNotEmpty()) {
+                        DsBadge(text = "${historyRows.size} reviews")
+                    }
+                }
+                Spacer(Modifier.height(DsSpacing.Sm))
+                if (historyRows.isEmpty()) {
+                    Text("No review events recorded for this card yet.", color = sc.textMuted, fontSize = DsType.Body)
+                } else {
+                    historyRows.take(12).forEach { entry ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                entry.event.reviewedAt.toString().substring(0, 16).replace('T', ' '),
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.width(130.dp)
+                            )
+                            Text(entry.event.rating.name, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.width(64.dp))
+                            Text(entry.cardTypeLabel, color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(110.dp))
+                            Text(
+                                text = "${entry.event.intervalBefore.toInt()}d → ${entry.event.intervalAfter.toInt()}d",
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = if (entry.event.correct) "correct" else "miss",
+                                color = if (entry.event.correct) successColor() else errorColor(),
+                                fontSize = DsType.Caption,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // Media immersion KPIs — period-aware, with deltas vs the previous window.
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -266,6 +798,11 @@ fun StatsView(state: AppState) {
                 HeatmapPanel(state, summaries)
             }
         }
+
+        // DAILY ACTIVITY — real per-day totals: engaged time (measured from
+        // actual interaction, never app-open time), engagement sessions and
+        // the decks touched that day (from real review events).
+        DailyActivityCard(state, today)
 
         // Media immersion — the 14-day chart plus honest lifetime totals.
         DsCard {
@@ -749,6 +1286,15 @@ private fun jlptColor(level: Int): Color = when (level) {
     else -> surfaceColors().textMuted
 }
 
+/** Kana writing accuracy from real stroke evaluations, or an honest "—". */
+private fun kanaWritingAccuracyLabel(learning: ua.syt0r.kanji.desktop.engine.learning.LearningEngine): String {
+    val kanaNoteIds = learning.notes.filter { it.kind == LearningItemKind.Kana }.map { it.id }.toSet()
+    val attempts = learning.writingAttempts.filter { it.noteId in kanaNoteIds }
+    if (attempts.isEmpty()) return "—"
+    val accuracy = attempts.map { it.accuracy }.average().toFloat().coerceIn(0f, 1f)
+    return "${(accuracy * 100).toInt()}%"
+}
+
 /** Label + value row used by the Learning Velocity card. */
 @Composable
 private fun VelocityStat(label: String, value: String) {
@@ -757,4 +1303,127 @@ private fun VelocityStat(label: String, value: String) {
         Text(label, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
         Text(value, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.Bold)
     }
+}
+
+// ============================================
+// DAILY ACTIVITY — engaged time, sessions and
+// decks per day, straight from the activity
+// tracker (real interaction) and review events.
+// ============================================
+
+private data class DailyActivityRow(
+    val date: LocalDate,
+    val engaged: Duration,
+    val sessions: Int,
+    val decks: List<String>
+)
+
+/**
+ * Last-14-days table of real engagement totals. Refreshes every 30 s (one
+ * bounded coroutine, cancelled with the composition) so "today" keeps
+ * accumulating while this view is open — same freshness the media chart has.
+ */
+@Composable
+private fun DailyActivityCard(state: AppState, today: LocalDate) {
+    val sc = surfaceColors()
+    var tick by remember { mutableStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            tick++
+        }
+    }
+    val rows = remember(tick) { buildDailyActivityRows(state, today) }
+    val active = rows
+        .filter { it.engaged > Duration.ZERO || it.sessions > 0 || it.decks.isNotEmpty() }
+        .sortedByDescending { it.date }
+    val totalEngaged = rows.fold(Duration.ZERO) { acc, r -> acc + r.engaged }
+
+    DsCard {
+        Column(Modifier.padding(DsSpacing.Lg)) {
+            DsSectionHeader(
+                title = "Daily Activity",
+                subtitle = "Engaged time comes from real interaction — sessions are continuous stretches of activity, never app-open time",
+                action = {
+                    Text(
+                        text = "${active.size}/14 active days · ${formatDuration(totalEngaged)} engaged",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+            )
+            Spacer(Modifier.height(DsSpacing.Lg))
+            if (active.isEmpty()) {
+                Text(
+                    "No study activity yet — review cards, practise writing or watch media and your daily totals appear here.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Day", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(1f))
+                    Text("Engaged", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(84.dp))
+                    Text("Sessions", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.width(72.dp))
+                    Text("Decks", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(2f))
+                }
+                Spacer(Modifier.height(2.dp))
+                active.forEach { row ->
+                    val isToday = row.date == today
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isToday) "Today" else shortDayLabel(row.date),
+                            color = if (isToday) accent().primary else sc.textSecondary,
+                            fontSize = DsType.Body,
+                            fontWeight = if (isToday) FontWeight.SemiBold else FontWeight.Normal,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = formatDuration(row.engaged),
+                            color = if (row.engaged > Duration.ZERO) sc.textPrimary else sc.textMuted,
+                            fontSize = DsType.Body,
+                            modifier = Modifier.width(84.dp)
+                        )
+                        Text(
+                            text = row.sessions.toString(),
+                            color = if (row.sessions > 0) sc.textPrimary else sc.textMuted,
+                            fontSize = DsType.Body,
+                            modifier = Modifier.width(72.dp)
+                        )
+                        Text(
+                            text = deckLabel(row.decks),
+                            color = sc.textSecondary,
+                            fontSize = DsType.Body,
+                            maxLines = 1,
+                            modifier = Modifier.weight(2f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun buildDailyActivityRows(state: AppState, today: LocalDate): List<DailyActivityRow> =
+    state.activity.dayActivities(today, 14).map { act ->
+        DailyActivityRow(
+            date = act.date,
+            engaged = act.engaged,
+            sessions = act.sessions,
+            decks = state.decksStudiedOn(act.date)
+        )
+    }
+
+private fun shortDayLabel(date: LocalDate): String =
+    "${date.dayOfWeek.name.take(3)} ${date.dayOfMonth} ${date.month.name.take(3)}"
+
+private fun deckLabel(decks: List<String>): String {
+    if (decks.isEmpty()) return "—"
+    val shown = decks.take(3).joinToString(" · ")
+    return if (decks.size > 3) "$shown +${decks.size - 3}" else shown
 }

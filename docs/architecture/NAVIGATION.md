@@ -93,3 +93,23 @@ DataStore:
 - Sync indicator / sponsor button from the legacy home sidebar are not yet
   surfaced in the shell chrome.
 - Top/Bottom positions still overlap the 44dp custom titlebar drag region.
+
+## Node-layer integration (TARGET — NODE §126, §133–§135)
+
+Navigation targets the Launchpad model over the current NavShell:
+
+- **Launchpad** (§126, §135): central spring-opened overlay with the fixed destination
+  set — Home · Browse · Library · Media · Stats · Journey · Settings (+ search).
+  Opened from the floating bubble; keyboard/mouse/touch/gamepad parity; no FPS drop;
+  consistent spacing/icons (acceptance criteria in UX_FLOWS §1).
+- **Floating bubble** (§133): draggable, 3 magnetic snap points per side, elastic
+  settle (spring, never teleport), position persisted; click = Launchpad, hold/
+  right-click = alternate menu; touch-hold supported; no redundant Quick Access.
+- **Sidebar** (§134): ≈20% nav / 80% content on desktop, resizable within bounds,
+  collapsible; on mobile becomes top/bottom nav — never a full-screen takeover.
+- Every destination is a node-view: Browse = node exploration (§129), Library = node
+  queries (§128), Media = MEDIA-family nodes (§130), Stats = event-derived (§131).
+- Journey is a destination (§141), entered via Launchpad with a deliberate transition.
+
+Known-limitations items above (Smart auto-hide, shell chrome gaps, titlebar overlap)
+remain tracked in `CURRENT_ISSUES.md`; the Launchpad work extends the same tokens.

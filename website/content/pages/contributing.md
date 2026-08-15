@@ -5,8 +5,11 @@ description: How to help with Kaiteyo — code, design, translation, documentati
 
 <div class="prose-note">
   <svg class="icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+  <strong>Looking for what to work on?</strong> The live contributor dashboard — real tasks,
+  good-first picks, and required knowledge — lives in the
+  <a href="/project/contributing/">Command Center → Contributing</a>.
   Full guidelines live in the repository —
-  <a href="{{ site.repository }}/blob/develop/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>.
+  <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a>.
 </div>
 
 ## Ways to contribute

@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 import ua.syt0r.kanji.presentation.screen.main.screen.statistics.StatisticsScreen
 import kotlinx.datetime.Clock
@@ -1156,7 +1157,7 @@ fun FlagSelectorDialog(
     onSelect: (CardFlagType) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Set Flag") },
         text = {
@@ -1211,7 +1212,7 @@ fun NoteEditorDialog(
     var content by remember { mutableStateOf(initialContent) }
     var useMarkdown by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Card Note") },
         text = {
@@ -1292,7 +1293,7 @@ fun CardStatusSelectorDialog(
     onSelect: (CardStatus) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Change Card Status") },
         text = {
@@ -1334,7 +1335,7 @@ fun ReviewSettingsDialog(
 ) {
     var settings by remember { mutableStateOf(ReviewSettings()) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Review Settings") },
         text = {
@@ -1447,7 +1448,7 @@ fun KeyboardShortcutSettingsDialog(
         "deselect" to "Escape"
     )
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Keyboard Shortcuts") },
         text = {
@@ -1495,7 +1496,7 @@ fun StudyHistoryDialog(
     history: List<StudyHistoryEntry>,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Study History") },
         text = {
@@ -1640,7 +1641,7 @@ fun HeatmapFullDialog(
     data: Map<String, Int>,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Study Heatmap") },
         text = {
@@ -1672,7 +1673,7 @@ fun SearchDialog(
 
     val searchModes = listOf("All Fields", "Kanji", "Reading", "Meaning", "Tags", "Notes", "Deck")
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Search Cards") },
         text = {
@@ -1726,7 +1727,7 @@ fun BulkActionsDialog(
     onAction: (BulkActionType) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Bulk Actions ($selectedCount cards)") },
         text = {
@@ -1782,7 +1783,7 @@ fun ImportExportDialog(
     var selectedFormat by remember { mutableStateOf("APKG") }
     val formats = listOf("APKG", "CSV", "JSON", "TXT", "Markdown")
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Import / Export") },
         text = {

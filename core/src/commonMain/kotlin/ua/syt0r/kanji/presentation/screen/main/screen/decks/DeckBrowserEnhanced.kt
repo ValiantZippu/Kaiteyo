@@ -26,6 +26,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // DECK BROWSER ENHANCED
@@ -384,7 +385,7 @@ private fun CreateDeckDialog(
     var createSubdeck by remember { mutableStateOf(false) }
     var expandedParent by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create Deck") },
         text = {
@@ -439,7 +440,7 @@ private fun MergeDecksDialog(
 ) {
     var selectedTarget by remember { mutableStateOf<KaiteyoDeck?>(null) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Merge Decks") },
         text = {

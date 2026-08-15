@@ -1,0 +1,133 @@
+{# Kaiteyo Web Trial — standalone fullscreen app shell.
+   Deliberately NOT based on base.html: entering the trial should feel like
+   opening the application, not browsing another website page. #}
+<!DOCTYPE html>
+<html lang="{{ site.locale }}" data-base-path="{{ basePath }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Try Kaiteyo — Web Trial · {{ site.name }}</title>
+  <meta name="description" content="A working, in-browser slice of Kaiteyo: study flashcards, browse kanji and vocabulary, practice writing strokes, and see real progress — no installation." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="{{ site.url }}{{ basePath }}try/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="{{ site.name }}" />
+  <meta property="og:title" content="Try Kaiteyo — Web Trial" />
+  <meta property="og:description" content="A working, in-browser slice of Kaiteyo: flashcards, kanji, vocabulary, writing practice, and progress." />
+  <meta property="og:url" content="{{ site.url }}{{ basePath }}try/" />
+  <link rel="icon" href="{{ basePath }}assets/images/favicon.svg" type="image/svg+xml" />
+
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/tokens.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/themes.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/trial/trial.css" />
+
+  <script>
+    (function () {
+      try {
+        var theme = JSON.parse(localStorage.getItem("kaiteyo:theme"));
+        var root = document.documentElement;
+        if (theme && theme.baseMode) {
+          root.dataset.baseMode = theme.baseMode;
+          root.dataset.accent = theme.accent || "signature";
+          root.dataset.glass = theme.glass ? "true" : "false";
+        } else {
+          root.dataset.baseMode =
+            window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "oled";
+          root.dataset.accent = "signature";
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="trial-body">
+
+  {% include "partials/icons.html" %}
+
+  <div class="trial" id="trialApp">
+
+    {# --- Trial banner: the honest boundary between trial and full app --- #}
+    <div class="trial-banner" id="trialBanner">
+      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+      <span class="banner-text">
+        <strong>This is the web trial</strong> — a working slice of Kaiteyo with sample data.
+        Nothing leaves your browser.
+      </span>
+      <a class="btn btn-primary btn-sm" href="{{ basePath }}download/">
+        <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+        Get the full app
+      </a>
+      <button class="btn-icon trial-banner-close" type="button" id="trialBannerClose" aria-label="Dismiss trial banner">
+        <svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg>
+      </button>
+    </div>
+
+    {# --- Dock (sidebar) --- #}
+    <aside class="trial-dock" aria-label="Trial navigation">
+      <div class="trial-brand">
+        <span class="trial-brand-mark" aria-hidden="true">書</span>
+        <span class="flex-col">
+          <span class="trial-brand-name">KAITEYO</span>
+          <span class="trial-brand-sub"><span lang="ja">書いてよ</span> · Web trial</span>
+        </span>
+      </div>
+
+      <nav class="trial-nav">
+        <span class="trial-nav-label">Study</span>
+        <button class="trial-nav-item" type="button" data-trial-nav="home" aria-current="true">
+          <svg class="icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> Home
+        </button>
+        <button class="trial-nav-item" type="button" data-trial-nav="browse">
+          <svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg> Browse
+        </button>
+        <button class="trial-nav-item" type="button" data-trial-nav="write">
+          <svg class="icon" aria-hidden="true"><use href="#icon-pen"/></svg> Writing
+        </button>
+        <button class="trial-nav-item" type="button" data-trial-nav="study">
+          <svg class="icon" aria-hidden="true"><use href="#icon-flip"/></svg> Study
+          <span class="badge badge-accent trial-nav-badge">due</span>
+        </button>
+        <button class="trial-nav-item" type="button" data-trial-nav="progress">
+          <svg class="icon" aria-hidden="true"><use href="#icon-milestone"/></svg> Progress
+        </button>
+      </nav>
+
+      <div class="trial-dock-footer">
+        <span class="trial-dock-note">
+          Sample data · everything stays in this browser.
+        </span>
+        <a class="btn btn-primary btn-sm" href="{{ basePath }}download/">
+          <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+          Download Kaiteyo
+        </a>
+        <a class="btn btn-ghost btn-sm" href="{{ basePath }}">
+          <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"/></svg>
+          Back to website
+        </a>
+      </div>
+    </aside>
+
+    {# --- Main column --- #}
+    <main class="trial-main">
+      <header class="trial-topbar">
+        <button class="trial-dock-toggle" type="button" id="trialDockToggle" aria-label="Open navigation">
+          <svg class="icon" aria-hidden="true"><use href="#icon-menu"/></svg>
+        </button>
+        <span class="trial-topbar-title" id="trialTopbarTitle">Home</span>
+        <div class="trial-topbar-actions">
+          <div class="trial-theme-row" id="trialThemeRow" aria-label="Quick theme preview">
+            <span class="trial-theme-label">Theme</span>
+          </div>
+          <div class="trial-search" id="trialSearchWrap">
+            <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+            <input type="search" id="trialSearch" placeholder="Search kanji or vocabulary… Enter ↵" aria-label="Search the trial" autocomplete="off" spellcheck="false" />
+          </div>
+        </div>
+      </header>
+      <div class="trial-content" id="trialContent" tabindex="-1"></div>
+    </main>
+  </div>
+
+  <script src="{{ basePath }}assets/trial/data.js"></script>
+  <script src="{{ basePath }}assets/trial/trial.js"></script>
+</body>
+</html>

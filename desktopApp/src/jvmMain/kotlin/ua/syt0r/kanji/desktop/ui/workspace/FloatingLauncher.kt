@@ -22,20 +22,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.OpenInFull
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.ViewSidebar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -85,6 +82,7 @@ import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.LauncherIconSize
 import ua.syt0r.kanji.desktop.appstate.LauncherSize
 import ua.syt0r.kanji.desktop.appstate.LauncherSnapPoint
+import ua.syt0r.kanji.desktop.engine.navigation.LauncherSnapMath
 import ua.syt0r.kanji.desktop.appstate.NavLayout
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
@@ -102,19 +100,6 @@ import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 //   · Drag               → free movement, spring snap on release
 // Auto-fades when idle; position + snap point persist.
 // ============================================
-
-/** The views surfaced by the launcher menu — the everyday destinations. */
-private val launcherTargets: List<WorkspaceView> = listOf(
-    WorkspaceView.Dashboard,
-    WorkspaceView.Library,
-    WorkspaceView.Review,
-    WorkspaceView.Dictionary,
-    WorkspaceView.Media,
-    WorkspaceView.Ocr,
-    WorkspaceView.Mining,
-    WorkspaceView.Statistics,
-    WorkspaceView.Settings
-)
 
 /** How long a press must be held before the mode panel opens (ms). */
 private const val LongPressTimeoutMs = 480L
@@ -152,17 +137,27 @@ fun DsFloatingLauncher(state: AppState) {
         val bubbleShape = RoundedCornerShape(bubbleSize * 0.32f)
         val hitboxExtra = if (state.navigationLargerHitbox) 18.dp else 8.dp
         // Phones/compact windows keep the bubble clear of the tab bars.
-        val compactWindow = w < 720.dp
+        val compactWindow = w < Breakpoints.CompactWindowWidth
         val edgeInset = if (compactWindow) 72.dp else 0.dp
         val snapPoint = state.launcherSnapPoint
 
         // Position as fractions of the window. Compact windows remember a
         // separate spot so the bubble never fights the tab bar / gesture zones.
+        // Restore validates against the current window (sizes change between
+        // sessions) and clamps/re-snaps instead of ever crashing or going
+        // off-screen — see LauncherSnapMath.restorePosition.
+        val snapLayout = LauncherSnapMath.SnapLayout(
+            windowWidth = w.value,
+            windowHeight = h.value,
+            bubbleSize = bubbleSize.value,
+            edgeInset = edgeInset.value
+        )
         var dragPos by remember(w, h, compactWindow) {
             mutableStateOf(
-                Offset(
-                    w.value * (if (compactWindow) state.launcherPosXPhone else state.launcherPosX),
-                    h.value * (if (compactWindow) state.launcherPosYPhone else state.launcherPosY)
+                LauncherSnapMath.restorePosition(
+                    storedX = if (compactWindow) state.launcherPosXPhone else state.launcherPosX,
+                    storedY = if (compactWindow) state.launcherPosYPhone else state.launcherPosY,
+                    layout = snapLayout
                 )
             )
         }
@@ -189,27 +184,8 @@ fun DsFloatingLauncher(state: AppState) {
         val bubbleDiameterPx = with(density) { bubbleSize.roundToPx() }
         val hitboxPaddingPx = with(density) { hitboxExtra.roundToPx() }
 
-        val snapPositionFor: (LauncherSnapPoint) -> Offset = { snap ->
-            val size = bubbleSize.value
-            when (snap) {
-                LauncherSnapPoint.TopLeft, LauncherSnapPoint.LeftTop -> Offset(0f, edgeInset.value)
-                LauncherSnapPoint.TopCenter -> Offset((w.value - size) / 2f, edgeInset.value)
-                LauncherSnapPoint.TopRight, LauncherSnapPoint.RightTop -> Offset(w.value - size, edgeInset.value)
-                LauncherSnapPoint.BottomLeft, LauncherSnapPoint.LeftBottom -> Offset(0f, h.value - edgeInset.value - size)
-                LauncherSnapPoint.BottomCenter -> Offset((w.value - size) / 2f, h.value - edgeInset.value - size)
-                LauncherSnapPoint.BottomRight, LauncherSnapPoint.RightBottom -> Offset(w.value - size, h.value - edgeInset.value - size)
-                LauncherSnapPoint.LeftCenter -> Offset(0f, (h.value - size) / 2f)
-                LauncherSnapPoint.RightCenter -> Offset(w.value - size, (h.value - size) / 2f)
-            }
-        }
-
-        fun nearestSnap(pos: Offset): LauncherSnapPoint =
-            LauncherSnapPoint.entries.minByOrNull { snap ->
-                val anchor = snapPositionFor(snap)
-                val dx = pos.x - anchor.x
-                val dy = pos.y - anchor.y
-                dx * dx + dy * dy
-            } ?: LauncherSnapPoint.BottomRight
+        fun snapPositionFor(snap: LauncherSnapPoint): Offset =
+            LauncherSnapMath.anchorPosition(snap, snapLayout)
 
         // Changing the snap point in settings moves the bubble live (and is
         // persisted as the new remembered spot). Skipped on first launch so
@@ -228,12 +204,11 @@ fun DsFloatingLauncher(state: AppState) {
         }
 
         fun finishDrag() {
-            val nearest = nearestSnap(dragPos)
-            val anchor = snapPositionFor(nearest)
-            state.updateLauncherSnapPoint(nearest)
-            dragPos = anchor
-            target = anchor
-            state.setLauncherPos(anchor.x / w.value, anchor.y / h.value, compact = compactWindow)
+            val settled = LauncherSnapMath.settle(dragPos, snapLayout)
+            state.updateLauncherSnapPoint(settled.snap)
+            dragPos = settled.anchor
+            target = settled.anchor
+            state.setLauncherPos(settled.posX, settled.posY, compact = compactWindow)
         }
 
         var faded by remember { mutableStateOf(false) }
@@ -320,8 +295,11 @@ fun DsFloatingLauncher(state: AppState) {
                         .size(bubbleSize)
                         .graphicsLayer {
                             alpha = opacity
-                            scaleX = hoverScale * pressScale
-                            scaleY = hoverScale * pressScale
+                            // Subtle squash/stretch while dragging — the press
+                            // dip compresses further into the drag axis so the
+                            // bubble reads as "being pulled", not rigid.
+                            scaleX = hoverScale * pressScale * (if (dragging) 1.05f else 1f)
+                            scaleY = hoverScale * pressScale * (if (dragging) 0.95f else 1f)
                         }
                         .focusRequester(bubbleFocusRequester)
                         .focusable()
@@ -350,26 +328,33 @@ fun DsFloatingLauncher(state: AppState) {
                                 var previous = down.position
                                 var longPressFired = false
 
+                                // The one command behind both long-press and
+                                // right-click — never duplicated per gesture.
+                                fun openFloatingBubbleMenu() {
+                                    modePanelOpen = true
+                                    menuOpen = false
+                                    lastActive = System.currentTimeMillis()
+                                }
+
                                 val longPressJob = scope.launch {
                                     delay(LongPressTimeoutMs)
                                     longPressFired = true
-                                    modePanelOpen = true
-                                    menuOpen = false
+                                    openFloatingBubbleMenu()
                                 }
 
                                 try {
                                     if (isSecondary) {
-                                        // Right-click → mode switch panel.
+                                        // Right-click → the same mode panel.
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                            if (event.type == PointerEventType.Release) {
-                                                longPressJob.cancel()
-                                                if (!longPressFired) {
-                                                    modePanelOpen = true
-                                                    menuOpen = false
+                                            when (event.type) {
+                                                PointerEventType.Release, PointerEventType.Exit -> {
+                                                    longPressJob.cancel()
+                                                    if (!longPressFired) openFloatingBubbleMenu()
+                                                    return@awaitEachGesture
                                                 }
-                                                break
+                                                else -> {}
                                             }
                                         }
                                     } else {
@@ -379,9 +364,10 @@ fun DsFloatingLauncher(state: AppState) {
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                             when (event.type) {
                                                 PointerEventType.Move -> {
-                                                    if (!dragged) {
+                                                    val pos = change.position
+                                                    if (!dragged && pos.x.isFinite() && pos.y.isFinite()) {
                                                         val slop = viewConfiguration.touchSlop
-                                                        if ((change.position - down.position).getDistance() > slop) {
+                                                        if ((pos - down.position).getDistance() > slop) {
                                                             dragged = true
                                                             longPressJob.cancel()
                                                             dragging = true
@@ -389,11 +375,11 @@ fun DsFloatingLauncher(state: AppState) {
                                                             modePanelOpen = false
                                                         }
                                                     }
-                                                    if (dragged) {
+                                                    if (dragged && previous.x.isFinite() && previous.y.isFinite() && pos.x.isFinite() && pos.y.isFinite()) {
                                                         change.consume()
-                                                        dragPos += change.position - previous
+                                                        dragPos += pos - previous
                                                         target = dragPos
-                                                        previous = change.position
+                                                        previous = pos
                                                     }
                                                 }
                                                 PointerEventType.Release -> {
@@ -403,6 +389,17 @@ fun DsFloatingLauncher(state: AppState) {
                                                         finishDrag()
                                                     } else if (!longPressFired) {
                                                         menuOpen = !menuOpen
+                                                    }
+                                                    finished = true
+                                                }
+                                                PointerEventType.Exit -> {
+                                                    // Gesture interrupted (pointer left the window, focus
+                                                    // change…). Never leave the bubble mid-drag or stuck
+                                                    // in a "pressed" state — settle it like a release.
+                                                    longPressJob.cancel()
+                                                    if (dragged) {
+                                                        dragging = false
+                                                        finishDrag()
                                                     }
                                                     finished = true
                                                 }
@@ -416,9 +413,12 @@ fun DsFloatingLauncher(state: AppState) {
                                 }
                             }
                         }
+                        // Shadow first so it sits behind the glyph — ordered
+                        // after the background it painted a dark shape on top
+                        // of the bubble, flattening the depth.
+                        .shadow(if (faded) 2.dp else 10.dp, bubbleShape)
                         .clip(bubbleShape)
-                        .background(ac.primary)
-                        .shadow(if (faded) 2.dp else 10.dp, bubbleShape),
+                        .background(ac.primary),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -731,7 +731,9 @@ private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: (
 
     val scale by animateFloatAsState(
         targetValue = if (leaving) 0.92f else 1f,
-        animationSpec = tween(if (leaving) exitMs else 200),
+        // Open with a spring so the panel settles softly from the bubble;
+        // closing stays a quick tween for a decisive dismiss.
+        animationSpec = if (leaving) tween(exitMs) else spring(dampingRatio = 0.72f, stiffness = 340f),
         label = "launchpadScale"
     )
     val alpha by animateFloatAsState(
@@ -785,117 +787,115 @@ private fun LaunchpadPanel(state: AppState, onDismiss: () -> Unit) {
 
     // Responsive: keep a comfortable width on large windows, shrink on phones.
     BoxWithConstraints {
-        val panelWidth = minOf(540.dp, (maxWidth - 32.dp).coerceAtLeast(320.dp))
+        val panelWidth = minOf(520.dp, (maxWidth - 32.dp).coerceAtLeast(320.dp))
+        val navListHeight = (maxHeight - 96.dp).coerceAtLeast(260.dp)
         Column(
             modifier = Modifier
                 .width(panelWidth)
                 .shadow(40.dp, RoundedCornerShape(28.dp))
                 .clip(RoundedCornerShape(28.dp))
-                .background(sc.surfaceElevated.copy(alpha = 0.92f))
+                .background(sc.surfaceElevated.copy(alpha = 0.96f))
                 .border(1.dp, sc.border.copy(alpha = 0.35f), RoundedCornerShape(28.dp))
-                .padding(DsSpacing.Xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+                .padding(DsSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
-        Text(
-            text = "LAUNCHPAD",
-            color = sc.textMuted,
-            fontSize = DsType.Caption,
-            fontWeight = FontWeight.Medium,
-            letterSpacing = 2.sp
-        )
-        // 5×2 grid of large icon tiles — arrow-key navigable (see below).
-        LaunchpadTileGrid(state, onDismiss)
-        // Window controls — Restore/Minimize/Maximize/Close, so the launchpad
-        // doubles as a window menu without needing the title bar.
-        val controls = LocalWindowControls.current
-        if (controls != null) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(sc.border.copy(alpha = 0.25f))
+            Text(
+                text = "NAVIGATION",
+                color = sc.textMuted,
+                fontSize = DsType.Caption,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 2.sp
             )
-            LaunchpadWindowControls(controls)
-        }
+            // Full navigation — the same grouped destinations as the dock,
+            // never a curated quick-access subset. The list is height-capped
+            // so it scrolls instead of overflowing short windows.
+            Box(
+                Modifier.heightIn(max = navListHeight)
+            ) {
+                LaunchpadNavList(state, onDismiss)
+            }
         }
     }
 }
 
 /**
- * Keyboard-accessible tile grid: ←/→ move within a row, ↑/↓ jump rows (both
- * wrapping, with the short last row clamped), Enter/Space activates the
- * focused tile through its native clickable, and the focused tile shows an
- * accent ring. Focus starts on the current view, if it's a launcher target.
+ * Full navigation list for the launchpad: every destination the dock offers,
+ * grouped the same way. ↑/↓ move through all items (wrapping), Enter/Space
+ * activates the focused row, and focus follows the current view on open.
  */
 @Composable
-private fun LaunchpadTileGrid(state: AppState, onDismiss: () -> Unit) {
-    val targets = launcherTargets
-    val cols = 5
-    val rows = targets.chunked(cols)
-    val focusRequesters = remember { List(targets.size) { FocusRequester() } }
+private fun LaunchpadNavList(state: AppState, onDismiss: () -> Unit) {
+    val sc = surfaceColors()
+    val groups = navGroupsForLaunchpad
+    val all = groups.flatMap { (_, items) -> items }
+    val focusRequesters = remember { List(all.size) { FocusRequester() } }
     var index by remember {
-        mutableStateOf(targets.indexOfFirst { it == state.currentView }.coerceAtLeast(0))
-    }
-
-    fun move(dx: Int, dy: Int) {
-        val rowCount = rows.size
-        val row = index / cols
-        val col = index % cols
-        val newRow = ((row + dy) % rowCount + rowCount) % rowCount
-        val newCol = ((col + dx) % cols + cols) % cols
-        val rowSize = minOf(cols, targets.size - newRow * cols)
-        index = newRow * cols + minOf(newCol, rowSize - 1)
+        mutableStateOf(all.indexOfFirst { it.first == state.currentView }.coerceAtLeast(0))
     }
 
     Column(
-        modifier = Modifier.onKeyEvent { keyEvent ->
-            if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
-            when (keyEvent.key) {
-                Key.DirectionRight -> {
-                    move(1, 0); true
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (keyEvent.key) {
+                    Key.DirectionDown -> {
+                        index = (index + 1) % all.size
+                        true
+                    }
+                    Key.DirectionUp -> {
+                        index = (index - 1 + all.size) % all.size
+                        true
+                    }
+                    Key.Enter, Key.Spacebar -> {
+                        val (view, _) = all[index]
+                        state.currentView = view
+                        onDismiss()
+                        true
+                    }
+                    else -> false
                 }
-                Key.DirectionLeft -> {
-                    move(-1, 0); true
-                }
-                Key.DirectionDown -> {
-                    move(0, 1); true
-                }
-                Key.DirectionUp -> {
-                    move(0, -1); true
-                }
-                else -> false
-            }
-        },
-        verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+            },
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
-        rows.forEachIndexed { row, rowTargets ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
-            ) {
-                rowTargets.forEachIndexed { col, view ->
-                    val flat = row * cols + col
-                    LaunchpadTileBig(
-                        view = view,
-                        selected = state.currentView == view,
-                        focused = index == flat,
-                        onClick = {
-                            state.currentView = view
-                            onDismiss()
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequesters[flat])
-                    )
-                }
-                repeat(cols - rowTargets.size) { Spacer(Modifier.weight(1f)) }
+        var flat = 0
+        groups.forEachIndexed { groupIndex, (groupLabel, items) ->
+            // The curated primary set (Home · Library · Browse · Stats · Media
+            // · Settings) leads without a header — it sits directly under the
+            // launchpad title; secondary groups keep their labels. Study is an
+            // action from the Library, not a destination.
+            if (groupIndex > 0) {
+                Text(
+                    text = groupLabel.uppercase(),
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = DsSpacing.Sm, top = DsSpacing.Sm, bottom = 2.dp)
+                )
+            }
+            items.forEach { (view, icon) ->
+                val current = flat
+                flat++
+                LaunchpadNavRow(
+                    view = view,
+                    icon = icon,
+                    selected = state.currentView == view,
+                    focused = index == current,
+                    onClick = {
+                        state.currentView = view
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequesters[current])
+                )
             }
         }
     }
+
     // Let the popup finish grabbing focus on first open so real keyboard
-    // focus lands on the selected tile — arrows work immediately, and
-    // capture mode screenshots the genuine focus ring.
+    // focus lands on the current view — arrows work immediately.
     var firstFocus by remember { mutableStateOf(true) }
     LaunchedEffect(index) {
         if (firstFocus) {
@@ -906,88 +906,13 @@ private fun LaunchpadTileGrid(state: AppState, onDismiss: () -> Unit) {
     }
 }
 
-/**
- * Keyboard-accessible window-control strip: ←/→ (and ↑/↓) move focus across
- * the four buttons (wrapping, skipping disabled ones), Tab reaches them, and
- * each button shows a focus ring while selected or focused.
- */
 @Composable
-private fun LaunchpadWindowControls(controls: WindowControls) {
-    val focusRequesters = remember { List(4) { FocusRequester() } }
-    val buttons = listOf(
-        Triple(Icons.Default.Restore, "Restore", controls.isMaximized) to controls.onToggleMaximize,
-        Triple(Icons.Default.Remove, "Minimize", true) to controls.onMinimize,
-        Triple(Icons.Default.OpenInFull, "Maximize", !controls.isMaximized) to controls.onToggleMaximize,
-        Triple(Icons.Default.Close, "Close", true) to controls.onClose
-    )
-
-    // Start on the first enabled action (Minimize while floating, Restore while maximized).
-    var selectedIndex by remember {
-        mutableStateOf(buttons.indexOfFirst { it.first.third }.coerceAtLeast(0))
-    }
-
-    fun move(delta: Int) {
-        var next = selectedIndex
-        repeat(buttons.size) {
-            next = (next + delta + buttons.size) % buttons.size
-            if (buttons[next].first.third) {
-                selectedIndex = next
-                return
-            }
-        }
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
-                when (keyEvent.key) {
-                    Key.DirectionRight, Key.DirectionDown -> {
-                        move(1)
-                        true
-                    }
-                    Key.DirectionLeft, Key.DirectionUp -> {
-                        move(-1)
-                        true
-                    }
-                    else -> false
-                }
-            },
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        buttons.forEachIndexed { index, (def, action) ->
-            LaunchpadWindowButton(
-                icon = def.first,
-                contentDescription = def.second,
-                enabled = def.third,
-                onClick = action,
-                focused = index == selectedIndex,
-                modifier = Modifier.focusRequester(focusRequesters[index])
-            )
-        }
-    }
-    // Same settle-on-open as the tile grid: the popup's own focus grab must
-    // not win the race, or arrows would go nowhere on first open.
-    var firstFocus by remember { mutableStateOf(true) }
-    LaunchedEffect(selectedIndex) {
-        if (firstFocus) {
-            firstFocus = false
-            delay(120)
-        }
-        focusRequesters[selectedIndex].requestFocus()
-    }
-}
-
-@Composable
-private fun LaunchpadWindowButton(
+private fun LaunchpadNavRow(
+    view: WorkspaceView,
     icon: ImageVector,
-    contentDescription: String,
+    selected: Boolean,
+    focused: Boolean,
     onClick: () -> Unit,
-    enabled: Boolean = true,
-    danger: Boolean = false,
-    focused: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val sc = surfaceColors()
@@ -996,104 +921,58 @@ private fun LaunchpadWindowButton(
     val hovered by interaction.collectIsHoveredAsState()
     val focusedSelf by interaction.collectIsFocusedAsState()
     val showFocus = focused || focusedSelf
-    Box(
+    val shape = RoundedCornerShape(DsRadius.Lg)
+
+    Row(
         modifier = modifier
-            .padding(horizontal = 2.dp)
-            .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(shape)
             .background(
                 when {
-                    !enabled -> Color.Transparent
-                    hovered && danger -> Color(0xFFE81123).copy(alpha = 0.18f)
+                    selected -> ac.primary.copy(alpha = 0.16f)
                     hovered -> sc.surfaceInteractive
                     else -> Color.Transparent
                 }
             )
             .then(
-                if (showFocus) Modifier.border(1.5.dp, ac.primary, RoundedCornerShape(12.dp))
-                else Modifier
-            )
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            )
-            .hoverable(interaction),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = when {
-                !enabled -> sc.textMuted.copy(alpha = 0.4f)
-                danger -> Color(0xFFFF6B6B)
-                else -> sc.textSecondary
-            },
-            modifier = Modifier.size(18.dp)
-        )
-    }
-}
-
-@Composable
-private fun LaunchpadTileBig(
-    view: WorkspaceView,
-    selected: Boolean,
-    onClick: () -> Unit,
-    focused: Boolean = false,
-    modifier: Modifier = Modifier
-) {
-    val sc = surfaceColors()
-    val ac = accent()
-    val interaction = remember { MutableInteractionSource() }
-    val hovered by interaction.collectIsHoveredAsState()
-    val focusedSelf by interaction.collectIsFocusedAsState()
-    val showFocus = focused || focusedSelf
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                when {
-                    selected -> ac.primary.copy(alpha = 0.16f)
-                    hovered -> sc.surfaceInteractive.copy(alpha = 0.8f)
-                    else -> Color.Transparent
-                }
-            )
-            .then(
-                if (showFocus) Modifier.border(1.5.dp, ac.primary, RoundedCornerShape(20.dp))
+                if (showFocus) Modifier.border(1.5.dp, ac.primary.copy(alpha = 0.55f), shape)
                 else Modifier
             )
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .hoverable(interaction)
-            .padding(vertical = DsSpacing.Sm),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    if (selected || hovered) ac.primary.copy(alpha = 0.2f)
-                    else sc.surfaceInteractive.copy(alpha = 0.7f)
-                ),
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (selected) ac.primary.copy(alpha = 0.2f) else sc.surfaceInteractive),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = launcherIconFor(view),
+                imageVector = icon,
                 contentDescription = null,
                 tint = if (selected) ac.primary else sc.textSecondary,
-                modifier = Modifier.size(26.dp)
+                modifier = Modifier.size(19.dp)
             )
         }
         Text(
             text = view.label,
             color = if (selected) ac.primary else sc.textPrimary,
-            fontSize = DsType.Caption,
+            fontSize = DsType.Body,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1
         )
+        Spacer(Modifier.weight(1f))
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(ac.primary)
+            )
+        }
     }
 }
 

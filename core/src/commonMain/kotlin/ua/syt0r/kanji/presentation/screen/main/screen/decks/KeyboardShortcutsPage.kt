@@ -30,6 +30,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // KEYBOARD SHORTCUTS PAGE
@@ -260,7 +261,7 @@ fun KeyboardShortcutsPage(
 
     // Reset dialog
     if (showResetDialog) {
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showResetDialog = false },
             title = { Text("Reset Shortcuts") },
             text = { Text("Reset all keyboard shortcuts to their default values? This cannot be undone.") },
@@ -426,7 +427,7 @@ private fun ImportExportShortcutsDialog(
     var text by remember { mutableStateOf("") }
     var mode by remember { mutableStateOf("export") }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(mode.replaceFirstChar { it.uppercase() } + " Shortcuts") },
         text = {

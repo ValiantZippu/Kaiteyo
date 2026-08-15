@@ -37,7 +37,11 @@ private fun Preview() {
                             currentStreak = 1,
                             longestStreak = 1,
                             reviewsToday = 1
-                        )
+                        ),
+                        recentDecks = emptyList(),
+                        allDecks = emptyList(),
+                        recentActivity = emptyList(),
+                        collections = emptyList()
                     )
                 ),
                 navigateToDailyLimitConfiguration = {},
@@ -52,8 +56,6 @@ private fun Preview() {
                 navigateToImportExport = {},
                 navigateToCollections = {},
                 retryLoad = {},
-                downloadsClick = {},
-                socialClick = {},
                 textAnalysisClick = {}
             )
         }

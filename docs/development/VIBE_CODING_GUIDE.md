@@ -1,225 +1,148 @@
 # Kaiteyo — Vibe Coding Guide
 
-This guide is for developers using AI assistants (Claude, GPT, Gemini, local models) to contribute to Kaiteyo. It covers everything from zero setup to daily workflow.
+This guide is for developers using AI assistants (Claude, GPT, Gemini, local models,
+Codebuff/agent CLIs) to contribute to Kaiteyo. It covers zero-setup, the daily
+workflow, and how to keep AI work safe in this repo. It complements — and defers to —
+`AI_CONTEXT.md` (project facts + never-change list) and
+`docs/ai/AI_AGENT_GUIDE.md` (the binding agent workflow).
 
 ## Prerequisites
 
 ### Accounts
 - **GitHub** account (free)
-- **VS Code** (free, recommended) or **IntelliJ IDEA** (Community Edition is free)
+- **VS Code** (free) or **IntelliJ IDEA** (Community is free; recommended for Kotlin)
 
-### Software Installation (Windows)
+### Software (Windows examples)
 
-#### 1. Git
-```bash
-# Download from https://git-scm.com/download/win
-# Install with default options
-# Verify:
-git --version
-```
+| Tool | How |
+|------|-----|
+| Git | https://git-scm.com/download/win |
+| JDK 17 | https://adoptium.net/temurin/releases/?version=17 (MSI, "Add to PATH") |
+| VS Code | https://code.visualstudio.com/ |
+| Android Studio (optional) | https://developer.android.com/studio — only for `:app` builds |
 
-#### 2. VS Code
-```bash
-# Download from https://code.visualstudio.com/
-# Install with default options
-```
+### VS Code extensions
 
-#### 3. Java JDK 17 (Temurin)
-```bash
-# Download from https://adoptium.net/temurin/releases/?version=17
-# Install MSI
-# Add to PATH (installer usually does this)
-# Verify:
-java --version
-# Should show: openjdk 17.x.x
-```
+**Kotlin**, **Gradle for Java**, **Extension Pack for Java**, **GitLens**,
+**Error Lens**, **Even Better TOML**, **YAML**, **Markdown All in One**,
+**GitHub Pull Requests**.
 
-#### 4. Android Studio (optional, for Android builds)
-```bash
-# Download from https://developer.android.com/studio
-# Install with default options
-# During setup, install Android SDK
-```
+Optional AI extensions: **Continue** (continue.dev), **Cline**, **GitHub Copilot**.
 
-#### 5. GitHub Desktop (optional, for Git beginners)
-```bash
-# Download from https://desktop.github.com/
-```
-
-### VS Code Extensions
-
-Install these extensions (Ctrl+Shift+X):
-
-| Extension | Purpose |
-|-----------|---------|
-| **Kotlin** | Kotlin language support |
-| **Gradle for Java** | Gradle integration |
-| **Extension Pack for Java** | Java support |
-| **GitLens** | Git history and blame |
-| **Error Lens** | Inline error display |
-| **Even Better TOML** | TOML file support |
-| **YAML** | YAML file support |
-| **Markdown All in One** | Markdown preview |
-| **GitHub Pull Requests** | PR management |
-
-Optional AI extensions:
-- **Continue** (continue.dev) — Open-source AI coding assistant
-- **Cline** — AI agent for VS Code
-- **GitHub Copilot** — Microsoft's AI pair programmer
-
-## First Clone
+## First clone
 
 ```bash
-# Open terminal (Ctrl+`)
-# Navigate to where you want the project
-cd C:\Projects
-
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/kaiteyo.git
-
-# Enter the project
-cd kaiteyo
-
-# Switch to develop branch
-git checkout develop
-
-# Run the desktop app (first build downloads dependencies)
-./gradlew :desktopApp:run
+git clone https://github.com/ValiantZippu/Kaiteyo.git
+cd Kaiteyo
+git checkout develop        # default integration branch
+./gradlew :desktopApp:run   # first build downloads dependencies (5–15 min)
 ```
-
-**Note:** The first build takes 5-15 minutes as it downloads Gradle, Kotlin compiler, and all dependencies.
 
 ## What is Gradle?
 
-Gradle is the build system. It:
-- Downloads dependencies (libraries)
-- Compiles Kotlin code
-- Packages the application
-- Runs tests
+Gradle is the build system: it downloads dependencies, compiles Kotlin, packages the
+app, and runs tests.
 
-Key commands:
 ```bash
-./gradlew :desktopApp:run           # Run the desktop app
-./gradlew :desktopApp:compileKotlinJvm  # Just compile (faster)
-./gradlew :core:allTests            # Run shared-engine tests
-./gradlew clean                     # Clean all build files
+./gradlew :desktopApp:run               # run the desktop app
+./gradlew :desktopApp:compileKotlinJvm  # compile only (fast feedback)
+./gradlew :core:allTests                # shared-engine tests
+./gradlew :desktopApp:test              # desktop suite tests
+./gradlew clean                         # clean outputs
 ```
 
-## What is JDK?
+Windows: `.\gradlew.bat ...` instead of `./gradlew ...`.
 
-JDK (Java Development Kit) is needed because Kotlin runs on the Java Virtual Machine (JVM). It includes:
-- **javac** — Java compiler (Kotlin also uses it)
-- **java** — Runtime to run the application
-- **jlink** — To package the app with a minimal JVM
+## What is JDK / why PATH matters
 
-## Why PATH Matters
+JDK 17 is required (the build pins `jvmToolchain(17)`). Kotlin compiles to the JVM.
+If `java --version` doesn't show 17, reinstall Temurin with "Add to PATH" and restart
+the terminal. Gradle's toolchain can auto-download 17, but installing it directly is
+more predictable.
 
-PATH is an environment variable that tells your terminal where to find programs. When you install Git, Java, or Android Studio, they should add themselves to PATH automatically. If a command like `java --version` doesn't work, the program isn't in PATH.
+## Daily workflow
 
-**Fix PATH issues:**
-1. Open System Properties → Advanced → Environment Variables
-2. Edit the `Path` variable
-3. Add the installation directories (e.g., `C:\Program Files\Eclipse Adoptium\jdk-17.0.xx\bin`)
-
-## Daily Workflow
-
-### Starting a Session
+### Starting a session
 ```bash
-# Get latest code
 git checkout develop
-git pull
-
-# Read documentation first
-# Open docs/README.md
-# Open docs/development/AI_CONTEXT.md
-# Open docs/planning/CURRENT_ISSUES.md
-
-# Start the app
-./gradlew :desktopApp:run
+git pull --rebase
 ```
 
-### Making Changes
+Read, in order: `docs/README.md` → `docs/development/AI_CONTEXT.md` →
+`docs/planning/CURRENT_ISSUES.md` → `docs/planning/TODO.md`. If you're an AI agent,
+also read `docs/ai/AI_AGENT_GUIDE.md` and `docs/engineering/ENGINEERING_STANDARDS.md`.
+
+### Making changes
 ```bash
-# Create a feature branch
 git checkout -b feature/my-feature
-
-# Make changes in VS Code
-# Compile to check for errors
-./gradlew :desktopApp:compileKotlinJvm
-
-# If successful, commit
-git add .
-git commit -m "feat: description of changes"
-
-# Push to GitHub
+# edit...
+./gradlew :desktopApp:compileKotlinJvm   # compile after each meaningful change
+git add <files>
+git commit -m "feat(scope): concise description"
 git push origin feature/my-feature
 ```
 
-### Creating a Pull Request
-1. Go to GitHub.com → your fork → Pull Requests
-2. Click "New Pull Request"
-3. Select your branch
-4. Write a description
-5. Click "Create Pull Request"
+Commit messages: `type(scope): description` — types `feat/fix/docs/refactor/perf/
+test/style/chore`. One coherent change per commit. Never commit `local.properties`,
+keystores, or secrets (all gitignored).
 
-## Common Errors and Fixes
+### Creating a pull request
+Push the branch, open a PR to `develop`, and fill in the summary/problem/solution/
+testing sections. PRs are squash-merged.
 
-### "Unresolved reference 'X'"
-**Cause:** Missing import or wrong package.
-**Fix:** Add the correct import. Check `docs/development/AI_CONTEXT.md` for import rules.
+## AI workflow tips (safe by construction)
 
-### "BUILD FAILED in Xs"
-**Cause:** Compilation error. Scroll up to see the actual error (look for `e:` lines).
-**Fix:** Read the error message carefully. It tells you the file, line number, and what's wrong.
+1. **Read before writing** — docs first, then the actual source. Never "fix"
+   something from memory.
+2. **Check the never-change list** (`AI_CONTEXT.md`) — SRS logic, SQLDelight schemas,
+   package namespace `ua.syt0r.kanji`, Gradle config are off-limits unless explicitly
+   requested.
+3. **Plan, then make the smallest correct change** — one file at a time, compile
+   after each change. Don't bulk-rewrite.
+4. **Follow the screen pattern** — new core screens need the 4-file pattern
+   (Contract/ViewModel/Module/Screen) and registration in `di/AppModule.kt`
+   (+ `MainNavigation.kt` for new destinations).
+5. **Use the design system** — desktop UI must use `Ds*` components and tokens; no
+   hardcoded colors/radii/spacing. See `docs/design/UI_SYSTEM.md`.
+6. **i18n** — new strings go in `Strings.kt` + `EnglishStrings.kt` +
+   `JapaneseStrings.kt`.
+7. **Update docs** — behavior changes update the affected docs; fixed issues update
+   `docs/planning/CURRENT_ISSUES.md`; solved setup problems update
+   `docs/troubleshooting/`.
+8. **Leave a handoff** — per `ENGINEERING_STANDARDS.md` §174, report what changed,
+   files, tests, known issues, next steps. Don't leave the next agent guessing.
 
-### "Java not found"
-**Cause:** JDK not installed or not in PATH.
-**Fix:** Install JDK 17 and add to PATH. Restart VS Code.
+## Common errors and fixes
 
-### "Gradle sync failed"
-**Cause:** Network issue or corrupted cache.
-**Fix:** 
-```bash
-./gradlew clean
-# Then try again
-```
+| Error | Cause / fix |
+|-------|-------------|
+| `Unresolved reference 'X'` | Missing import. Check Compose MPP import rules in `AI_CONTEXT.md` (e.g. `spring` → `androidx.compose.animation.core`). |
+| `BUILD FAILED` | Compile error — read the `e:` lines for file/line. Fix, recompile. |
+| `java not found` / wrong version | JDK 17 not on PATH. |
+| `Gradle sync failed` | Network or cache — `./gradlew clean`, retry. |
+| `Kotlin/Native targets cannot be built` | Expected on Windows; ignore (flag is set). |
+| `SDK location not found` | Android build without `ANDROID_HOME`/`local.properties` — see `DEVELOPMENT_SETUP.md` Step 7. |
 
-### "Kotlin/Native targets cannot be built on this machine"
-**Cause:** iOS targets can't be built on Windows.
-**Fix:** This is expected. Ignore the warning. Add to `gradle.properties`:
-```
-kotlin.native.ignoreDisabledTargets=true
-```
+## How CI builds releases
 
-## How GitHub Actions Builds Releases
+Pushing a tag (`vX.Y.Z`) triggers `.github/workflows/build-release.yml` →
+`build-all.yml`: Linux builds `:app:assembleFdroidRelease` + desktop Linux packages;
+Windows/macOS build desktop distributions; artifacts are staged, verified
+(`stage-artifacts.sh` + `verify-artifacts.sh`), update feeds are generated, and a
+GitHub Release is created. See `docs/architecture/ci-cd.md` and
+`docs/releases/RELEASE_PROCESS.md`.
 
-When you push a tag (e.g., `v1.1.0`), GitHub Actions automatically:
-1. Checks out the code
-2. Sets up JDK 17
-3. Builds the desktop app for Windows (MSI), macOS (DMG), Linux (Deb)
-4. Builds the Android app (APK, AAB)
-5. Creates a GitHub Release with all artifacts
+## How signing works (Android)
 
-## How Signing Works for Android
+No keystore or credentials are in git. The build resolves the keystore from
+`KEYSTORE_PATH` env → `~/.kaiteyo/keystore.jks` → repo-root `keystore.jks` (CI decodes
+it from the `KEYSTORE_BASE64` secret); fallback is debug signing. Release secrets come
+from CI env vars — never commit them.
 
-Release builds need a keystore for signing. **No keystore or credentials are committed to
-the repository** — they are kept out of git for security. The build resolves the keystore
-from (in order):
+## Related
 
-1. `KEYSTORE_PATH` environment variable
-2. `~/.kaiteyo/keystore.jks`
-3. Repo-root `keystore.jks` (CI decodes it from the `KEYSTORE_BASE64` secret)
-
-If none exists, the build falls back to **debug signing** so local builds still work.
-Production release secrets (keystore password, key alias, key password) come from CI
-environment variables — never commit them.
-
-## AI Workflow Tips
-
-1. **Always read docs first** — The `/docs` directory is the project brain
-2. **Check CURRENT_ISSUES.md** — Know what's broken before adding features
-3. **Compile after each change** — Don't make 10 changes then compile
-4. **Follow the design language** — Read `../design/DESIGN_LANGUAGE.md` before UI changes
-5. **Update documentation** — If you add a feature, document it
-6. **One file at a time** — Make focused changes, not massive rewrites
-7. **Use the correct imports** — See `AI_CONTEXT.md` for import rules
+- `AI_CONTEXT.md` — project facts, never-change list, import rules
+- `DEVELOPER_GUIDE.md` — building/testing/debugging
+- `DEVELOPMENT_SETUP.md` — from zero to running
+- `docs/ai/AI_AGENT_GUIDE.md` — the binding agent workflow
+- `docs/engineering/ENGINEERING_STANDARDS.md` — the engineering contract

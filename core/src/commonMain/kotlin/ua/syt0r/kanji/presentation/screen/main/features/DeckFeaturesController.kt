@@ -5,6 +5,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -18,7 +21,9 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import ua.syt0r.kanji.core.mergeSharedFlows
 import ua.syt0r.kanji.core.srs.SrsCardKey
+import ua.syt0r.kanji.core.srs.VocabPracticeType
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCard
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCardParams
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus
@@ -29,11 +34,14 @@ import ua.syt0r.kanji.core.user_data.database.BackupRow
 import ua.syt0r.kanji.core.user_data.database.CardDatabaseManager
 import ua.syt0r.kanji.core.user_data.database.FilteredDeckRow
 import ua.syt0r.kanji.core.user_data.database.FsrsCardRepository
+import ua.syt0r.kanji.core.user_data.database.LetterPracticeRepository
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryItem
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
 import ua.syt0r.kanji.core.user_data.database.StudyHistoryRow
+import ua.syt0r.kanji.core.user_data.database.VocabPracticeRepository
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.BackupMetadata
+import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardDifficulty
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardFlagType
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardOperation
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardStatus
@@ -177,7 +185,9 @@ class DeckFeaturesController(
     private val reviewHistoryRepository: ReviewHistoryRepository,
     private val fsrsCardRepository: FsrsCardRepository,
     private val appPreferences: PreferencesContract.AppPreferences,
-    private val timeUtils: TimeUtils
+    private val timeUtils: TimeUtils,
+    private val letterPracticeRepository: LetterPracticeRepository,
+    private val vocabPracticeRepository: VocabPracticeRepository
 ) {
 
     // ── Load state ──
@@ -220,6 +230,9 @@ class DeckFeaturesController(
     val backups = mutableStateListOf<BackupMetadata>()
     val filteredDecks = mutableStateListOf<FilteredDeck>()
     val savedSearches = mutableStateListOf<SavedSearch>()
+    val deckSummaries = mutableStateListOf<DeckSummary>()
+    val favoriteDeckIds = mutableStateOf<Set<String>>(emptySet())
+    val pinnedDeckIds = mutableStateOf<Set<String>>(emptySet())
     val suspendedCards = mutableStateMapOf<String, Boolean>()
     val buriedCards = mutableStateMapOf<String, Boolean>()
     val cardNotes = mutableStateMapOf<String, String>()
@@ -265,6 +278,7 @@ class DeckFeaturesController(
             loadReviewSettings()
             loadBackupConfig()
             loadSavedSearches()
+            loadDeckFavorites()
             isLoaded = true
         } catch (t: Throwable) {
             loadError = true
@@ -287,6 +301,7 @@ class DeckFeaturesController(
             loadReviewSettings()
             loadBackupConfig()
             loadSavedSearches()
+            loadDeckFavorites()
         } finally {
             isLoading = false
         }
@@ -538,6 +553,69 @@ class DeckFeaturesController(
         }.getOrDefault(emptyList()).forEach {
             savedSearches.add(SavedSearch(name = it.name, query = it.query, createdAt = it.createdAt))
         }
+    }
+
+    // ── Deck favorites & pinning (persisted) ──
+
+    @Serializable
+    private data class DeckFavoritesData(
+        val favoriteIds: List<String> = emptyList(),
+        val pinnedIds: List<String> = emptyList()
+    )
+
+    private suspend fun loadDeckFavorites() {
+        val json = appPreferences.deckFavoritesJson.get()
+        if (json.isBlank()) {
+            favoriteDeckIds.value = emptySet()
+            pinnedDeckIds.value = emptySet()
+            return
+        }
+        val data = runCatching {
+            historyJson.decodeFromString<DeckFavoritesData>(json)
+        }.getOrDefault(DeckFavoritesData())
+        favoriteDeckIds.value = data.favoriteIds.toSet()
+        pinnedDeckIds.value = data.pinnedIds.toSet()
+    }
+
+    private suspend fun persistDeckFavorites() {
+        appPreferences.deckFavoritesJson.set(
+            historyJson.encodeToString(
+                DeckFavoritesData(
+                    favoriteIds = favoriteDeckIds.value.toList(),
+                    pinnedIds = pinnedDeckIds.value.toList()
+                )
+            )
+        )
+    }
+
+    suspend fun toggleDeckFavorite(deckId: String) {
+        favoriteDeckIds.value = if (deckId in favoriteDeckIds.value) {
+            favoriteDeckIds.value - deckId
+        } else {
+            favoriteDeckIds.value + deckId
+        }
+        persistDeckFavorites()
+        val deck = deckSummaries.firstOrNull { it.id == deckId }
+        recordHistory(
+            KaiteyoHistoryAction.DECK,
+            if (deckId in favoriteDeckIds.value) "Favorited deck '${deck?.name ?: deckId}'"
+            else "Removed favorite from deck '${deck?.name ?: deckId}'"
+        )
+    }
+
+    suspend fun toggleDeckPin(deckId: String) {
+        pinnedDeckIds.value = if (deckId in pinnedDeckIds.value) {
+            pinnedDeckIds.value - deckId
+        } else {
+            pinnedDeckIds.value + deckId
+        }
+        persistDeckFavorites()
+        val deck = deckSummaries.firstOrNull { it.id == deckId }
+        recordHistory(
+            KaiteyoHistoryAction.DECK,
+            if (deckId in pinnedDeckIds.value) "Pinned deck '${deck?.name ?: deckId}'"
+            else "Unpinned deck '${deck?.name ?: deckId}'"
+        )
     }
 
     // ── Tag operations ──
@@ -841,6 +919,356 @@ class DeckFeaturesController(
         cardDatabaseManager.deleteFilteredDeck(id)
         filteredDecks.removeAll { it.id == id }
         recordHistory(KaiteyoHistoryAction.DECK, "Deleted filtered deck '${deck?.name ?: id}'")
+    }
+
+    // ── Deck management (real SRS decks) ──
+
+    data class DeckSummary(
+        val id: String,
+        val name: String,
+        val position: Int,
+        val isArchived: Boolean,
+        val cardCount: Int,
+        val newCount: Int = 0,
+        val learningCount: Int = 0,
+        val reviewCount: Int = 0,
+        val dueCount: Int = 0,
+        val isFavorite: Boolean = false,
+        val isPinned: Boolean = false,
+        val deckType: String = "kanji"
+    )
+
+    /**
+     * Merged change stream for every source that can affect deck contents or
+     * study counts (deck tables, FSRS cards, review history). The browser
+     * route collects this so counts stay live after a study session.
+     */
+    val deckChangesFlow: kotlinx.coroutines.flow.SharedFlow<Unit> = mergeSharedFlows(
+        CoroutineScope(Dispatchers.IO),
+        letterPracticeRepository.changesFlow,
+        vocabPracticeRepository.changesFlow,
+        fsrsCardRepository.changesFlow
+    )
+
+    private fun deckFamily(deckId: String): String? = when {
+        deckId.startsWith("letter:") -> "letter"
+        deckId.startsWith("vocab:") -> "vocab"
+        else -> null
+    }
+
+    private fun deckRawId(deckId: String): Long? =
+        deckId.removePrefix("letter:").removePrefix("vocab:").toLongOrNull()
+
+    private fun CardStatus.isLearning(): Boolean =
+        this == CardStatus.Learning || this == CardStatus.Relearning
+
+    private fun CardStatus.isReview(): Boolean =
+        this == CardStatus.Young || this == CardStatus.Mature
+
+    /**
+     * Rebuilds the deck list from the real letter (kanji) and vocabulary
+     * practice repositories. Every count is derived from the live FSRS state
+     * (read from the card repository at load time, not a cached snapshot), so
+     * the browser always shows current new/learning/review/due numbers.
+     */
+    suspend fun loadDecks() {
+        val now = Clock.System.now()
+        val favoriteIds = favoriteDeckIds.value
+        val pinnedIds = pinnedDeckIds.value
+
+        // Live FSRS snapshot, keyed the same way the SRS managers do.
+        val letterSrs = fsrsCardRepository.getAll()
+            .filterKeys { it.practiceType == LETTER_WRITING_PRACTICE_TYPE }
+            .mapKeys { it.key.itemKey }
+        val vocabSrs = fsrsCardRepository.getAll()
+            .filterKeys { it.practiceType in VocabPracticeType.srsPracticeTypeValues }
+
+        fun statusOf(character: String): CardStatus =
+            letterSrs[character]?.let { card ->
+                when (card.status) {
+                    ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.New -> CardStatus.New
+                    ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Learning -> CardStatus.Learning
+                    ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Review -> CardStatus.Mature
+                    ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Relearning -> CardStatus.Relearning
+                }
+            } ?: CardStatus.New
+
+        fun isDue(card: ua.syt0r.kanji.core.srs.fsrs.FsrsCard?): Boolean {
+            if (card == null) return false
+            val last = card.lastReview ?: return false
+            return last + card.interval <= now
+        }
+
+        fun addSummary(
+            id: String,
+            name: String,
+            position: Int,
+            isArchived: Boolean,
+            cardCount: Int,
+            newCount: Int,
+            learningCount: Int,
+            reviewCount: Int,
+            dueCount: Int,
+            deckType: String
+        ) {
+            deckSummaries.add(
+                DeckSummary(
+                    id = id,
+                    name = name,
+                    position = position,
+                    isArchived = isArchived,
+                    cardCount = cardCount,
+                    newCount = newCount,
+                    learningCount = learningCount,
+                    reviewCount = reviewCount,
+                    dueCount = dueCount,
+                    isFavorite = id in favoriteIds,
+                    isPinned = id in pinnedIds,
+                    deckType = deckType
+                )
+            )
+        }
+
+        deckSummaries.clear()
+        letterPracticeRepository.getDecks().forEach { deck ->
+            val characters = letterPracticeRepository.getDeckCharacters(deck.id)
+            val statuses = characters.map { statusOf(it) }
+            addSummary(
+                id = "letter:${deck.id}",
+                name = deck.name,
+                position = deck.position,
+                isArchived = deck.isArchived,
+                cardCount = characters.size,
+                newCount = statuses.count { it == CardStatus.New },
+                learningCount = statuses.count { it.isLearning() },
+                reviewCount = statuses.count { it.isReview() },
+                dueCount = statuses.count { it.isLearning() } +
+                    characters.count { ch ->
+                        val card = letterSrs[ch]
+                        card?.status == ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Review && isDue(card)
+                    },
+                deckType = "kanji"
+            )
+        }
+        vocabPracticeRepository.getDecks().forEach { deck ->
+            val cardIds = vocabPracticeRepository.getCardIdList(deck.id)
+            var newCount = 0
+            var learningCount = 0
+            var reviewCount = 0
+            var dueCount = 0
+            cardIds.forEach { wordId ->
+                val cards = VocabPracticeType.srsPracticeTypeValues.mapNotNull { practiceType ->
+                    vocabSrs[SrsCardKey(wordId.toString(), practiceType)]
+                }
+                if (cards.isEmpty()) {
+                    newCount++
+                } else {
+                    val learning = cards.any { it.status == ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Learning ||
+                        it.status == ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Relearning }
+                    val review = cards.any { it.status == ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus.Review }
+                    when {
+                        learning -> {
+                            learningCount++
+                            dueCount++
+                        }
+                        review -> {
+                            reviewCount++
+                            if (cards.any { isDue(it) }) dueCount++
+                        }
+                        else -> newCount++
+                    }
+                }
+            }
+            addSummary(
+                id = "vocab:${deck.id}",
+                name = deck.title,
+                position = deck.position,
+                isArchived = deck.isArchived,
+                cardCount = cardIds.size,
+                newCount = newCount,
+                learningCount = learningCount,
+                reviewCount = reviewCount,
+                dueCount = dueCount,
+                deckType = "vocabulary"
+            )
+        }
+        // Pinned decks float to the top, then alphabetical.
+        deckSummaries.sortWith(
+            compareByDescending<DeckSummary> { it.isPinned }.thenBy { it.name.lowercase() }
+        )
+    }
+
+    /**
+     * Static parts the Card Browser needs to build a live catalog: real deck
+     * names per character, synthesized vocabulary rows, and — when opened for
+     * a specific deck — that deck's display label plus the set of card ids that
+     * belong to it. The route combines these with [cards] at composition time so
+     * flag/status edits made inside the browser still reflect immediately.
+     */
+    data class BrowserCatalogParts(
+        val deckNameByCharacter: Map<String, String>,
+        val vocabRows: List<KaiteyoCard>,
+        val filterLabel: String?,
+        val filterIds: Set<String>?
+    )
+
+    suspend fun browserCatalogParts(initialDeckId: String? = null): BrowserCatalogParts {
+        val deckNameByCharacter = buildMap<String, String> {
+            letterPracticeRepository.getDecks().forEach { deck ->
+                letterPracticeRepository.getDeckCharacters(deck.id).forEach { ch -> put(ch, deck.name) }
+            }
+        }
+        val vocabRows = buildList {
+            val decks = vocabPracticeRepository.getDecks().associateBy { it.id }
+            val srs = fsrsCardRepository.getAll()
+            vocabPracticeRepository.getAllCards().forEach { saved ->
+                val practiceCards = VocabPracticeType.srsPracticeTypeValues.mapNotNull { pt ->
+                    srs[SrsCardKey(saved.cardId.toString(), pt)]
+                }
+                val status = when {
+                    practiceCards.isEmpty() -> CardStatus.New
+                    practiceCards.any { it.status == FsrsCardStatus.Learning || it.status == FsrsCardStatus.Relearning } ->
+                        CardStatus.Learning
+                    practiceCards.any { it.status == FsrsCardStatus.Review } -> CardStatus.Mature
+                    else -> CardStatus.New
+                }
+                add(
+                    KaiteyoCard(
+                        id = "vocab:${saved.cardId}",
+                        character = saved.data.kanjiReading ?: saved.data.kanaReading,
+                        reading = saved.data.kanaReading,
+                        meaning = saved.data.meaning.orEmpty(),
+                        deck = decks[saved.deckId]?.title ?: "Unassigned",
+                        deckId = saved.deckId,
+                        tags = mutableListOf(),
+                        tagNames = mutableListOf(),
+                        flag = CardFlagType.None,
+                        notes = "",
+                        status = status,
+                        difficulty = CardDifficulty.Good,
+                        priority = 0,
+                        isSuspended = false,
+                        isBuried = false,
+                        isArchived = false,
+                        isFavorite = false,
+                        customFields = mutableMapOf(),
+                        aliases = mutableListOf(),
+                        relatedCards = mutableListOf(),
+                        createdAt = "",
+                        modifiedAt = "",
+                        lastReviewed = "",
+                        reviewCount = 0,
+                        interval = 0,
+                        ease = 2.5f,
+                        lapses = 0,
+                        accuracy = 0f,
+                        totalTimeStudied = 0L
+                    )
+                )
+            }
+        }
+        var label: String? = null
+        var filterIds: Set<String>? = null
+        if (initialDeckId != null) {
+            when {
+                initialDeckId.startsWith("letter:") -> {
+                    val raw = initialDeckId.removePrefix("letter:").toLongOrNull()
+                    if (raw != null) {
+                        filterIds = letterPracticeRepository.getDeckCharacters(raw).toSet()
+                        label = letterPracticeRepository.getDecks().firstOrNull { it.id == raw }?.name
+                    } else {
+                        filterIds = emptySet()
+                    }
+                }
+                initialDeckId.startsWith("vocab:") -> {
+                    val raw = initialDeckId.removePrefix("vocab:").toLongOrNull()
+                    if (raw != null) {
+                        filterIds = vocabPracticeRepository.getCardIdList(raw).map { "vocab:$it" }.toSet()
+                        label = vocabPracticeRepository.getDecks().firstOrNull { it.id == raw }?.title
+                    } else {
+                        filterIds = emptySet()
+                    }
+                }
+            }
+        }
+        return BrowserCatalogParts(
+            deckNameByCharacter = deckNameByCharacter,
+            vocabRows = vocabRows,
+            filterLabel = label,
+            filterIds = filterIds
+        )
+    }
+
+    /**
+     * Creates a real empty deck. [type] is "kanji" (letter family) or
+     * "vocabulary" (vocab family) and decides which repository owns it.
+     */
+    suspend fun createDeck(name: String, type: String = "kanji") {
+        val clean = name.trim()
+        if (clean.isBlank()) return
+        when (type) {
+            "vocabulary", "vocab" -> vocabPracticeRepository.createDeck(clean, emptyList())
+            else -> letterPracticeRepository.createDeck(clean, emptyList())
+        }
+        loadDecks()
+        recordHistory(KaiteyoHistoryAction.DECK, "Created $type deck '$clean'")
+    }
+
+    suspend fun renameDeck(deckId: String, name: String) {
+        val clean = name.trim()
+        if (clean.isBlank()) return
+        val rawId = deckRawId(deckId) ?: return
+        when (deckFamily(deckId)) {
+            "letter" -> letterPracticeRepository.updateDeck(rawId, clean, emptyList(), emptyList())
+            "vocab" -> vocabPracticeRepository.updateDeck(rawId, clean, emptyList(), emptyList(), emptyList())
+        }
+        loadDecks()
+        recordHistory(KaiteyoHistoryAction.DECK, "Renamed deck to '$clean'")
+    }
+
+    suspend fun deleteDeck(deckId: String) {
+        val rawId = deckRawId(deckId) ?: return
+        when (deckFamily(deckId)) {
+            "letter" -> letterPracticeRepository.deleteDeck(rawId)
+            "vocab" -> vocabPracticeRepository.deleteDeck(rawId)
+        }
+        loadDecks()
+        recordHistory(KaiteyoHistoryAction.DECK, "Deleted deck")
+    }
+
+    suspend fun archiveDeck(deckId: String, isArchived: Boolean) {
+        val rawId = deckRawId(deckId) ?: return
+        when (deckFamily(deckId)) {
+            "letter" -> letterPracticeRepository.updateDeckArchived(rawId, isArchived)
+            "vocab" -> vocabPracticeRepository.updateDeckArchived(rawId, isArchived)
+        }
+        loadDecks()
+        recordHistory(KaiteyoHistoryAction.DECK, if (isArchived) "Archived deck" else "Restored deck")
+    }
+
+    suspend fun mergeDeck(sourceId: String, targetId: String) {
+        if (deckFamily(sourceId) != deckFamily(targetId)) return
+        val targetName = deckSummaries.firstOrNull { it.id == targetId }?.name ?: "Merged"
+        val sourceRaw = deckRawId(sourceId) ?: return
+        val targetRaw = deckRawId(targetId) ?: return
+        when (deckFamily(sourceId)) {
+            "letter" -> letterPracticeRepository.createDeckAndMerge(targetName, listOf(sourceRaw, targetRaw))
+            "vocab" -> vocabPracticeRepository.mergeDecks(targetName, listOf(sourceRaw, targetRaw))
+        }
+        loadDecks()
+        recordHistory(KaiteyoHistoryAction.DECK, "Merged decks into '$targetName'")
+    }
+
+    suspend fun moveDeck(sourceId: String, targetId: String) {
+        if (deckFamily(sourceId) != deckFamily(targetId)) return
+        val sourceRaw = deckRawId(sourceId) ?: return
+        val targetPosition = deckSummaries.firstOrNull { it.id == targetId }?.position ?: return
+        when (deckFamily(sourceId)) {
+            "letter" -> letterPracticeRepository.updateDeckPositions(mapOf(sourceRaw to targetPosition + 1))
+            "vocab" -> vocabPracticeRepository.updateDeckPositions(mapOf(sourceRaw to targetPosition + 1))
+        }
+        loadDecks()
+        recordHistory(KaiteyoHistoryAction.DECK, "Moved deck")
     }
 
     // ── Backups ──

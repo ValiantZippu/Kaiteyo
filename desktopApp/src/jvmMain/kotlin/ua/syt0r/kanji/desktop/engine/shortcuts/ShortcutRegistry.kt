@@ -184,7 +184,9 @@ fun defaultShortcuts(): List<ShortcutDef> = listOf(
     ShortcutDef("open-library", "Library", ShortcutCategory.Navigation, KeyChord("l", ctrl = true, shift = true), "Open the deck library"),
     ShortcutDef("open-stats", "Statistics", ShortcutCategory.Navigation, KeyChord("4", alt = true), "Open statistics"),
     ShortcutDef("open-settings", "Settings", ShortcutCategory.Navigation, KeyChord("comma", ctrl = true), "Open settings"),
-    ShortcutDef("open-themes", "Theme Studio", ShortcutCategory.Navigation, KeyChord("t", ctrl = true), "Open theme studio"),
+    // Ctrl+T is reserved for the workspace tab system (new tab), so Theme
+    // Studio lives on Ctrl+M.
+    ShortcutDef("open-themes", "Theme Studio", ShortcutCategory.Navigation, KeyChord("m", ctrl = true), "Open theme studio"),
     ShortcutDef("open-history", "Activity Log", ShortcutCategory.Navigation, KeyChord("y", ctrl = true), "Open activity log"),
     ShortcutDef("open-transfer", "Import / Export", ShortcutCategory.Navigation, KeyChord("i", ctrl = true), "Open import/export"),
     ShortcutDef("toggle-nav", "Toggle Navigation", ShortcutCategory.App, KeyChord("n", ctrl = true, shift = true), "Cycle navigation through expanded / compact / bubble modes"),
@@ -195,4 +197,16 @@ fun defaultShortcuts(): List<ShortcutDef> = listOf(
     // without colliding with review/browser keys. Only the navigation chord
     // to open the workspace belongs to the global registry.
     ShortcutDef("open-media", "Media", ShortcutCategory.Navigation, KeyChord("v", alt = true), "Open the media workspace")
-)
+) + tabShortcuts()
+
+/** Browser-style workspace tab shortcuts (Ctrl+T/W/Tab, Ctrl+1..9). */
+private fun tabShortcuts(): List<ShortcutDef> = buildList {
+    add(ShortcutDef("tab-new", "New Tab", ShortcutCategory.App, KeyChord("t", ctrl = true), "Open a new workspace tab"))
+    add(ShortcutDef("tab-close", "Close Tab", ShortcutCategory.App, KeyChord("w", ctrl = true), "Close the active workspace tab"))
+    add(ShortcutDef("tab-next", "Next Tab", ShortcutCategory.App, KeyChord("tab", ctrl = true), "Switch to the next workspace tab"))
+    add(ShortcutDef("tab-previous", "Previous Tab", ShortcutCategory.App, KeyChord("tab", ctrl = true, shift = true), "Switch to the previous workspace tab"))
+    add(ShortcutDef("tab-reopen", "Reopen Closed Tab", ShortcutCategory.App, KeyChord("t", ctrl = true, shift = true), "Reopen the last closed workspace tab"))
+    (1..9).forEach { index ->
+        add(ShortcutDef("tab-jump-$index", "Jump to Tab $index", ShortcutCategory.App, KeyChord("$index", ctrl = true), "Jump to workspace tab $index"))
+    }
+}

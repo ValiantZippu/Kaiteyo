@@ -67,10 +67,45 @@ data class WatchHistoryEntry(
     val language: String = ""
 )
 
+/** A user-named, persistent playlist referencing library items by id. */
+@Serializable
+data class MediaPlaylist(
+    val id: String,
+    val name: String,
+    val itemIds: List<String> = emptyList(),
+    val createdAt: String = "",
+    /** Id of the [PlaylistFolder] this playlist lives in ("" = library root). */
+    val folderId: String = "",
+    /** Pinned playlists sort above unpinned ones in lists. */
+    val favorite: Boolean = false
+) {
+    fun renamed(newName: String) = copy(name = newName)
+    fun withItem(itemId: String) = copy(itemIds = itemIds + itemId)
+    fun withoutItem(itemId: String) = copy(itemIds = itemIds.filterNot { it == itemId })
+    fun withOrder(newOrder: List<String>) = copy(itemIds = newOrder)
+    fun inFolder(folderId: String) = copy(folderId = folderId)
+    fun withFavorite(value: Boolean) = copy(favorite = value)
+}
+
+/**
+ * A user-named folder that organizes playlists (nested via [parentId]).
+ * Persisted in the library file; deleting a folder moves its playlists and
+ * child folders back up one level — nothing is lost.
+ */
+@Serializable
+data class PlaylistFolder(
+    val id: String,
+    val name: String,
+    val parentId: String = "",
+    val createdAt: String = ""
+)
+
 @Serializable
 private data class LibraryDto(
     val items: List<MediaItem> = emptyList(),
-    val folders: List<MediaFolder> = emptyList()
+    val folders: List<MediaFolder> = emptyList(),
+    val playlists: List<MediaPlaylist> = emptyList(),
+    val playlistFolders: List<PlaylistFolder> = emptyList()
 )
 
 @Serializable
@@ -87,6 +122,8 @@ class MediaLibrary(
     val items = mutableStateListOf<MediaItem>()
     val folders = mutableStateListOf<MediaFolder>()
     val history = mutableStateListOf<WatchHistoryEntry>()
+    val playlists = mutableStateListOf<MediaPlaylist>()
+    val playlistFolders = mutableStateListOf<PlaylistFolder>()
 
     /** Common user-facing collections, plus any custom ones found in items. */
     val defaultCollections = listOf("Anime", "Movies", "TV", "YouTube", "Music", "Audiobooks", "Other")
@@ -301,6 +338,186 @@ class MediaLibrary(
     }
 
     // ------------------------------------------------------------
+    // Playlists
+    // ------------------------------------------------------------
+
+    /** Create a named playlist; returns its id (or the existing one if the name is taken). */
+    fun createPlaylist(name: String, folderId: String = ""): String {
+        val clean = name.trim()
+        if (clean.isBlank()) return ""
+        playlists.firstOrNull { it.name.equals(clean, ignoreCase = true) }?.let { return it.id }
+        val id = "playlist-${System.currentTimeMillis()}"
+        playlists.add(
+            MediaPlaylist(
+                id = id,
+                name = clean,
+                createdAt = kotlinx.datetime.Clock.System.now().toString(),
+                folderId = folderId
+            )
+        )
+        save()
+        return id
+    }
+
+    /** Copy a playlist (name + items, no folder); returns the new id or null. */
+    fun duplicatePlaylist(id: String): String? {
+        val source = playlists.firstOrNull { it.id == id } ?: return null
+        val copy = MediaPlaylist(
+            id = "playlist-${System.currentTimeMillis()}",
+            name = "${source.name} (copy)",
+            itemIds = source.itemIds.toList(),
+            createdAt = kotlinx.datetime.Clock.System.now().toString(),
+            folderId = source.folderId,
+            favorite = false
+        )
+        playlists.add(copy)
+        save()
+        return copy.id
+    }
+
+    /** Pin/unpin a playlist (favorites sort first). */
+    fun togglePlaylistFavorite(id: String) {
+        val idx = playlists.indexOfFirst { it.id == id }
+        if (idx == -1) return
+        playlists[idx] = playlists[idx].withFavorite(!playlists[idx].favorite)
+        save()
+    }
+
+    /** Move a playlist into a folder ("" moves it back to the library root). */
+    fun movePlaylistToFolder(id: String, folderId: String) {
+        val idx = playlists.indexOfFirst { it.id == id }
+        if (idx == -1) return
+        if (folderId.isNotBlank() && playlistFolder(folderId) == null) return
+        playlists[idx] = playlists[idx].inFolder(folderId)
+        save()
+    }
+
+    /** Playlists directly inside [folderId] ("" = root), favorites first. */
+    fun playlistsInFolder(folderId: String): List<MediaPlaylist> =
+        playlists.filter { it.folderId == folderId }
+            .sortedBy { !it.favorite }
+            .sortedBy { it.name.lowercase() }
+
+    // ------------------------------------------------------------
+    // Playlist folders
+    // ------------------------------------------------------------
+
+    /** Create a folder; returns its id (or the existing one if the name is taken). */
+    fun createPlaylistFolder(name: String, parentId: String = ""): String {
+        val clean = name.trim()
+        if (clean.isBlank()) return ""
+        playlistFolders.firstOrNull { it.name.equals(clean, ignoreCase = true) && it.parentId == parentId }
+            ?.let { return it.id }
+        val id = "plfolder-${System.currentTimeMillis()}"
+        playlistFolders.add(
+            PlaylistFolder(
+                id = id,
+                name = clean,
+                parentId = parentId,
+                createdAt = kotlinx.datetime.Clock.System.now().toString()
+            )
+        )
+        save()
+        return id
+    }
+
+    fun renamePlaylistFolder(id: String, newName: String): Boolean {
+        val idx = playlistFolders.indexOfFirst { it.id == id }
+        if (idx == -1) return false
+        val clean = newName.trim()
+        if (clean.isBlank()) return false
+        playlistFolders[idx] = playlistFolders[idx].copy(name = clean)
+        save()
+        return true
+    }
+
+    /**
+     * Delete a folder: playlists inside it return to the library root and
+     * child folders are re-parented one level up — nothing is ever lost.
+     */
+    fun deletePlaylistFolder(id: String) {
+        val target = playlistFolder(id) ?: return
+        playlists.forEachIndexed { i, p ->
+            if (p.folderId == id) playlists[i] = p.inFolder(target.parentId)
+        }
+        playlistFolders.forEachIndexed { i, f ->
+            if (f.parentId == id) playlistFolders[i] = f.copy(parentId = target.parentId)
+        }
+        playlistFolders.removeAll { it.id == id }
+        save()
+    }
+
+    fun playlistFolder(id: String): PlaylistFolder? = playlistFolders.firstOrNull { it.id == id }
+
+    /** Immediate child folders of [parentId], sorted by name. */
+    fun folderChildren(parentId: String): List<PlaylistFolder> =
+        playlistFolders.filter { it.parentId == parentId }.sortedBy { it.name.lowercase() }
+
+    /** Flat ancestor chain from root to [id] (used for breadcrumbs). */
+    fun folderChain(id: String): List<PlaylistFolder> {
+        val chain = mutableListOf<PlaylistFolder>()
+        var current = playlistFolder(id)
+        while (current != null) {
+            chain.add(0, current)
+            current = current.parentId.takeIf { it.isNotBlank() }?.let(::playlistFolder)
+        }
+        return chain
+    }
+
+    fun renamePlaylist(id: String, newName: String): Boolean {
+        val idx = playlists.indexOfFirst { it.id == id }
+        if (idx == -1) return false
+        val clean = newName.trim()
+        if (clean.isBlank()) return false
+        if (playlists.any { it.id != id && it.name.equals(clean, ignoreCase = true) }) return false
+        playlists[idx] = playlists[idx].renamed(clean)
+        save()
+        return true
+    }
+
+    fun deletePlaylist(id: String) {
+        playlists.removeAll { it.id == id }
+        save()
+    }
+
+    /** Add an item id to a playlist (deduplicated). */
+    fun addToPlaylist(playlistId: String, itemId: String) {
+        val idx = playlists.indexOfFirst { it.id == playlistId }
+        if (idx == -1) return
+        if (itemId in playlists[idx].itemIds) return
+        playlists[idx] = playlists[idx].withItem(itemId)
+        save()
+    }
+
+    fun removeFromPlaylist(playlistId: String, itemId: String) {
+        val idx = playlists.indexOfFirst { it.id == playlistId }
+        if (idx == -1) return
+        playlists[idx] = playlists[idx].withoutItem(itemId)
+        save()
+    }
+
+    /** Move an item within a playlist; returns the new order. */
+    fun reorderPlaylist(playlistId: String, itemId: String, toIndex: Int): List<String> {
+        val idx = playlists.indexOfFirst { it.id == playlistId }
+        if (idx == -1) return emptyList()
+        val current = playlists[idx].itemIds
+        val from = current.indexOf(itemId)
+        if (from == -1) return current
+        val reordered = current.toMutableList().apply { removeAt(from) }
+        val target = toIndex.coerceIn(0, reordered.size)
+        reordered.add(target, itemId)
+        playlists[idx] = playlists[idx].withOrder(reordered)
+        save()
+        return reordered
+    }
+
+    /** Resolve a playlist to its current items (missing library entries are skipped). */
+    fun playlistItems(playlist: MediaPlaylist): List<MediaItem> =
+        playlist.itemIds.mapNotNull(::item)
+
+    fun playlist(id: String): MediaPlaylist? = playlists.firstOrNull { it.id == id }
+
+    // ------------------------------------------------------------
     // Tags / favorites / collections
     // ------------------------------------------------------------
 
@@ -324,6 +541,26 @@ class MediaLibrary(
         items[idx] = items[idx].copy(collection = collection)
         save()
     }
+
+    /** All tag values currently used across the library (sorted, distinct). */
+    fun allTags(): List<String> =
+        items.flatMap { it.tags }.distinct().sorted()
+
+    /** Toggle the "watch-later" convenience tag on an item. */
+    fun toggleWatchLater(itemId: String) {
+        val idx = items.indexOfFirst { it.id == itemId }
+        if (idx == -1) return
+        val tags = items[idx].tags.toMutableList()
+        if ("watch-later" in tags) tags.remove("watch-later") else tags.add("watch-later")
+        items[idx] = items[idx].copy(tags = tags.distinct())
+        save()
+    }
+
+    fun watchLater(): List<MediaItem> = items.filter { "watch-later" in it.tags }
+
+    /** Is the item tagged watch-later? */
+    fun isWatchLater(itemId: String): Boolean =
+        items.firstOrNull { it.id == itemId }?.tags?.contains("watch-later") == true
 
     fun setSubtitle(itemId: String, subtitlePath: String) {
         val idx = items.indexOfFirst { it.id == itemId }
@@ -361,6 +598,9 @@ class MediaLibrary(
 
     fun favorites(): List<MediaItem> = items.filter { it.favorite }
 
+    fun recentlyAdded(limit: Int = 60): List<MediaItem> =
+        items.sortedByDescending { it.addedAt }.take(limit)
+
     fun byCollection(name: String): List<MediaItem> =
         items.filter { it.collection == name }.sortedBy { it.name.lowercase() }
 
@@ -372,6 +612,88 @@ class MediaLibrary(
                 it.tags.any { t -> t.lowercase().contains(q) } || it.collection.lowercase().contains(q)
         }.sortedBy { it.name.lowercase() }
     }
+
+    // ------------------------------------------------------------
+    // Sorting / filtering
+    // ------------------------------------------------------------
+
+    /** Sort keys offered by the Media Centre browse view. */
+    enum class MediaSortMode(val label: String) {
+        Title("Title"),
+        DateAdded("Date added"),
+        RecentlyWatched("Recently watched"),
+        Duration("Duration"),
+        Progress("Progress"),
+        FileSize("File size"),
+        LastModified("Last modified")
+    }
+
+    /** Sort a list of items by [mode] (most useful orders descending). */
+    fun sortItems(list: List<MediaItem>, mode: MediaSortMode): List<MediaItem> = when (mode) {
+        MediaSortMode.Title -> list.sortedBy { it.name.lowercase() }
+        MediaSortMode.DateAdded -> list.sortedByDescending { it.addedAt }
+        MediaSortMode.RecentlyWatched -> list.sortedByDescending { it.lastWatchedAt.ifBlank { it.addedAt } }
+        MediaSortMode.Duration -> list.sortedByDescending { it.durationMs }
+        MediaSortMode.Progress -> list.sortedByDescending { it.progressFraction }
+        MediaSortMode.FileSize -> list.sortedByDescending { it.sizeBytes }
+        MediaSortMode.LastModified -> list.sortedByDescending {
+            if (it.isRemote) 0L else java.io.File(it.path).lastModified()
+        }
+    }
+
+    /** Watch-state filter presets for the browse view. */
+    enum class MediaWatchFilter(val label: String) {
+        Any("Any"),
+        Unwatched("Unwatched"),
+        InProgress("In progress"),
+        Completed("Completed")
+    }
+
+    fun matchesWatchFilter(item: MediaItem, filter: MediaWatchFilter): Boolean = when (filter) {
+        MediaWatchFilter.Any -> true
+        MediaWatchFilter.Unwatched -> item.watchCount == 0 && item.lastWatchedAt.isBlank()
+        MediaWatchFilter.InProgress -> item.lastWatchedAt.isNotBlank() && !item.completed && item.progressFraction in 0.01f..0.99f
+        MediaWatchFilter.Completed -> item.completed
+    }
+
+    // ------------------------------------------------------------
+    // Folder browsing (explorer)
+    // ------------------------------------------------------------
+
+    /** Items whose file lives directly inside [dirPath]. */
+    fun itemsDirectlyUnder(dirPath: String): List<MediaItem> {
+        val prefix = dirPath.trimEnd('/')
+        return items.filter { item ->
+            if (item.isRemote) return@filter false
+            val parent = java.io.File(item.path).parentFile?.absolutePath?.trimEnd('/')
+            parent == prefix
+        }.sortedBy { it.name.lowercase() }
+    }
+
+    /**
+     * Immediate subfolders of [dirPath] that contain media, derived from the
+     * library (never a filesystem walk) — one level at a time.
+     */
+    fun subfoldersUnder(dirPath: String): List<String> {
+        val prefix = dirPath.trimEnd('/')
+        val found = linkedSetOf<String>()
+        items.forEach { item ->
+            if (item.isRemote) return@forEach
+            val parent = java.io.File(item.path).parentFile ?: return@forEach
+            if (parent.absolutePath.trimEnd('/') == prefix) return@forEach
+            val grandParent = parent.parentFile
+            if (grandParent?.absolutePath?.trimEnd('/') == prefix) found.add(parent.absolutePath)
+        }
+        return found.sortedBy { it.substringAfterLast('/') }
+    }
+
+    /** Leaf name of a folder path for breadcrumbs / tiles. */
+    fun folderName(path: String): String =
+        java.io.File(path).name.ifBlank { path }
+
+    /** Watched folders whose directory still exists (browse roots). */
+    fun existingWatchedFolders(): List<String> =
+        folders.map { it.path }.filter { java.io.File(it).isDirectory }.sorted()
 
     fun totalWatchTimeMs(): Long = history.sumOf { (it.durationMs * it.percentage).toLong() }
 
@@ -449,6 +771,8 @@ class MediaLibrary(
                 val dto = json.decodeFromString<LibraryDto>(libraryFile.readText())
                 items.clear(); items.addAll(dto.items)
                 folders.clear(); folders.addAll(dto.folders)
+                playlists.clear(); playlists.addAll(dto.playlists)
+                playlistFolders.clear(); playlistFolders.addAll(dto.playlistFolders)
             }
         }
         if (historyFile.exists()) {
@@ -461,7 +785,11 @@ class MediaLibrary(
 
     private fun save() {
         runCatching {
-            libraryFile.writeText(json.encodeToString(LibraryDto(items.toList(), folders.toList())))
+            libraryFile.writeText(
+                json.encodeToString(
+                    LibraryDto(items.toList(), folders.toList(), playlists.toList(), playlistFolders.toList())
+                )
+            )
             historyFile.writeText(json.encodeToString(HistoryDto(history.toList())))
         }
     }

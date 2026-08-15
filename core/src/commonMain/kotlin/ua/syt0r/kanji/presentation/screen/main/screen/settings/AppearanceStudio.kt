@@ -1,17 +1,13 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.settings
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,12 +25,14 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,41 +41,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ua.syt0r.kanji.presentation.common.theme.AllAccentSchemes
-import ua.syt0r.kanji.presentation.common.theme.AnimationConfig
-import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
-import ua.syt0r.kanji.presentation.common.theme.BaseMode
-import ua.syt0r.kanji.presentation.common.theme.CornerRadiusStyle
-import ua.syt0r.kanji.presentation.common.theme.GlowConfig
-import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
-import ua.syt0r.kanji.presentation.common.theme.KaiteyoGradient
-import ua.syt0r.kanji.presentation.common.theme.LayoutConfig
-import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
-import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
-import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
-import ua.syt0r.kanji.presentation.common.theme.PageTransitionType
-import ua.syt0r.kanji.presentation.common.theme.RadiusConfig
-import ua.syt0r.kanji.presentation.common.theme.UIDensity
+import org.koin.compose.koinInject
+import ua.syt0r.kanji.core.theme_manager.ThemeManager
+import ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme
 import ua.syt0r.kanji.presentation.common.nav.LocalNavigationSettings
 import ua.syt0r.kanji.presentation.common.nav.NavigationSettingsOverlay
 import ua.syt0r.kanji.presentation.common.nav.rememberFormFactor
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.theme.AllAccentSchemes
+import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
+import ua.syt0r.kanji.presentation.common.theme.BaseMode
+import ua.syt0r.kanji.presentation.common.theme.CornerRadiusStyle
+import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
+import ua.syt0r.kanji.presentation.common.theme.KaiteyoThemeState
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
+import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.theme.PageTransitionType
+import ua.syt0r.kanji.presentation.common.theme.UIDensity
 import ua.syt0r.kanji.presentation.common.theme.gradientForAccent
 import ua.syt0r.kanji.presentation.common.theme.surfaceForBaseMode
+import ua.syt0r.kanji.presentation.common.theme.toHexString
 
 // ============================================
-// KAITEYO v1.2.0 — Appearance Studio
-// Professional theme customization suite
-// Color Editor · Gradient Editor · Live Preview
-// Motion Studio · Layout Studio · Import/Export
+// KAITEYO APPEARANCE STUDIO
+// Every control writes straight into the live
+// KaiteyoThemeState (base mode is routed through
+// the persisted preference), so all six tabs take
+// effect app-wide instantly and survive restarts.
 // ============================================
 
 private enum class StudioTab(val displayName: String) {
@@ -89,121 +89,141 @@ private enum class StudioTab(val displayName: String) {
     Export("Export")
 }
 
+private val TwoPaneMinWidth = 720.dp
+
 @Composable
 fun AppearanceStudio() {
     val themeState = LocalKaiteyoThemeState.current
-    val currentAccent = LocalKaiteyoAccent.current
     val surfaceColors = LocalSurfaceColors.current
-
+    val themeManager = koinInject<ThemeManager>()
     var selectedTab by remember { mutableStateOf(StudioTab.Themes) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp)
-    ) {
-        // ============================================
-        // LEFT: Tab Navigation + Controls
-        // ============================================
-        Column(
-            modifier = Modifier
-                .width(440.dp)
-                .fillMaxHeight()
-        ) {
-            // Header
-            Text(
-                text = "Appearance Studio",
-                style = MaterialTheme.typography.titleLarge,
-                color = surfaceColors.textPrimary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Capture the constraint in a local before entering the Row/Column
+        // lambdas, where the scope receiver would shadow it.
+        val availableWidth = maxWidth
+        val wide = availableWidth >= TwoPaneMinWidth
 
-            // Tab bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Row(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .width(if (wide) 440.dp else availableWidth - 24.dp)
+                    .fillMaxHeight()
             ) {
-                StudioTab.entries.forEach { tab ->
-                    val isSelected = selectedTab == tab
-                    val tabBg by animateColorAsState(
-                        targetValue = if (isSelected) currentAccent.primary.copy(alpha = 0.15f)
-                            else Color.Transparent,
-                        animationSpec = tween(200),
-                        label = "tabBg"
-                    )
-                    val tabText by animateColorAsState(
-                        targetValue = if (isSelected) currentAccent.primary
-                            else surfaceColors.textSecondary,
-                        animationSpec = tween(200),
-                        label = "tabText"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(tabBg)
-                            .clickable { selectedTab = tab }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tab.displayName,
-                            color = tabText,
-                            fontSize = 12.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                        )
+                Text(
+                    text = "Appearance Studio",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = surfaceColors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                StudioTabBar(
+                    selected = selectedTab,
+                    onSelect = { selectedTab = it }
+                )
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = surfaceColors.border.copy(alpha = 0.3f))
+                Spacer(Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    when (selectedTab) {
+                        StudioTab.Themes -> ThemePresetsTab(themeManager)
+                        StudioTab.Colors -> ColorEditorTab()
+                        StudioTab.Gradient -> GradientEditorTab()
+                        StudioTab.Motion -> MotionStudioTab()
+                        StudioTab.Layout -> LayoutStudioTab()
+                        StudioTab.Export -> ThemeExportTab(themeManager)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Divider(color = surfaceColors.border.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Tab content
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                when (selectedTab) {
-                    StudioTab.Themes -> ThemePresetsTab()
-                    StudioTab.Colors -> ColorEditorTab()
-                    StudioTab.Gradient -> GradientEditorTab()
-                    StudioTab.Motion -> MotionStudioTab()
-                    StudioTab.Layout -> LayoutStudioTab()
-                    StudioTab.Export -> ThemeExportTab()
+            if (wide) {
+                Spacer(Modifier.width(12.dp))
+                HorizontalDivider(
+                    modifier = Modifier.fillMaxHeight().width(1.dp),
+                    color = surfaceColors.border.copy(alpha = 0.2f)
+                )
+                Spacer(Modifier.width(12.dp))
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    LivePreviewPanel()
                 }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.width(12.dp))
-        Divider(
-            modifier = Modifier.fillMaxHeight().width(1.dp),
-            color = surfaceColors.border.copy(alpha = 0.2f)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // ============================================
-        // RIGHT: Live Preview
-        // ============================================
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) {
-            LivePreviewPanel()
+@Composable
+private fun StudioTabBar(
+    selected: StudioTab,
+    onSelect: (StudioTab) -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val currentAccent = LocalKaiteyoAccent.current
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        StudioTab.entries.forEach { tab ->
+            val isSelected = selected == tab
+            val tabBg by animateColorAsState(
+                targetValue = if (isSelected) currentAccent.primary.copy(alpha = 0.15f)
+                else Color.Transparent,
+                animationSpec = tween(200),
+                label = "studioTabBg"
+            )
+            val tabText by animateColorAsState(
+                targetValue = if (isSelected) currentAccent.primary
+                else surfaceColors.textSecondary,
+                animationSpec = tween(200),
+                label = "studioTabText"
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(tabBg)
+                    .clickable { onSelect(tab) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = tab.displayName,
+                    color = tabText,
+                    fontSize = 11.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
 
 // ============================================
-// TAB 1: Theme Presets
+// BASE MODE → PERSISTED PREFERENCE
+// Sepia has no preference equivalent, so it is
+// applied to the live state only (session).
+// ============================================
+
+private fun applyBaseMode(
+    themeState: KaiteyoThemeState,
+    themeManager: ThemeManager,
+    mode: BaseMode
+) {
+    when (mode) {
+        BaseMode.Oled -> themeManager.changeTheme(PreferencesTheme.Amoled)
+        BaseMode.Dark -> themeManager.changeTheme(PreferencesTheme.Dark)
+        BaseMode.Light -> themeManager.changeTheme(PreferencesTheme.Light)
+        BaseMode.Sepia -> themeState.baseMode = BaseMode.Sepia
+    }
+}
+
+// ============================================
+// TAB 1: THEMES
 // ============================================
 
 @Composable
-private fun ThemePresetsTab() {
+private fun ThemePresetsTab(themeManager: ThemeManager) {
     val themeState = LocalKaiteyoThemeState.current
     val surfaceColors = LocalSurfaceColors.current
     val currentAccent = LocalKaiteyoAccent.current
@@ -214,75 +234,89 @@ private fun ThemePresetsTab() {
         color = surfaceColors.textPrimary,
         fontWeight = FontWeight.SemiBold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
         text = "Choose a base theme to customize",
         style = MaterialTheme.typography.bodySmall,
         color = surfaceColors.textMuted
     )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Base Mode selector
     Text(
         text = "Base Mode",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        BaseMode.entries.forEach { mode ->
-            val isSelected = themeState.baseMode == mode
-            val cardBg by animateColorAsState(
-                targetValue = if (isSelected) currentAccent.primary.copy(alpha = 0.15f)
-                    else surfaceColors.surface,
-                animationSpec = tween(200),
-                label = "baseModeBg"
-            )
-            val cardBorder by animateColorAsState(
-                targetValue = if (isSelected) currentAccent.primary
-                    else surfaceColors.border.copy(alpha = 0.3f),
-                animationSpec = tween(200),
-                label = "baseModeBorder"
-            )
-            Column(
+    Spacer(Modifier.height(6.dp))
+    BaseMode.entries.forEach { mode ->
+        val isSelected = themeState.baseMode == mode
+        val cardBg by animateColorAsState(
+            targetValue = if (isSelected) currentAccent.primary.copy(alpha = 0.12f)
+            else surfaceColors.surface,
+            animationSpec = tween(200),
+            label = "baseModeCardBg"
+        )
+        val cardBorder by animateColorAsState(
+            targetValue = if (isSelected) currentAccent.primary
+            else surfaceColors.border.copy(alpha = 0.2f),
+            animationSpec = tween(200),
+            label = "baseModeCardBorder"
+        )
+        val surf = surfaceForBaseMode(mode)
+        val isSepia = mode == BaseMode.Sepia
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(cardBg)
+                .border(1.5.dp, cardBorder, RoundedCornerShape(12.dp))
+                .clickable { applyBaseMode(themeState, themeManager, mode) }
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder, RoundedCornerShape(10.dp))
-                    .clickable { themeState.baseMode = mode }
-                    .padding(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(surfaceForBaseMode(mode).background)
-                        .border(0.5.dp, surfaceColors.border.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(surf.background)
+                    .border(0.5.dp, surf.border.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = mode.displayName,
-                    color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
-                    fontSize = 11.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    color = if (isSelected) currentAccent.primary else surfaceColors.textPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
                 )
+                Text(
+                    text = if (isSepia) {
+                        "Warm paper reading mode · session-only"
+                    } else {
+                        "Saved to preferences · ${surf.background.toHexString()} bg"
+                    },
+                    color = surfaceColors.textMuted,
+                    fontSize = 11.sp
+                )
+            }
+            if (isSelected) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(currentAccent.primary))
             }
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Accent scheme grid
     Text(
         text = "Color Schemes",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(Modifier.height(8.dp))
 
     AllAccentSchemes.chunked(2).forEach { row ->
         Row(
@@ -290,16 +324,17 @@ private fun ThemePresetsTab() {
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             row.forEach { scheme ->
-                val isSelected = currentAccent.name == scheme.name
+                val isSelected = currentAccent.name == scheme.name &&
+                    themeState.accentScheme.primary == scheme.primary
                 val cardBg by animateColorAsState(
                     targetValue = if (isSelected) currentAccent.primary.copy(alpha = 0.12f)
-                        else surfaceColors.surface,
+                    else surfaceColors.surface,
                     animationSpec = tween(200),
                     label = "schemeCardBg"
                 )
                 val cardBorder by animateColorAsState(
                     targetValue = if (isSelected) currentAccent.primary
-                        else surfaceColors.border.copy(alpha = 0.2f),
+                    else surfaceColors.border.copy(alpha = 0.2f),
                     animationSpec = tween(200),
                     label = "schemeCardBorder"
                 )
@@ -313,36 +348,61 @@ private fun ThemePresetsTab() {
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Color dots
                     Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                         scheme.previewColors.forEach { color ->
-                            Box(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                            )
+                            Box(Modifier.size(14.dp).clip(CircleShape).background(color))
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = scheme.name,
                         color = if (isSelected) currentAccent.primary else surfaceColors.textPrimary,
                         fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(Modifier.height(6.dp))
     }
 }
 
 // ============================================
-// TAB 2: Color Editor
-// RGB / HSV / HSL / HEX with sliders
+// TAB 2: COLORS
 // ============================================
+
+private enum class ColorTarget(val displayName: String) {
+    Primary("Primary"),
+    Secondary("Secondary"),
+    Tertiary("Tertiary"),
+    GradientStart("Gradient Start"),
+    GradientEnd("Gradient End")
+}
+
+private fun KaiteyoAccentScheme.colorFor(target: ColorTarget): Color = when (target) {
+    ColorTarget.Primary -> primary
+    ColorTarget.Secondary -> secondary
+    ColorTarget.Tertiary -> tertiary ?: secondary
+    ColorTarget.GradientStart -> gradientStart ?: primary
+    ColorTarget.GradientEnd -> gradientEnd ?: secondary
+}
+
+private fun KaiteyoAccentScheme.withColor(target: ColorTarget, color: Color): KaiteyoAccentScheme =
+    when (target) {
+        ColorTarget.Primary -> copy(
+            name = "Custom", primary = color, primaryDark = color,
+            previewColors = listOf(color, secondary)
+        )
+        ColorTarget.Secondary -> copy(
+            name = "Custom", secondary = color, secondaryDark = color,
+            previewColors = listOf(primary, color)
+        )
+        ColorTarget.Tertiary -> copy(name = "Custom", tertiary = color)
+        ColorTarget.GradientStart -> copy(name = "Custom", gradientStart = color)
+        ColorTarget.GradientEnd -> copy(name = "Custom", gradientEnd = color)
+    }
 
 @Composable
 private fun ColorEditorTab() {
@@ -356,24 +416,24 @@ private fun ColorEditorTab() {
         color = surfaceColors.textPrimary,
         fontWeight = FontWeight.SemiBold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
-        text = "Fine-tune every color in your theme",
+        text = "Fine-tune every color in your theme — changes apply instantly",
         style = MaterialTheme.typography.bodySmall,
         color = surfaceColors.textMuted
     )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Color target selector
-    var selectedColorTarget by remember { mutableStateOf("Primary") }
-    val colorTargets = listOf("Primary", "Secondary", "Tertiary", "Background", "Surface", "Text")
+    var selectedTarget by remember { mutableStateOf(ColorTarget.Primary) }
+    val accent = themeState.accentScheme
+    val targetColor = accent.colorFor(selectedTarget)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        colorTargets.forEach { target ->
-            val isSelected = selectedColorTarget == target
+        ColorTarget.entries.forEach { target ->
+            val isSelected = selectedTarget == target
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -382,88 +442,92 @@ private fun ColorEditorTab() {
                         if (isSelected) currentAccent.primary.copy(alpha = 0.15f)
                         else Color.Transparent
                     )
-                    .clickable { selectedColorTarget = target }
+                    .clickable { selectedTarget = target }
                     .padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = target,
+                    text = target.displayName,
                     color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
                     fontSize = 10.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Color preview swatch
-    val currentColor = when (selectedColorTarget) {
-        "Primary" -> currentAccent.primary
-        "Secondary" -> currentAccent.secondary
-        "Tertiary" -> currentAccent.tertiary ?: currentAccent.primary
-        "Background" -> surfaceColors.background
-        "Surface" -> surfaceColors.surface
-        "Text" -> surfaceColors.textPrimary
-        else -> currentAccent.primary
-    }
+    Spacer(Modifier.height(12.dp))
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(currentColor)
+                .background(targetColor)
                 .border(1.dp, surfaceColors.border.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(Modifier.width(12.dp))
         Column {
             Text(
-                text = selectedColorTarget,
+                text = selectedTarget.displayName,
                 color = surfaceColors.textPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp
             )
             Text(
-                text = colorToHex(currentColor),
+                text = targetColor.toHexString(),
                 color = surfaceColors.textMuted,
                 fontSize = 12.sp
             )
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // RGB Sliders
-    Text(
-        text = "RGB",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
-    )
-    Spacer(modifier = Modifier.height(6.dp))
+    // Live RGB draft — applied to the theme as the user drags.
+    var red by remember(targetColor, selectedTarget) {
+        mutableFloatStateOf(targetColor.red * 255f)
+    }
+    var green by remember(targetColor, selectedTarget) {
+        mutableFloatStateOf(targetColor.green * 255f)
+    }
+    var blue by remember(targetColor, selectedTarget) {
+        mutableFloatStateOf(targetColor.blue * 255f)
+    }
 
-    var red by remember { mutableStateOf((currentColor.red * 255).toInt()) }
-    var green by remember { mutableStateOf((currentColor.green * 255).toInt()) }
-    var blue by remember { mutableStateOf((currentColor.blue * 255).toInt()) }
+    LaunchedEffect(red, green, blue) {
+        val draft = Color(red / 255f, green / 255f, blue / 255f)
+        // Skip the initial composition (and slider resyncs) — only apply a
+        // genuine change so opening the tab never rewrites the current scheme.
+        if (draft.toArgb() == targetColor.toArgb()) return@LaunchedEffect
+        themeState.accentScheme = accent.withColor(selectedTarget, draft)
+    }
 
-    ColorSlider("R", red, 0..255, Color.Red.copy(alpha = 0.3f)) { red = it }
-    ColorSlider("G", green, 0..255, Color.Green.copy(alpha = 0.3f)) { green = it }
-    ColorSlider("B", blue, 0..255, Color.Blue.copy(alpha = 0.3f)) { blue = it }
+    ColorSlider("R", red, Color.Red.copy(alpha = 0.3f)) {
+        red = it * 255f
+    }
+    ColorSlider("G", green, Color.Green.copy(alpha = 0.3f)) {
+        green = it * 255f
+    }
+    ColorSlider("B", blue, Color.Blue.copy(alpha = 0.3f)) {
+        blue = it * 255f
+    }
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // HEX input
     Text(
         text = "HEX",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
 
-    var hexValue by remember { mutableStateOf(colorToHex(currentColor).removePrefix("#")) }
+    var hexValue by remember(targetColor, selectedTarget) {
+        mutableStateOf(targetColor.toHexString().removePrefix("#"))
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "#",
@@ -471,7 +535,7 @@ private fun ColorEditorTab() {
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(Modifier.width(4.dp))
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
@@ -481,7 +545,22 @@ private fun ColorEditorTab() {
         ) {
             BasicTextField(
                 value = TextFieldValue(hexValue),
-                onValueChange = { hexValue = it.text.take(6).uppercase() },
+                onValueChange = { newValue ->
+                    val sanitized = newValue.text
+                        .take(6)
+                        .filter { it.isDigit() || it.uppercase() in "ABCDEF" }
+                        .uppercase()
+                    hexValue = sanitized
+                    if (sanitized.length == 6) {
+                        val r = sanitized.substring(0, 2).toIntOrNull(16) ?: 0
+                        val g = sanitized.substring(2, 4).toIntOrNull(16) ?: 0
+                        val b = sanitized.substring(4, 6).toIntOrNull(16) ?: 0
+                        themeState.accentScheme = accent.withColor(
+                            selectedTarget,
+                            Color(r / 255f, g / 255f, b / 255f)
+                        )
+                    }
+                },
                 textStyle = TextStyle(
                     color = surfaceColors.textPrimary,
                     fontSize = 14.sp,
@@ -492,40 +571,17 @@ private fun ColorEditorTab() {
             )
         }
     }
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Opacity control
-    Text(
-        text = "Opacity",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    var opacity by remember { mutableStateOf(1f) }
-    Slider(
-        value = opacity,
-        onValueChange = { opacity = it },
-        valueRange = 0f..1f,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Text(
-        text = "${(opacity * 100).toInt()}%",
-        color = surfaceColors.textMuted,
-        fontSize = 12.sp
-    )
 }
 
 // ============================================
-// TAB 3: Gradient Editor
+// TAB 3: GRADIENT
 // ============================================
 
 @Composable
 private fun GradientEditorTab() {
     val themeState = LocalKaiteyoThemeState.current
     val surfaceColors = LocalSurfaceColors.current
-    val currentAccent = LocalKaiteyoAccent.current
+    val accent = themeState.accentScheme
 
     Text(
         text = "Gradient Editor",
@@ -533,155 +589,177 @@ private fun GradientEditorTab() {
         color = surfaceColors.textPrimary,
         fontWeight = FontWeight.SemiBold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
-        text = "Create custom gradient effects",
+        text = "Pick start and end colors — the gradient updates app-wide instantly",
         style = MaterialTheme.typography.bodySmall,
         color = surfaceColors.textMuted
     )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Gradient preview
-    val gradient = gradientForAccent(currentAccent)
+    val gradient = gradientForAccent(accent)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp)
+            .height(64.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(gradient.start, gradient.end),
-                    tileMode = TileMode.Clamp
-                )
-            )
+            .background(Brush.linearGradient(listOf(gradient.start, gradient.end)))
             .border(1.dp, surfaceColors.border.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
     )
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Gradient stops
-    Text(
-        text = "Gradient Stops",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
+    GradientStopEditor(
+        label = "Start color",
+        color = gradient.start,
+        onPick = { color ->
+            themeState.accentScheme = accent.copy(name = "Custom", gradientStart = color)
+        }
     )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    // Start color
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(gradient.start)
-                .border(1.dp, surfaceColors.border.copy(alpha = 0.3f), CircleShape)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Start: ${colorToHex(gradient.start)}",
-            color = surfaceColors.textPrimary,
-            fontSize = 13.sp
-        )
-    }
-    Spacer(modifier = Modifier.height(6.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(gradient.end)
-                .border(1.dp, surfaceColors.border.copy(alpha = 0.3f), CircleShape)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "End: ${colorToHex(gradient.end)}",
-            color = surfaceColors.textPrimary,
-            fontSize = 13.sp
-        )
-    }
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // Angle control
-    Text(
-        text = "Angle: ${gradient.angle.toInt()}°",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    var angle by remember { mutableStateOf(gradient.angle) }
-    Slider(
-        value = angle,
-        onValueChange = { angle = it },
-        valueRange = 0f..360f,
-        modifier = Modifier.fillMaxWidth()
+    Spacer(Modifier.height(12.dp))
+    GradientStopEditor(
+        label = "End color",
+        color = gradient.end,
+        onPick = { color ->
+            themeState.accentScheme = accent.copy(name = "Custom", gradientEnd = color)
+        }
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Intensity
-    Text(
-        text = "Intensity",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    var intensity by remember { mutableStateOf(gradient.intensity) }
-    Slider(
-        value = intensity,
-        onValueChange = { intensity = it },
-        valueRange = 0f..2f,
-        modifier = Modifier.fillMaxWidth()
-    )
-    Text(
-        text = "${(intensity * 100).toInt()}%",
-        color = surfaceColors.textMuted,
-        fontSize = 12.sp
-    )
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // Preset gradients
     Text(
         text = "Presets",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(
-            currentAccent.primary to currentAccent.secondary,
-            currentAccent.secondary to currentAccent.primary,
-            currentAccent.primary to currentAccent.primaryDark,
-            currentAccent.secondary to currentAccent.secondaryDark
-        ).forEach { (start, end) ->
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        AllAccentSchemes.forEach { scheme ->
+            val start = scheme.gradientStart ?: scheme.primary
+            val end = scheme.gradientEnd ?: scheme.secondary
             Box(
                 modifier = Modifier
-                    .size(48.dp, 32.dp)
+                    .weight(1f)
+                    .height(32.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(Brush.linearGradient(listOf(start, end)))
-                    .clickable { /* apply preset */ }
                     .border(0.5.dp, surfaceColors.border.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
+                    .clickable {
+                        themeState.accentScheme = accent.copy(
+                            name = "Custom",
+                            gradientStart = start,
+                            gradientEnd = end
+                        )
+                    }
+            )
+        }
+    }
+
+    Spacer(Modifier.height(12.dp))
+    Button(
+        onClick = {
+            themeState.accentScheme = accent.copy(gradientStart = null, gradientEnd = null)
+        },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = surfaceColors.surface,
+            contentColor = surfaceColors.textPrimary
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Reset to scheme default", fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun GradientStopEditor(
+    label: String,
+    color: Color,
+    onPick: (Color) -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val currentAccent = LocalKaiteyoAccent.current
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(color)
+                .border(1.dp, surfaceColors.border.copy(alpha = 0.3f), CircleShape)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "$label  ${color.toHexString()}",
+            color = surfaceColors.textPrimary,
+            fontSize = 13.sp
+        )
+    }
+    Spacer(Modifier.height(6.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        val palette = AllAccentSchemes.flatMap { scheme ->
+            listOf(
+                scheme.gradientStart ?: scheme.primary,
+                scheme.gradientEnd ?: scheme.secondary
+            )
+        }.distinctBy { it.toArgb() }
+        palette.forEach { swatch ->
+            val isSelected = swatch == color
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(swatch)
+                    .border(
+                        2.dp,
+                        if (isSelected) currentAccent.primary else surfaceColors.border.copy(alpha = 0.3f),
+                        CircleShape
+                    )
+                    .clickable { onPick(swatch) }
             )
         }
     }
 }
 
+private fun Color.toArgb(): Int {
+    val r = (red * 255).toInt().coerceIn(0, 255)
+    val g = (green * 255).toInt().coerceIn(0, 255)
+    val b = (blue * 255).toInt().coerceIn(0, 255)
+    return (255 shl 24) or (r shl 16) or (g shl 8) or b
+}
+
 // ============================================
-// TAB 4: Motion Studio
-// Animation presets and controls
+// TAB 4: MOTION
 // ============================================
+
+private data class MotionPreset(
+    val name: String,
+    val speed: AnimationSpeed,
+    val damping: Float,
+    val stiffness: Float,
+    val durationMs: Int
+)
+
+private val motionPresets = listOf(
+    MotionPreset("Off", AnimationSpeed.Instant, 0.6f, 300f, 300),
+    MotionPreset("Minimal", AnimationSpeed.Fast, 0.8f, 400f, 200),
+    MotionPreset("Standard", AnimationSpeed.Normal, 0.6f, 300f, 300),
+    MotionPreset("Smooth", AnimationSpeed.Slow, 0.5f, 200f, 450),
+    MotionPreset("Bouncy", AnimationSpeed.Slow, 0.25f, 140f, 350)
+)
 
 @Composable
 private fun MotionStudioTab() {
     val themeState = LocalKaiteyoThemeState.current
     val surfaceColors = LocalSurfaceColors.current
     val currentAccent = LocalKaiteyoAccent.current
+    val config = themeState.animationConfig
 
     Text(
         text = "Motion Studio",
@@ -689,37 +767,30 @@ private fun MotionStudioTab() {
         color = surfaceColors.textPrimary,
         fontWeight = FontWeight.SemiBold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
         text = "Control the feel of every interaction",
         style = MaterialTheme.typography.bodySmall,
         color = surfaceColors.textMuted
     )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Animation presets
     Text(
         text = "Animation Preset",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-
-    val presets = listOf(
-        "No Animation" to AnimationSpeed.Instant,
-        "Minimal" to AnimationSpeed.Fast,
-        "Standard" to AnimationSpeed.Normal,
-        "Smooth" to AnimationSpeed.Slow,
-        "Bouncy" to AnimationSpeed.Slow
-    )
-
+    Spacer(Modifier.height(6.dp))
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        presets.forEach { (name, speed) ->
-            val isSelected = themeState.animationConfig.speed == speed
+        motionPresets.forEach { preset ->
+            val isSelected = config.speed == preset.speed &&
+                config.springDamping == preset.damping &&
+                config.springStiffness == preset.stiffness &&
+                config.defaultDuration == preset.durationMs
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -734,13 +805,18 @@ private fun MotionStudioTab() {
                         RoundedCornerShape(8.dp)
                     )
                     .clickable {
-                        themeState.animationConfig = themeState.animationConfig.copy(speed = speed)
+                        themeState.animationConfig = config.copy(
+                            speed = preset.speed,
+                            springDamping = preset.damping,
+                            springStiffness = preset.stiffness,
+                            defaultDuration = preset.durationMs
+                        )
                     }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = name,
+                    text = preset.name,
                     color = if (isSelected) currentAccent.primary else surfaceColors.textSecondary,
                     fontSize = 10.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
@@ -750,64 +826,45 @@ private fun MotionStudioTab() {
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Spring controls
     Text(
         text = "Spring Physics",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-
-    Text(
-        text = "Damping: ${String.format("%.1f", themeState.animationConfig.springDamping)}",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
+    Spacer(Modifier.height(6.dp))
+    SliderWithLabel(
+        label = "Damping",
+        value = config.springDamping,
+        range = 0.1f..2f,
+        suffix = "",
+        onValueChange = { v ->
+            themeState.animationConfig = config.copy(springDamping = v)
+        }
     )
-    var damping by remember { mutableStateOf(themeState.animationConfig.springDamping) }
-    Slider(
-        value = damping,
-        onValueChange = {
-            damping = it
-            themeState.animationConfig = themeState.animationConfig.copy(springDamping = it)
-        },
-        valueRange = 0.1f..2f,
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-        text = "Stiffness: ${themeState.animationConfig.springStiffness.toInt()}",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
-    )
-    var stiffness by remember { mutableStateOf(themeState.animationConfig.springStiffness) }
-    Slider(
-        value = stiffness,
-        onValueChange = {
-            stiffness = it
-            themeState.animationConfig = themeState.animationConfig.copy(springStiffness = it)
-        },
-        valueRange = 100f..1000f,
-        modifier = Modifier.fillMaxWidth()
+    SliderWithLabel(
+        label = "Stiffness",
+        value = config.springStiffness,
+        range = 100f..1000f,
+        suffix = "",
+        onValueChange = { v ->
+            themeState.animationConfig = config.copy(springStiffness = v)
+        }
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Transition type
     Text(
         text = "Page Transition",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-
+    Spacer(Modifier.height(6.dp))
     PageTransitionType.entries.forEach { transition ->
-        val isSelected = themeState.animationConfig.pageTransition == transition
+        val isSelected = config.pageTransition == transition
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -817,7 +874,7 @@ private fun MotionStudioTab() {
                     else Color.Transparent
                 )
                 .clickable {
-                    themeState.animationConfig = themeState.animationConfig.copy(pageTransition = transition)
+                    themeState.animationConfig = config.copy(pageTransition = transition)
                 }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -826,12 +883,9 @@ private fun MotionStudioTab() {
                 modifier = Modifier
                     .size(16.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (isSelected) currentAccent.primary
-                        else surfaceColors.border
-                    )
+                    .background(if (isSelected) currentAccent.primary else surfaceColors.border)
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(Modifier.width(10.dp))
             Text(
                 text = transition.displayName,
                 color = if (isSelected) currentAccent.primary else surfaceColors.textPrimary,
@@ -840,35 +894,26 @@ private fun MotionStudioTab() {
         }
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Duration
-    Text(
-        text = "Duration: ${themeState.animationConfig.defaultDuration}ms",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
-    )
-    var duration by remember { mutableStateOf(themeState.animationConfig.defaultDuration.toFloat()) }
-    Slider(
-        value = duration,
-        onValueChange = {
-            duration = it
-            themeState.animationConfig = themeState.animationConfig.copy(defaultDuration = it.toInt())
-        },
-        valueRange = 50f..800f,
-        modifier = Modifier.fillMaxWidth()
+    Spacer(Modifier.height(12.dp))
+    SliderWithLabel(
+        label = "Duration",
+        value = config.defaultDuration.toFloat(),
+        range = 50f..800f,
+        suffix = "ms",
+        format = { it.toInt().toString() },
+        onValueChange = { v ->
+            themeState.animationConfig = config.copy(defaultDuration = v.toInt())
+        }
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Reduced motion toggle
+    Spacer(Modifier.height(12.dp))
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable {
-                themeState.animationConfig = themeState.animationConfig.copy(
-                    reducedMotion = !themeState.animationConfig.reducedMotion
+                themeState.animationConfig = config.copy(
+                    reducedMotion = !config.reducedMotion
                 )
             }
             .padding(vertical = 8.dp),
@@ -878,32 +923,24 @@ private fun MotionStudioTab() {
             modifier = Modifier
                 .size(20.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(
-                    if (themeState.animationConfig.reducedMotion) currentAccent.primary
-                    else surfaceColors.border
-                )
-                .then(
-                    if (themeState.animationConfig.reducedMotion) Modifier.padding(4.dp)
-                    else Modifier.padding(2.dp)
-                ),
+                .background(if (config.reducedMotion) currentAccent.primary else surfaceColors.border),
             contentAlignment = Alignment.Center
         ) {
-            if (themeState.animationConfig.reducedMotion) {
-                Text("✓", color = currentAccent.onPrimary, fontSize = 10.sp)
+            if (config.reducedMotion) {
+                Text("\u2713", color = currentAccent.onPrimary, fontSize = 10.sp)
             }
         }
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = "Reduced Motion",
-            color = surfaceColors.textPrimary,
-            fontSize = 13.sp
-        )
+        Spacer(Modifier.width(10.dp))
+        Text("Reduced Motion", color = surfaceColors.textPrimary, fontSize = 13.sp)
+        Spacer(Modifier.weight(1f))
+        if (config.reducedMotion) {
+            Text("On", color = currentAccent.primary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
 // ============================================
-// TAB 5: Layout Studio
-// Density, radius, sidebar, spacing
+// TAB 5: LAYOUT
 // ============================================
 
 @Composable
@@ -919,23 +956,21 @@ private fun LayoutStudioTab() {
         color = surfaceColors.textPrimary,
         fontWeight = FontWeight.SemiBold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
         text = "Customize the spatial experience",
         style = MaterialTheme.typography.bodySmall,
         color = surfaceColors.textMuted
     )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Density
     Text(
         text = "UI Density",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-
+    Spacer(Modifier.height(6.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         UIDensity.entries.forEach { density ->
             val isSelected = themeState.layoutConfig.density == density
@@ -968,17 +1003,15 @@ private fun LayoutStudioTab() {
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Corner Radius
     Text(
         text = "Corner Radius Style",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-
+    Spacer(Modifier.height(6.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         CornerRadiusStyle.entries.forEach { style ->
             val isSelected = themeState.radiusConfig.style == style
@@ -1011,41 +1044,33 @@ private fun LayoutStudioTab() {
         }
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Custom radius slider
-    Text(
-        text = "Custom Radius: ${(themeState.radiusConfig.customRadius ?: 12f).toInt()}dp",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
-    )
-    var customRadius by remember { mutableStateOf(themeState.radiusConfig.customRadius ?: 12f) }
-    Slider(
-        value = customRadius,
-        onValueChange = {
-            customRadius = it
-            themeState.radiusConfig = themeState.radiusConfig.copy(customRadius = it)
-        },
-        valueRange = 0f..48f,
-        modifier = Modifier.fillMaxWidth()
+    Spacer(Modifier.height(12.dp))
+    SliderWithLabel(
+        label = "Custom Radius",
+        value = themeState.radiusConfig.customRadius ?: 12f,
+        range = 0f..48f,
+        suffix = "dp",
+        format = { it.toInt().toString() },
+        onValueChange = { v ->
+            themeState.radiusConfig = themeState.radiusConfig.copy(customRadius = v)
+        }
     )
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Sidebar — unified adaptive navigation
     Text(
         text = "Navigation",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
+    Spacer(Modifier.height(6.dp))
     Text(
         text = "Mode, placement, floating launcher and phone layout are configured in the adaptive navigation settings.",
         color = surfaceColors.textMuted,
         fontSize = 12.sp
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(Modifier.height(8.dp))
     val navSettings = LocalNavigationSettings.current
     if (navSettings != null) {
         Button(
@@ -1056,75 +1081,50 @@ private fun LayoutStudioTab() {
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(resolveString { nav.openNavigationSettingsLabel })
+            Text(resolveString { nav.openNavigationSettingsLabel }, fontSize = 11.sp)
         }
     }
-    Spacer(modifier = Modifier.height(16.dp))
 
-    // Glow
+    Spacer(Modifier.height(16.dp))
+
     Text(
         text = "Glow Effects",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(6.dp))
-
-    Text(
-        text = "Intensity: ${String.format("%.1f", themeState.glowConfig.intensity)}",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
+    Spacer(Modifier.height(6.dp))
+    SliderWithLabel(
+        label = "Intensity",
+        value = themeState.glowConfig.intensity,
+        range = 0f..2f,
+        suffix = "x",
+        onValueChange = { v ->
+            themeState.glowConfig = themeState.glowConfig.copy(intensity = v)
+        }
     )
-    var glowIntensity by remember { mutableStateOf(themeState.glowConfig.intensity) }
-    Slider(
-        value = glowIntensity,
-        onValueChange = {
-            glowIntensity = it
-            themeState.glowConfig = themeState.glowConfig.copy(intensity = it)
-        },
-        valueRange = 0f..2f,
-        modifier = Modifier.fillMaxWidth()
+    SliderWithLabel(
+        label = "Radius",
+        value = themeState.glowConfig.radius,
+        range = 0f..2f,
+        suffix = "x",
+        onValueChange = { v ->
+            themeState.glowConfig = themeState.glowConfig.copy(radius = v)
+        }
     )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-        text = "Radius: ${String.format("%.1f", themeState.glowConfig.radius)}",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
-    )
-    var glowRadius by remember { mutableStateOf(themeState.glowConfig.radius) }
-    Slider(
-        value = glowRadius,
-        onValueChange = {
-            glowRadius = it
-            themeState.glowConfig = themeState.glowConfig.copy(radius = it)
-        },
-        valueRange = 0f..2f,
-        modifier = Modifier.fillMaxWidth()
+    SliderWithLabel(
+        label = "Opacity",
+        value = themeState.glowConfig.opacity,
+        range = 0f..1f,
+        suffix = "%",
+        format = { "${(it * 100).toInt()}" },
+        onValueChange = { v ->
+            themeState.glowConfig = themeState.glowConfig.copy(opacity = v)
+        }
     )
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(Modifier.height(12.dp))
 
-    Text(
-        text = "Opacity: ${String.format("%.1f", themeState.glowConfig.opacity)}",
-        color = surfaceColors.textPrimary,
-        fontSize = 13.sp
-    )
-    var glowOpacity by remember { mutableStateOf(themeState.glowConfig.opacity) }
-    Slider(
-        value = glowOpacity,
-        onValueChange = {
-            glowOpacity = it
-            themeState.glowConfig = themeState.glowConfig.copy(opacity = it)
-        },
-        valueRange = 0f..1f,
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Transparency / Blur
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1148,33 +1148,23 @@ private fun LayoutStudioTab() {
             contentAlignment = Alignment.Center
         ) {
             if (themeState.layoutConfig.transparencyEnabled) {
-                Text("✓", color = currentAccent.onPrimary, fontSize = 10.sp)
+                Text("\u2713", color = currentAccent.onPrimary, fontSize = 10.sp)
             }
         }
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = "Enable Transparency",
-            color = surfaceColors.textPrimary,
-            fontSize = 13.sp
-        )
+        Spacer(Modifier.width(10.dp))
+        Text("Enable Transparency", color = surfaceColors.textPrimary, fontSize = 13.sp)
     }
-
     if (themeState.layoutConfig.transparencyEnabled) {
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Glass Opacity: ${(themeState.layoutConfig.glassOpacity * 100).toInt()}%",
-            color = surfaceColors.textPrimary,
-            fontSize = 13.sp
-        )
-        var glassOpacity by remember { mutableStateOf(themeState.layoutConfig.glassOpacity) }
-        Slider(
-            value = glassOpacity,
-            onValueChange = {
-                glassOpacity = it
-                themeState.layoutConfig = themeState.layoutConfig.copy(glassOpacity = it)
-            },
-            valueRange = 0.1f..1f,
-            modifier = Modifier.fillMaxWidth()
+        Spacer(Modifier.height(4.dp))
+        SliderWithLabel(
+            label = "Glass Opacity",
+            value = themeState.layoutConfig.glassOpacity,
+            range = 0.1f..1f,
+            suffix = "%",
+            format = { "${(it * 100).toInt()}" },
+            onValueChange = { v ->
+                themeState.layoutConfig = themeState.layoutConfig.copy(glassOpacity = v)
+            }
         )
     }
 
@@ -1191,14 +1181,18 @@ private fun LayoutStudioTab() {
 }
 
 // ============================================
-// TAB 6: Theme Export / Import
+// TAB 6: EXPORT / IMPORT
 // ============================================
 
 @Composable
-private fun ThemeExportTab() {
+private fun ThemeExportTab(themeManager: ThemeManager) {
     val themeState = LocalKaiteyoThemeState.current
     val surfaceColors = LocalSurfaceColors.current
     val currentAccent = LocalKaiteyoAccent.current
+    val clipboard = LocalClipboardManager.current
+    var message by remember { mutableStateOf<String?>(null) }
+
+    val themeJson = remember(themeState) { themeStateToPrettyJson(themeState) }
 
     Text(
         text = "Theme Export / Import",
@@ -1206,141 +1200,136 @@ private fun ThemeExportTab() {
         color = surfaceColors.textPrimary,
         fontWeight = FontWeight.SemiBold
     )
-    Spacer(modifier = Modifier.height(4.dp))
+    Spacer(Modifier.height(4.dp))
     Text(
-        text = "Share your custom themes as JSON",
+        text = "Share your custom themes as JSON via the clipboard",
         style = MaterialTheme.typography.bodySmall,
         color = surfaceColors.textMuted
     )
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(Modifier.height(16.dp))
 
-    // Export
     Text(
-        text = "Export Current Theme",
+        text = "Current Theme",
         style = MaterialTheme.typography.bodyMedium,
         color = surfaceColors.textSecondary,
         fontWeight = FontWeight.Medium
     )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    val themeJson = buildThemeJson(
-        accent = currentAccent,
-        baseMode = themeState.baseMode,
-        animationConfig = themeState.animationConfig,
-        radiusConfig = themeState.radiusConfig,
-        glowConfig = themeState.glowConfig,
-        layoutConfig = themeState.layoutConfig
-    )
-
+    Spacer(Modifier.height(8.dp))
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(220.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(surfaceColors.surfaceInteractive)
             .border(1.dp, surfaceColors.border.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
             .padding(12.dp)
     ) {
-        Text(
-            text = themeJson,
-            color = surfaceColors.textSecondary,
-            fontSize = 10.sp,
-            lineHeight = 14.sp
-        )
-    }
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    Button(
-        onClick = { /* Copy to clipboard */ },
-        colors = ButtonDefaults.buttonColors(
-            containerColor = currentAccent.primary,
-            contentColor = currentAccent.onPrimary
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("Copy Theme JSON")
-    }
-
-    Spacer(modifier = Modifier.height(20.dp))
-    Divider(color = surfaceColors.border.copy(alpha = 0.3f))
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Import
-    Text(
-        text = "Import Theme",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
-            .border(
-                1.dp,
-                surfaceColors.border.copy(alpha = 0.3f),
-                RoundedCornerShape(8.dp)
-            )
-            .clickable { /* Open file picker */ },
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
             Text(
-                text = "Drop JSON file here",
-                color = surfaceColors.textMuted,
-                fontSize = 13.sp
-            )
-            Text(
-                text = "or click to browse",
-                color = currentAccent.primary,
-                fontSize = 12.sp
+                text = themeJson,
+                color = surfaceColors.textSecondary,
+                fontSize = 10.sp,
+                lineHeight = 14.sp
             )
         }
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(Modifier.height(12.dp))
 
-    // Saved presets
-    Text(
-        text = "Saved Presets",
-        style = MaterialTheme.typography.bodyMedium,
-        color = surfaceColors.textSecondary,
-        fontWeight = FontWeight.Medium
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Button(
+            onClick = {
+                clipboard.setText(AnnotatedString(themeStateToJson(themeState)))
+                message = "Theme copied to clipboard — paste it anywhere to share"
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = currentAccent.primary,
+                contentColor = currentAccent.onPrimary
+            ),
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Copy Theme JSON", fontSize = 11.sp)
+        }
+        Button(
+            onClick = {
+                val imported = clipboard.getText()?.text?.let { themeJsonToState(it) }
+                if (imported != null) {
+                    applyBaseMode(themeState, themeManager, imported.baseMode)
+                    themeState.accentScheme = imported.accentScheme
+                    themeState.animationConfig = imported.animationConfig
+                    themeState.radiusConfig = imported.radiusConfig
+                    themeState.glowConfig = imported.glowConfig
+                    themeState.layoutConfig = imported.layoutConfig
+                    message = "Theme imported from clipboard"
+                } else {
+                    message = "Clipboard does not contain a valid Kaiteyo theme"
+                }
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = currentAccent.primary,
+                contentColor = currentAccent.onPrimary
+            ),
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Import from Clipboard", fontSize = 11.sp)
+        }
+    }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(surfaceColors.surface)
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+    message?.let {
+        Spacer(Modifier.height(6.dp))
+        Text(it, color = surfaceColors.textMuted, fontSize = 11.sp)
+    }
+
+    Spacer(Modifier.height(12.dp))
+    Button(
+        onClick = {
+            applyBaseMode(themeState, themeManager, BaseMode.Oled)
+            themeState.accentScheme = AllAccentSchemes.first()
+            themeState.animationConfig = themeState.animationConfig.copy(
+                speed = AnimationSpeed.Normal,
+                springDamping = 0.6f,
+                springStiffness = 300f,
+                defaultDuration = 300,
+                pageTransition = PageTransitionType.FadeThrough,
+                reducedMotion = false,
+                themeTransitionEnabled = true
+            )
+            themeState.radiusConfig = themeState.radiusConfig.copy(
+                style = CornerRadiusStyle.Rounded,
+                customRadius = null
+            )
+            themeState.glowConfig = themeState.glowConfig.copy(
+                intensity = 1f, radius = 1f, opacity = 1f
+            )
+            themeState.layoutConfig = themeState.layoutConfig.copy(
+                density = UIDensity.Comfortable,
+                transparencyEnabled = false,
+                glassOpacity = 0.8f
+            )
+            message = "Theme reset to Kaiteyo defaults"
+        },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.error,
+            contentColor = MaterialTheme.colorScheme.onError
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = "No saved presets yet. Export a theme to save it.",
-            color = surfaceColors.textMuted,
-            fontSize = 12.sp
-        )
+        Text("Reset All to Defaults", fontSize = 11.sp)
     }
 }
 
 // ============================================
 // LIVE PREVIEW PANEL
-// Shows sidebar, cards, buttons, lists, dialogs
 // ============================================
 
 @Composable
 private fun LivePreviewPanel() {
     val themeState = LocalKaiteyoThemeState.current
-    val surfaceColors = LocalSurfaceColors.current
     val currentAccent = LocalKaiteyoAccent.current
-
     val previewSurface = surfaceForBaseMode(themeState.baseMode)
 
     Column(
@@ -1350,22 +1339,19 @@ private fun LivePreviewPanel() {
             .background(previewSurface.background)
             .padding(16.dp)
     ) {
-        // Header
         Text(
             text = "Live Preview",
             style = MaterialTheme.typography.titleMedium,
             color = previewSurface.textPrimary,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(Modifier.height(2.dp))
         Text(
             text = "Changes apply in real-time",
             style = MaterialTheme.typography.bodySmall,
             color = previewSurface.textMuted
         )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Preview layout: sidebar + content
+        Spacer(Modifier.height(12.dp))
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -1373,7 +1359,7 @@ private fun LivePreviewPanel() {
                 .background(previewSurface.surface)
                 .padding(8.dp)
         ) {
-            // Mini sidebar preview
+            // Mini sidebar
             Column(
                 modifier = Modifier
                     .width(80.dp)
@@ -1383,7 +1369,6 @@ private fun LivePreviewPanel() {
                     .padding(6.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Logo area
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1392,18 +1377,10 @@ private fun LivePreviewPanel() {
                         .background(currentAccent.primary.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "K",
-                        color = currentAccent.primary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("K", color = currentAccent.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Nav items
-                listOf("◆", "◇", "◇", "◇").forEachIndexed { i, icon ->
+                Spacer(Modifier.height(4.dp))
+                listOf("\u25C6", "\u25C7", "\u25C7", "\u25C7").forEachIndexed { i, icon ->
                     val isActive = i == 0
                     Row(
                         modifier = Modifier
@@ -1417,11 +1394,11 @@ private fun LivePreviewPanel() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = icon,
+                            icon,
                             color = if (isActive) currentAccent.primary else previewSurface.textMuted,
                             fontSize = 8.sp
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(Modifier.width(4.dp))
                         Text(
                             text = if (i == 0) "Home" else "Item",
                             color = if (isActive) currentAccent.primary else previewSurface.textMuted,
@@ -1429,10 +1406,7 @@ private fun LivePreviewPanel() {
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Mini progress
+                Spacer(Modifier.weight(1f))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1449,16 +1423,9 @@ private fun LivePreviewPanel() {
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
+            Spacer(Modifier.width(8.dp))
             // Content area
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            ) {
-                // Content header
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1466,36 +1433,31 @@ private fun LivePreviewPanel() {
                 ) {
                     Column {
                         Text(
-                            text = "Dashboard",
+                            "Dashboard",
                             color = previewSurface.textPrimary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = "Study overview",
-                            color = previewSurface.textMuted,
-                            fontSize = 8.sp
-                        )
+                        Text("Study overview", color = previewSurface.textMuted, fontSize = 8.sp)
                     }
-                    // Mini controls
                     Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        listOf("⚙", "★").forEach { icon ->
-                            Box(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(previewSurface.surfaceElevated),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(icon, fontSize = 7.sp, color = previewSurface.textMuted)
-                            }
-                        }
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(previewSurface.surfaceElevated),
+                            contentAlignment = Alignment.Center
+                        ) { Text("\u2699", fontSize = 7.sp, color = previewSurface.textMuted) }
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(previewSurface.surfaceElevated),
+                            contentAlignment = Alignment.Center
+                        ) { Text("\u2605", fontSize = 7.sp, color = previewSurface.textMuted) }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Card grid
+                Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -1509,23 +1471,20 @@ private fun LivePreviewPanel() {
                                 .padding(6.dp)
                         ) {
                             Text(
-                                text = value,
+                                value,
                                 color = currentAccent.primary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = listOf("Learning", "Review", "Mastered")[i],
+                                listOf("Learning", "Review", "Mastered")[i],
                                 color = previewSurface.textMuted,
                                 fontSize = 7.sp
                             )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Wide card
+                Spacer(Modifier.height(6.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1536,17 +1495,18 @@ private fun LivePreviewPanel() {
                 ) {
                     Column {
                         Text(
-                            text = "Continue Learning",
+                            "Continue Learning",
                             color = previewSurface.textPrimary,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.SemiBold
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        // Progress bars
+                        Spacer(Modifier.height(4.dp))
                         listOf(0.45f, 0.25f, 0.15f).forEach { progress ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = listOf("N5", "N4", "Vocab")[listOf(0.45f, 0.25f, 0.15f).indexOf(progress)],
+                                    text = listOf("N5", "N4", "Vocab")[
+                                        listOf(0.45f, 0.25f, 0.15f).indexOf(progress)
+                                    ],
                                     color = previewSurface.textMuted,
                                     fontSize = 7.sp,
                                     modifier = Modifier.width(28.dp)
@@ -1566,19 +1526,16 @@ private fun LivePreviewPanel() {
                                             .background(currentAccent.primary)
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(Modifier.width(4.dp))
                                 Text(
-                                    text = "${(progress * 100).toInt()}%",
+                                    "${(progress * 100).toInt()}%",
                                     color = previewSurface.textMuted,
                                     fontSize = 7.sp
                                 )
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(Modifier.height(2.dp))
                         }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        // Button preview
+                        Spacer(Modifier.weight(1f))
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1602,22 +1559,42 @@ private fun LivePreviewPanel() {
 }
 
 // ============================================
-// UTILITY FUNCTIONS
+// SHARED CONTROLS
 // ============================================
+
+@Composable
+private fun SliderWithLabel(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    suffix: String,
+    onValueChange: (Float) -> Unit,
+    format: (Float) -> String = { formatFloat(it, 1) }
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    Text(
+        text = "$label: ${format(value)}$suffix",
+        color = surfaceColors.textPrimary,
+        fontSize = 13.sp
+    )
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        valueRange = range,
+        modifier = Modifier.fillMaxWidth()
+    )
+    Spacer(Modifier.height(4.dp))
+}
 
 @Composable
 private fun ColorSlider(
     label: String,
-    value: Int,
-    range: IntRange,
+    value: Float,
     trackColor: Color,
-    onValueChange: (Int) -> Unit
+    onValueChange: (Float) -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
             color = surfaceColors.textPrimary,
@@ -1626,74 +1603,17 @@ private fun ColorSlider(
             modifier = Modifier.width(20.dp)
         )
         Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt()) },
-            valueRange = range.first.toFloat()..range.last.toFloat(),
+            value = value.coerceIn(0f, 255f) / 255f,
+            onValueChange = onValueChange,
+            valueRange = 0f..1f,
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = value.toString(),
+            text = value.toInt().toString(),
             color = surfaceColors.textMuted,
             fontSize = 11.sp,
             modifier = Modifier.width(30.dp),
             textAlign = TextAlign.End
         )
     }
-}
-
-private fun colorToHex(color: Color): String {
-    val r = (color.red * 255).toInt()
-    val g = (color.green * 255).toInt()
-    val b = (color.blue * 255).toInt()
-    return "#${r.toString(16).padStart(2, '0').uppercase()}" +
-            "${g.toString(16).padStart(2, '0').uppercase()}" +
-            "${b.toString(16).padStart(2, '0').uppercase()}"
-}
-
-private fun buildThemeJson(
-    accent: KaiteyoAccentScheme,
-    baseMode: BaseMode,
-    animationConfig: AnimationConfig,
-    radiusConfig: RadiusConfig,
-    glowConfig: GlowConfig,
-    layoutConfig: LayoutConfig
-): String {
-    return """{
-  "name": "Custom Theme",
-  "base": "${baseMode.displayName}",
-  "colors": {
-    "primary": "${colorToHex(accent.primary)}",
-    "secondary": "${colorToHex(accent.secondary)}",
-    "onPrimary": "${colorToHex(accent.onPrimary)}",
-    "onSecondary": "${colorToHex(accent.onSecondary)}"
-  },
-  "gradient": {
-    "start": "${colorToHex(accent.gradientStart ?: accent.primary)}",
-    "end": "${colorToHex(accent.gradientEnd ?: accent.secondary)}"
-  },
-  "animation": {
-    "speed": "${animationConfig.speed.displayName}",
-    "damping": ${String.format("%.1f", animationConfig.springDamping)},
-    "stiffness": ${animationConfig.springStiffness.toInt()},
-    "duration": ${animationConfig.defaultDuration},
-    "transition": "${animationConfig.pageTransition.displayName}",
-    "reducedMotion": ${animationConfig.reducedMotion}
-  },
-  "radius": {
-    "style": "${radiusConfig.style.displayName}",
-    "custom": ${radiusConfig.customRadius ?: "null"}
-  },
-  "glow": {
-    "intensity": ${String.format("%.1f", glowConfig.intensity)},
-    "radius": ${String.format("%.1f", glowConfig.radius)},
-    "opacity": ${String.format("%.1f", glowConfig.opacity)}
-  },
-  "layout": {
-    "density": "${layoutConfig.density.displayName}",
-    "sidebarMode": "${layoutConfig.sidebarMode.displayName}",
-    "sidebarPosition": "${layoutConfig.sidebarPosition.displayName}",
-    "transparency": ${layoutConfig.transparencyEnabled},
-    "glassOpacity": ${String.format("%.1f", layoutConfig.glassOpacity)}
-  }
-}"""
 }

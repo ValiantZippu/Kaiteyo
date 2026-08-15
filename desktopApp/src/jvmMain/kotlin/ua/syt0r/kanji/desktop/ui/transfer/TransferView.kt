@@ -68,13 +68,185 @@ fun TransferView(state: AppState) {
     var tab by remember { mutableStateOf(0) }
 
     Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
-        DsTabRow(tabs = listOf("Export", "Import", "Backup"), selectedIndex = tab, onSelect = { tab = it })
+        DsTabRow(tabs = listOf("Export", "Import", "Backup", "Learning data"), selectedIndex = tab, onSelect = { tab = it })
         when (tab) {
             0 -> ExportPanel(state)
             1 -> ImportPanel(state)
             2 -> BackupPanel(state)
+            3 -> LearningDataPanel(state)
         }
     }
+}
+
+// ============================================
+// LEARNING DATA (unified learning store)
+// Full-fidelity export / import of notes, cards,
+// deck configs, review events, writing attempts,
+// exam results and study sessions — via the
+// ImportExportEngine. Never destroys data: import
+// merges, and the legacy card pool is re-synced
+// so every view sees the same content.
+// ============================================
+
+private enum class LearningExportFormat { Json, Csv, Tsv }
+private enum class LearningImportFormat { Json, Csv, Tsv }
+
+@Composable
+private fun LearningDataPanel(state: AppState) {
+    val sc = surfaceColors()
+    val clipboard = LocalClipboardManager.current
+    var exportFormat by remember { mutableStateOf(LearningExportFormat.Json) }
+    var exportOutput by remember { mutableStateOf("") }
+    var importFormat by remember { mutableStateOf(LearningImportFormat.Json) }
+    var importText by remember { mutableStateOf("") }
+
+    Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                Text("Export learning data", color = sc.textPrimary, fontSize = DsType.Heading, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "Full-fidelity export of the unified learning store: notes, cards, per-deck study config, review events, writing attempts, exam results and study sessions. JSON is lossless; CSV/TSV are spreadsheet-friendly.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    DsSelect(
+                        selected = exportFormat,
+                        options = LearningExportFormat.entries.toList(),
+                        onSelected = { exportFormat = it },
+                        labelOf = { it.name },
+                        modifier = Modifier.width(160.dp)
+                    )
+                    DsButton(
+                        text = "Generate",
+                        icon = Icons.Default.FileDownload,
+                        onClick = {
+                            exportOutput = when (exportFormat) {
+                                LearningExportFormat.Json -> state.learning.exportSnapshotJson()
+                                LearningExportFormat.Csv -> state.learning.exportCsv()
+                                LearningExportFormat.Tsv -> state.learning.exportTsv()
+                            }
+                            state.toastHost.show("Export generated (${exportOutput.length} chars)", kind = ToastKind.Success)
+                        }
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "${state.learning.notes.size} notes · ${state.learning.cards.size} cards · ${state.learning.reviewEvents.size} reviews · ${state.learning.examResults.size} exams",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+                if (exportOutput.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Text("Preview", color = sc.textMuted, fontSize = DsType.Caption, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                        DsButton(
+                            text = "Save to file…",
+                            icon = Icons.Default.Save,
+                            compact = true,
+                            onClick = {
+                                val ext = exportFormat.name.lowercase()
+                                val saved = TransferFilePicker.save(
+                                    bytes = exportOutput.toByteArray(Charsets.UTF_8),
+                                    fileName = "kaiteyo-learning.$ext",
+                                    description = "Kaiteyo learning data ($ext)",
+                                    ext
+                                )
+                                if (saved) {
+                                    state.toastHost.show("Learning data saved ($exportFormat)", kind = ToastKind.Success)
+                                    state.activityLog.record(ActivityCategory.Export, "Exported learning data (${exportFormat.name})")
+                                }
+                            }
+                        )
+                        DsButton(
+                            text = "Copy to clipboard",
+                            icon = Icons.Default.ContentCopy,
+                            compact = true,
+                            onClick = {
+                                clipboard.setText(AnnotatedString(exportOutput))
+                                state.toastHost.show("Copied ${exportOutput.length} characters", kind = ToastKind.Success)
+                            }
+                        )
+                    }
+                    DsTextArea(value = exportOutput, onValueChange = {}, height = 220.dp, readOnly = true)
+                }
+            }
+        }
+
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                Text("Import learning data", color = sc.textPrimary, fontSize = DsType.Heading, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "Import a Kaiteyo learning-data file. JSON restores full fidelity (including history); CSV/TSV add notes and generate default cards. Imported content merges with your current data — nothing is deleted.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                ) {
+                    DsSelect(
+                        selected = importFormat,
+                        options = LearningImportFormat.entries.toList(),
+                        onSelected = { importFormat = it },
+                        labelOf = { it.name },
+                        modifier = Modifier.width(160.dp)
+                    )
+                    DsButton(
+                        text = "Load from file…",
+                        icon = Icons.Default.FolderOpen,
+                        onClick = {
+                            val content = TransferFilePicker.open("Kaiteyo learning data", "json", "csv", "tsv")
+                                ?.toString(Charsets.UTF_8)
+                            if (content != null) importText = content
+                        }
+                    )
+                    Spacer(Modifier.weight(1f))
+                    DsButton(
+                        text = "Import",
+                        icon = Icons.Default.FileUpload,
+                        enabled = importText.isNotBlank(),
+                        onClick = {
+                            applyLearningImport(state, importText, importFormat)
+                            importText = ""
+                        }
+                    )
+                }
+                DsTextArea(value = importText, onValueChange = { importText = it }, height = 220.dp, readOnly = false)
+            }
+        }
+    }
+}
+
+private fun applyLearningImport(state: AppState, text: String, format: LearningImportFormat) {
+    val result = when (format) {
+        LearningImportFormat.Json -> state.learning.importJson(text)
+        LearningImportFormat.Csv -> state.learning.importCsv(text)
+        LearningImportFormat.Tsv -> state.learning.importTsv(text)
+    }
+    if (result.errors.isNotEmpty()) {
+        state.toastHost.show("Import failed: ${result.errors.first()}", kind = ToastKind.Error)
+        return
+    }
+    // CSV/TSV imports only carry notes — materialize their default cards.
+    if (format != LearningImportFormat.Json) state.learning.ensureCards()
+    // Re-sync the legacy card pool so every view sees the imported content.
+    val legacy = state.learning.allLegacyCards()
+    state.cards.clear()
+    state.cards.addAll(legacy)
+    state.library.saveCards(state.cards.toList())
+    state.activityLog.record(
+        ActivityCategory.Import,
+        "Imported learning data ($format): ${result.notesAdded} notes, ${result.notesUpdated} updated, ${result.cardsAdded} cards, ${result.eventsImported} events"
+    )
+    state.toastHost.show(
+        "Import complete — ${result.notesAdded} notes added, ${result.notesUpdated} updated, ${result.cardsAdded} cards, ${result.eventsImported} events",
+        kind = ToastKind.Success
+    )
 }
 
 // ============================================

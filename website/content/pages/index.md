@@ -1,36 +1,79 @@
-## Everything you need, nothing you don't
+## Learn — kanji, vocabulary, and kana as one system
 
 <div class="feature-grid">
   <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg></div>
-    <h3>Spaced repetition that respects your time</h3>
-    <p>Intervals calibrated per-deck and per-card. Review the right card at the right moment — nothing is dumped on you at once.</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-pen"/></svg></div>
-    <h3>Write, don't just recognize</h3>
-    <p>Stroke-order writing practice with instant feedback on every stroke. Reading kanji is half the battle — writing is the other half.</p>
+    <h3>Kanji with real structure</h3>
+    <p>Every character carries its readings, meanings, radicals, stroke count, frequency and JLPT level — from open datasets like KANJIDIC and KanjiVG, resolved automatically.</p>
   </div>
   <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg></div>
-    <h3>Built-in dictionary</h3>
-    <p>Look up readings and meanings without leaving the app. Example sentences show how words behave in the wild.</p>
+    <h3>Vocabulary that connects</h3>
+    <p>JMdict-backed entries with readings, furigana, part of speech and examples. Each word links back to the kanji it contains, so studying one feeds the other.</p>
   </div>
   <div class="feature-card">
-    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-dark-mode"/></svg></div>
-    <h3>Beautiful on every display</h3>
-    <p>OLED black, dark, light, and sepia base modes with seven signature accents. The same design language from phones to desktops.</p>
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-flip"/></svg></div>
+    <h3>Spaced repetition that respects your time</h3>
+    <p>A real SRS scheduler — new, learning, review and relearning states with calibrated intervals. Review the right card at the right moment, nothing dumped on you at once.</p>
+  </div>
+</div>
+
+## Practice — write, don't just recognize
+
+<div class="steps">
+  <div class="step">
+    <span class="step-number">1</span>
+    <div class="step-body">
+      <h3>Study a card</h3>
+      <p>Recognition, production or writing cards from your decks, graded with Again / Hard / Good / Easy.</p>
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-number">2</span>
+    <div class="step-body">
+      <h3>Trace the strokes</h3>
+      <p>Stroke-order writing practice with instant feedback on every stroke — direction, order, start and end position, and shape.</p>
+    </div>
+  </div>
+  <div class="step">
+    <span class="step-number">3</span>
+    <div class="step-body">
+      <h3>See it stick</h3>
+      <p>Writing accuracy feeds your statistics and your SRS state — the same content shows up in exams and decks.</p>
+    </div>
+  </div>
+</div>
+
+## Remember — the scheduler works while you're away
+
+<div class="prose">
+  <p>Kaiteyo keeps a card-by-card record of your reviews. Intervals grow when you know a card and reset when you don't. Cards you struggle with get surfaced first, so every session is spent on the gap between what you know and what you're about to forget.</p>
+</div>
+
+## Immerse — media becomes study material
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-play"/></svg></div>
+    <h3>Media Centre</h3>
+    <p>Watch local video with Japanese subtitles, select text, look it up in the built-in dictionary and mine it into a deck — screenshot, sentence and all.</p>
   </div>
   <div class="feature-card">
-    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-keyboard"/></svg></div>
-    <h3>Keyboard-first</h3>
-    <p>Every action is reachable from the keyboard. Grading a review is one keypress — no mouse, no friction, no lifting your hands.</p>
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg></div>
+    <h3>Mining pipeline</h3>
+    <p>Encounter a word, understand it, capture it. A mined card becomes a normal Kaiteyo note in a deck you choose — ready for the next review.</p>
   </div>
   <div class="feature-card">
-    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-offline"/></svg></div>
-    <h3>Offline-first</h3>
-    <p>All data lives on your device. No account, no tracking, no cloud lock-in — study on a plane, in a tunnel, or anywhere else.</p>
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-sync"/></svg></div>
+    <h3>Anki-compatible workflows</h3>
+    <p>Kaiteyo stands on its own, and can integrate with an existing Anki setup where that fits your workflow. The choice is yours — no lock-in.</p>
   </div>
+</div>
+
+## Measure — statistics that answer real questions
+
+<div class="prose">
+  <p>Study time, reviews, retention, writing accuracy, deck progress, JLPT progress, exam results and mining activity — a single authoritative statistics system with an activity heatmap. No fabricated charts, no numbers that contradict the Library or Study screens.</p>
 </div>
 
 ## Stats
@@ -42,23 +85,28 @@
   <div class="stat"><span class="stat-value">100%</span><span class="stat-label">local, offline-first data</span></div>
 </div>
 
-## How it works
+## Build your own system
 
-<div class="steps">
-  <div class="step">
-    <span class="step-number">1</span>
-    <h3>Add kanji, kana, or vocabulary</h3>
-    <p>Pick from the built-in dictionaries, or add your own words — stroke data is resolved automatically.</p>
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg></div>
+    <h3>Decks you control</h3>
+    <p>JLPT decks, custom decks, mined decks, nested collections. Create, rename, merge, archive, pin favorites — decks are real entities, not labels.</p>
   </div>
-  <div class="step">
-    <span class="step-number">2</span>
-    <h3>Study and write</h3>
-    <p>Flip cards, trace stroke order, and let the app grade your strokes in real time.</p>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg></div>
+    <h3>Powerful search</h3>
+    <p>Search kanji and vocabulary by expression, reading, meaning, JLPT level, frequency, radical or stroke count — from anywhere in the Library.</p>
   </div>
-  <div class="step">
-    <span class="step-number">3</span>
-    <h3>Review on the app's schedule</h3>
-    <p>The scheduler picks exactly the cards you're about to forget — so you never waste a session.</p>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-palette"/></svg></div>
+    <h3>Yours to customize</h3>
+    <p>OLED black, dark, light and sepia base modes, seven signature accents, configurable animation. The same design language on every platform.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-offline"/></svg></div>
+    <h3>Offline-first, free, open source</h3>
+    <p>All data lives on your device. No account, no tracking, no cloud lock-in — study anywhere, and read the source.</p>
   </div>
 </div>
 

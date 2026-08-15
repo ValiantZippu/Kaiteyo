@@ -1,0 +1,46 @@
+{# Project command center shell — extends the site layout and adds a
+   project section rail. Children set `project_active` and override
+   `project_content`. #}
+{% extends "base.html" %}
+{% set project_active = project_active|default("") %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ basePath }}assets/styles/project.css" />
+{% block project_head_extra %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="project-shell">
+  <nav class="project-nav" aria-label="Project sections">
+    <a class="project-nav-link {% if project_active == 'status' %}is-active{% endif %}" href="{{ basePath }}project/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-layers"/></svg>Status
+    </a>
+    <a class="project-nav-link {% if project_active == 'kanban' %}is-active{% endif %}" href="{{ basePath }}project/kanban/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg>Kanban
+      <span class="project-nav-count">{{ open_tasks }}</span>
+    </a>
+    <a class="project-nav-link {% if project_active == 'roadmap' %}is-active{% endif %}" href="{{ basePath }}project/roadmap/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-milestone"/></svg>Roadmap
+    </a>
+    <a class="project-nav-link {% if project_active == 'whiteboard' %}is-active{% endif %}" href="{{ basePath }}project/whiteboard/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-compass"/></svg>Whiteboard
+    </a>
+    <a class="project-nav-link {% if project_active == 'suggestions' %}is-active{% endif %}" href="{{ basePath }}project/suggestions/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-chat"/></svg>Suggestions
+    </a>
+    <a class="project-nav-link {% if project_active == 'decisions' %}is-active{% endif %}" href="{{ basePath }}project/decisions/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-scale"/></svg>Decisions
+    </a>
+    <a class="project-nav-link {% if project_active == 'activity' %}is-active{% endif %}" href="{{ basePath }}project/activity/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-history"/></svg>Activity
+    </a>
+    <a class="project-nav-link {% if project_active == 'contributing' %}is-active{% endif %}" href="{{ basePath }}project/contributing/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-contribute"/></svg>Contributing
+    </a>
+  </nav>
+
+  <div class="project-body">
+    {% block project_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

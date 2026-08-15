@@ -5,6 +5,12 @@ milestones are historical; unshipped items are labeled with their status. Priori
 the issue tracker (`docs/planning/CURRENT_ISSUES.md`) and task list
 (`docs/planning/TODO.md`) are the operational source of truth.
 
+> **Blueprint context**: the master product definition is `docs/product/PRODUCT.md`
+> (MASTER §0–§88), the per-subsystem status matrix is `docs/planning/CURRENT_STATE.md`,
+> and the full task inventory is `docs/planning/MASTER_TODO.md` (work packages P0–P39).
+> The game-side roadmap lives in `docs/game/README.md` + `docs/production/phases.md`;
+> the vision is `docs/product/VISION.md` (+ `docs/roadmap/PROJECT_VISION.md`).
+
 ## Current status
 
 - **v2.2.1 shipped** — platform polish & rebranding completion: premium installer
@@ -52,11 +58,19 @@ Status: in progress (much is already implemented per `docs/planning/COMPLETED.md
   standalone `kjd`) into one pipeline.
 - **Data**: Tatoeba example-sentence dataset behind the KJD pipeline; pitch-accent and
   grammar extension datasets (see `kjd/README.md` → Future direction).
+- **Node layer foundations**: node model + knowledge graph (ADR-0013), user knowledge
+  states (`docs/architecture/nodes/KNOWLEDGE_STATE_MODEL.md`), and the content pipeline
+  (ADR-0015) — the shared substrate Journey, media exposure, and discovery will build on.
+- **Journey engine evaluation**: evaluate established game engines per STANDARDS §242 and
+  document the decision (ADR-0014) before any world work.
 
 ## Long term (ideas, not commitments)
 
 From `docs/planning/FUTURE_IDEAS.md` — nothing here is scheduled:
 
+- **Journey world** — Kamakura + Enoshima vertical slice as the first world. **Target
+  architecture only** (ADR-0014, NODE §158): no implementation, no launch claim.
+  Full spec: `docs/architecture/NODE_ARCHITECTURE.md` + `docs/architecture/nodes/`.
 - Community features: shared decks, theme marketplace, study groups, optional leaderboards
 - AI-assisted scheduling & learning paths (as a *future enhancement* to FSRS, not a
   replacement)
@@ -67,7 +81,8 @@ From `docs/planning/FUTURE_IDEAS.md` — nothing here is scheduled:
 ## Explicit non-goals (from `PROJECT_VISION.md`)
 
 - No gamification gimmicks (points/badges/streaks as the core loop — the app has
-  achievements, but the design treats users as capable adults)
+  achievements, but the design treats users as capable adults). Journey follows the same
+  rule: exploration/discovery-first progression, never XP grinding (NODE §86, §116)
 - Not a mobile-first app (mobile is supported; desktop is primary)
 - Not a social network
 - No Kaiteyo-hosted central service (sync is provider-based; see ADR-0009)

@@ -15,6 +15,7 @@ const TYPE_LABELS = {
   page: "Page",
   doc: "Documentation",
   wiki: "Wiki",
+  guide: "Guide",
   faq: "FAQ",
   shortcut: "Shortcut",
   roadmap: "Roadmap",

@@ -16,7 +16,7 @@ import kotlinx.serialization.json.Json
 enum class SettingType { Boolean, Int, Float, String, Enum, List }
 
 @Serializable
-enum class SettingCategory { General, Navigation, Appearance, Review, Browser, Statistics, History, ImportExport, Sync, Updates, Plugins, Accessibility, Advanced, Media }
+enum class SettingCategory { General, Navigation, Appearance, Review, Browser, Statistics, History, Activity, ImportExport, Sync, Updates, Plugins, Accessibility, Advanced, Media, About }
 
 data class SettingDef(
     val key: String,
@@ -165,8 +165,14 @@ class SettingsEngine(
         definitions.values.forEach { values[it.key] = it.normalizedDefault }
     }
 
-    fun observe(listener: (String, String, String) -> Unit) {
+    /**
+     * Register a change listener; fires with (key, oldValue, newValue) on every
+     * actual change (including [restore]). Returns an unsubscribe lambda so
+     * short-lived observers (e.g. Compose DisposableEffect) never leak.
+     */
+    fun observe(listener: (String, String, String) -> Unit): () -> Unit {
         listeners.add(listener)
+        return { listeners.remove(listener) }
     }
 
     // ------------------------------------------------------------
@@ -255,6 +261,9 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("navigation.compact-position", "Navigation position", "Tab bar position on phones and compact windows", SettingCategory.Navigation, SettingType.Enum, "bottom", options = listOf("top", "bottom"), group = "Compact"),
     SettingDef("navigation.tooltip-delay", "Tooltip behavior", "Delay before hover tooltips appear", SettingCategory.Navigation, SettingType.Int, 450, group = "Compact"),
 
+    SettingDef("workspace.tabs-enabled", "Workspace tabs", "Open views in browser-style tabs with per-tab state", SettingCategory.Navigation, SettingType.Boolean, true, group = "Tabs"),
+    SettingDef("workspace.tabs", "Open tabs (internal)", "Persisted open workspace tabs", SettingCategory.General, SettingType.String, "", searchable = false),
+
     SettingDef("navigation.animations", "Enable animations", "Animate layout changes and transitions", SettingCategory.Navigation, SettingType.Boolean, true, group = "Animations"),
     SettingDef("navigation.animation-speed", "Animation duration", "1.0 = default, 0.5 = half, 2.0 = double", SettingCategory.Navigation, SettingType.Float, 1.0f, group = "Animations"),
     SettingDef("navigation.reduced-motion", "Reduced motion", "Disable all navigation and launcher animations", SettingCategory.Navigation, SettingType.Boolean, false, group = "Animations"),
@@ -263,14 +272,8 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("navigation.larger-hitbox", "Larger hitboxes", "Easier to grab the launcher and recover it after fading", SettingCategory.Navigation, SettingType.Boolean, false, group = "Accessibility"),
     SettingDef("navigation.high-contrast", "High contrast", "Stronger borders and surfaces for the navigation", SettingCategory.Navigation, SettingType.Boolean, false, group = "Accessibility"),
 
-    SettingDef("appearance.base-mode", "Base mode", "Oled, Dark, Light or Sepia", SettingCategory.Appearance, SettingType.Enum, "oled", options = listOf("oled", "dark", "light", "sepia")),
-    SettingDef("appearance.accent", "Accent color", "Accent theme", SettingCategory.Appearance, SettingType.Enum, "signature", options = listOf("signature", "cotton", "ocean", "forest", "sunset", "lavender", "mono")),
-    SettingDef("appearance.density", "Density", "Compact / Comfortable / Spacious", SettingCategory.Appearance, SettingType.Enum, "comfortable", options = listOf("compact", "comfortable", "spacious")),
     SettingDef("appearance.reduced-motion", "Reduced motion", "Disable animations", SettingCategory.Appearance, SettingType.Boolean, false),
-    SettingDef("appearance.high-contrast", "High contrast", "Increase contrast", SettingCategory.Appearance, SettingType.Boolean, false),
-    SettingDef("appearance.large-text", "Large text", "Scale up typography", SettingCategory.Appearance, SettingType.Boolean, false),
-    SettingDef("appearance.glass", "Glass panels", "Blurred translucency", SettingCategory.Appearance, SettingType.Boolean, false),
-    SettingDef("appearance.corner-radius", "Corner radius", "Panel rounding", SettingCategory.Appearance, SettingType.Enum, "rounded", options = listOf("square", "rounded", "soft")),
+
 
     SettingDef("review.show-new", "Show new cards", "Include new cards in review", SettingCategory.Review, SettingType.Boolean, true),
     SettingDef("review.daily-new-limit", "Daily new card limit", "Max new cards per day", SettingCategory.Review, SettingType.Int, 20),
@@ -291,6 +294,7 @@ fun defaultSettings(): List<SettingDef> = listOf(
 
     SettingDef("stats.default-period", "Default stats period", "Dashboard default range", SettingCategory.Statistics, SettingType.Enum, "month", options = listOf("day", "week", "month", "year", "all")),
     SettingDef("stats.show-goals", "Show goals", "Display goal progress", SettingCategory.Statistics, SettingType.Boolean, true),
+    SettingDef("stats.daily-target", "Daily review target", "Reviews to complete per day — drives the Dashboard study target", SettingCategory.Statistics, SettingType.Int, 20),
 
     SettingDef("account.profile-name", "Profile name", "Your display name", SettingCategory.General, SettingType.String, "Learner"),
     SettingDef("account.learner-level", "Learner level", "How far along you are", SettingCategory.General, SettingType.Enum, "beginner", options = listOf("beginner", "intermediate", "advanced")),
@@ -332,6 +336,28 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("media.auto-pause", "Auto-pause", "Pause automatically around cues", SettingCategory.Media, SettingType.Enum, "off", options = listOf("off", "at-cue-start", "at-cue-end", "before-cue"), group = "Playback"),
 
     SettingDef("media.subtitle-font-size", "Subtitle font size", "Overlay subtitle size (pt)", SettingCategory.Media, SettingType.Int, 20, group = "Subtitles"),
+    SettingDef("media.subtitle-scale", "Subtitle scale", "Global subtitle zoom factor", SettingCategory.Media, SettingType.Float, 1.0f, group = "Subtitles"),
+    SettingDef("media.subtitle-delay-ms", "Subtitle delay (ms)", "Persisted subtitle timing offset", SettingCategory.Media, SettingType.Int, 0, group = "Subtitles"),
+
+    SettingDef("media.display-mode", "Default display mode", "Fit / Fill / Crop / Original / Stretch", SettingCategory.Media, SettingType.Enum, "fit", options = listOf("fit", "fill", "crop", "original", "stretch"), group = "Video"),
+    SettingDef("media.aspect-ratio", "Default aspect ratio", "Forced aspect ratio preset", SettingCategory.Media, SettingType.Enum, "auto", options = listOf("auto", "r4x3", "r16x9", "r16x10", "r21x9", "r3x2", "r1x1", "r5x4", "square"), group = "Video"),
+    SettingDef("media.video-brightness", "Brightness", "Video brightness (100 = neutral)", SettingCategory.Media, SettingType.Int, 100, group = "Video"),
+    SettingDef("media.video-contrast", "Contrast", "Video contrast (100 = neutral)", SettingCategory.Media, SettingType.Int, 100, group = "Video"),
+    SettingDef("media.video-saturation", "Saturation", "Video saturation (100 = neutral)", SettingCategory.Media, SettingType.Int, 100, group = "Video"),
+    SettingDef("media.video-gamma", "Gamma", "Video gamma (100 = neutral)", SettingCategory.Media, SettingType.Int, 100, group = "Video"),
+    SettingDef("media.video-hue", "Hue", "Video hue offset (0 = neutral)", SettingCategory.Media, SettingType.Int, 0, group = "Video"),
+    SettingDef("media.video-deinterlace", "Deinterlace", "Deinterlace the video signal", SettingCategory.Media, SettingType.Boolean, false, group = "Video"),
+    SettingDef("media.screenshot-format", "Screenshot format", "PNG or JPEG captures", SettingCategory.Media, SettingType.Enum, "png", options = listOf("png", "jpg"), group = "Video"),
+    SettingDef("media.screenshot-folder", "Screenshot folder", "Directory for captured frames (empty = cache)", SettingCategory.Media, SettingType.String, "", group = "Video"),
+
+    SettingDef("media.audio-delay-ms", "Audio delay (ms)", "Persisted audio sync offset", SettingCategory.Media, SettingType.Int, 0, group = "Audio"),
+    SettingDef("media.audio-channel", "Audio channel preset", "Stereo / Mono / Headphones upmix", SettingCategory.Media, SettingType.Enum, "stereo", options = listOf("stereo", "reversestereo", "left", "right", "mono", "headphones"), group = "Audio"),
+    SettingDef("media.audio-output", "Audio output device", "Preferred output device id (empty = default)", SettingCategory.Media, SettingType.String, "", group = "Audio"),
+    SettingDef("media.eq-preset", "Equalizer preset", "Active EQ preset (flat = off)", SettingCategory.Media, SettingType.Enum, "flat", options = listOf("flat", "classical", "club", "dance", "fullbass", "fullbasstreble", "fulltreble", "headphones", "largehall", "live", "party", "pop", "reggae", "rock", "ska", "soft", "softrock", "techno"), group = "Audio"),
+    SettingDef("media.eq-preamp-db", "EQ preamp (dB)", "Master gain before band equalization", SettingCategory.Media, SettingType.Float, 0.0f, group = "Audio"),
+    SettingDef("media.eq-bands-db", "EQ bands (internal)", "Persisted 10-band EQ curve, comma separated dB", SettingCategory.Media, SettingType.String, "", searchable = false, group = "Audio"),
+
+    SettingDef("media.controls-hide-ms", "Controls auto-hide (ms)", "Inactivity before playback controls fade (0 = never)", SettingCategory.Media, SettingType.Int, 3000, group = "Playback"),
     SettingDef("media.subtitle-outline", "Subtitle outline", "Readable outline behind text", SettingCategory.Media, SettingType.Boolean, true, group = "Subtitles"),
     SettingDef("media.subtitle-position", "Subtitle position", "Where the overlay sits", SettingCategory.Media, SettingType.Enum, "bottom", options = listOf("bottom", "top"), group = "Subtitles"),
     SettingDef("media.subtitle-annotation", "Annotation mode", "Token annotation style", SettingCategory.Media, SettingType.Enum, "status", options = listOf("off", "reading", "status", "frequency"), group = "Subtitles"),
@@ -376,10 +402,31 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("media.api.token", "Local API token (internal)", "Auto-generated bearer token protecting the local API", SettingCategory.Media, SettingType.String, "", searchable = false, group = "Integrations"),
 
     SettingDef("media.anki.enabled", "AnkiConnect", "Show AnkiConnect as an available integration", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
-    SettingDef("media.anki.send-mined", "Forward mined cards to Anki", "Send every completed mine to AnkiConnect as well as Kaiteyo", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
+    SettingDef("media.anki.send-mined", "Forward mined cards to Anki (legacy)", "Legacy: treat the default mine destination as \"Kaiteyo + Anki\" when the per-mine destination is Kaiteyo", SettingCategory.Media, SettingType.Boolean, false, group = "Integrations"),
     SettingDef("media.anki.host", "AnkiConnect host", "AnkiConnect server address", SettingCategory.Media, SettingType.String, "127.0.0.1", group = "Integrations"),
     SettingDef("media.anki.port", "AnkiConnect port", "AnkiConnect server port", SettingCategory.Media, SettingType.Int, 8765, group = "Integrations"),
     SettingDef("media.anki.key", "AnkiConnect API key", "Optional API key (AnkiConnect 2.1.55+) for a locked server", SettingCategory.Media, SettingType.String, "", group = "Integrations"),
+    SettingDef("media.anki.deck", "Anki deck (optional)", "When set, mined cards go to this exact Anki deck instead of Kaiteyo::<deck>", SettingCategory.Media, SettingType.String, "", group = "Integrations"),
+    SettingDef("media.mine-destination", "Default mine destination", "Where mined cards go by default: kaiteyo, anki, or both", SettingCategory.Media, SettingType.String, "kaiteyo", group = "Integrations"),
 
-    SettingDef("media.condensed-fast-forward", "Fast-forward unsubtitled gaps", "With condensed playback, advance quickly through gaps instead of jumping straight to the next subtitle", SettingCategory.Media, SettingType.Boolean, false, group = "Playback")
+    SettingDef("media.condensed-fast-forward", "Fast-forward unsubtitled gaps", "With condensed playback, advance quickly through gaps instead of jumping straight to the next subtitle", SettingCategory.Media, SettingType.Boolean, false, group = "Playback"),
+
+    // ---- Activity tracking & AFK -------------------------------
+    // Study time is engagement-based, never "app open" time: signals close
+    // the loop with the UI and only lapses longer than the timeout end an
+    // interval. The AFK rain is pure decoration on top of that model.
+    SettingDef("activity.tracking", "Track study activity", "Measure study time from real engagement instead of app-open time", SettingCategory.Activity, SettingType.Boolean, true, group = "Tracking"),
+    SettingDef("activity.afk-mode", "AFK mode", "Smart adapts the idle timeout to what you're doing; Custom uses your exact value", SettingCategory.Activity, SettingType.Enum, "smart", options = listOf("smart", "custom"), group = "Tracking"),
+    SettingDef("activity.afk-timeout-minutes", "AFK timeout (minutes)", "Custom idle timeout before study time pauses (1–120 min)", SettingCategory.Activity, SettingType.Int, 5, group = "Tracking"),
+
+    SettingDef("activity.rain-enabled", "AFK rain", "Show a subtle kanji/vocabulary rain effect when you step away", SettingCategory.Activity, SettingType.Boolean, true, group = "Rain"),
+    SettingDef("activity.rain-density", "Rain density", "Particle density of the AFK effect", SettingCategory.Activity, SettingType.Enum, "medium", options = listOf("low", "medium", "high"), group = "Rain"),
+    SettingDef("activity.rain-speed", "Rain speed", "Fall speed of the AFK effect", SettingCategory.Activity, SettingType.Enum, "normal", options = listOf("slow", "normal", "fast"), group = "Rain"),
+    SettingDef("activity.rain-opacity", "Rain opacity", "Opacity of the falling glyphs (0.05–0.9)", SettingCategory.Activity, SettingType.Float, 0.35f, group = "Rain"),
+    SettingDef("activity.rain-duration-seconds", "Rain duration (seconds)", "How long the effect plays before settling", SettingCategory.Activity, SettingType.Int, 45, group = "Rain"),
+    SettingDef("activity.rain-content", "Rain content", "Which real study content falls", SettingCategory.Activity, SettingType.Enum, "both", options = listOf("kanji", "vocabulary", "both"), group = "Rain"),
+
+    // ---- Product tutorial --------------------------------------
+    SettingDef("tutorial.completed", "Tutorial chapters (internal)", "Comma-separated list of completed tutorial chapters", SettingCategory.General, SettingType.String, "", searchable = false),
+    SettingDef("tutorial.version", "Tutorial version (internal)", "Version of the tutorial flow seen", SettingCategory.General, SettingType.Int, 1, searchable = false)
 )

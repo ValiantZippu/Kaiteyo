@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
 enum class ContentKind(val label: String, val glyph: String) {
     Kanji("Kanji", "字"),
     Vocabulary("Vocabulary", "語"),
+    Kana("Kana", "あ"),
     Grammar("Grammar", "文"),
     Radical("Radicals", "部"),
     Sentence("Sentences", "句"),
@@ -57,6 +58,7 @@ enum class StudyMode(val label: String, val glyph: String, val hint: String) {
         fun forKind(kind: ContentKind): List<StudyMode> = when (kind) {
             ContentKind.Kanji -> listOf(Flashcards, Recognition, Writing)
             ContentKind.Vocabulary -> listOf(Flashcards, Recognition, Recall, Listening)
+            ContentKind.Kana -> listOf(Flashcards, Recognition, Recall, Writing, Listening)
             ContentKind.Grammar -> listOf(Flashcards, Pattern, Cloze)
             ContentKind.Radical -> listOf(Recognition, Flashcards)
             ContentKind.Sentence -> listOf(Flashcards, Recall)

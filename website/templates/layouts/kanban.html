@@ -1,0 +1,80 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "kanban" %}
+{% import "partials/project-macros.html" as pm %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Kanban</h1>
+  <p class="text-secondary">What is happening now. Every card is a real task from
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/planning/MASTER_TODO.md" target="_blank" rel="noopener">docs/planning/MASTER_TODO.md</a>
+    — the repository is the single source of truth; this board renders it. Drag-and-drop
+    editing is a documented backend feature (see
+    <a href="{{ pm.doc_href('https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/website/API.md') }}">the API contract</a>),
+    not faked here.</p>
+</header>
+
+<div class="kanban-toolbar" role="search">
+  <input id="kanban-search" class="kanban-search" type="search" placeholder="Filter cards…" aria-label="Filter cards" />
+  <label class="kanban-filter">
+    <span class="visually-hidden">Package</span>
+    <select id="kanban-package" aria-label="Filter by package">
+      <option value="">All packages</option>
+      {% for pkg in packages %}
+      <option value="{{ pkg.id }}">{{ pkg.id }} — {{ pkg.title }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="kanban-filter">
+    <span class="visually-hidden">Priority</span>
+    <select id="kanban-priority" aria-label="Filter by priority">
+      <option value="">All priorities</option>
+      <option value="P0">Critical</option>
+      <option value="P1">High</option>
+      <option value="P2">Medium</option>
+      <option value="P3">Low</option>
+    </select>
+  </label>
+  <button id="kanban-reset" class="btn btn-ghost btn-sm" type="button">Reset</button>
+</div>
+
+<div class="kanban-board" data-kanban>
+  {% for column in columns %}
+  <section class="kanban-column" data-column="{{ column.label|lower|replace(' ', '-') }}">
+    <header class="kanban-column-head">
+      <h2>{{ column.label }}</h2>
+      <span class="kanban-count" data-count>{{ column.count }}</span>
+    </header>
+    <div class="kanban-cards" data-cards>
+      {% for card in column.cards %}
+      <article class="card kanban-card" data-card
+               data-package="{{ card.package }}" data-priority="{{ card.priority }}"
+               data-text="{{ (card.title ~ ' ' ~ card.id ~ ' ' ~ card.acceptance)|lower }}"
+               id="card-{{ card.id|lower }}">
+        <div class="kanban-card-head">
+          <span class="kanban-card-id">{{ card.id }}</span>
+          {% if card.priority %}<span class="badge {% if card.priority == 'P0' %}badge-error{% elif card.priority == 'P1' %}badge-warning{% else %}badge-muted{% endif %}">{{ pm.priority_label(card.priority) }}</span>{% endif %}
+        </div>
+        <h3 class="kanban-card-title">{{ card.title }}</h3>
+        {% if card.deps and card.deps != '—' %}
+        <p class="kanban-card-deps">Depends on: {{ card.deps }}</p>
+        {% endif %}
+        <p class="card-description">{{ card.acceptance }}</p>
+        <footer class="kanban-card-foot">
+          {% for pkg in packages if pkg.id == card.package %}
+          <a class="card-link" href="{{ pm.doc_href(pkg.docs) }}">{{ pkg.id }} · {{ pkg.title }}</a>
+          {% endfor %}
+        </footer>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+<div class="kanban-empty" data-empty hidden>
+  <h3>No cards match.</h3>
+  <p class="text-secondary">Try clearing a filter.</p>
+</div>
+
+<script src="{{ basePath }}assets/scripts/kanban.js" defer></script>
+{% endblock %}

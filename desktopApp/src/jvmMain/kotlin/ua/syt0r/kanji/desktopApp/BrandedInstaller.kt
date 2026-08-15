@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import ua.syt0r.kanji.presentation.common.theme.AllAccentSchemes
 import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
 import ua.syt0r.kanji.presentation.common.theme.BaseMode
@@ -133,14 +134,8 @@ fun BrandedInstaller(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier.size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(accent)
-                    , contentAlignment = Alignment.Center
-                ) {
-                    Text("K", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
+                // The real Kaiteyo mark — centralized brand asset, not a "K".
+                BrandMark(modifier = Modifier.size(36.dp), contentDescription = null)
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text("Kaiteyo Installer", color = surfaceColors.textPrimary,
@@ -249,15 +244,8 @@ private fun WelcomeStep(accent: Color) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(32.dp))
-        // Animated logo
-        Box(
-            modifier = Modifier.size(96.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(accent)
-            , contentAlignment = Alignment.Center
-        ) {
-            Text("K", color = Color.White, fontSize = 48.sp, fontWeight = FontWeight.Bold)
-        }
+        // The real Kaiteyo mark — centralized brand asset, not a "K".
+        BrandMark(modifier = Modifier.size(96.dp), contentDescription = "Kaiteyo")
         Spacer(Modifier.height(24.dp))
         Text("Welcome to Kaiteyo",
             color = surfaceColors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -485,10 +473,8 @@ private fun ThemePreviewStep(accent: Color) {
                 ) {
                     Text(mode.displayName, color = surf.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(accent),
-                        contentAlignment = Alignment.Center
-                    ) { Text("K", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+                    // The real Kaiteyo mark — centralized brand asset, not a "K".
+                    BrandMark(modifier = Modifier.size(40.dp), contentDescription = null)
                     Spacer(Modifier.height(8.dp))
                     Text("Preview", color = surf.textMuted, fontSize = 9.sp)
                 }
@@ -686,12 +672,8 @@ private fun ProgressStep(accent: Color) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)).background(accent),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("K", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.Bold)
-        }
+        // The real Kaiteyo mark — centralized brand asset, not a "K".
+        BrandMark(modifier = Modifier.size(80.dp), contentDescription = "Kaiteyo")
         Spacer(Modifier.height(24.dp))
         Text("Installing Kaiteyo...",
             color = surfaceColors.textPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)

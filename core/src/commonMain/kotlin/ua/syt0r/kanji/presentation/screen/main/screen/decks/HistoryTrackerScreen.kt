@@ -26,6 +26,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.datetime.*
 
@@ -285,7 +286,7 @@ fun HistoryFullScreen(
 
     // Clear history confirmation
     if (showClearConfirm) {
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showClearConfirm = false },
             title = { Text("Clear History?") },
             text = { Text("This will permanently delete all history entries. This action cannot be undone.") },
@@ -306,7 +307,7 @@ fun HistoryFullScreen(
 
     // Result message
     showUndoResult?.let { msg ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showUndoResult = null },
             confirmButton = { TextButton(onClick = { showUndoResult = null }) { Text("OK") } },
             title = { Text("Done") },
@@ -502,7 +503,7 @@ private fun EntryDetailDialog(
     onDismiss: () -> Unit,
     onUndo: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {

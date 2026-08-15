@@ -33,7 +33,15 @@ class VlcBackend(
         PlaybackCapability.CanExternalSubtitles,
         PlaybackCapability.CanHwAcceleration,
         PlaybackCapability.CanChapters,
-        PlaybackCapability.CanLoop
+        PlaybackCapability.CanLoop,
+        PlaybackCapability.CanAspectRatio,
+        PlaybackCapability.CanDisplayMode,
+        PlaybackCapability.CanVideoAdjustments,
+        PlaybackCapability.CanDeinterlace,
+        PlaybackCapability.CanAudioDelay,
+        PlaybackCapability.CanAudioChannel,
+        PlaybackCapability.CanAudioOutput,
+        PlaybackCapability.CanEqualizer
     )
     override var listener: ((PlaybackEvent) -> Unit)? = null
     override val isAvailable: Boolean get() = runCatching {
@@ -240,6 +248,119 @@ class VlcBackend(
     override fun setSubtitleDelay(delayMs: Long) {
         val mp = component?.mediaPlayer() ?: return
         mp.subpictures().setDelay(delayMs)
+    }
+
+    // ------------------------------------------------------------
+    // Video rendering (display mode / aspect / adjustments)
+    // ------------------------------------------------------------
+
+    override fun setDisplayMode(mode: VideoDisplayMode) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching {
+            when (mode) {
+                VideoDisplayMode.Fit -> {
+                    mp.video().setScale(0f)
+                    mp.video().setCropGeometry("")
+                }
+                VideoDisplayMode.Fill -> {
+                    mp.video().setScale(0f)
+                    mp.video().setCropGeometry("")
+                    mp.video().setAspectRatio("16:9")
+                }
+                VideoDisplayMode.Crop -> {
+                    mp.video().setScale(0f)
+                    mp.video().setCropGeometry("16:9")
+                }
+                VideoDisplayMode.Original -> {
+                    mp.video().setCropGeometry("")
+                    mp.video().setScale(1f)
+                }
+                VideoDisplayMode.Stretch -> {
+                    mp.video().setScale(0f)
+                    mp.video().setCropGeometry("")
+                    mp.video().setAspectRatio("")
+                }
+            }
+        }
+    }
+
+    override fun setAspectRatio(preset: AspectRatioPreset) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching { mp.video().setAspectRatio(preset.value ?: "") }
+    }
+
+    override fun setVideoAdjustments(adjustments: VideoAdjustments) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching {
+            if (adjustments.neutral() && !adjustments.deinterlace) {
+                mp.video().setAdjustVideo(false)
+            } else {
+                mp.video().setAdjustVideo(true)
+                // VLC expects 0..2 with 1 = neutral; our sliders are 0..200/100.
+                mp.video().setBrightness(adjustments.brightness / 100f)
+                mp.video().setContrast(adjustments.contrast / 100f)
+                mp.video().setSaturation(adjustments.saturation / 100f)
+                mp.video().setGamma(adjustments.gamma / 100f)
+                mp.video().setHue(adjustments.hue)
+            }
+            setDeinterlace(adjustments.deinterlace)
+        }
+    }
+
+    override fun setDeinterlace(enabled: Boolean) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching {
+            mp.video().setDeinterlace(
+                if (enabled) uk.co.caprica.vlcj.player.base.DeinterlaceMode.YADIF
+                else uk.co.caprica.vlcj.player.base.DeinterlaceMode.DISCARD
+            )
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Audio extras (delay / channel / output / equalizer)
+    // ------------------------------------------------------------
+
+    override fun setAudioDelay(delayMs: Long) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching { mp.audio().setDelay(delayMs) }
+    }
+
+    override fun setAudioChannel(channel: AudioChannelPreset) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching {
+            val mapped = when (channel) {
+                AudioChannelPreset.Stereo -> uk.co.caprica.vlcj.player.base.AudioChannel.STEREO
+                AudioChannelPreset.ReverseStereo -> uk.co.caprica.vlcj.player.base.AudioChannel.RSTEREO
+                AudioChannelPreset.Left -> uk.co.caprica.vlcj.player.base.AudioChannel.LEFT
+                AudioChannelPreset.Right -> uk.co.caprica.vlcj.player.base.AudioChannel.RIGHT
+                AudioChannelPreset.Mono -> uk.co.caprica.vlcj.player.base.AudioChannel.MONO
+                AudioChannelPreset.Headphones -> uk.co.caprica.vlcj.player.base.AudioChannel.HEADPHONES
+            }
+            mp.audio().setChannel(mapped)
+        }
+    }
+
+    override fun setAudioOutput(deviceId: String?) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching {
+            if (deviceId == null) mp.audio().setOutput("")
+            else mp.audio().setOutput(deviceId)
+        }
+    }
+
+    override fun setEqualizer(equalizer: EqualizerSettings?) {
+        val mp = component?.mediaPlayer() ?: return
+        runCatching {
+            if (equalizer == null || !equalizer.active) {
+                mp.audio().setEqualizer(null)
+                return@runCatching
+            }
+            val eq = uk.co.caprica.vlcj.player.base.Equalizer(EQUALIZER_BAND_FREQUENCIES_HZ.size)
+            eq.setPreamp(equalizer.preampDb)
+            equalizer.normalizedBands().forEachIndexed { index, db -> eq.setAmp(index, db) }
+            mp.audio().setEqualizer(eq)
+        }
     }
 
     override fun frameStepForward(): Boolean {

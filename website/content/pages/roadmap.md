@@ -6,8 +6,11 @@ description: Where Kaiteyo is heading — as documented in the repository's ROAD
 <div class="prose-note">
   <svg class="icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
   Maintained in the repository at
-  <a href="{{ site.repository }}/blob/develop/docs/roadmap/ROADMAP.md" target="_blank" rel="noopener">docs/roadmap/ROADMAP.md</a> —
-  republished on every site build.
+  <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/roadmap/ROADMAP.md" target="_blank" rel="noopener">docs/roadmap/ROADMAP.md</a> —
+  republished on every site build. This is the <strong>product</strong> roadmap (released versions).
+  The forward-looking project plan — what is being built next and its status — lives in the
+  <a href="/project/roadmap/">project Roadmap</a> inside the
+  <a href="/project/">Command Center</a>.
 </div>
 
 <div class="timeline">
@@ -64,4 +67,4 @@ description: Where Kaiteyo is heading — as documented in the repository's ROAD
 4. Sidebar collapse/expand with spring animation
 5. Smooth resize behavior
 
-Want to weigh in on priorities? Join the <a href="{{ site.repository }}/discussions" target="_blank" rel="noopener">Discussions</a>.
+Want to weigh in on priorities? Join the <a href="https://github.com/ValiantZippu/Kaiteyo/discussions" target="_blank" rel="noopener">Discussions</a>.

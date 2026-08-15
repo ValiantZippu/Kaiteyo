@@ -12,7 +12,7 @@ Kaiteyo is free software: you can redistribute it and/or modify it under the ter
 
 The full license text is in the repository:
 
-- [LICENSE]({{ site.repository }}/blob/develop/LICENSE) — the complete GPL-3.0 text
+- [LICENSE](https://github.com/ValiantZippu/Kaiteyo/blob/develop/LICENSE) — the complete GPL-3.0 text
 - [GNU GPL v3](https://www.gnu.org/licenses/) — official license page
 
 ### Data licenses

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "brand": "Kaiteyo",
+  "description": "Central brand asset manifest. Every role maps a source asset in brand/source to the application resources it feeds. The app consumes these via the BrandAssets Kotlin API (core/.../presentation/common/resources/brand/BrandAssets.kt).",
+  "roles": {
+    "appLogo": {
+      "source": "source/logos/app-logo.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg", "png"],
+      "minSize": [512, 512],
+      "destinations": [
+        { "kind": "core-drawable", "path": "core/src/commonMain/composeResources/drawable/kaiteyo_logo.svg" }
+      ],
+      "usage": ["README", "website header", "About page", "splash", "social preview"]
+    },
+    "appLogoWide": {
+      "source": "source/logos/app-logo-wide.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg"],
+      "minSize": [400, 120],
+      "destinations": [],
+      "usage": ["wide horizontal spaces", "installer banner", "website hero"]
+    },
+    "appMark": {
+      "source": "source/marks/app-mark.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg", "xml-vector"],
+      "minSize": [32, 32],
+      "destinations": [
+        { "kind": "core-drawable", "path": "core/src/commonMain/composeResources/drawable/kaiteyo_mark.xml" }
+      ],
+      "usage": ["nav rail", "title bar", "window chrome", "compact surfaces", "empty states"]
+    },
+    "appIcon": {
+      "source": "source/app-icons/app-icon.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg", "png", "ico", "icns"],
+      "minSize": [1024, 1024],
+      "destinations": [
+        { "kind": "desktop-window-icon", "path": "desktopApp/src/jvmMain/composeResources/drawable/windowIcon.png" },
+        { "kind": "desktop-package-icon", "path": "desktopApp/windows_icon.ico" },
+        { "kind": "desktop-package-icon", "path": "desktopApp/mac_icon.icns" },
+        { "kind": "android-adaptive-icon", "path": "app/src/main/res/drawable/drawable_icon_foreground.xml" },
+        { "kind": "android-adaptive-icon", "path": "app/src/main/res/drawable/drawable_icon_monochrome.xml" },
+        { "kind": "ios-app-icon", "path": "iosApp/KaiteyoApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png" },
+        { "kind": "linux-flatpak-icon", "path": "desktopApp/linux/flatpak/io.github.syt0r.kaiteyo.png" },
+        { "kind": "linux-snap-icon", "path": "desktopApp/linux/snapcraft/gui/icon.png" }
+      ],
+      "usage": ["launcher", "window icon", "taskbar", "dock", "installer", "store listing"]
+    },
+    "homeBanner": {
+      "source": "source/banners/home-banner.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg", "png", "webp"],
+      "minSize": [1280, 640],
+      "destinations": [],
+      "usage": ["dashboard hero", "website banner", "media banner"]
+    },
+    "favicon": {
+      "source": "source/favicons/favicon.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg", "png", "ico"],
+      "minSize": [64, 64],
+      "destinations": [],
+      "usage": ["browser tab", "website", "bookmark"]
+    },
+    "socialPreview": {
+      "source": "source/promotional/social-preview.svg",
+      "variants": { "light": null, "dark": null, "monochrome": null, "compact": null, "wide": null },
+      "formats": ["svg", "png"],
+      "minSize": [1280, 640],
+      "destinations": [],
+      "usage": ["GitHub social preview", "OG image", "Twitter card"]
+    }
+  },
+  "pipeline": {
+    "sourceRoot": "source",
+    "processedRoot": "processed",
+    "generatedRoot": "generated",
+    "validate": "bash brand/scripts/validate-assets.sh",
+    "sync": "bash brand/scripts/sync-assets.sh"
+  }
+}

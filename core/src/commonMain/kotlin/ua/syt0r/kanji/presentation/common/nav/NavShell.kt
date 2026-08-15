@@ -49,26 +49,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ViewSidebar
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CollectionsBookmark
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MenuOpen
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -84,6 +73,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,6 +93,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -180,6 +171,15 @@ enum class DesktopWindowPlacement { Floating, Maximized }
 val LocalWindowPlacement = compositionLocalOf<DesktopWindowPlacement?> { null }
 
 /**
+ * True while the desktop window shell is actively running a resize drag.
+ * Layouts that normally animate (sidebar width, content reserve) read this
+ * and snap to their targets instead of chasing a window size that changes
+ * on every frame. Provided by the desktop shell; defaults to false on
+ * mobile and in previews.
+ */
+val LocalWindowResizing = staticCompositionLocalOf { false }
+
+/**
  * Space (in dp) that bottom-docked UI currently occupies, including any system
  * inset it clears. [NavShell] publishes this so overlays placed on top — most
  * importantly the root SnackbarHost in MainScreen — can pad themselves and
@@ -242,33 +242,44 @@ private fun AdaptiveNavigation(
 
     // Publish the space the bottom bar / bottom-anchored bubble occupies so
     // overlays (the root SnackbarHost) can clear it.
-    val sidebarSize = dockedBarSize(settings, formFactor, expanded, vertical)
+    val density = LocalDensity.current
+    val containerWidthDp = with(density) {
+        LocalWindowInfo.current.containerSize.width.toDp()
+    }
+    // The docked region size: width for a vertical sidebar, height for a
+    // horizontal bar. Both the content reservation and the bar surface derive
+    // from this single value so they can never disagree.
+    val dockedSize = dockedBarSize(settings, formFactor, expanded, vertical, containerWidthDp)
     val bottomInset = if (edge == SidebarPosition.Bottom) horizontalBarInsetDp(edge) else 0.dp
     val bubbleBottomSpace = if (mode == NavigationMode.Floating) {
         val snap = settings.snapPointFor(formFactor)
         if (snap.name.startsWith("Bottom") || snap.name.endsWith("Bottom")) {
-            settings.accessibility.scaledHitbox(settings.bubble.size).dp + BubbleEdgeMargin
+            settings.accessibility.scaledHitbox(settings.bubble.size).dp + settings.bubble.safeMargin.dp
         } else 0.dp
     } else 0.dp
     val navBarBottomSpace = LocalNavBarBottomSpace.current
     SideEffect {
         navBarBottomSpace.value = when {
-            mode == NavigationMode.Sidebar && edge == SidebarPosition.Bottom -> sidebarSize + bottomInset
+            mode == NavigationMode.Sidebar && edge == SidebarPosition.Bottom -> dockedSize + bottomInset
             mode == NavigationMode.Floating -> bubbleBottomSpace
             else -> 0.dp
         }
     }
 
-    val sections = buildNavSections(navigationState, homeNavState)
+    val sections = buildPrimaryNavSections(navigationState, homeNavState)
 
     // The docked bar reserves space in sidebar mode only; in floating mode the
     // content owns the whole surface. The reserve animates across the switch
     // so the mode transition feels like one continuous layout.
     val horizontalInset = if (vertical) 0.dp else horizontalBarInsetDp(edge)
-    val dockedReserve = if (mode == NavigationMode.Sidebar) sidebarSize + horizontalInset else 0.dp
+    val dockedReserve = if (mode == NavigationMode.Sidebar) dockedSize + horizontalInset else 0.dp
+    // During a live resize drag the reserve follows the window instantly — a
+    // spring toward a size that changes every frame only adds lag and jitter.
+    // Provided by the desktop window shell (see LocalWindowResizing).
+    val resizing = LocalWindowResizing.current
     val animatedReserve by animateDpAsState(
         targetValue = dockedReserve,
-        animationSpec = navAnimSpec(animations),
+        animationSpec = if (resizing) snap() else navAnimSpec(animations),
         label = "contentReserve"
     )
 
@@ -374,7 +385,8 @@ private fun AdaptiveNavigation(
                 formFactor = formFactor,
                 edge = edge,
                 vertical = vertical,
-                animations = animations
+                animations = animations,
+                dockSize = dockedSize
             )
         }
     }
@@ -393,7 +405,8 @@ private fun DockedNavigation(
     formFactor: FormFactor,
     edge: SidebarPosition,
     vertical: Boolean,
-    animations: Boolean
+    animations: Boolean,
+    dockSize: Dp
 ) {
     // Switching edges reflows the sidebar — the old dock slides away while the
     // new one enters from its edge, so the sidebar never teleports.
@@ -432,6 +445,7 @@ private fun DockedNavigation(
             formFactor = formFactor,
             edge = targetEdge,
             vertical = targetVertical,
+            dockSize = dockSize,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -446,6 +460,7 @@ private fun DockedSidebar(
     formFactor: FormFactor,
     edge: SidebarPosition,
     vertical: Boolean,
+    dockSize: Dp,
     modifier: Modifier = Modifier
 ) {
     val settings = navSettings.settings
@@ -461,9 +476,8 @@ private fun DockedSidebar(
     val itemSpacing = settings.sidebar.compactSpacing.dp
 
     // The horizontal bar must be exactly as tall as the reserved content
-    // space (sidebarSize + system inset) so it never overlaps the content.
+    // space (dockSize + system inset) so it never overlaps the content.
     val barInsetDp = if (vertical) 0.dp else horizontalBarInsetDp(edge)
-    val barSize = dockedBarSize(settings, formFactor, expanded, vertical)
 
     Box(modifier) {
         Surface(
@@ -471,9 +485,13 @@ private fun DockedSidebar(
                 .align(sidebarAlignment(edge))
                 .then(
                     when {
-                        vertical -> Modifier.fillMaxHeight().widthIn(min = margin)
+                        // Vertical sidebar: an explicit width (≈20% of the window)
+                        // — never the full window width. Without this the inner
+                        // fillMaxSize column measures against the whole window
+                        // and the "sidebar" swallows 100% of the screen.
+                        vertical -> Modifier.fillMaxHeight().width(dockSize)
                             .padding(vertical = margin)
-                        else -> Modifier.fillMaxWidth().height(barSize + barInsetDp)
+                        else -> Modifier.fillMaxWidth().height(dockSize + barInsetDp)
                             .padding(horizontal = margin)
                     }
                 )
@@ -541,19 +559,24 @@ private fun DockedSidebar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.Space1)
                 ) {
-                    SidebarHeaderControls(
-                        navSettings = navSettings,
-                        vertical = false,
-                        formFactor = formFactor,
-                        controlSize = if (formFactor.isPhone) 28.dp else NavTokens.ModeControlSize,
-                        modifier = Modifier.padding(vertical = (Dimens.Space1 * densityMultiplier))
-                    )
-                    Box(
-                        Modifier
-                            .width(1.dp)
-                            .height(24.dp)
-                            .background(surfaceColors.border.copy(alpha = 0.5f))
-                    )
+                    // Phones get a clean navigation bar: the mode/compact/placement
+                    // controls live in Navigation settings instead, keeping the bar
+                    // from overflowing narrow widths.
+                    if (!formFactor.isPhone) {
+                        SidebarHeaderControls(
+                            navSettings = navSettings,
+                            vertical = false,
+                            formFactor = formFactor,
+                            controlSize = if (formFactor.isPhone) 28.dp else NavTokens.ModeControlSize,
+                            modifier = Modifier.padding(vertical = (Dimens.Space1 * densityMultiplier))
+                        )
+                        Box(
+                            Modifier
+                                .width(1.dp)
+                                .height(24.dp)
+                                .background(surfaceColors.border.copy(alpha = 0.5f))
+                        )
+                    }
                     NavSectionsColumn(
                         sections = sections,
                         settings = settings,
@@ -565,17 +588,19 @@ private fun DockedSidebar(
                             .weight(1f)
                             .horizontalScroll(rememberScrollState())
                     )
-                    Box(
-                        Modifier
-                            .width(1.dp)
-                            .height(24.dp)
-                            .background(surfaceColors.border.copy(alpha = 0.5f))
-                    )
-                    SidebarHeaderTrailing(
-                        navSettings = navSettings,
-                        formFactor = formFactor,
-                        modifier = Modifier.padding(vertical = Dimens.Space1)
-                    )
+                    if (!formFactor.isPhone) {
+                        Box(
+                            Modifier
+                                .width(1.dp)
+                                .height(24.dp)
+                                .background(surfaceColors.border.copy(alpha = 0.5f))
+                        )
+                        SidebarHeaderTrailing(
+                            navSettings = navSettings,
+                            formFactor = formFactor,
+                            modifier = Modifier.padding(vertical = Dimens.Space1)
+                        )
+                    }
                 }
             }
         }
@@ -613,27 +638,41 @@ private fun SidebarHeaderControls(
     }
 
     if (vertical) {
-        Column(
-            modifier = modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(Dimens.Space1 * densityMultiplier)
-        ) {
-            ModeSegmentedControl(
-                navSettings = navSettings,
-                showLabels = expanded,
-                controlSize = controlSize,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
-                    .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
-                    .padding(4.dp)
-            )
-            iconRow(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
-                    .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
-                    .padding(4.dp)
-            )
+        if (expanded) {
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Dimens.Space1 * densityMultiplier)
+            ) {
+                ModeSegmentedControl(
+                    navSettings = navSettings,
+                    showLabels = true,
+                    controlSize = controlSize,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
+                        .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
+                        .padding(4.dp)
+                )
+                iconRow(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
+                        .background(surfaceColors.surfaceInteractive.copy(alpha = 0.5f))
+                        .padding(4.dp)
+                )
+            }
+        } else {
+            // Compact rail: the control cluster stacks vertically so it fits
+            // the narrow rail without overflowing or compressing the buttons.
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Dimens.Space1 * densityMultiplier),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                NavCompactToggle(navSettings, formFactor, size = NavTokens.CompactItemSize)
+                NavPlacementButton(navSettings, formFactor, size = NavTokens.CompactItemSize)
+                NavSettingsButton(size = NavTokens.CompactItemSize)
+            }
         }
     } else {
         Row(
@@ -708,7 +747,7 @@ private fun ModeSegmentedControl(
                 onClick = { if (!selected) navSettings.setMode(mode) },
                 size = controlSize,
                 showLabel = showLabels,
-                modifier = Modifier.weight(if (showLabels) 1f else 0f)
+                modifier = if (showLabels) Modifier.weight(1f) else Modifier
             )
         }
     }
@@ -1230,9 +1269,10 @@ private fun NavigationPlacementSelector(
                     scaleY = scale
                     this.alpha = alpha
                 }
+                // Shadow before clip/background so it renders behind the surface.
+                .shadow(16.dp, RoundedCornerShape(scaledRadius(Dimens.RadiusLg)))
                 .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusLg)))
                 .background(surfaceColors.surfaceElevated)
-                .shadow(16.dp, RoundedCornerShape(scaledRadius(Dimens.RadiusLg)))
                 .padding(Dimens.Space3),
             verticalArrangement = Arrangement.spacedBy(Dimens.Space2)
         ) {
@@ -1342,11 +1382,18 @@ private fun MiniEdgePreview(
 }
 
 // ============================================
-// NAV SECTIONS BUILDER
+// PRIMARY NAV SECTIONS — the single navigation
+// model shared by Floating (launchpad) and
+// Sidebar modes. One curated set of primary
+// destinations — Home · Library · Study · Browse
+// · Stats · Media · Settings. Media is a real
+// MainDestination with a desktop implementation
+// (and an honest placeholder elsewhere), so it
+// is a genuine primary destination everywhere.
 // ============================================
 
 @Composable
-private fun buildNavSections(
+private fun buildPrimaryNavSections(
     navigationState: MainNavigationState,
     homeNavState: HomeNavigationState
 ): List<NavSection> {
@@ -1354,187 +1401,63 @@ private fun buildNavSections(
     val onHome = currentDestination is MainDestination.Home
     val selectedTab = homeNavState.selectedTab.value
 
-    val homeEntries = HomeScreenTab.VisibleTabs.map { tab ->
-        NavEntry(
-            id = "home_${tab.name}",
-            label = { resolveString(tab.titleResolver) },
-            icon = null,
-            iconContent = tab.iconContent,
-            selected = onHome && selectedTab == tab,
-            onClick = {
-                if (!onHome) navigationState.navigateToTop(MainDestination.Home)
-                homeNavState.navigate(tab)
-            }
-        )
-    }
-
-    // Note: Statistics intentionally lives in the Home section as the Stats tab —
-    // it is NOT duplicated here in Features.
-    val featureEntries = listOf(
-        Triple<MainDestination, @Composable () -> String, ImageVector>(
-            MainDestination.DeckBrowser,
-            { resolveString { nav.decksLabel } },
-            Icons.Default.CollectionsBookmark
-        ),
-        Triple<MainDestination, @Composable () -> String, ImageVector>(
-            MainDestination.TextAnalysis,
-            { resolveString { nav.textAnalysisLabel } },
-            Icons.Default.GridView
-        )
-    ).map { (destination, label, icon) ->
-        destinationEntry(destination, label, icon, currentDestination, navigationState)
-    }
-
-    val systemEntries = buildList {
-        add(destinationEntry(
-            MainDestination.KanjiBrowser(),
-            { resolveString { nav.kanjiBrowserLabel } },
-            Icons.Default.Search,
-            currentDestination,
-            navigationState
-        ))
-        add(destinationEntry(
-            MainDestination.AppearanceStudio,
-            { resolveString { nav.appearanceLabel } },
-            Icons.Default.Palette,
-            currentDestination,
-            navigationState
-        ))
-        add(destinationEntry(
-            MainDestination.Backup,
-            { resolveString { nav.backupLabel } },
-            Icons.AutoMirrored.Filled.ArrowBack,
-            currentDestination,
-            navigationState
-        ))
-        add(destinationEntry(
-            MainDestination.Account(),
-            { resolveString { nav.accountLabel } },
-            Icons.Default.Person,
-            currentDestination,
-            navigationState
-        ))
-        add(destinationEntry(
-            MainDestination.Credits,
-            { resolveString { nav.creditsLabel } },
-            Icons.Default.Info,
-            currentDestination,
-            navigationState
-        ))
-        add(destinationEntry(
-            MainDestination.About,
-            { resolveString { nav.aboutLabel } },
-            Icons.Default.Info,
-            currentDestination,
-            navigationState
-        ))
-    }
-
-    return listOf(
-        NavSection(title = { resolveString { nav.homeSection } }, entries = homeEntries),
-        NavSection(title = { resolveString { nav.featuresSection } }, entries = featureEntries),
-        NavSection(title = { resolveString { nav.systemSection } }, entries = systemEntries)
-    )
-}
-
-// ============================================
-// LAUNCHPAD QUICK ACCESS — curated destinations
-// Note: Browser / Media / OCR / Mining live only in the desktop suite and
-// have no core MainDestination, so they are intentionally not listed here —
-// wiring them would create dead navigation.
-// ============================================
-
-@Composable
-internal fun buildQuickAccessSection(
-    navigationState: MainNavigationState,
-    homeNavState: HomeNavigationState
-): NavSection {
-    val currentDestination = navigationState.currentDestination.value
-    val onHome = currentDestination is MainDestination.Home
-    val selectedTab = homeNavState.selectedTab.value
-
     fun homeEntry(
         tab: HomeScreenTab,
         label: @Composable () -> String,
-        icon: ImageVector?
+        extraSelected: Boolean = false
     ): NavEntry = NavEntry(
-        id = "quick_${tab.name}",
+        id = "primary_${tab.name}",
         label = label,
-        icon = icon,
+        icon = null,
         iconContent = tab.iconContent,
-        selected = onHome && selectedTab == tab,
+        selected = onHome && selectedTab == tab || extraSelected,
         onClick = {
             if (!onHome) navigationState.navigateToTop(MainDestination.Home)
             homeNavState.navigate(tab)
         }
     )
 
-    return NavSection(
-        title = { resolveString { nav.quickAccessLabel } },
-        entries = listOf(
-            homeEntry(
-                HomeScreenTab.GeneralDashboard,
-                { resolveString { nav.homeLabel } },
-                Icons.Default.Home
-            ),
-            homeEntry(
-                HomeScreenTab.Library,
-                { resolveString { nav.libraryLabel } },
-                null
-            ),
-            destinationEntry(
-                MainDestination.DeckBrowser,
-                { resolveString { nav.studyLabel } },
-                Icons.Default.ViewModule,
-                currentDestination,
-                navigationState
-            ),
-            homeEntry(
-                HomeScreenTab.Search,
-                { resolveString { nav.dictionaryLabel } },
-                Icons.Default.Search
-            ),
-            homeEntry(
-                HomeScreenTab.Stats,
-                { resolveString { nav.statisticsLabel } },
-                Icons.Default.BarChart
-            ),
-            destinationEntry(
-                MainDestination.Collections,
-                { resolveString { nav.collectionsLabel } },
-                Icons.Default.CollectionsBookmark,
-                currentDestination,
-                navigationState
-            ),
-            destinationEntry(
-                MainDestination.KanjiBrowser(),
-                { resolveString { nav.kanjiBrowserLabel } },
-                Icons.Default.Tune,
-                currentDestination,
-                navigationState
-            ),
-            homeEntry(
-                HomeScreenTab.Settings,
-                { resolveString { home.settingsTabLabel } },
-                Icons.Default.Settings
+    return listOf(
+        NavSection(
+            title = null,
+            entries = listOf(
+                homeEntry(HomeScreenTab.GeneralDashboard, { resolveString { nav.homeLabel } }),
+                homeEntry(HomeScreenTab.Library, { resolveString { nav.libraryLabel } }),
+                // Study — the deck/study workspace. Stays highlighted for the
+                // whole deck feature family so the user always knows where they
+                // are inside it.
+                NavEntry(
+                    id = "primary_study",
+                    label = { resolveString { nav.studyLabel } },
+                    icon = Icons.Default.CollectionsBookmark,
+                    iconContent = null,
+                    selected = currentDestination == MainDestination.DeckBrowser ||
+                        currentDestination is MainDestination.CardBrowser ||
+                        currentDestination == MainDestination.StudyHistory,
+                    onClick = { navigationState.navigate(MainDestination.DeckBrowser) }
+                ),
+                homeEntry(
+                    HomeScreenTab.Search,
+                    { resolveString { nav.browseLabel } },
+                    extraSelected = currentDestination == MainDestination.SearchEngine
+                ),
+                homeEntry(
+                    HomeScreenTab.Stats,
+                    { resolveString { nav.statisticsLabel } },
+                    extraSelected = currentDestination == MainDestination.StatisticsDashboard
+                ),
+                // Media — the immersion workspace (desktop) / info screen (elsewhere).
+                NavEntry(
+                    id = "primary_media",
+                    label = { resolveString { nav.mediaLabel } },
+                    icon = Icons.Default.VideoLibrary,
+                    iconContent = null,
+                    selected = currentDestination == MainDestination.Media,
+                    onClick = { navigationState.navigate(MainDestination.Media) }
+                ),
+                homeEntry(HomeScreenTab.Settings, { resolveString { home.settingsTabLabel } })
             )
         )
-    )
-}
-
-private fun destinationEntry(
-    destination: MainDestination,
-    label: @Composable () -> String,
-    icon: ImageVector,
-    currentDestination: MainDestination?,
-    navigationState: MainNavigationState
-): NavEntry {
-    return NavEntry(
-        id = "dest_${destination.analyticsName ?: destination::class.simpleName}",
-        label = label,
-        icon = icon,
-        selected = currentDestination == destination,
-        onClick = { navigationState.navigate(destination) }
     )
 }
 
@@ -1551,23 +1474,40 @@ private fun defaultHomeTab(appPreferences: PreferencesContract.AppPreferences): 
 }
 
 /**
- * Size of a docked navigation bar for the current sidebar layout and form
- * factor. Shared by the content reservation, the bar surface and the
- * published bottom-bar space so they always agree.
+ * Size of the docked navigation region for the current sidebar layout and
+ * form factor: width for a vertical sidebar, height for a horizontal bar.
+ * Shared by the content reservation, the bar surface and the published
+ * bottom-bar space so they always agree.
  */
 private fun dockedBarSize(
     settings: NavigationSettings,
     formFactor: FormFactor,
     expanded: Boolean,
-    vertical: Boolean
+    vertical: Boolean,
+    containerWidthDp: Dp
 ): Dp = when {
-    vertical && expanded -> settings.sidebar.expandedWidth.dp
+    vertical && expanded -> adaptiveSidebarWidth(containerWidthDp, settings)
     vertical -> NavTokens.CompactRailWidth
     // Phone bars use a fixed comfortable height for touch; expanded vs
     // compact differs only by whether labels are shown.
     formFactor.isPhone -> NavTokens.PhoneBarHeight
     expanded -> NavTokens.HorizontalBarHeight
     else -> NavTokens.HorizontalBarCompactHeight
+}
+
+/**
+ * Adaptive sidebar width: roughly 20% of the available window width so the
+ * content always keeps ~80%, clamped to sensible bounds so the sidebar stays
+ * usable on small windows and never becomes enormous on very wide ones. The
+ * configured expanded-width preference picks the target ratio (0.16–0.22).
+ */
+private fun adaptiveSidebarWidth(
+    availableWidth: Dp,
+    settings: NavigationSettings
+): Dp {
+    val ratios = listOf(0.16f, 0.18f, 0.20f, 0.22f)
+    val ratio = ratios.getOrElse(settings.sidebar.expandedWidthIndex) { 0.20f }
+    return (availableWidth * ratio).coerceIn(208.dp, 384.dp)
 }
 
 /**

@@ -232,6 +232,9 @@ private fun ScreenReview(
                 VocabPracticeFlashcardUI(
                     reviewState = currentState,
                     answers = reviewState.answers,
+                    progress = reviewState.progress,
+                    deckTitle = reviewState.deckTitle,
+                    currentStreak = reviewState.currentStreak,
                     onRevealAnswerClick = onFlashcardAnswerRevealClick,
                     onNextClick = onNextClick,
                     onInfoClick = { onInfoClick(currentState) },

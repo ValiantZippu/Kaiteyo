@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
@@ -62,6 +62,7 @@ import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Material3BottomSheetScaffold
 import ua.syt0r.kanji.presentation.common.ui.Orientation
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSelector
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BrushSettings
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.CharacterWritingProgress
@@ -166,7 +167,11 @@ fun LetterPracticeWritingUI(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .trackItemPosition { infoSectionBottomPadding.value = it.heightFromScreenBottom }
-                    .sizeIn(maxWidth = 400.dp)
+                    .sizeIn(maxWidth = rememberAdaptiveContentMaxWidth(
+                        phoneMax = 400.dp,
+                        mediumMax = 480.dp,
+                        wideMax = 560.dp
+                    ))
                     .padding(horizontal = 20.dp)
             )
 
@@ -178,7 +183,11 @@ fun LetterPracticeWritingUI(
                     .trackItemPosition {
                         infoSectionBottomPadding.value = it.heightFromScreenBottom
                     }
-                    .sizeIn(maxWidth = 400.dp)
+                    .sizeIn(maxWidth = rememberAdaptiveContentMaxWidth(
+                        phoneMax = 400.dp,
+                        mediumMax = 480.dp,
+                        wideMax = 560.dp
+                    ))
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 20.dp)
                     .aspectRatio(1f, matchHeightConstraintsFirst = true)
@@ -233,7 +242,11 @@ fun LetterPracticeWritingUI(
                     brushSettings = brushSettings,
                     modifier = Modifier
                         .fillMaxSize()
-                        .sizeIn(maxWidth = 400.dp)
+                        .sizeIn(maxWidth = rememberAdaptiveContentMaxWidth(
+                            phoneMax = 400.dp,
+                            mediumMax = 480.dp,
+                            wideMax = 560.dp
+                        ))
                         .aspectRatio(1f)
                         .padding(20.dp)
                 )
@@ -336,7 +349,11 @@ private fun AnswerButtons(
                                 .padding(AppListItemDefaults.ListItemDefaultPaddings)
                                 .clip(MaterialTheme.shapes.medium)
                                 .clickable(studyCompleted)
-                                .width(400.dp)
+                                .widthIn(max = rememberAdaptiveContentMaxWidth(
+                                    phoneMax = 400.dp,
+                                    mediumMax = 480.dp,
+                                    wideMax = 560.dp
+                                ))
                                 .padding(Dimens.SpacingBig),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMid)

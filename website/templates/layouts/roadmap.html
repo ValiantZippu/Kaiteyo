@@ -1,0 +1,56 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "roadmap" %}
+{% import "partials/project-macros.html" as pm %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Roadmap</h1>
+  <p class="text-secondary">Where Kaiteyo is going. This is the forward-looking plan; the
+    <a href="{{ basePath }}project/kanban/">Kanban</a> shows what is happening right now. Every item
+    links to its documentation and its kanban work package. The product roadmap (released versions)
+    lives at <a href="{{ basePath }}roadmap/">/roadmap/</a>.</p>
+</header>
+
+{% for phase in roadmap_phases %}
+<section class="roadmap-phase">
+  <header class="roadmap-phase-head">
+    <h2>{{ phase.title }}</h2>
+    <p class="text-secondary">{{ phase.description }}</p>
+  </header>
+  <div class="roadmap-items">
+    {% for item in phase.items %}
+    <article class="card roadmap-item" id="item-{{ item.id|lower }}">
+      <div class="roadmap-item-head">
+        <span class="roadmap-item-id">{{ item.id }}</span>
+        {{ pm.status_badge(item.status) }}
+      </div>
+      <h3>{{ item.title }}</h3>
+      {% if item.note %}<p class="card-description">{{ item.note }}</p>{% endif %}
+      <footer class="roadmap-item-foot">
+        {% if item.docs %}
+        <a class="card-link" href="{{ pm.doc_href(item.docs) }}">
+          <svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg>Docs
+        </a>
+        {% endif %}
+        {% if item.kanban %}
+        <a class="card-link" href="{{ basePath }}project/kanban/?package={{ item.kanban }}">
+          <svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg>{{ item.kanban }} work
+        </a>
+        {% endif %}
+      </footer>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<section class="card roadmap-note">
+  <h2>How this stays honest</h2>
+  <p class="card-description">Status labels come from
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/planning/CURRENT_STATE.md" target="_blank" rel="noopener">docs/planning/CURRENT_STATE.md</a>
+    and <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/planning/MASTER_TODO.md" target="_blank" rel="noopener">docs/planning/MASTER_TODO.md</a>.
+    <span class="badge badge-info">Target</span> means fully architected but not yet implemented —
+    nothing on this page overstates what exists. When a phase's items move, the repository docs
+    change first, then this page re-renders from them.</p>
+</section>
+{% endblock %}

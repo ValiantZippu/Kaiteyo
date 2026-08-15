@@ -45,6 +45,7 @@ interface PreferencesContract {
 
         val lastAppVersionWhenChangesDialogShown: SuspendedProperty<String>
         val tutorialSeen: SuspendedProperty<Boolean>
+        val onboardingCompleted: SuspendedProperty<Boolean>
         val generalDashboardStudyTargets: SuspendedProperty<Map<String, Boolean>>
 
         val letterDashboardPracticeType: SuspendedProperty<PreferencesLetterPracticeType>
@@ -72,6 +73,7 @@ interface PreferencesContract {
         val reviewSettingsJson: SuspendedProperty<String>
         val backupConfigJson: SuspendedProperty<String>
         val savedSearchesJson: SuspendedProperty<String>
+        val deckFavoritesJson: SuspendedProperty<String>
         val browserColumnsJson: SuspendedProperty<String>
         val shortcutBindingsJson: SuspendedProperty<String>
         val tagSortOrder: SuspendedProperty<String>

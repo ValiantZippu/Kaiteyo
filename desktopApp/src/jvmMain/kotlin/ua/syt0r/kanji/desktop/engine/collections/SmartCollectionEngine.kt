@@ -220,7 +220,78 @@ class CollectionStore(
 
     fun childrenOf(parentId: String?): List<CollectionDef> = _collections.filter { it.parentId == parentId }
 
-    fun resolveCards(def: CollectionDef, cards: List<DesktopCard>): List<DesktopCard> = smartEngine.resolve(def, cards)
+    /**
+     * Resolve every card in the collection: manual + smart membership, plus
+     * (when a [library] is supplied) the cards of every owned deck and every
+     * descendant collection — a collection tree is a deck tree.
+     */
+    fun resolveCards(
+        def: CollectionDef,
+        cards: List<DesktopCard>,
+        library: ua.syt0r.kanji.desktop.engine.library.LibraryStore? = null
+    ): List<DesktopCard> {
+        val byId = LinkedHashMap<String, DesktopCard>()
+        smartEngine.resolve(def, cards).forEach { byId[it.id] = it }
+        if (library != null) {
+            fun collect(current: CollectionDef) {
+                decksIn(current, library).forEach { deck ->
+                    library.cardsIn(deck, cards).forEach { byId[it.id] = it }
+                }
+                childrenOf(current.id).forEach { collect(it) }
+            }
+            collect(def)
+        }
+        return byId.values.toList()
+    }
+
+    // ------------------------------------------------------------
+    // Deck membership — a collection is a container of decks (and
+    // subcollections). Deck ids are membership references: the decks
+    // themselves stay canonical in the Library store.
+    // ------------------------------------------------------------
+
+    /** The decks owned by this collection (direct ids, deduplicated). */
+    fun decksIn(def: CollectionDef, library: ua.syt0r.kanji.desktop.engine.library.LibraryStore): List<ua.syt0r.kanji.desktop.model.DeckDef> =
+        def.deckIds.mapNotNull { library.deck(it) }.distinctBy { it.id }
+
+    /**
+     * Every deck owned by the collection or any of its descendant
+     * collections, in tree order — a collection tree is a deck tree.
+     */
+    fun resolveDecks(
+        def: CollectionDef,
+        library: ua.syt0r.kanji.desktop.engine.library.LibraryStore
+    ): List<ua.syt0r.kanji.desktop.model.DeckDef> {
+        val result = LinkedHashSet<ua.syt0r.kanji.desktop.model.DeckDef>()
+        fun collect(current: CollectionDef) {
+            decksIn(current, library).forEach { result.add(it) }
+            childrenOf(current.id).forEach { collect(it) }
+        }
+        collect(def)
+        return result.toList()
+    }
+
+    /** Attach a deck to a collection (idempotent membership). */
+    fun addDeck(collectionId: String, deckId: String) {
+        val idx = _collections.indexOfFirst { it.id == collectionId }
+        if (idx == -1) return
+        val def = _collections[idx]
+        if (deckId in def.deckIds) return
+        _collections[idx] = def.copy(deckIds = def.deckIds + deckId)
+    }
+
+    /** Detach a deck from a collection. */
+    fun removeDeck(collectionId: String, deckId: String) {
+        val idx = _collections.indexOfFirst { it.id == collectionId }
+        if (idx == -1) return
+        val def = _collections[idx]
+        if (deckId !in def.deckIds) return
+        _collections[idx] = def.copy(deckIds = def.deckIds - deckId)
+    }
+
+    /** Whether a collection directly owns a deck. */
+    fun ownsDeck(collectionId: String, deckId: String): Boolean =
+        _collections.firstOrNull { it.id == collectionId }?.deckIds?.contains(deckId) == true
 
     fun rename(id: String, name: String) {
         val idx = _collections.indexOfFirst { it.id == id }
@@ -276,6 +347,7 @@ class CollectionStore(
 
         val target = _collections[targetIdx]
         val mergedCardIds = LinkedHashSet(target.cardIds)
+        val mergedDeckIds = LinkedHashSet(target.deckIds)
         val smartSources = sourceIds.mapNotNull { id -> _collections.firstOrNull { it.id == id } }
             .filter { it.smartRule != null }
 
@@ -283,6 +355,7 @@ class CollectionStore(
         sourceIds.mapNotNull { id -> _collections.firstOrNull { it.id == id } }.forEach { source ->
             val before = mergedCardIds.size
             mergedCardIds.addAll(source.cardIds)
+            mergedDeckIds.addAll(source.deckIds)
             added += mergedCardIds.size - before
         }
 
@@ -293,7 +366,11 @@ class CollectionStore(
         }
 
         sourceIds.forEach { delete(it) }
-        _collections[targetIdx] = target.copy(cardIds = mergedCardIds.toList(), smartRule = adoptedRule)
+        _collections[targetIdx] = target.copy(
+            cardIds = mergedCardIds.toList(),
+            deckIds = mergedDeckIds.toList(),
+            smartRule = adoptedRule
+        )
         return added
     }
 

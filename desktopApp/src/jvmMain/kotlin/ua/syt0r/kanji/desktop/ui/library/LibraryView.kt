@@ -4,12 +4,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,9 +24,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
@@ -104,6 +111,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsPromptDialog
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSearchField
+import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
 import ua.syt0r.kanji.desktop.designsystem.DsSelect
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsTagChip
@@ -113,11 +121,16 @@ import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.dueColor
 import ua.syt0r.kanji.desktop.designsystem.favoriteColor
 import ua.syt0r.kanji.desktop.designsystem.infoColor
+import ua.syt0r.kanji.desktop.designsystem.newColor
 import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.learning.CardType
+import ua.syt0r.kanji.desktop.engine.learning.DeckStudyConfig
+import ua.syt0r.kanji.desktop.engine.learning.LearningEngine.UnifiedSearchResult
+import ua.syt0r.kanji.desktop.engine.learning.toLearningItemKind
 import ua.syt0r.kanji.desktop.engine.search.SearchEngine
 import ua.syt0r.kanji.desktop.engine.transfer.TransferFilePicker
 import ua.syt0r.kanji.desktop.model.ContentKind
@@ -125,6 +138,7 @@ import ua.syt0r.kanji.desktop.model.DeckDef
 import ua.syt0r.kanji.desktop.model.DeckExportDto
 import ua.syt0r.kanji.desktop.model.DeckModeStats
 import ua.syt0r.kanji.desktop.model.DesktopCard
+import ua.syt0r.kanji.desktop.model.LibrarySearchResult
 import ua.syt0r.kanji.desktop.model.LibrarySuggestion
 import ua.syt0r.kanji.desktop.model.StudyMode
 import ua.syt0r.kanji.desktop.model.StudyModeProgress
@@ -153,6 +167,12 @@ private sealed interface LibraryScope {
     data class Kind(val kind: ContentKind) : LibraryScope {
         override val label = kind.label
         override val count = { state: AppState -> state.library.decksForKind(kind).size }
+    }
+
+    /** A collection — the Library's top-level container of decks. */
+    data class Collection(val def: ua.syt0r.kanji.desktop.model.CollectionDef) : LibraryScope {
+        override val label = def.name
+        override val count = { state: AppState -> state.collections.resolveDecks(def, state.library).size }
     }
 
     data object DueToday : LibraryScope {
@@ -184,6 +204,7 @@ private sealed interface LibraryScope {
 private fun scopeToName(scope: LibraryScope): String = when (scope) {
     LibraryScope.All -> "all"
     is LibraryScope.Kind -> "kind:${scope.kind.name}"
+    is LibraryScope.Collection -> "collection:${scope.def.id}"
     LibraryScope.DueToday -> "due"
     LibraryScope.New -> "new"
     LibraryScope.Favorites -> "favorites"
@@ -191,7 +212,7 @@ private fun scopeToName(scope: LibraryScope): String = when (scope) {
     LibraryScope.Archived -> "archived"
 }
 
-private fun restoreLibraryScope(name: String): LibraryScope = when {
+private fun restoreLibraryScope(name: String, state: AppState): LibraryScope = when {
     name == "all" -> LibraryScope.All
     name == "due" -> LibraryScope.DueToday
     name == "new" -> LibraryScope.New
@@ -200,21 +221,109 @@ private fun restoreLibraryScope(name: String): LibraryScope = when {
     name == "archived" -> LibraryScope.Archived
     name.startsWith("kind:") ->
         ContentKind.entries.firstOrNull { it.name == name.removePrefix("kind:") }?.let { LibraryScope.Kind(it) } ?: LibraryScope.All
+    name.startsWith("collection:") -> {
+        // The collection may have been renamed or deleted since the scope was
+        // remembered — resolve by id, falling back to the default scope.
+        val id = name.removePrefix("collection:")
+        state.collections.collections.firstOrNull { it.id == id }?.let { LibraryScope.Collection(it) } ?: LibraryScope.All
+    }
     else -> LibraryScope.All
 }
 
 private fun restoreDeckSort(name: String): DeckSort =
     DeckSort.entries.firstOrNull { it.name == name } ?: DeckSort.Name
 
+// ============================================
+// Merged search — one model over decks, legacy
+// entries and the unified learning store
+// ============================================
+
+private sealed interface MergedResultRow {
+    data class Deck(val deck: DeckDef, val count: Int) : MergedResultRow
+    data class Store(val result: UnifiedSearchResult) : MergedResultRow
+    data class Entry(val card: DesktopCard) : MergedResultRow
+}
+
+private data class MergedSearchData(
+    val deckMatches: List<DeckDef>,
+    val storeResults: List<UnifiedSearchResult>,
+    val extraEntries: List<LibrarySearchResult>,
+    val rows: List<MergedResultRow>
+)
+
+private fun buildMergedSearch(
+    state: AppState,
+    cards: List<DesktopCard>,
+    q: String,
+    kind: ua.syt0r.kanji.desktop.engine.learning.LearningItemKind?,
+    jlpt: Int?
+): MergedSearchData {
+    val deckMatches = state.library.allDecks().filter { deck ->
+        deck.name.contains(q, ignoreCase = true) || deck.description.contains(q, ignoreCase = true) ||
+            deck.tags.any { it.contains(q, ignoreCase = true) }
+    }.take(6)
+
+    // Legacy-card matches…
+    val entries = state.library.search(cards, q, limit = 200)
+    // …and the unified store (synced from the same cards) with real stage/due
+    // state. The store covers most content; anything it doesn't (not yet
+    // synced) still appears via `extraEntries` — nothing lost, nothing doubled.
+    val storeResults = state.learning.search(
+        query = q,
+        kinds = kind?.let { setOf(it) } ?: emptySet(),
+        jlpt = jlpt,
+        maxResults = 40
+    )
+    val storeLegacyIds = storeResults.mapNotNull { result ->
+        state.learning.cards.firstOrNull { it.noteId == result.noteId }?.let { storeCard ->
+            state.learning.legacyCardsForDeck(storeCard.deckId).firstOrNull { it.id == storeCard.id }?.id
+        }
+    }.toSet()
+    val extraEntries = entries.filter { it.entry.id !in storeLegacyIds }
+
+    val rows = buildList {
+        deckMatches.forEach { add(MergedResultRow.Deck(it, state.library.cardsIn(it, cards).size)) }
+        storeResults.forEach { add(MergedResultRow.Store(it)) }
+        extraEntries.forEach { add(MergedResultRow.Entry(it.entry)) }
+    }
+    return MergedSearchData(deckMatches, storeResults, extraEntries, rows)
+}
+
+/** Maps a unified-store result back to its legacy card, if any. */
+private fun storeResultLegacyCard(state: AppState, result: UnifiedSearchResult): DesktopCard? {
+    val card = state.learning.cards.firstOrNull { it.noteId == result.noteId && it.cardType == CardType.Recognition }
+        ?: state.learning.cards.firstOrNull { it.noteId == result.noteId }
+    return card?.let { storeCard ->
+        state.learning.legacyCardsForDeck(storeCard.deckId).firstOrNull { it.id == storeCard.id }
+    }
+}
+
+private fun openMergedRow(
+    state: AppState,
+    row: MergedResultRow,
+    onOpenDeck: (DeckDef) -> Unit,
+    onOpenEntry: (DesktopCard) -> Unit
+) {
+    when (row) {
+        is MergedResultRow.Deck -> onOpenDeck(row.deck)
+        is MergedResultRow.Store -> storeResultLegacyCard(state, row.result)?.let(onOpenEntry)
+        is MergedResultRow.Entry -> onOpenEntry(row.card)
+    }
+}
+
 @Composable
 fun LibraryView(state: AppState) {
-    val sc = surfaceColors()
-    var scope by remember { mutableStateOf(restoreLibraryScope(state.settings.getString("browser.library-scope", "all"))) }
+    var scope by remember { mutableStateOf(restoreLibraryScope(state.settings.getString("browser.library-scope", "all"), state)) }
     var query by remember { mutableStateOf("") }
     var selectedDeckId by remember { mutableStateOf<String?>(null) }
     var openEntryId by remember { mutableStateOf<String?>(null) }
     var browseDeckId by remember { mutableStateOf<String?>(null) }
     var showCreate by remember { mutableStateOf(false) }
+    // Kind + JLPT filters for the merged search results (null = all).
+    var kindFilter by remember { mutableStateOf<ua.syt0r.kanji.desktop.engine.learning.LearningItemKind?>(null) }
+    var jlptFilter by remember { mutableStateOf<Int?>(null) }
+    // Arrow-key selection over the merged results list.
+    var resultIndex by remember { mutableStateOf(0) }
 
     // When arriving from another view with a card selected (dashboard,
     // collections, tags…), surface that card's detail page right away —
@@ -234,116 +343,102 @@ fun LibraryView(state: AppState) {
         openEntryId = null
         browseDeckId = null
     }
+
+    // Deep link from Home: a collection card lands here scoped to that
+    // collection — the Library is the hub. The pending id is consumed so
+    // returning to the Library later starts at the last-used scope.
+    LaunchedEffect(state.pendingCollectionId) {
+        state.pendingCollectionId?.let { id ->
+            state.collections.collections.firstOrNull { it.id == id }?.let { def ->
+                selectScope(LibraryScope.Collection(def))
+            }
+            state.pendingCollectionId = null
+        }
+    }
     val selectedDeck = selectedDeckId?.let { state.library.deck(it) }
     val openEntry = openEntryId?.let { id -> state.cards.firstOrNull { it.id == id } }
-    val cards = state.cards.toList()
 
-    Row(Modifier.fillMaxSize()) {
-        // Scope rail
-        Column(
-            modifier = Modifier
-                .width(212.dp)
-                .fillMaxHeight()
-                .background(sc.background)
-                .padding(vertical = DsSpacing.Lg),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = "LIBRARY",
-                color = sc.textMuted,
-                fontSize = DsType.Caption,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Xs)
+    // Main content — one pinned search plus a row of mode chips. Typing
+    // swaps the browse surface for merged results (decks + entries + learning
+    // store in one list); clearing the query returns to the chip-driven
+    // catalog. Searching, filtering and opening entries all happen without
+    // leaving the Library.
+    Column(Modifier.fillMaxSize()) {
+        when {
+            openEntry != null -> EntryDetail(
+                state = state,
+                card = openEntry,
+                onBack = { openEntryId = null },
+                onOpenEntry = { openEntryId = it.id }
             )
-            LibraryScopeItem(LibraryScope.All, scope == LibraryScope.All, LibraryScope.All.count(state)) { selectScope(LibraryScope.All) }
-            Text(
-                text = "CONTENT",
-                color = sc.textMuted,
-                fontSize = DsType.Caption,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Sm)
+            selectedDeck != null && browseDeckId == selectedDeck.id -> DeckEntriesView(
+                state = state,
+                deck = selectedDeck,
+                onBack = { browseDeckId = null },
+                onOpenEntry = { openEntryId = it.id }
             )
-            ContentKind.entries.forEach { kind ->
-                val target = LibraryScope.Kind(kind)
-                LibraryScopeItem(target, scope == target, state.library.decksForKind(kind).size) { selectScope(target) }
-            }
-            Text(
-                text = "SMART SCOPES",
-                color = sc.textMuted,
-                fontSize = DsType.Caption,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Sm)
+            selectedDeck != null -> DeckDetail(
+                state = state,
+                deck = selectedDeck,
+                onBack = {
+                    selectedDeckId = null
+                    browseDeckId = null
+                },
+                onBrowse = { browseDeckId = selectedDeck.id },
+                onOpenEntry = { openEntryId = it.id }
             )
-            listOf(LibraryScope.DueToday, LibraryScope.New, LibraryScope.Favorites, LibraryScope.Recent).forEach { smart ->
-                LibraryScopeItem(smart, scope == smart, smart.count(state)) { selectScope(smart) }
-            }
-            Text(
-                text = "MANAGE",
-                color = sc.textMuted,
-                fontSize = DsType.Caption,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Sm)
-            )
-            LibraryScopeItem(LibraryScope.Archived, scope == LibraryScope.Archived, LibraryScope.Archived.count(state)) { selectScope(LibraryScope.Archived) }
-            Spacer(Modifier.weight(1f))
-            DsButton(
-                text = "New deck",
-                icon = Icons.Default.Add,
-                onClick = { showCreate = true },
-                modifier = Modifier.padding(horizontal = DsSpacing.Lg)
-            )
-        }
-
-        // Main content — the universal search bar sits above every
-        // browsing surface, so searching, filtering and opening entries
-        // all happen without leaving the Library.
-        Column(Modifier.weight(1f).fillMaxHeight()) {
-            if (openEntry == null && selectedDeck == null) {
+            else -> {
+                val q = query.trim()
+                val merged = remember(state.library.revision, state.learning.revision, q, kindFilter, jlptFilter) {
+                    if (q.isBlank()) null else buildMergedSearch(state, state.cards.toList(), q, kindFilter, jlptFilter)
+                }
                 LibrarySearchBar(
                     state = state,
                     query = query,
-                    onQueryChange = { query = it },
+                    onQueryChange = { query = it; resultIndex = 0 },
+                    resultRows = merged?.rows ?: emptyList(),
+                    resultIndex = resultIndex,
+                    onResultIndexChange = { resultIndex = it },
                     onOpenDeck = { selectedDeckId = it.id; query = "" },
                     onOpenEntry = { openEntryId = it.id; query = "" }
                 )
-            }
-            when {
-                openEntry != null -> EntryDetail(
-                    state = state,
-                    card = openEntry,
-                    onBack = { openEntryId = null },
-                    onOpenEntry = { openEntryId = it.id }
-                )
-                selectedDeck != null && browseDeckId == selectedDeck.id -> DeckEntriesView(
-                    state = state,
-                    deck = selectedDeck,
-                    onBack = { browseDeckId = null },
-                    onOpenEntry = { openEntryId = it.id }
-                )
-                selectedDeck != null -> DeckDetail(
-                    state = state,
-                    deck = selectedDeck,
-                    onBack = {
-                        selectedDeckId = null
-                        browseDeckId = null
-                    },
-                    onBrowse = { browseDeckId = selectedDeck.id },
-                    onOpenEntry = { openEntryId = it.id }
-                )
-                query.isNotBlank() -> LibrarySearchResults(
-                    state = state,
-                    query = query,
-                    onQueryChange = { query = it },
-                    onOpenDeck = { selectedDeckId = it.id; query = "" },
-                    onOpenEntry = { openEntryId = it.id; query = "" }
-                )
-                else -> DeckCatalog(
-                    state = state,
-                    scope = scope,
-                    onOpen = { selectedDeckId = it.id },
-                    onOpenEntry = { openEntryId = it.id },
-                    onCreate = { showCreate = true }
-                )
+                if (query.isNotBlank() && merged != null) {
+                    // Merged results — one keyboard-navigable list across
+                    // decks, legacy entries and the unified learning store.
+                    LibrarySearchResults(
+                        state = state,
+                        query = query,
+                        data = merged,
+                        selectedIndex = resultIndex,
+                        kind = kindFilter,
+                        onKindChange = { kindFilter = it; resultIndex = 0 },
+                        jlpt = jlptFilter,
+                        onJlptChange = { jlptFilter = it; resultIndex = 0 },
+                        onOpenDeck = { selectedDeckId = it.id; query = "" },
+                        onOpenEntry = { openEntryId = it.id; query = "" }
+                    )
+                } else {
+                    ModeChipBar(state = state, scope = scope, onSelect = selectScope)
+                    // Collections are the Library's top-level organization —
+                    // the learning hub starts with the containers, not a flat
+                    // list of deck cards.
+                    if (scope is LibraryScope.All) {
+                        CollectionsStrip(
+                            state = state,
+                            onOpen = { selectScope(LibraryScope.Collection(it)) }
+                        )
+                    }
+                    // Unified deck statistics — per-deck new/learning/review/due
+                    // counts straight from the learning store's card state.
+                    UnifiedDeckStatsSection(state)
+                    DeckCatalog(
+                        state = state,
+                        scope = scope,
+                        onOpen = { selectedDeckId = it.id },
+                        onOpenEntry = { openEntryId = it.id },
+                        onCreate = { showCreate = true }
+                    )
+                }
             }
         }
     }
@@ -356,8 +451,43 @@ fun LibraryView(state: AppState) {
     }
 }
 
+// Mode chips — the same All · Decks · Kanji · Vocabulary · … pattern as the
+// core Library, replacing the old side rail. One tap switches the browse
+// surface in place; every chip shows a live count.
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LibraryScopeItem(scope: LibraryScope, selected: Boolean, count: Int, onClick: () -> Unit) {
+private fun ModeChipBar(state: AppState, scope: LibraryScope, onSelect: (LibraryScope) -> Unit) {
+    val allScopes = buildList {
+        // When a collection is open it leads the chips (one tap back to All).
+        if (scope is LibraryScope.Collection) add(scope)
+        add(LibraryScope.All)
+        addAll(ContentKind.entries.map { LibraryScope.Kind(it) })
+        add(LibraryScope.DueToday)
+        add(LibraryScope.New)
+        add(LibraryScope.Favorites)
+        add(LibraryScope.Recent)
+        add(LibraryScope.Archived)
+    }
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = DsSpacing.Xl, end = DsSpacing.Xl, top = DsSpacing.Md),
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        allScopes.forEach { candidate ->
+            ScopeChip(
+                label = candidate.label,
+                count = candidate.count(state),
+                selected = scope == candidate,
+                onClick = { onSelect(candidate) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScopeChip(label: String, count: Int, selected: Boolean, onClick: () -> Unit) {
     val sc = surfaceColors()
     val ac = accent()
     val interaction = remember { MutableInteractionSource() }
@@ -365,33 +495,142 @@ private fun LibraryScopeItem(scope: LibraryScope, selected: Boolean, count: Int,
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = DsSpacing.Sm)
-            .clip(RoundedCornerShape(DsRadius.Md))
+            .clip(RoundedCornerShape(DsRadius.Full))
             .background(
                 when {
                     selected -> ac.primary.copy(alpha = 0.16f)
-                    hovered -> sc.surfaceInteractive.copy(alpha = 0.6f)
-                    else -> Color.Transparent
+                    hovered -> sc.surfaceInteractive
+                    else -> sc.surfaceElevated
                 }
             )
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .hoverable(interaction)
-            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = DsSpacing.Md, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = scope.label,
+            text = label,
             color = if (selected) ac.primary else sc.textSecondary,
             fontSize = DsType.Body,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            modifier = Modifier.weight(1f)
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
         Text(
             text = count.toString(),
             color = if (selected) ac.primary.copy(alpha = 0.8f) else sc.textMuted,
             fontSize = DsType.Caption
         )
+    }
+}
+
+// ============================================
+// COLLECTIONS STRIP
+// The Library's top-level organization: a row of
+// collection cards (the containers) above the deck
+// catalog. Each card shows its deck/card counts and
+// live due workload; opening one scopes the catalog
+// to that collection's decks.
+// ============================================
+
+@Composable
+private fun CollectionsStrip(
+    state: AppState,
+    onOpen: (ua.syt0r.kanji.desktop.model.CollectionDef) -> Unit
+) {
+    val sc = surfaceColors()
+    val collections = state.collections.childrenOf(null).filter { !it.archived }
+    if (collections.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = DsSpacing.Xl, end = DsSpacing.Xl, top = DsSpacing.Md)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Collections",
+                color = sc.textPrimary,
+                fontSize = DsType.BodyLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "open one to see its decks",
+                color = sc.textMuted,
+                fontSize = DsType.Caption
+            )
+        }
+        Spacer(Modifier.height(DsSpacing.Sm))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+        ) {
+            collections.forEach { def ->
+                CollectionStripCard(state = state, def = def, onOpen = onOpen)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CollectionStripCard(
+    state: AppState,
+    def: ua.syt0r.kanji.desktop.model.CollectionDef,
+    onOpen: (ua.syt0r.kanji.desktop.model.CollectionDef) -> Unit
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val now = kotlinx.datetime.Clock.System.now()
+    val decks = state.collections.resolveDecks(def, state.library)
+    val cards = state.collections.resolveCards(def, state.cards.toList(), state.library)
+    val due = decks.sumOf { state.library.deckStats(it, state.cards.toList(), now).anyDue } +
+        cards.count {
+            it.dueAt != null && it.dueAt <= now && it.status != ua.syt0r.kanji.desktop.model.SrsStatus.New
+        }
+
+    DsCard(
+        modifier = Modifier.width(248.dp),
+        onClick = { onOpen(def) }
+    ) {
+        Column(
+            modifier = Modifier.padding(DsSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(ac.primary.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Bookmarks, null, tint = ac.primary, modifier = Modifier.size(14.dp))
+                }
+                Spacer(Modifier.width(DsSpacing.Sm))
+                Text(
+                    text = def.name,
+                    color = sc.textPrimary,
+                    fontSize = DsType.Body,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Text(
+                text = "${decks.size} decks · ${cards.size} cards",
+                color = sc.textMuted,
+                fontSize = DsType.Caption
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
+                if (due > 0) DsBadge(text = "$due due", tint = dueColor())
+                if (def.kind == ua.syt0r.kanji.desktop.model.CollectionKind.Smart) {
+                    DsBadge(text = "Smart", tint = Color(0xFFA78BFA))
+                }
+            }
+        }
     }
 }
 
@@ -437,6 +676,7 @@ private fun DeckCatalog(
     ) {
         val base = when (scope) {
             is LibraryScope.Kind -> state.library.decksForKind(scope.kind)
+            is LibraryScope.Collection -> state.collections.resolveDecks(scope.def, state.library)
             LibraryScope.All -> state.library.childrenOf(currentFolderId)
             else -> emptyList()
         }
@@ -1149,6 +1389,7 @@ private fun DeckDetail(
     var manageOpen by remember { mutableStateOf(false) }
     var tagsOpen by remember { mutableStateOf(false) }
     var editOpen by remember { mutableStateOf(false) }
+    var settingsOpen by remember { mutableStateOf(false) }
     var deckAction by remember { mutableStateOf<DeckAction?>(null) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -1353,6 +1594,12 @@ private fun DeckDetail(
                 kind = DsButtonKind.Secondary,
                 onClick = { state.currentView = WorkspaceView.Statistics }
             )
+            DsButton(
+                text = "Study settings",
+                icon = Icons.Default.Schedule,
+                kind = DsButtonKind.Secondary,
+                onClick = { settingsOpen = true }
+            )
             Spacer(Modifier.weight(1f))
         }
 
@@ -1370,6 +1617,68 @@ private fun DeckDetail(
             val ms = stats.byMode[mode]
             if (ms != null) {
                 ModeCard(state, deck, mode, ms, now)
+            }
+        }
+
+        // Study settings — the deck's real queue configuration (limits, steps,
+        // intervals, card types) persisted in the unified LearningStore.
+        Spacer(Modifier.height(DsSpacing.Lg))
+        val studyConfig = state.learning.deckStudyConfig(deck.id)
+        DsCard(modifier = Modifier.padding(horizontal = DsSpacing.Xl).fillMaxWidth()) {
+            Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                DsSectionHeader(
+                    title = "Study settings",
+                    subtitle = "Queue limits, learning steps and intervals used by the study engine",
+                    action = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                            DsButton(
+                                text = "Study (unified)",
+                                icon = Icons.Default.PlayArrow,
+                                compact = true,
+                                onClick = {
+                                    val totals = state.learning.deckTotals(deck.id)
+                                    if (totals.due + totals.new > 0) {
+                                        state.startUnifiedDeckReview(deck.id, StudyMode.Flashcards)
+                                    } else {
+                                        state.toastHost.show("Nothing due in \"${deck.name}\"", kind = ToastKind.Info)
+                                    }
+                                }
+                            )
+                            DsButton(
+                                text = "Edit settings",
+                                icon = Icons.Default.Schedule,
+                                kind = DsButtonKind.Secondary,
+                                compact = true,
+                                onClick = { settingsOpen = true }
+                            )
+                        }
+                    }
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                    SettingsSummaryTile("New / day", studyConfig.dailyNewLimit.toString(), Modifier.weight(1f))
+                    SettingsSummaryTile("Reviews / day", studyConfig.dailyReviewLimit.toString(), Modifier.weight(1f))
+                    SettingsSummaryTile("Learning steps", studyConfig.learningStepsMinutes.joinToString(", ") { "${it}m" }, Modifier.weight(1f))
+                    SettingsSummaryTile("Graduating", "${studyConfig.graduatingIntervalDays}d", Modifier.weight(1f))
+                    SettingsSummaryTile("Easy", "${studyConfig.easyIntervalDays}d", Modifier.weight(1f))
+                    SettingsSummaryTile("Max interval", "${studyConfig.maximumIntervalDays.toInt()}d", Modifier.weight(1f))
+                }
+                Text(
+                    text = "Card types: " + studyConfig.cardTypesFor(deck.kind.toLearningItemKind()).joinToString(", ") { it.label } +
+                        if (studyConfig.enabledCardTypes.isEmpty()) " (per-kind defaults)" else "",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+                val behaviors = listOfNotNull(
+                    if (studyConfig.interleaveNewAndReviews) "interleaves new & reviews" else null,
+                    if (studyConfig.buryRelatedNew) "buries related new" else null,
+                    if (studyConfig.buryRelatedReviews) "buries related reviews" else null,
+                    if (studyConfig.suspendOnLapse) "suspends on lapse" else null
+                )
+                Text(
+                    text = if (behaviors.isEmpty()) "No extra bury/suspend behavior" else behaviors.joinToString(" · "),
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
             }
         }
 
@@ -1437,6 +1746,9 @@ private fun DeckDetail(
     }
     if (editOpen) {
         DeckEditDialog(state, deck, onDismiss = { editOpen = false })
+    }
+    if (settingsOpen) {
+        DeckStudySettingsDialog(state, deck, onDismiss = { settingsOpen = false })
     }
     if (deckAction != null) {
         DeckActionDialogs(
@@ -1573,7 +1885,7 @@ private fun DsModeChip(
 // at the caller level via [DeckActionDialogs] so they survive.
 // ============================================
 
-private enum class DeckAction { Rename, Edit, Move, Merge, Tags, Export, Archive, Delete }
+private enum class DeckAction { Rename, Edit, Settings, AddToCollection, Move, Merge, Tags, Export, Archive, Delete }
 
 @Composable
 private fun DeckActionsMenu(
@@ -1599,6 +1911,10 @@ private fun DeckActionsMenu(
             onClick = { onAction(DeckAction.Edit); onDismiss() }
         )
         DsMenuItemRow(
+            item = DsMenuItem(label = "Study settings…", icon = Icons.Default.Schedule, onAction = {}),
+            onClick = { onAction(DeckAction.Settings); onDismiss() }
+        )
+        DsMenuItemRow(
             item = DsMenuItem(
                 label = if (deck.favorite) "Remove favorite" else "Add to favorites",
                 icon = Icons.Default.Favorite,
@@ -1617,6 +1933,10 @@ private fun DeckActionsMenu(
                 onAction = {}
             ),
             onClick = { state.library.togglePinned(deck.id); onDismiss() }
+        )
+        DsMenuItemRow(
+            item = DsMenuItem(label = "Add to collection…", icon = Icons.Default.Bookmarks, onAction = {}),
+            onClick = { onAction(DeckAction.AddToCollection); onDismiss() }
         )
         DsMenuDivider()
         DsMenuItemRow(
@@ -1686,6 +2006,10 @@ private fun DeckActionDialogs(
         )
 
         DeckAction.Edit -> DeckEditDialog(state, deck, onDismiss = onClose)
+
+        DeckAction.Settings -> DeckStudySettingsDialog(state, deck, onDismiss = onClose)
+
+        DeckAction.AddToCollection -> AddToCollectionDialog(state, deck, onDismiss = onClose)
 
         DeckAction.Move -> DeckPickerDialog(
             state = state,
@@ -1762,6 +2086,74 @@ private fun DeckActionDialogs(
             },
             onDismiss = onClose
         )
+    }
+}
+
+/** Choose which collections own this deck (membership, not copies). */
+@Composable
+private fun AddToCollectionDialog(state: AppState, deck: DeckDef, onDismiss: () -> Unit) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val collections = state.collections.collections.filter { !it.archived }
+
+    DsDialog(title = "Add \"${deck.name}\" to collections", onDismiss = onDismiss) {
+        Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            Text(
+                text = "Toggle membership — the deck stays canonical in the Library; each collection just references it.",
+                color = sc.textMuted,
+                fontSize = DsType.Caption
+            )
+            if (collections.isEmpty()) {
+                Text(
+                    text = "No collections yet — create one from the Collections workspace first.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            }
+            collections.forEach { def ->
+                val owned = state.collections.ownsDeck(def.id, deck.id)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(DsRadius.Md))
+                        .background(sc.surfaceInteractive.copy(alpha = 0.4f))
+                        .clickable {
+                            if (owned) {
+                                state.collections.removeDeck(def.id, deck.id)
+                                state.toastHost.show("Removed from '${def.name}'", kind = ToastKind.Info)
+                            } else {
+                                state.collections.addDeck(def.id, deck.id)
+                                state.toastHost.show("Added to '${def.name}'", kind = ToastKind.Success)
+                            }
+                        }
+                        .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = def.name,
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    DsBadge(
+                        text = "${state.collections.resolveDecks(def, state.library).size} decks",
+                        tint = sc.textMuted
+                    )
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    Icon(
+                        if (owned) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                        contentDescription = null,
+                        tint = if (owned) ac.primary else sc.textMuted,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.height(DsSpacing.Sm))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)) {
+                DsButton(text = "Done", kind = DsButtonKind.Ghost, onClick = onDismiss)
+            }
+        }
     }
 }
 
@@ -1880,6 +2272,199 @@ private fun DeckTagsDialog(state: AppState, deck: DeckDef, onDismiss: () -> Unit
     }
 }
 
+/** Compact label/value pair used by the deck study-settings summary. */
+@Composable
+private fun SettingsSummaryTile(label: String, value: String, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    Column(modifier) {
+        Text(value, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+        Text(label, color = sc.textMuted, fontSize = DsType.Caption)
+    }
+}
+
+/**
+ * Per-deck study settings editor. Every field maps to the persisted
+ * DeckStudyConfig in the unified LearningStore — limits, learning steps,
+ * intervals, bury/suspend behavior and the enabled card types. Empty card
+ * types mean the per-kind defaults.
+ */
+@Composable
+private fun DeckStudySettingsDialog(state: AppState, deck: DeckDef, onDismiss: () -> Unit) {
+    val sc = surfaceColors()
+    val existing = state.learning.deckStudyConfig(deck.id)
+    var dailyNew by remember(deck.id) { mutableStateOf(existing.dailyNewLimit) }
+    var dailyReview by remember(deck.id) { mutableStateOf(existing.dailyReviewLimit) }
+    var stepsText by remember(deck.id) { mutableStateOf(existing.learningStepsMinutes.joinToString(", ")) }
+    var graduatingText by remember(deck.id) { mutableStateOf(existing.graduatingIntervalDays.toString()) }
+    var easyText by remember(deck.id) { mutableStateOf(existing.easyIntervalDays.toString()) }
+    var maxIntervalText by remember(deck.id) { mutableStateOf(existing.maximumIntervalDays.toInt().toString()) }
+    var interleave by remember(deck.id) { mutableStateOf(existing.interleaveNewAndReviews) }
+    var buryNew by remember(deck.id) { mutableStateOf(existing.buryRelatedNew) }
+    var buryReviews by remember(deck.id) { mutableStateOf(existing.buryRelatedReviews) }
+    var suspendLapse by remember(deck.id) { mutableStateOf(existing.suspendOnLapse) }
+    var enabledTypes by remember(deck.id) { mutableStateOf(existing.enabledCardTypes) }
+
+    DsDialog(title = "Study settings — ${deck.name}", onDismiss = onDismiss) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+            DsNumericField(value = dailyNew, onValueChange = { dailyNew = it }, label = "New cards / day")
+            DsNumericField(value = dailyReview, onValueChange = { dailyReview = it }, label = "Reviews / day")
+            DsTextField(
+                value = stepsText,
+                onValueChange = { stepsText = it },
+                label = "Learning steps (minutes, comma separated)",
+                placeholder = "e.g. 1, 10"
+            )
+            DsTextField(value = graduatingText, onValueChange = { graduatingText = it }, label = "Graduating interval (days)")
+            DsTextField(value = easyText, onValueChange = { easyText = it }, label = "Easy interval (days)")
+            DsTextField(value = maxIntervalText, onValueChange = { maxIntervalText = it }, label = "Maximum interval (days)")
+            DsToggle(checked = interleave, onCheckedChange = { interleave = it }, label = "Interleave new cards and reviews")
+            DsToggle(checked = buryNew, onCheckedChange = { buryNew = it }, label = "Bury related new cards")
+            DsToggle(checked = buryReviews, onCheckedChange = { buryReviews = it }, label = "Bury related reviews")
+            DsToggle(checked = suspendLapse, onCheckedChange = { suspendLapse = it }, label = "Suspend cards that lapse")
+            Text(
+                text = "Enabled card types",
+                color = sc.textSecondary,
+                fontSize = DsType.Label,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = "Empty = per-kind defaults (${CardType.defaultsFor(deck.kind.toLearningItemKind()).joinToString(", ") { it.label }})",
+                color = sc.textMuted,
+                fontSize = DsType.Caption
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+            ) {
+                CardType.entries.forEach { type ->
+                    val selected = type in enabledTypes
+                    DsChip(
+                        text = type.label,
+                        selected = selected,
+                        onClick = {
+                            enabledTypes = if (selected) enabledTypes - type else enabledTypes + type
+                        }
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)
+            ) {
+                DsButton(text = "Cancel", kind = DsButtonKind.Ghost, onClick = onDismiss)
+                DsButton(
+                    text = "Save settings",
+                    onClick = {
+                        val steps = stepsText.split(',').mapNotNull { it.trim().toLongOrNull() }.filter { it > 0 }
+                        state.learning.saveDeckStudyConfig(
+                            DeckStudyConfig(
+                                deckId = deck.id,
+                                dailyNewLimit = dailyNew.coerceAtLeast(0),
+                                dailyReviewLimit = dailyReview.coerceAtLeast(0),
+                                learningStepsMinutes = steps.ifEmpty { listOf(1L, 10L) },
+                                graduatingIntervalDays = graduatingText.toDoubleOrNull()?.coerceAtLeast(0.1) ?: existing.graduatingIntervalDays,
+                                easyIntervalDays = easyText.toDoubleOrNull()?.coerceAtLeast(0.1) ?: existing.easyIntervalDays,
+                                maximumIntervalDays = maxIntervalText.toDoubleOrNull()?.coerceAtLeast(1.0) ?: existing.maximumIntervalDays,
+                                buryRelatedNew = buryNew,
+                                buryRelatedReviews = buryReviews,
+                                suspendOnLapse = suspendLapse,
+                                enabledCardTypes = enabledTypes,
+                                interleaveNewAndReviews = interleave
+                            )
+                        )
+                        state.activityLog.record(ActivityCategory.Deck, "Updated study settings for \"${deck.name}\"")
+                        state.toastHost.show("Study settings saved", kind = ToastKind.Success)
+                        onDismiss()
+                    }
+                )
+            }
+        }
+    }
+}
+
+// ============================================
+// UNIFIED LEARNING SEARCH
+// One search over the unified learning store — the same notes exams,
+// mistakes and statistics read from. Every result carries real stage/due
+// state, and clicking an entry opens its card in the browser.
+// ============================================
+
+// ============================================
+// UNIFIED DECK STATISTICS
+// Per-deck SRS totals straight from the unified store — the same state
+// exams, mistakes and statistics read from. Lists decks that actually
+// have unified cards, with real stage counts.
+// ============================================
+
+@Composable
+private fun UnifiedDeckStatsSection(state: AppState) {
+    val sc = surfaceColors()
+    val deckIds = remember(state.learning.revision) {
+        state.learning.cards.map { it.deckId }.distinct().sorted()
+    }
+    DsCard {
+        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Unified deck stats", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = "${deckIds.size} deck(s) · ${state.learning.cards.size} cards in the learning store",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
+                DsBadge(text = "real SRS state", tint = successColor())
+            }
+            if (deckIds.isEmpty()) {
+                Text(
+                    "No unified cards yet — reviews and imports populate this automatically.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+            } else {
+                deckIds.take(12).forEach { deckId ->
+                    val totals = state.learning.deckTotals(deckId)
+                    val deckName = state.library.deck(deckId)?.name ?: deckId
+                    Column(Modifier.padding(vertical = DsSpacing.Xs)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(deckName, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                            DeckMiniCount("new", totals.new, newColor())
+                            DeckMiniCount("learning", totals.learning, infoColor())
+                            DeckMiniCount("review", totals.review, successColor())
+                            DeckMiniCount("due", totals.due, dueColor())
+                            DeckMiniCount("suspended", totals.suspended, sc.textMuted)
+                        }
+                        DsProgressBar(
+                            fraction = if (totals.total == 0) 0f else (totals.new + totals.learning).toFloat() / totals.total,
+                            modifier = Modifier.padding(top = 2.dp),
+                            color = accent().primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeckMiniCount(label: String, count: Int, tint: Color) {
+    val sc = surfaceColors()
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(if (count > 0) tint else sc.border.copy(alpha = 0.3f))
+        )
+        Text(
+            text = if (count > 0) "$label $count" else label,
+            color = if (count > 0) sc.textSecondary else sc.textMuted.copy(alpha = 0.6f),
+            fontSize = DsType.Caption
+        )
+        Spacer(Modifier.width(DsSpacing.Sm))
+    }
+}
+
 @Composable
 private fun CreateDeckDialog(state: AppState, onDismiss: () -> Unit, onCreated: (DeckDef) -> Unit) {
     var name by remember { mutableStateOf("") }
@@ -1943,6 +2528,9 @@ private fun LibrarySearchBar(
     state: AppState,
     query: String,
     onQueryChange: (String) -> Unit,
+    resultRows: List<MergedResultRow>,
+    resultIndex: Int,
+    onResultIndexChange: (Int) -> Unit,
     onOpenDeck: (DeckDef) -> Unit,
     onOpenEntry: (DesktopCard) -> Unit
 ) {
@@ -1962,6 +2550,9 @@ private fun LibrarySearchBar(
         state.library.recordSearch(suggestion.payload.ifBlank { suggestion.title })
     }
 
+    // Once merged results are showing, arrow keys and Enter navigate the live
+    // results list (the popup yields); suggestions only take over while there
+    // are no full results yet.
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1971,18 +2562,33 @@ private fun LibrarySearchBar(
                 if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 when (event.key) {
                     Key.DirectionDown -> {
-                        if (suggestions.isNotEmpty()) selectedIndex = (selectedIndex + 1) % suggestions.size
+                        if (resultRows.isNotEmpty()) {
+                            onResultIndexChange((resultIndex + 1) % resultRows.size)
+                        } else if (suggestions.isNotEmpty()) {
+                            selectedIndex = (selectedIndex + 1) % suggestions.size
+                        }
                         true
                     }
                     Key.DirectionUp -> {
-                        if (suggestions.isNotEmpty()) selectedIndex = (selectedIndex - 1 + suggestions.size) % suggestions.size
+                        if (resultRows.isNotEmpty()) {
+                            onResultIndexChange((resultIndex - 1 + resultRows.size) % resultRows.size)
+                        } else if (suggestions.isNotEmpty()) {
+                            selectedIndex = (selectedIndex - 1 + suggestions.size) % suggestions.size
+                        }
                         true
                     }
                     Key.Enter -> {
-                        if (query.isNotBlank() && suggestions.isNotEmpty()) {
+                        if (resultRows.isNotEmpty()) {
+                            resultRows.getOrNull(resultIndex)?.let {
+                                openMergedRow(state, it, onOpenDeck, onOpenEntry)
+                            }
+                            true
+                        } else if (query.isNotBlank() && suggestions.isNotEmpty()) {
                             applySuggestion(suggestions[selectedIndex.coerceIn(0, suggestions.lastIndex)])
+                            true
+                        } else {
+                            false
                         }
-                        query.isNotBlank() && suggestions.isNotEmpty()
                     }
                     Key.Escape -> {
                         if (query.isNotBlank()) onQueryChange("")
@@ -1999,7 +2605,7 @@ private fun LibrarySearchBar(
         )
     }
 
-    if (query.isNotBlank() && anchor != null) {
+    if (query.isNotBlank() && anchor != null && resultRows.isEmpty()) {
         val pos = anchor!!.positionInWindow()
         Popup(
             onDismissRequest = {},
@@ -2093,84 +2699,284 @@ private fun SuggestionRow(suggestion: LibrarySuggestion, selected: Boolean, onCl
 private fun LibrarySearchResults(
     state: AppState,
     query: String,
-    onQueryChange: (String) -> Unit,
+    data: MergedSearchData,
+    selectedIndex: Int,
+    kind: ua.syt0r.kanji.desktop.engine.learning.LearningItemKind?,
+    onKindChange: (ua.syt0r.kanji.desktop.engine.learning.LearningItemKind?) -> Unit,
+    jlpt: Int?,
+    onJlptChange: (Int?) -> Unit,
     onOpenDeck: (DeckDef) -> Unit,
     onOpenEntry: (DesktopCard) -> Unit
 ) {
     val sc = surfaceColors()
-    val cards = state.cards.toList()
     val q = query.trim()
     LaunchedEffect(q) { if (q.isNotBlank()) state.library.recordSearch(q) }
 
-    val deckMatches = remember(state.library.revision, q) {
-        state.library.allDecks().filter { deck ->
-            deck.name.contains(q, ignoreCase = true) || deck.description.contains(q, ignoreCase = true) ||
-                deck.tags.any { it.contains(q, ignoreCase = true) }
-        }.take(6)
-    }
-    val entries = remember(q) { state.library.search(cards, q, limit = 200) }
+    val deckMatches = data.deckMatches
+    val storeResults = data.storeResults
+    val extraEntries = data.extraEntries
+    val rows = data.rows
+    val hasFilters = kind != null || jlpt != null
+    val hasContent = deckMatches.isNotEmpty() || storeResults.isNotEmpty() || extraEntries.isNotEmpty()
+    val deckCounts = data.rows.filterIsInstance<MergedResultRow.Deck>().associate { it.deck.id to it.count }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = DsSpacing.Xl)) {
-        Text(
-            text = "Results for \"$q\"",
-            color = sc.textPrimary,
-            fontSize = DsType.Heading,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(vertical = DsSpacing.Md)
-        )
-        if (deckMatches.isNotEmpty()) {
-            SectionLabel("DECKS")
-            Spacer(Modifier.height(DsSpacing.Xs))
-            deckMatches.forEach { deck ->
-                val count = state.library.cardsIn(deck, cards).size
-                DsCard(onClick = { onOpenDeck(deck) }, modifier = Modifier.fillMaxWidth().padding(bottom = DsSpacing.Sm)) {
-                    Row(
-                        Modifier.padding(DsSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(DsRadius.Md))
-                                .background(accent().primary.copy(alpha = 0.14f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(deck.icon.ifBlank { deck.kind.glyph }, color = accent().primary, fontSize = DsType.Title, fontWeight = FontWeight.Bold)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text(deck.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
-                            Text("${deck.kind.label} · $count cards", color = sc.textMuted, fontSize = DsType.Caption)
-                        }
-                        if (deck.favorite) {
-                            Icon(Icons.Default.Star, contentDescription = null, tint = favoriteColor(), modifier = Modifier.size(16.dp))
-                        }
+    // Keep the arrow-selected row visible as the selection moves.
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedIndex, rows.size) {
+        if (rows.isNotEmpty() && selectedIndex in rows.indices) {
+            listState.animateScrollToItem(resultRowListIndex(data, selectedIndex))
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = DsSpacing.Xl),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm),
+        contentPadding = PaddingValues(bottom = DsSpacing.Xl)
+    ) {
+        item(key = "header") {
+            Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                Text(
+                    text = "Results for \"$q\"",
+                    color = sc.textPrimary,
+                    fontSize = DsType.Heading,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = DsSpacing.Md)
+                )
+                // Kind + JLPT filters — apply to the learning-store section.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DsChip(text = "All kinds", selected = kind == null, onClick = { onKindChange(null) })
+                    ua.syt0r.kanji.desktop.engine.learning.LearningItemKind.entries.forEach { k ->
+                        DsChip(text = k.label, selected = kind == k, onClick = { onKindChange(k) })
+                    }
+                    Spacer(Modifier.width(DsSpacing.Sm))
+                    DsChip(text = "All JLPT", selected = jlpt == null, onClick = { onJlptChange(null) })
+                    (1..5).forEach { level ->
+                        DsChip(text = "N$level", selected = jlpt == level, onClick = { onJlptChange(level) })
                     }
                 }
+                Text(
+                    text = "↑/↓ navigate · Enter open · Esc clear",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
             }
-            Spacer(Modifier.height(DsSpacing.Lg))
         }
-        if (entries.isEmpty() && deckMatches.isEmpty()) {
-            DsEmptyState(
-                title = "Nothing found",
-                message = "Try a different term, or a filter like jlpt:3, grade:2, freq:<=500, tag:anime or kind:grammar.",
-                modifier = Modifier.fillMaxSize()
-            )
-        } else if (entries.isNotEmpty()) {
-            SectionLabel("ENTRIES (${entries.size})")
-            Spacer(Modifier.height(DsSpacing.Xs))
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(240.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(bottom = DsSpacing.Xl),
-                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md),
-                verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
-            ) {
-                items(entries, key = { it.entry.id }) { result ->
-                    EntryCard(state, result.entry, onOpenEntry)
+
+        if (!hasContent) {
+            item(key = "empty") {
+                DsEmptyState(
+                    title = "Nothing found",
+                    message = "Try a different term, or a filter like jlpt:3, grade:2, freq:<=500, tag:anime or kind:grammar.",
+                    modifier = Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xl)
+                )
+            }
+        } else {
+            if (deckMatches.isNotEmpty()) {
+                item(key = "decks-label") { SectionLabel("DECKS") }
+                items(deckMatches, key = { "deck-${it.id}" }) { deck ->
+                    val rowIndex = rows.indexOfFirst { it is MergedResultRow.Deck && it.deck.id == deck.id }
+                    DeckResultRow(
+                        deck = deck,
+                        count = deckCounts[deck.id] ?: 0,
+                        selected = rowIndex == selectedIndex,
+                        onClick = { onOpenDeck(deck) }
+                    )
+                }
+            }
+            if (storeResults.isNotEmpty() || extraEntries.isNotEmpty()) {
+                item(key = "content-label") {
+                    SectionLabel(if (hasFilters) "CONTENT — FILTERED" else "CONTENT")
+                }
+                items(storeResults, key = { "store-${it.noteId}" }) { result ->
+                    val rowIndex = rows.indexOfFirst { it is MergedResultRow.Store && it.result.noteId == result.noteId }
+                    StoreResultRow(
+                        state = state,
+                        result = result,
+                        selected = rowIndex == selectedIndex,
+                        onOpenEntry = onOpenEntry
+                    )
+                }
+                items(extraEntries, key = { "entry-${it.entry.id}" }) { result ->
+                    val rowIndex = rows.indexOfFirst { it is MergedResultRow.Entry && it.card.id == result.entry.id }
+                    EntryResultRow(
+                        state = state,
+                        card = result.entry,
+                        selected = rowIndex == selectedIndex,
+                        onOpenEntry = onOpenEntry
+                    )
                 }
             }
         }
+    }
+}
+
+// LazyColumn index of the row for `selectedIndex` in the merged results,
+// accounting for the header and per-section labels.
+private fun resultRowListIndex(data: MergedSearchData, selectedIndex: Int): Int {
+    var index = 1 // item 0 is the header
+    if (data.deckMatches.isNotEmpty()) {
+        index += 1 // DECKS label
+        index += data.deckMatches.size
+    }
+    if (data.storeResults.isNotEmpty() || data.extraEntries.isNotEmpty()) {
+        index += 1 // CONTENT label
+        val contentIndex = if (data.deckMatches.isNotEmpty()) selectedIndex - data.deckMatches.size else selectedIndex
+        index += contentIndex
+    }
+    return index
+}
+
+@Composable
+private fun DeckResultRow(deck: DeckDef, count: Int, selected: Boolean = false, onClick: () -> Unit) {
+    val sc = surfaceColors()
+    val ac = accent()
+    DsCard(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (selected) Modifier.border(1.5.dp, ac.primary.copy(alpha = 0.6f), RoundedCornerShape(DsRadius.Lg))
+                else Modifier
+            )
+    ) {
+        Row(
+            Modifier.padding(DsSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(DsRadius.Md))
+                    .background(accent().primary.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(deck.icon.ifBlank { deck.kind.glyph }, color = accent().primary, fontSize = DsType.Title, fontWeight = FontWeight.Bold)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(deck.name, color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Text("${deck.kind.label} · $count cards", color = sc.textMuted, fontSize = DsType.Caption)
+            }
+            if (deck.favorite) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = favoriteColor(), modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoreResultRow(state: AppState, result: UnifiedSearchResult, selected: Boolean = false, onOpenEntry: (DesktopCard) -> Unit) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DsRadius.Sm))
+            .background(
+                when {
+                    selected -> ac.primary.copy(alpha = 0.14f)
+                    hovered -> sc.surfaceInteractive
+                    else -> sc.surfaceElevated
+                }
+            )
+            .hoverable(interaction)
+            .clickable {
+                val card = state.learning.cards.firstOrNull { it.noteId == result.noteId && it.cardType == CardType.Recognition }
+                    ?: state.learning.cards.firstOrNull { it.noteId == result.noteId }
+                if (card != null) {
+                    state.learning.legacyCardsForDeck(card.deckId).firstOrNull { it.id == card.id }
+                        ?.let { onOpenEntry(it) }
+                }
+            }
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Text(
+            text = result.expression,
+            color = sc.textPrimary,
+            fontSize = DsType.BodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(120.dp)
+        )
+        Text(
+            text = result.reading,
+            color = sc.textSecondary,
+            fontSize = DsType.Body,
+            modifier = Modifier.width(140.dp)
+        )
+        Text(
+            text = result.meanings.take(2).joinToString("; "),
+            color = sc.textSecondary,
+            fontSize = DsType.Body,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (result.jlpt != null) DsBadge(text = "N${result.jlpt}", tint = accent().primary)
+        DsBadge(
+            text = result.stage.label,
+            tint = when (result.stage) {
+                ua.syt0r.kanji.desktop.engine.learning.LearningStage.Mature -> successColor()
+                ua.syt0r.kanji.desktop.engine.learning.LearningStage.Established -> Color(0xFF7BC8FF)
+                ua.syt0r.kanji.desktop.engine.learning.LearningStage.Learning -> warningColor()
+                else -> sc.textMuted
+            }
+        )
+        if (result.due > 0) DsBadge(text = "${result.due} due", tint = dueColor())
+    }
+}
+
+@Composable
+private fun EntryResultRow(state: AppState, card: DesktopCard, selected: Boolean = false, onOpenEntry: (DesktopCard) -> Unit) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val deckId = state.library.deckIdFor(card, state.cards.toList())
+    val deck = deckId?.let { state.library.deck(it) }
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DsRadius.Sm))
+            .background(
+                when {
+                    selected -> ac.primary.copy(alpha = 0.14f)
+                    hovered -> sc.surfaceInteractive
+                    else -> sc.surfaceElevated
+                }
+            )
+            .hoverable(interaction)
+            .clickable { onOpenEntry(card) }
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Text(
+            text = card.character,
+            color = sc.textPrimary,
+            fontSize = DsType.BodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(120.dp)
+        )
+        Text(
+            text = card.meaning,
+            color = sc.textSecondary,
+            fontSize = DsType.Body,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        DsBadge(text = card.contentKind.label, tint = ac.primary)
+        if (deck != null) DsBadge(text = deck.name, tint = sc.textMuted)
+        DsBadge(text = card.status.name, tint = sc.textMuted)
     }
 }
 
@@ -2200,6 +3006,10 @@ private fun EntryDetail(
     val deckId = state.library.deckIdFor(card, state.cards.toList())
     val deck = deckId?.let { state.library.deck(it) }
     val modes = StudyMode.forKind(card.contentKind)
+    var deckPickerOpen by remember { mutableStateOf(false) }
+    val containingDecks = remember(state.library.revision, card.id) {
+        state.library.decksContaining(card, state.cards.toList())
+    }
     val related = remember(card.id) {
         val pool = (deck?.let { state.library.cardsIn(it, state.cards.toList()) } ?: state.cards.toList())
             .filter { it.id != card.id }
@@ -2234,9 +3044,6 @@ private fun EntryDetail(
                     if (card.frequency != null) DsBadge(text = "#${card.frequency}", tint = warningColor())
                 }
                 Text(card.meaning, color = sc.textSecondary, fontSize = DsType.BodyLarge)
-                if (deck != null) {
-                    Text("In deck: ${deck.name}", color = sc.textMuted, fontSize = DsType.Caption)
-                }
             }
             DsIconButton(
                 icon = if (card.favorite) Icons.Default.Star else Icons.Default.StarBorder,
@@ -2265,6 +3072,72 @@ private fun EntryDetail(
                 kind = DsButtonKind.Secondary,
                 onClick = { state.openEditor(card) }
             )
+        }
+
+        // Deck membership — every deck containing this entry, with real
+        // add/remove actions. Filter decks (built-ins) match by search rule
+        // and are shown as such; only explicit membership can be removed here.
+        DsCard(modifier = Modifier.padding(horizontal = DsSpacing.Xl, vertical = DsSpacing.Sm)) {
+            Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "DECKS",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    DsButton(
+                        text = "Add to deck",
+                        icon = Icons.Default.Add,
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        onClick = { deckPickerOpen = true }
+                    )
+                }
+                if (containingDecks.isEmpty()) {
+                    Text(
+                        text = "Not in any deck yet — add it to study it alongside related content.",
+                        color = sc.textMuted,
+                        fontSize = DsType.Body
+                    )
+                } else {
+                    containingDecks.forEach { containing ->
+                        val explicit = containing.cardIds.contains(card.id)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(DsRadius.Md))
+                                .background(sc.surfaceElevated)
+                                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                        ) {
+                            Text(
+                                text = containing.name,
+                                color = sc.textPrimary,
+                                fontSize = DsType.Body,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (!explicit) DsBadge(text = "auto", tint = sc.textMuted)
+                            DsButton(
+                                text = "Remove",
+                                kind = DsButtonKind.Ghost,
+                                compact = true,
+                                enabled = explicit,
+                                onClick = {
+                                    state.library.removeCards(containing.id, listOf(card.id))
+                                    state.toastHost.show("Removed ${card.character} from ${containing.name}", kind = ToastKind.Success)
+                                    state.activityLog.record(ActivityCategory.Deck, "Removed ${card.character} from ${containing.name}")
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         DsCard(modifier = Modifier.padding(horizontal = DsSpacing.Xl, vertical = DsSpacing.Sm)) {
@@ -2393,6 +3266,22 @@ private fun EntryDetail(
             }
         }
         Spacer(Modifier.height(DsSpacing.Xl))
+    }
+
+    if (deckPickerOpen) {
+        DeckPickerDialog(
+            state = state,
+            title = "Add to deck",
+            subtitle = "Choose a deck for \"${card.character}\". Auto (filter) decks match by search rule; explicit membership can be removed from the list above.",
+            decks = state.library.allDecks(),
+            onPick = { target ->
+                deckPickerOpen = false
+                state.library.addCards(target.id, listOf(card.id))
+                state.toastHost.show("Added ${card.character} to ${target.name}", kind = ToastKind.Success)
+                state.activityLog.record(ActivityCategory.Deck, "Added ${card.character} to ${target.name}")
+            },
+            onDismiss = { deckPickerOpen = false }
+        )
     }
 }
 

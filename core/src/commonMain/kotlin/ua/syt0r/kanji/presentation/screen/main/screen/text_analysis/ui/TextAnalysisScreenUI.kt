@@ -81,6 +81,7 @@ import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
 import ua.syt0r.kanji.presentation.common.ui.FuriganaText
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.common.ui.kanji.HighlightedLetter
 import ua.syt0r.kanji.presentation.dialog.SaveLettersDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.text_analysis.TextAnalysisContentMode
@@ -251,7 +252,11 @@ private fun AnalysisResultSection(
                         modifier = modifier
                             .fillMaxWidth()
                             .wrapContentSize()
-                            .widthIn(max = Dimens.ScreenWidth)
+                            .widthIn(max = rememberAdaptiveContentMaxWidth(
+                                phoneMax = Dimens.ScreenWidth,
+                                mediumMax = 480.dp,
+                                wideMax = 560.dp
+                            ))
                             .verticalScroll(rememberScrollState())
                     ) {
                         Icon(

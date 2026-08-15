@@ -128,7 +128,7 @@ fun AppState.capture(): ProfileData = ProfileData(
     settings = settings.snapshot(),
     themeId = activeThemeId,
     activity = activityLog.entries.asReversed(),
-    windowBounds = WindowStateStore.load(),
+    windowBounds = WindowStateStore.read(),
     metadata = mapOf(
         "cards" to cards.size.toString(),
         "reviews" to reviewLog.size.toString(),

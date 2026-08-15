@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
@@ -71,6 +72,7 @@ import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.theme.snapSizeTransform
 import ua.syt0r.kanji.presentation.common.theme.snapToBiggerSizeTransform
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.daily_limit.DailyLimitScreenContract.ScreenState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -264,7 +266,11 @@ private fun ScreenLayout(
                                 columnModifier = Modifier
                                     .fillMaxWidth()
                                     .wrapContentWidth()
-                                    .width(400.dp)
+                                    .widthIn(max = rememberAdaptiveContentMaxWidth(
+                                        phoneMax = 400.dp,
+                                        mediumMax = 520.dp,
+                                        wideMax = 640.dp
+                                    ))
                                     .clip(MaterialTheme.shapes.medium)
                                     .background(containerColor)
                                     .padding(20.dp)

@@ -1,0 +1,31 @@
+{# Shared macros for the project command center. #}
+
+{% macro status_badge(status) -%}
+{%- set class = 'badge-muted' -%}
+{%- set label = status -%}
+{%- if status == 'IMPLEMENTED' %}{% set class = 'badge-accent' %}{% set label = 'Live' %}
+{%- elif status == 'PARTIALLY_IMPLEMENTED' %}{% set class = 'badge-warning' %}{% set label = 'Partial' %}
+{%- elif status == 'PARTIAL' %}{% set class = 'badge-warning' %}{% set label = 'Partial' %}
+{%- elif status == 'ARCHITECTED' %}{% set class = 'badge-info' %}{% set label = 'Target' %}
+{%- elif status == 'PLANNED' %}{% set class = 'badge-muted' %}{% set label = 'Planned' %}
+{%- elif status == 'PLACEHOLDER' %}{% set class = 'badge-error' %}{% set label = 'Scaffold' %}
+{%- elif status == 'DONE' %}{% set class = 'badge-accent' %}{% set label = 'Done' %}
+{%- elif status == 'IN_PROGRESS' %}{% set class = 'badge-warning' %}{% set label = 'In progress' %}
+{%- elif status == 'BLOCKED' %}{% set class = 'badge-error' %}{% set label = 'Blocked' %}
+{%- elif status == 'TARGET' %}{% set class = 'badge-info' %}{% set label = 'Target' %}
+{%- elif status == 'RESEARCH' %}{% set class = 'badge-muted' %}{% set label = 'Research' %}
+{%- elif status == 'PLACEHOLDER' %}{% set class = 'badge-error' %}{% set label = 'Scaffold' %}
+{%- endif -%}
+<span class="badge {{ class }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro doc_href(docs) -%}
+{%- if docs and docs.startswith('http') %}{{ docs }}
+{%- elif docs %}{{ basePath }}{{ docs.lstrip('/') }}
+{%- else %}{{ basePath }}docs/
+{%- endif -%}
+{%- endmacro %}
+
+{% macro priority_label(pri) -%}
+{%- if pri == 'P0' %}Critical{% elif pri == 'P1' %}High{% elif pri == 'P2' %}Medium{% elif pri == 'P3' %}Low{% else %}—{% endif -%}
+{%- endmacro %}

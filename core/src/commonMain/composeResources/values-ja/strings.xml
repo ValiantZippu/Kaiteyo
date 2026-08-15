@@ -29,6 +29,10 @@
     <string name="general_dashboard_study_now">今すぐ学習</string>
     <string name="general_dashboard_today_progress">今日の進捗</string>
     <string name="general_dashboard_weekly_summary">直近7日間</string>
+    <string name="general_dashboard_activity">アクティビティ</string>
+    <string name="general_dashboard_activity_less">少</string>
+    <string name="general_dashboard_activity_more">多</string>
+    <string name="general_dashboard_your_decks">あなたのデッキ</string>
     <string name="general_dashboard_recent_decks">最近のデッキ</string>
     <string name="general_dashboard_recent_activity">最近のアクティビティ</string>
     <string name="general_dashboard_quick_actions">クイックアクション</string>

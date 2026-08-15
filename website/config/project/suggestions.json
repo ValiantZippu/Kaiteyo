@@ -1,0 +1,27 @@
+{
+  "$comment": "Public suggestion system (MASTER spec §16–§19, docs/website/API.md). The official plan is protected: suggestions never modify the roadmap directly. Submission channel today: GitHub issues (real, working). States: DRAFT, SUBMITTED, TRIAGE, DISCUSSION, NEEDS_MORE_INFO, ACCEPTED, REJECTED, DUPLICATE, DEFERRED, CONVERTED_TO_PLAN. items[] is intentionally empty until the backend exists — no fabricated suggestions.",
+  "workflow": [
+    { "state": "SUBMITTED", "label": "Submitted", "description": "A proposal has been created (today: as a GitHub issue)." },
+    { "state": "TRIAGE", "label": "In triage", "description": "Maintainers are deciding whether it is a feature request, plan proposal, or duplicate." },
+    { "state": "DISCUSSION", "label": "In discussion", "description": "Being discussed; contributors can add context and alternatives." },
+    { "state": "NEEDS_MORE_INFO", "label": "Needs more info", "description": "The proposal is missing required context; the author is asked to complete it." },
+    { "state": "ACCEPTED", "label": "Accepted", "description": "Approved by a maintainer. Becomes a roadmap item and/or kanban task with provenance back to the proposal." },
+    { "state": "REJECTED", "label": "Rejected", "description": "Declined, with the reason recorded." },
+    { "state": "DUPLICATE", "label": "Duplicate", "description": "Already tracked elsewhere; linked, not closed silently." },
+    { "state": "DEFERRED", "label": "Deferred", "description": "Deliberately postponed, with a reason." },
+    { "state": "CONVERTED_TO_PLAN", "label": "Converted to plan", "description": "Became an official roadmap/kanban item — the original proposal is preserved as provenance." }
+  ],
+  "types": [
+    { "id": "feature", "label": "Feature request", "description": "\"I want Kaiteyo to support X.\"" },
+    { "id": "plan", "label": "Plan proposal", "description": "\"I think Kaiteyo should implement subsystem X through architecture Y.\" — more structured, used for major architecture." },
+    { "id": "bug", "label": "Bug fix", "description": "Reproducible defect." },
+    { "id": "refactor", "label": "Refactor", "description": "Structural improvement without user-visible change." },
+    { "id": "docs", "label": "Documentation", "description": "Documentation gap or improvement." },
+    { "id": "design", "label": "Design improvement", "description": "UI/UX polish or redesign." },
+    { "id": "perf", "label": "Performance", "description": "Measurable performance improvement." },
+    { "id": "research", "label": "Research", "description": "Investigation before a decision (e.g. datasets, engines)." },
+    { "id": "architecture", "label": "Architecture change", "description": "Requires an ADR." },
+    { "id": "content", "label": "Content", "description": "Game location, course, exam type, media integration, story content." }
+  ],
+  "items": []
+}

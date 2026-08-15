@@ -58,12 +58,17 @@ import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenPaddedListI
 import ua.syt0r.kanji.presentation.screen.main.screen.info.VocabInfoData
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableSection
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableSentenceSection
+import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningAction
+import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningStatusSection
+import ua.syt0r.kanji.presentation.screen.main.screen.info.use_case.ItemLearningState
 
 @Composable
 fun VocabInfoUI(
     vocabData: VocabInfoData,
     listState: LazyListState,
     listSpacerState: ExtraListSpacerState,
+    learningState: ItemLearningState?,
+    learningActions: List<LearningAction>,
     onLetterClick: (String) -> Unit
 ) {
 
@@ -88,6 +93,15 @@ fun VocabInfoUI(
             ) {
 
                 item { VocabReadingSection(vocabData.word) }
+
+                if (learningState != null) {
+                    item(key = "learning-status") {
+                        LearningStatusSection(
+                            state = learningState,
+                            actions = learningActions
+                        )
+                    }
+                }
 
                 expandableSenseSection(
                     senseList = vocabData.senseList,
@@ -146,6 +160,15 @@ fun VocabInfoUI(
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
+
+                    if (learningState != null) {
+                        item(key = "learning-status") {
+                            LearningStatusSection(
+                                state = learningState,
+                                actions = learningActions
+                            )
+                        }
+                    }
 
                     infoScreenExpandableSentenceSection(
                         expanded = sentencesExpanded,

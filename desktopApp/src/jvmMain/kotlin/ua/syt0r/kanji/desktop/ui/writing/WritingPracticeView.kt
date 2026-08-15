@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,9 @@ import ua.syt0r.kanji.desktop.designsystem.DsTagChip
 import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
+import ua.syt0r.kanji.desktop.designsystem.errorColor
+import ua.syt0r.kanji.desktop.designsystem.successColor
+import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.model.ReviewRating
 import ua.syt0r.kanji.desktop.model.SrsStatus
@@ -233,13 +237,80 @@ private fun WritingSessionPanel(state: AppState, session: ua.syt0r.kanji.desktop
         }
 
         // Canvas
+        val canvasState = remember { WritingCanvasState() }
         WritingCanvas(
             revealed = state.writingRevealed,
             answer = card.character,
+            canvasState = canvasState,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(380.dp)
         )
+
+        // Stroke evaluation feedback (shown after reveal when the evaluator
+        // has canonical data for this character).
+        val evaluation = remember(state.writingRevealed, card.character, canvasState.strokes.size) {
+            if (!state.writingRevealed || canvasState.strokes.isEmpty()) {
+                null
+            } else {
+                state.writingEvaluator.evaluate(
+                    expression = card.character,
+                    drawnStrokes = canvasState.normalizedStrokes(),
+                    canvasWidth = canvasState.canvasSize?.width?.toDouble() ?: 380.0,
+                    canvasHeight = canvasState.canvasSize?.height?.toDouble() ?: 380.0
+                )
+            }
+        }
+        if (evaluation != null && evaluation.supported && evaluation.strokes.isNotEmpty()) {
+            DsCard {
+                Column(Modifier.padding(DsSpacing.Md), verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Text(
+                            text = "Stroke analysis",
+                            color = sc.textPrimary,
+                            fontSize = DsType.Label,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        DsBadge(
+                            text = "${evaluation.correctStrokes}/${evaluation.strokes.size} strokes · ${(evaluation.accuracy * 100).toInt()}% · ${evaluation.sourceLabel}",
+                            tint = if (evaluation.accuracy >= 0.7f) successColor() else warningColor()
+                        )
+                        if (!evaluation.kanjiVgPresent) {
+                            DsBadge(
+                                text = "install KanjiVG for full coverage",
+                                tint = sc.textMuted
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            text = "Your self-grade still drives the schedule",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                    evaluation.strokes.forEach { ev ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Stroke ${ev.strokeIndex + 1}",
+                                color = sc.textSecondary,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.width(72.dp)
+                            )
+                            Text(
+                                text = when (ev.mistake) {
+                                    ua.syt0r.kanji.desktop.engine.stroke_evaluator.StrokeMistake.None -> "correct"
+                                    ua.syt0r.kanji.desktop.engine.stroke_evaluator.StrokeMistake.Shape -> "shape deviation ${ev.deviation.toInt()}"
+                                    ua.syt0r.kanji.desktop.engine.stroke_evaluator.StrokeMistake.Direction -> "wrong direction ${ev.directionErrorDegrees.toInt()}°"
+                                    ua.syt0r.kanji.desktop.engine.stroke_evaluator.StrokeMistake.ShapeAndDirection -> "shape + direction"
+                                },
+                                color = if (ev.correct) successColor() else errorColor(),
+                                fontSize = DsType.Caption
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // Controls
         Row(
@@ -251,22 +322,22 @@ private fun WritingSessionPanel(state: AppState, session: ua.syt0r.kanji.desktop
                 DsButton(
                     text = "Again",
                     kind = DsButtonKind.Danger,
-                    onClick = { state.rateWriting(ReviewRating.Again) },
+                    onClick = { state.rateWriting(ReviewRating.Again, canvasState) },
                     compact = false
                 )
                 DsButton(
                     text = "Hard",
                     kind = DsButtonKind.Secondary,
-                    onClick = { state.rateWriting(ReviewRating.Hard) }
+                    onClick = { state.rateWriting(ReviewRating.Hard, canvasState) }
                 )
                 DsButton(
                     text = "Good",
-                    onClick = { state.rateWriting(ReviewRating.Good) }
+                    onClick = { state.rateWriting(ReviewRating.Good, canvasState) }
                 )
                 DsButton(
                     text = "Easy",
                     kind = DsButtonKind.Secondary,
-                    onClick = { state.rateWriting(ReviewRating.Easy) }
+                    onClick = { state.rateWriting(ReviewRating.Easy, canvasState) }
                 )
             } else {
                 DsButton(
@@ -289,9 +360,10 @@ private fun WritingSessionPanel(state: AppState, session: ua.syt0r.kanji.desktop
 // HANDWRITING CANVAS
 // ============================================
 
-private class WritingCanvasState {
+class WritingCanvasState {
     val strokes = mutableStateListOf<List<Offset>>()
     var current by mutableStateOf<List<Offset>>(emptyList())
+    var canvasSize by mutableStateOf<androidx.compose.ui.geometry.Size?>(null)
 
     val isEmpty: Boolean get() = strokes.isEmpty() && current.isEmpty()
 
@@ -303,17 +375,29 @@ private class WritingCanvasState {
         strokes.clear()
         current = emptyList()
     }
+
+    /** Completed strokes as normalized [StrokePoint]s for the evaluator. */
+    fun normalizedStrokes(): List<List<ua.syt0r.kanji.desktop.engine.stroke_evaluator.StrokePoint>> {
+        val size = canvasSize ?: return emptyList()
+        if (size.width <= 0f || size.height <= 0f) return emptyList()
+        return strokes.map { stroke ->
+            stroke.map { p ->
+                ua.syt0r.kanji.desktop.engine.stroke_evaluator.StrokePoint(p.x.toDouble(), p.y.toDouble())
+            }
+        }
+    }
 }
 
 @Composable
-private fun WritingCanvas(
+internal fun WritingCanvas(
     revealed: Boolean,
     answer: String,
+    canvasState: WritingCanvasState,
     modifier: Modifier = Modifier
 ) {
     val sc = surfaceColors()
     val ac = accent()
-    val state = remember { WritingCanvasState() }
+    val state = canvasState
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(
@@ -321,6 +405,7 @@ private fun WritingCanvas(
                 .fillMaxSize()
                 .clip(RoundedCornerShape(DsRadius.Lg))
                 .background(sc.surfaceElevated)
+                .onSizeChanged { state.canvasSize = androidx.compose.ui.geometry.Size(it.width.toFloat(), it.height.toFloat()) }
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
                         while (true) {

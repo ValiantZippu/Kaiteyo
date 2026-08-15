@@ -10,6 +10,11 @@ today** — implemented features only; planned items are labeled as such.
 | [`DESKTOP_SUITE.md`](DESKTOP_SUITE.md) | The desktop immersion workspace: dictionary, media, mining, OCR, browser |
 | [`CUSTOMIZATION.md`](CUSTOMIZATION.md) | Themes, settings, navigation, keyboard shortcuts |
 
+> These guides describe **implemented features only**, and the screen/feature names
+> match the actual composables and workspace views (e.g. `LibraryScreen`,
+> `StatisticsScreen`, `WorkspaceView` entries). If a guide disagrees with the app,
+> the app wins — report it per `../contributing/CONTRIBUTING.md`.
+
 ## Which guide do I need?
 
 - **New to the app?** Start with [GETTING_STARTED.md](GETTING_STARTED.md).

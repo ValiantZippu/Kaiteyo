@@ -1,0 +1,31 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "activity" %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Activity</h1>
+  <p class="text-secondary">The project evolving — commits, releases, decisions, and documentation
+    changes. Every event is real: this feed is a snapshot of the git history and decision log
+    captured on {{ activity_captured }} (see
+    <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/website/config/project/activity.json" target="_blank" rel="noopener">activity.json</a>).
+    Nothing here is fabricated.</p>
+</header>
+
+<ol class="activity-feed">
+  {% for event in activity_events %}
+  <li class="activity-event" data-kind="{{ event.kind }}">
+    <time class="activity-date" datetime="{{ event.date }}">{{ event.date }}</time>
+    <div class="activity-body">
+      <span class="badge badge-muted">{{ event.kind }}</span>
+      <h3>{{ event.title }}</h3>
+      {% if event.detail %}<p class="card-description">{{ event.detail }}</p>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+
+<p class="text-secondary activity-note">The realtime activity feed (live updates as cards move,
+  proposals are accepted, docs change) is part of the documented
+  <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/website/API.md" target="_blank" rel="noopener">backend API contract</a>
+  — never simulated.</p>
+{% endblock %}

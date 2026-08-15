@@ -41,11 +41,18 @@ import java.util.Base64
 // silently duplicating a collection.
 // ============================================
 
+/** Live connection parameters read from the settings engine at call time. */
+data class AnkiConfig(
+    val host: String = "127.0.0.1",
+    val port: Int = 8765,
+    val apiKey: String = "",
+    /** When set, mined cards land in this Anki deck instead of `Kaiteyo::<deck>`. */
+    val deckOverride: String = ""
+)
+
 /** Builds AnkiConnect JSON-RPC-style requests and parses responses. */
 class AnkiConnectTransport(
-    private val host: String = "127.0.0.1",
-    private val port: Int = 8765,
-    private val apiKey: String = ""
+    private val config: () -> AnkiConfig
 ) : MiningTransport {
 
     override val name: String = "AnkiConnect"
@@ -54,6 +61,11 @@ class AnkiConnectTransport(
         private set
     var lastError by mutableStateOf<String?>(null)
         private set
+
+    private val host: String get() = config().host
+    private val port: Int get() = config().port
+    private val apiKey: String get() = config().apiKey
+    private val deckOverride: String get() = config().deckOverride
 
     override val configured: Boolean get() = host.isNotBlank() && port in 1..65535
 
@@ -175,7 +187,7 @@ class AnkiConnectTransport(
 
     override fun send(payload: MiningPayload): Result<String> = runCatching {
         if (!configured) error("AnkiConnect is not configured")
-        val deck = "Kaiteyo::${payload.deckId.ifBlank { DesktopCard.DEFAULT_DECK_ID }}"
+        val deck = deckOverride.ifBlank { "Kaiteyo::${payload.deckId.ifBlank { DesktopCard.DEFAULT_DECK_ID }}" }
         ensureDeck(deck)
 
         val note = buildJsonObject {

@@ -27,6 +27,18 @@ enum class MiningMode(val label: String) {
     Both("Kaiteyo + GameSentenceMiner")
 }
 
+/**
+ * Per-mine card destination. Kaiteyo is always available; Anki destinations
+ * are only valid while the AnkiConnect integration is enabled. `Anki` means
+ * the card lives in Anki only (Kaiteyo keeps a mine record, and falls back to
+ * a native card if Anki is unreachable so a word is never lost).
+ */
+enum class CardDestination(val label: String) {
+    Kaiteyo("Kaiteyo"),
+    Anki("Anki"),
+    Both("Kaiteyo + Anki")
+}
+
 /** A destination for mined cards, e.g. GameSentenceMiner. */
 interface MiningTransport {
     val name: String
@@ -144,10 +156,20 @@ class MiningIntegrationManager(
             else -> MiningMode.Kaiteyo
         }
 
+    /**
+     * The AnkiConnect transport. Connection parameters are read from the
+     * settings engine at call time, so host/port/key changes apply without
+     * rebuilding the manager.
+     */
     val anki: AnkiConnectTransport = AnkiConnectTransport(
-        host = settings.getString("media.anki.host", "127.0.0.1"),
-        port = settings.getInt("media.anki.port", 8765),
-        apiKey = settings.getString("media.anki.key")
+        config = {
+            AnkiConfig(
+                host = settings.getString("media.anki.host", "127.0.0.1"),
+                port = settings.getInt("media.anki.port", 8765),
+                apiKey = settings.getString("media.anki.key"),
+                deckOverride = settings.getString("media.anki.deck")
+            )
+        }
     )
 
     val transports: List<MiningTransport>
@@ -157,25 +179,21 @@ class MiningIntegrationManager(
         }
 
     /**
-     * Push a completed mine to the external transports per the active mode.
-     * GameSentenceMiner follows the mining-mode setting; AnkiConnect forwards
-     * independently when enabled. Kaiteyo is always the primary destination.
+     * Push a completed mine to the external transports for the given
+     * destination. GameSentenceMiner follows the mining-mode setting; the
+     * AnkiConnect transport is used only for `Anki`/`Both` destinations and
+     * only while the integration is enabled. Each result is attributed to its
+     * transport so callers can queue retries without duplicating anything.
      */
-    fun forward(payload: MiningPayload): List<Result<String>> {
-        val results = mutableListOf<Result<String>>()
+    fun forward(payload: MiningPayload, destination: CardDestination): List<Pair<MiningTransport, Result<String>>> {
+        val results = mutableListOf<Pair<MiningTransport, Result<String>>>()
         when (mode) {
             MiningMode.Kaiteyo -> Unit
-            MiningMode.Forward, MiningMode.Both -> results.add(gsm.send(payload))
+            MiningMode.Forward, MiningMode.Both -> results.add(gsm to gsm.send(payload))
         }
-        if (settings.getBool("media.anki.enabled") && settings.getBool("media.anki.send-mined")) {
-            results.add(anki.send(payload))
+        if (settings.getBool("media.anki.enabled") && destination != CardDestination.Kaiteyo) {
+            results.add(anki to anki.send(payload))
         }
         return results
-    }
-
-    /** Rebuild the transport after settings change. */
-    fun refresh() {
-        // GsmTransport is effectively stateless per call; settings are read
-        // through the engine so no rebuild is strictly required.
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import kotlin.math.max
 import kotlin.math.min
 
@@ -153,7 +154,7 @@ fun FilteredDeckDialog(
 ) {
     var config by remember { mutableStateOf(FilteredDeckConfig()) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Custom Study / Filtered Deck") },
         text = {
@@ -251,7 +252,7 @@ fun StudyModeSelector(
     onSelectMode: (StudyMode) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Study Mode") },
         text = {
@@ -302,7 +303,7 @@ fun CramModeDialog(
 ) {
     var config by remember { mutableStateOf(CramConfig()) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Cram Mode Settings") },
         text = {
@@ -482,7 +483,7 @@ fun RepositionDialog(
 ) {
     var position by remember { mutableStateOf("0") }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Reposition Cards") },
         text = {
@@ -510,7 +511,7 @@ fun RescheduleDialog(
 ) {
     var interval by remember { mutableStateOf("21") }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Set Interval") },
         text = {
@@ -538,7 +539,7 @@ fun ChangeDueDateDialog(
 ) {
     var days by remember { mutableStateOf("0") }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Change Due Date") },
         text = {

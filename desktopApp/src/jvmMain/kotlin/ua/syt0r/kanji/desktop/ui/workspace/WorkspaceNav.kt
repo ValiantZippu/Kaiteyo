@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -52,9 +53,9 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MenuOpen
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Settings
@@ -65,6 +66,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.ViewSidebar
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,10 +82,15 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.pointer.isTertiaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -111,6 +118,8 @@ import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.presentation.common.nav.LocalWindowResizing
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import kotlin.math.roundToInt
 
 // ============================================
@@ -131,25 +140,57 @@ private data class NavItem(
     val icon: ImageVector
 )
 
-private val navGroups: List<Pair<String, List<NavItem>>> = listOf(
-    "Study" to listOf(
-        NavItem(WorkspaceView.Dashboard, Icons.Default.SpaceDashboard),
-        NavItem(WorkspaceView.Library, Icons.Default.LibraryBooks),
-        NavItem(WorkspaceView.Dictionary, Icons.Default.MenuBook),
+// ============================================
+// CURATED PRIMARY DESTINATIONS — the single
+// navigation model shared by the dock, the
+// compact tab bar and the floating launchpad.
+// The Library is the learning hub: studying is
+// an action performed from a deck, never a
+// top-level destination. Primary set:
+// Home · Library · Browse · Stats · Media ·
+// Settings — Review (the active study session)
+// stays reachable from decks and the "Study
+// tools" overflow, not from the main dock.
+// ============================================
+
+private val primaryNavItems: List<NavItem> = listOf(
+    // Home
+    NavItem(WorkspaceView.Dashboard, Icons.Default.SpaceDashboard),
+    // Library — the hub (collections → decks → study)
+    NavItem(WorkspaceView.Library, Icons.Default.LibraryBooks),
+    // Browse
+    NavItem(WorkspaceView.Dictionary, Icons.Default.MenuBook),
+    // Stats
+    NavItem(WorkspaceView.Statistics, Icons.Default.BarChart),
+    // Media
+    NavItem(WorkspaceView.Media, Icons.Default.VideoLibrary),
+    // Settings
+    NavItem(WorkspaceView.Settings, Icons.Default.Settings)
+)
+
+/**
+ * Secondary workspaces, grouped for the dock's "All views" overflow and the
+ * launchpad's secondary section. The suite's power tools (exams, writing,
+ * mining, OCR, integrations…) stay one click away — never orphaned. Review
+ * lives here: starting a study session from a deck still opens it, but the
+ * Review view is an action surface, not a navigation destination.
+ */
+private val secondaryNavGroups: List<Pair<String, List<NavItem>>> = listOf(
+    "Study tools" to listOf(
         NavItem(WorkspaceView.Review, Icons.Default.PlayArrow),
+        NavItem(WorkspaceView.Exams, Icons.Default.School),
         NavItem(WorkspaceView.Writing, Icons.Default.Create),
         NavItem(WorkspaceView.Grammar, Icons.Default.Lightbulb),
         NavItem(WorkspaceView.Collections, Icons.Default.Bookmarks)
     ),
     "Materials" to listOf(
         NavItem(WorkspaceView.LearningBrowser, Icons.Default.TextSnippet),
-        NavItem(WorkspaceView.Media, Icons.Default.VideoLibrary),
         NavItem(WorkspaceView.Ocr, Icons.Default.Camera),
         NavItem(WorkspaceView.Mining, Icons.Default.Usb)
     ),
     "Organize" to listOf(
         NavItem(WorkspaceView.Tags, Icons.Default.Sell),
-        NavItem(WorkspaceView.Statistics, Icons.Default.BarChart),
+        NavItem(WorkspaceView.Mistakes, Icons.Default.Warning),
         NavItem(WorkspaceView.History, Icons.Default.History)
     ),
     "System" to listOf(
@@ -158,28 +199,79 @@ private val navGroups: List<Pair<String, List<NavItem>>> = listOf(
         NavItem(WorkspaceView.Sync, Icons.Default.Sync),
         NavItem(WorkspaceView.Shortcuts, Icons.Default.Keyboard),
         NavItem(WorkspaceView.Plugins, Icons.Default.Extension),
-        NavItem(WorkspaceView.ThemeStudio, Icons.Default.Palette),
-        NavItem(WorkspaceView.Settings, Icons.Default.Settings),
         NavItem(WorkspaceView.Account, Icons.Default.Person),
         NavItem(WorkspaceView.Contributions, Icons.Default.Favorite)
     )
 )
 
-/** All nav items flattened (used by the compact overflow menu). */
+/** All nav items flattened (primary + secondary) for the palette and icon lookups. */
 val allNavItems: List<Pair<WorkspaceView, ImageVector>> =
-    navGroups.flatMap { (_, items) -> items.map { it.view to it.icon } }
+    (primaryNavItems + secondaryNavGroups.flatMap { it.second }).map { it.view to it.icon }
 
-/** The four views surfaced as primary tabs in compact windows. */
+/** All secondary views, flattened for the dock "All views" overflow. */
+private val secondaryNavItems: List<Pair<WorkspaceView, ImageVector>> =
+    secondaryNavGroups.flatMap { (_, items) -> items.map { it.view to it.icon } }
+
+/**
+ * Launchpad groups: the curated primary set first, then every secondary
+ * workspace — the launchpad stays the comprehensive launcher while the
+ * primary destinations lead it, exactly like the dock.
+ */
+val navGroupsForLaunchpad: List<Pair<String, List<Pair<WorkspaceView, ImageVector>>>> =
+    listOf("Primary" to primaryNavItems.map { it.view to it.icon }) +
+        secondaryNavGroups.map { (label, items) -> label to items.map { it.view to it.icon } }
+
+/** The views surfaced as primary tabs in compact windows (Home · Library · Browse · Stats). */
 private val compactPrimaryViews = listOf(
     WorkspaceView.Dashboard,
     WorkspaceView.Library,
     WorkspaceView.Dictionary,
-    WorkspaceView.Review
+    WorkspaceView.Statistics
 )
+
+/**
+ * Dock-item press behavior: a plain click navigates the active tab, while
+ * middle-click or Ctrl+click opens the destination in a new workspace tab
+ * (browser-style multi-instance). Consumption keeps the two exclusive.
+ */
+private fun Modifier.dockItemGesture(state: AppState, view: WorkspaceView): Modifier = this
+    .pointerInput(view) {
+        awaitEachGesture {
+            // Buttons live on the event in Compose 1.8, not the change.
+            val firstEvent = awaitPointerEvent()
+            val down = firstEvent.changes.firstOrNull { it.pressed } ?: return@awaitEachGesture
+            if (firstEvent.buttons.isTertiaryPressed || currentEvent.keyboardModifiers.isCtrlPressed) {
+                down.consume()
+                state.openTab(view, activate = true)
+                return@awaitEachGesture
+            }
+            var dragged = false
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                when (event.type) {
+                    PointerEventType.Move -> {
+                        if (!dragged &&
+                            (change.position - down.position).getDistance() > viewConfiguration.touchSlop
+                        ) {
+                            dragged = true
+                        }
+                    }
+                    PointerEventType.Release -> {
+                        if (!dragged) state.currentView = view
+                        return@awaitEachGesture
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
 
 @Composable
 private fun navBadge(state: AppState, view: WorkspaceView): String? = when (view) {
-    WorkspaceView.Review -> state.dueCount().takeIf { it > 0 }?.toString()
+    // The Library is the hub — its badge is the total due workload across
+    // every deck, so the dock still answers "what needs studying today?".
+    WorkspaceView.Library -> state.dueCount().takeIf { it > 0 }?.toString()
     else -> null
 }
 
@@ -189,16 +281,9 @@ private fun navBadge(state: AppState, view: WorkspaceView): String? = when (view
 
 @Composable
 private fun DsLogoMark(modifier: Modifier = Modifier) {
-    val ac = accent()
-    Box(
-        modifier = modifier
-            .size(30.dp)
-            .clip(RoundedCornerShape(DsRadius.Md))
-            .background(ac.primary),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("K", color = ac.onPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.Bold)
-    }
+    // The real Kaiteyo mark — resolved through the centralized brand asset
+    // API instead of a letterform placeholder.
+    BrandMark(modifier = modifier.size(30.dp), contentDescription = null)
 }
 
 /** Motion duration for dock size changes, honoring the animation toggle + speed + global reduced motion. */
@@ -238,10 +323,6 @@ private fun showNavLabel(state: AppState, expanded: Boolean, hovered: Boolean): 
         NavLabelMode.OnHover -> hovered
         NavLabelMode.Hidden -> false
     }
-
-/** Group section headers only make sense when labels are always visible. */
-private fun showNavGroupHeaders(state: AppState, expanded: Boolean): Boolean =
-    expanded && state.navLabelMode == NavLabelMode.Always
 
 // ============================================
 // NAV TOOLTIP (compact icon-only mode)
@@ -337,11 +418,14 @@ fun DsNavRail(
     val itemSpacing = navItemSpacing(state)
 
     // The rail reads the window width so the expanded size stays within
-    // predefined widths and is capped on narrow (tablet) windows.
+    // predefined widths and is capped on narrow (tablet) windows. While the
+    // window is being resized the width follows instantly — animating toward
+    // a target that changes every frame only adds lag and jitter.
     BoxWithConstraints(Modifier.fillMaxHeight()) {
+        val resizing = LocalWindowResizing.current
         val railWidth by animateDpAsState(
             targetValue = if (expanded) state.effectiveExpandedWidth(maxWidth.value) else 64.dp,
-            animationSpec = tween(dockDurationMs(state), easing = FastOutSlowInEasing),
+            animationSpec = tween(if (resizing) 0 else dockDurationMs(state), easing = FastOutSlowInEasing),
             label = "navRailWidth"
         )
 
@@ -400,23 +484,14 @@ fun DsNavRail(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(itemSpacing)
         ) {
-            navGroups.forEach { (groupLabel, items) ->
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (showNavGroupHeaders(state, expanded)) {
-                        Text(
-                            text = groupLabel.uppercase(),
-                            color = sc.textMuted,
-                            fontSize = DsType.Caption,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs)
-                        )
-                    } else {
-                        Spacer(Modifier.height(DsSpacing.Xs))
-                    }
-                    items.forEach { item -> DsNavItem(item, state, expanded) }
-                }
-                Spacer(Modifier.height(DsSpacing.Xs))
-            }
+            // The curated primary destinations — Home · Library · Browse ·
+            // Stats · Media · Settings — with the Library as the learning hub
+            // (single section, no headers). Study is an action from a deck.
+            primaryNavItems.forEach { item -> DsNavItem(item, state, expanded) }
+            Spacer(Modifier.height(DsSpacing.Xs))
+            // Every other workspace behind one overflow entry — the dock
+            // stays a curated primary navigation and nothing is orphaned.
+            DsMoreViewsButton(state, expanded, vertical = true)
         }
 
         Spacer(Modifier.height(DsSpacing.Md))
@@ -487,7 +562,7 @@ private fun DsNavItem(item: NavItem, state: AppState, expanded: Boolean) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(DsRadius.Md))
                 .background(bg)
-                .clickable(interactionSource = interaction, indication = null, onClick = { state.currentView = item.view })
+                .dockItemGesture(state, item.view)
                 .hoverable(interaction)
                 .padding(horizontal = if (expanded) DsSpacing.Md else 0.dp, vertical = DsSpacing.Sm),
             verticalAlignment = Alignment.CenterVertically,
@@ -537,9 +612,10 @@ fun DsNavBar(
 ) {
     val sc = surfaceColors()
     val expanded = state.navExpansion == NavExpansion.Expanded
+    val resizing = LocalWindowResizing.current
     val barHeight by animateDpAsState(
         targetValue = if (expanded) 64.dp else 52.dp,
-        animationSpec = tween(dockDurationMs(state), easing = FastOutSlowInEasing),
+        animationSpec = tween(if (resizing) 0 else dockDurationMs(state), easing = FastOutSlowInEasing),
         label = "navBarHeight"
     )
 
@@ -580,10 +656,11 @@ fun DsNavBar(
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            navGroups.forEachIndexed { groupIndex, (_, items) ->
-                if (groupIndex > 0) NavGroupSeparator()
-                items.forEach { item -> DsNavPill(item, state, expanded) }
-            }
+            // The curated primary destinations first, then the overflow for
+            // every secondary workspace.
+            primaryNavItems.forEach { item -> DsNavPill(item, state, expanded) }
+            NavGroupSeparator()
+            DsMoreViewsButton(state, expanded, vertical = false)
         }
         Spacer(Modifier.width(DsSpacing.Sm))
         DsNavPositionButton(state)
@@ -615,7 +692,7 @@ private fun DsNavPill(item: NavItem, state: AppState, expanded: Boolean) {
             modifier = Modifier
                 .clip(RoundedCornerShape(DsRadius.Md))
                 .background(bg)
-                .clickable(interactionSource = interaction, indication = null, onClick = { state.currentView = item.view })
+                .dockItemGesture(state, item.view)
                 .hoverable(interaction)
                 .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Sm),
             verticalAlignment = Alignment.CenterVertically,
@@ -652,6 +729,117 @@ private fun NavGroupSeparator() {
             .height(20.dp)
             .background(sc.border.copy(alpha = 0.5f))
     )
+}
+
+// ============================================
+// ALL VIEWS OVERFLOW
+// Every secondary workspace sits behind one
+// "More" entry, so the dock stays a curated
+// primary navigation (Home · Library · Browse ·
+// Stats · Media · Settings) without orphaning
+// anything. Same grouped menu used by the compact
+// tab bar, with full keyboard access.
+// ============================================
+
+@Composable
+private fun DsMoreViewsButton(
+    state: AppState,
+    expanded: Boolean,
+    vertical: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val sc = surfaceColors()
+    var open by remember { mutableStateOf(false) }
+    var anchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    val bg = if (hovered) sc.surfaceInteractive.copy(alpha = 0.6f) else Color.Transparent
+
+    NavTooltipHost(
+        label = "All views",
+        enabled = !expanded,
+        placement = when {
+            vertical -> if (state.navPosition == NavPosition.Right) TooltipPlacement.Left else TooltipPlacement.Right
+            state.navPosition == NavPosition.Bottom -> TooltipPlacement.Above
+            else -> TooltipPlacement.Below
+        },
+        delayMs = state.navigationTooltipDelayMs
+    ) {
+        Row(
+            modifier = modifier
+                .then(if (vertical) Modifier.fillMaxWidth() else Modifier)
+                .onGloballyPositioned { if (anchor != it) anchor = it }
+                .clip(RoundedCornerShape(DsRadius.Md))
+                .background(bg)
+                .hoverable(interaction)
+                .clickable(interactionSource = interaction, indication = null) { open = true }
+                .padding(horizontal = if (expanded) DsSpacing.Md else 0.dp, vertical = DsSpacing.Sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (expanded) Arrangement.Start else Arrangement.Center
+        ) {
+            Icon(
+                Icons.Default.MoreVert,
+                contentDescription = "All views",
+                tint = if (hovered) sc.textPrimary else sc.textSecondary,
+                modifier = Modifier.size(navIconSize(state))
+            )
+            if (expanded) {
+                Spacer(Modifier.width(DsSpacing.Md))
+                Text(
+                    text = "More",
+                    color = sc.textSecondary,
+                    fontSize = DsType.Body
+                )
+            }
+        }
+    }
+
+    val coords = anchor
+    if (open && coords != null) {
+        val pos = coords.positionInWindow()
+        val density = LocalDensity.current
+        val windowSize = LocalWindowInfo.current.containerSize
+        val menuW = with(density) { 244.dp.toPx() }
+        val menuH = with(density) { minOf(430f, secondaryNavItems.size * 36f + 16f).dp.toPx() }
+        // Open toward the window interior and flip upward when the menu would
+        // clip below the window.
+        val openUp = state.navPosition == NavPosition.Bottom ||
+            pos.y + coords.size.height + menuH > windowSize.height
+        val openLeft = state.navPosition == NavPosition.Right
+        val popupX = when {
+            openLeft -> pos.x - menuW - 8
+            vertical -> pos.x + coords.size.width + 8
+            else -> pos.x
+        }
+        val popupY = if (openUp) pos.y - menuH else pos.y + coords.size.height
+        Popup(
+            onDismissRequest = { open = false },
+            offset = IntOffset(popupX.roundToInt(), popupY.roundToInt()),
+            properties = PopupProperties(focusable = true)
+        ) {
+            Column(
+                Modifier
+                    .heightIn(max = 430.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                DsMenuPanel(
+                    menuItems = secondaryNavItems
+                        .map { (view, icon) ->
+                            DsMenuItem(
+                                label = view.label,
+                                icon = icon,
+                                checked = state.currentView == view,
+                                onAction = {
+                                    state.currentView = view
+                                    open = false
+                                }
+                            )
+                        },
+                    onDismiss = { open = false }
+                )
+            }
+        }
+    }
 }
 
 // ============================================
@@ -699,7 +887,7 @@ fun DsCompactNavBar(state: AppState) {
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(DsRadius.Md))
-                    .clickable { state.currentView = view }
+                    .dockItemGesture(state, view)
                     .padding(vertical = DsSpacing.Xs),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -732,6 +920,29 @@ fun DsCompactNavBar(state: AppState) {
         }
         var overflowOpen by remember { mutableStateOf(false) }
         var overflowAnchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        // Compact tab-bar position toggle — moves the bar to the opposite
+        // edge. Only Top/Bottom are valid in compact windows (AppState
+        // coerces anything else), and only reachable in the suite's compact
+        // layout, where this bar is visible.
+        DsIconButton(
+            icon = if (state.compactNavPosition == NavPosition.Top) {
+                Icons.Default.KeyboardArrowDown
+            } else {
+                Icons.Default.KeyboardArrowUp
+            },
+            onClick = {
+                state.updateCompactNavPosition(
+                    if (state.compactNavPosition == NavPosition.Top) NavPosition.Bottom
+                    else NavPosition.Top
+                )
+            },
+            contentDescription = if (state.compactNavPosition == NavPosition.Top) {
+                "Move tab bar to bottom"
+            } else {
+                "Move tab bar to top"
+            },
+            size = 32.dp
+        )
         Box(
             modifier = Modifier
                 .onGloballyPositioned { if (overflowAnchor != it) overflowAnchor = it }

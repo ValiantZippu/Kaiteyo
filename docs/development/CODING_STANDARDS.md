@@ -1,86 +1,97 @@
 # Kaiteyo (書いてよ) — Coding Standards
 
-## General Principles
+> These standards are **observed in the codebase**, not aspirational. Where a generic
+> rule below conflicts with an existing pattern, follow the existing pattern and note
+> the discrepancy.
 
-1. **Readability over cleverness** — Write code that is easy to understand
-2. **Consistency** — Follow existing patterns in the codebase
-3. **Minimalism** — Less code is better code
-4. **Type safety** — Use Kotlin's type system to prevent errors
-5. **Testability** — Write code that can be tested
+## General principles
 
-## Naming Conventions
+1. **Readability over cleverness** — code is read more than written
+2. **Consistency** — match the surrounding file/module's patterns
+3. **Minimalism** — the smallest correct change; prefer established libraries over
+   custom code (`ENGINEERING_STANDARDS.md` §164)
+4. **Type safety** — use Kotlin's type system to make illegal states unrepresentable
+5. **Testability** — pure domain logic separated from UI so it can be unit-tested
+6. **Token-driven UI** — never hardcode colors/spacing/radii; read `Ds*`/`Dimens` tokens
+
+## Naming conventions
 
 ### Kotlin
+
 | Element | Convention | Example |
 |---------|------------|---------|
 | Classes | PascalCase | `ThemeManager`, `KaiteyoWindow` |
-| Functions | camelCase | `animateColorAsState`, `resolveString` |
+| Functions | camelCase | `resolveString`, `rememberMainNavigationState` |
 | Properties | camelCase | `windowState`, `isMaximized` |
-| Constants | UPPER_SNAKE_CASE | `MAX_WIDTH`, `DEFAULT_RADIUS` |
-| Composables | PascalCase | `KaiteyoTitleBar`, `FloatingControlButton` |
+| Constants | UPPER_SNAKE_CASE | `ThemeTransitionMillis`, `SidebarElevation` |
+| Composables | PascalCase | `KaiteyoTitleBar`, `DictionaryPopup` |
 | State holders | PascalCase | `KaiteyoThemeState`, `GlowConfig` |
-| Type aliases | PascalCase | `ColorToken`, `DpValue` |
+| ViewModels | `{Feature}ScreenViewModel` | `DeckDetailsScreenViewModel` |
+| Contracts | `{Feature}ScreenContract` | `DeckDetailsScreenContract` |
 
 ### Files
-- One class/interface per file (except for small related types)
-- File name matches the primary class name
-- Use `.kt` extension
+- One primary class/interface per file; file name matches the primary name
+- Compose screens follow the 4-file pattern (Contract / ViewModel / Module / Screen)
+- Desktop `Ds*` components: one file per component family (`DsButtons.kt`, `DsCards.kt`)
 
 ## Formatting
 
-### Indentation
-- 4 spaces (no tabs)
-- Continuation indent: 8 spaces
+- **Indentation**: 4 spaces (continuation: 8)
+- **Braces**: `fun example() {`; `else`/`catch`/`finally` on the closing brace line
+- **Spacing**: single space after keywords; no space before colon; space after colon;
+  space after commas
+- **Max line length**: 120 chars; wrap before operators
+- **Imports**: no wildcards; grouped stdlib → Android/Compose → third-party → project,
+  blank line between groups
 
-### Braces
-- Opening brace on same line: `fun example() {`
-- Closing brace on its own line
-- `else`, `catch`, `finally` on same line as closing brace
+## The screen pattern (core, all platforms)
 
-### Spacing
-- Single space after keywords: `if (condition)`, `for (item in list)`
-- No space before colon: `val x: Int`
-- Space after colon: `val x: Int`
-- No space before comma: `fun example(a: Int, b: Int)`
-- Space after comma: `fun example(a: Int, b: Int)`
+Every feature screen in `core/.../screen/main/screen/<feature>/` uses 4 files:
 
-### Maximum Line Length
-- 120 characters
-- Break before operators when wrapping
+```text
+{Feature}ScreenContract.kt    # interface {Feature}ScreenContract { interface ViewModel ... }
+{Feature}ScreenViewModel.kt   # class ... : Contract.ViewModel  (StateFlow-based)
+{Feature}ScreenModule.kt      # Koin: multiplatformViewModel<Contract.ViewModel> { ... }
+{Feature}Screen.kt|UI.kt      # @Composable, VM via getMultiplatformViewModel<Contract.ViewModel>()
+```
 
-### Imports
-- No wildcard imports (use explicit imports)
-- Group imports by:
-  1. Kotlin stdlib
-  2. Android/Compose
-  3. Third-party libraries
-  4. Project imports
-- Blank line between groups
+- **Contract** — declares the `ViewModel` interface and any screen-level state types
+  (`data class` state, `sealed interface` events/effects).
+- **ViewModel** — exposes `StateFlow<State>`; receives a `viewModelScope`-style scope;
+  never touches Compose.
+- **Module** — `multiplatformViewModel<XContract.ViewModel> { XViewModel(...) }`;
+  register the module in `di/AppModule.kt` `screenModules`.
+- **Screen** — composable; collects state with `collectAsState()`; calls VM methods
+  from callbacks.
 
-## Compose Practices
+New destinations: add a `MainDestination` to `MainNavigation.kt` and register it in
+`defaultMainDestinations` (with its kotlinx.serialization configuration).
 
-### Composable Functions
+## Compose practices
+
+### Composable signature
+
 ```kotlin
 @Composable
 fun MyComponent(
     param1: String,
     param2: Int = 0,
-    modifier: Modifier = Modifier
-) {
-    // Implementation
-}
+    modifier: Modifier = Modifier   // last, with default
+)
 ```
 
-### Modifier Order
-1. `size`, `width`, `height`, `fillMaxSize`, etc.
-2. `padding`, `margin`
+### Modifier order
+
+1. `size`, `width`, `height`, `fillMaxSize`…
+2. `padding`
 3. `background`, `border`, `clip`
-4. `clickable`, `hoverable`, `scrollable`
+4. `clickable`, `hoverable`, `scrollable` (interactive)
 5. `align`, `weight`
 6. `graphicsLayer`, `alpha`, `scale`
 7. `testTag`, `semantics`
 
-### State Management
+### State management
+
 ```kotlin
 // Local UI state
 var isExpanded by remember { mutableStateOf(false) }
@@ -88,141 +99,120 @@ var isExpanded by remember { mutableStateOf(false) }
 // Derived state
 val isValid by remember(input) { derivedStateOf { input.isNotEmpty() } }
 
-// Animation state
+// Animation state — always through config-aware helpers
 val scale by animateFloatAsState(
-    targetValue = if (isHovered) 1.1f else 1f,
-    animationSpec = spring(dampingRatio = 0.5f),
+    targetValue = if (isHovered) 1.05f else 1f,
+    animationSpec = springAnim(),          // honors AnimationConfig
     label = "elementScale"
 )
 ```
 
 ### Performance
-- Use `remember` to cache expensive computations
-- Use `derivedStateOf` to derive state without recomposition
-- Use `key()` in `LazyColumn` for stable item identity
-- Avoid creating new objects in composition (use `remember`)
-- Use `@Stable` annotation on state holders
-- Keep composable functions small and focused
+
+- `remember` expensive computations; `derivedStateOf` derived values
+- `key()`/stable keys in `LazyColumn`/`DsVirtualList`
+- `@Stable` on state holders
+- Animate `graphicsLayer`, not layout properties
+- Respect `reducedMotion` and `AnimationSpeed` (see `docs/design/ANIMATION_SYSTEM.md`)
+
+### Desktop suite
+
+- Views: `@Composable fun XView(state: AppState)`; get state via
+  `LocalAppState.current`/`rememberAppState()`
+- Components: `Ds*` only (`DsButton`, `DsCard`, `DsDialog`, `DsTextField`…), tokens
+  via `DsSpacing`, `DsRadius`, `DsType`, `DsMotion`, `DsElevation`, `DsSemantic`
+- Panels/openers follow the existing view patterns (`DictionaryManagerView`,
+  `ThemeStudioView`, `SettingsView` are canonical examples)
 
 ## Architecture
 
-### Package Structure
+### Package structure (core screen)
+
 ```
-feature/
-├── FeatureScreen.kt        # Screen composable
-├── FeatureContract.kt      # State/Event contracts
-├── FeatureViewModel.kt     # ViewModel
-└── components/             # Feature-specific components
+screen/main/screen/<feature>/
+├── {Feature}ScreenContract.kt
+├── {Feature}ScreenViewModel.kt
+├── {Feature}ScreenModule.kt
+├── {Feature}Screen.kt / {Feature}ScreenUI.kt
+├── data/          # configuration/screen data types
+├── ui/            # feature-specific components
+└── use_case/      # single-responsibility use cases (DeckDetails*UseCase)
 ```
 
-### State Flow
+### State flow (ViewModel)
+
 ```kotlin
 // Contract
-data class FeatureState(
-    val isLoading: Boolean = false,
-    val data: List<Item> = emptyList(),
-    val error: String? = null
-)
-
-sealed class FeatureEvent {
-    data object Load : FeatureEvent()
-    data class SelectItem(val id: String) : FeatureEvent()
+interface DeckDetailsScreenContract {
+    interface ViewModel {
+        val state: StateFlow<ScreenState>
+        fun onEvent(event: ScreenEvent)
+    }
+    data class ScreenState(...)
+    sealed interface ScreenEvent
 }
 
 // ViewModel
-class FeatureViewModel(
-    private val repository: Repository
-) : ViewModel() {
-    private val _state = MutableStateFlow(FeatureState())
-    val state: StateFlow<FeatureState> = _state.asStateFlow()
+class DeckDetailsScreenViewModel(...) : DeckDetailsScreenContract.ViewModel {
+    private val _state = MutableStateFlow(DeckDetailsScreenContract.ScreenState())
+    override val state: StateFlow<DeckDetailsScreenContract.ScreenState> = _state.asStateFlow()
+    ...
+}
+```
 
-    fun onEvent(event: FeatureEvent) {
-        when (event) {
-            is FeatureEvent.Load -> loadData()
-            is FeatureEvent.SelectItem -> selectItem(event.id)
-        }
+### Dependency injection
+
+```kotlin
+// Module
+val featureScreenModule = module {
+    multiplatformViewModel<FeatureScreenContract.ViewModel> {
+        FeatureScreenViewModel(
+            repository = get(),
+            useCase = get()
+        )
     }
 }
+
+// Composable
+val viewModel = getMultiplatformViewModel<FeatureScreenContract.ViewModel>()
 ```
 
-### Dependency Injection
-```kotlin
-// Module definition
-val featureModule = module {
-    factory { FeatureViewModel(get()) }
-    factory { FeatureRepository(get()) }
-}
+### expect/actual
 
-// Injection in composable
-@Composable
-fun FeatureScreen(
-    viewModel: FeatureViewModel = koinInject()
-) {
-    val state by viewModel.state.collectAsState()
-    // UI
-}
-```
+Platform-specific behavior (backup archive, file pickers, sync transport, `main`
+entry) uses `expect` declarations in `commonMain` with `actual`s in `jvmMain` /
+`androidMain` / `iosMain`.
+
+## Strings (i18n)
+
+- Interface-based: `Strings` interface + `EnglishStrings` + `JapaneseStrings`
+- Adding a string edits all three (interface + both impls) — compile enforces it
+- Lookup: `resolveString { someString }`
 
 ## Documentation
 
-### KDoc Comments
-```kotlin
-/**
- * A floating window control button with hover animations.
- *
- * @param icon The text character to display (e.g., "×", "─", "□")
- * @param onClick Callback when button is clicked
- * @param glowColor Color for hover glow effect
- * @param size Button size in dp
- */
-@Composable
-private fun FloatingControlButton(
-    icon: String,
-    onClick: () -> Unit,
-    glowColor: Color,
-    size: Dp = 32.dp
-)
-```
-
-### Inline Comments
-- Explain WHY, not WHAT
-- Use `//` for single-line comments
-- Use `/* */` for multi-line comments
-- Avoid obvious comments (`// increment counter`)
+- KDoc on public types/functions with `@param`/`@return` where non-obvious
+- Inline comments explain **why**, not what
+- Docs live in `docs/`; follow `DocumentationRules.md` (update map, no dead links,
+  no placeholders)
 
 ## Testing
 
-### Unit Tests
-```kotlin
-class FeatureViewModelTest {
-    @Test
-    fun `load data should update state`() = runTest {
-        val viewModel = FeatureViewModel(mockRepository)
-        viewModel.onEvent(FeatureEvent.Load)
-        assertTrue(viewModel.state.value.isLoading)
-    }
-}
-```
-
-### Test Naming
-- Use backtick names: ``fun `description of test`()``
-- Follow pattern: `subject_action_expectedResult`
+- Location: `core/src/commonTest/` (shared), `desktopApp/src/jvmTest/` (suite),
+  `kjd/src/test/`
+- Framework: kotlin.test (JUnit Platform)
+- Naming: backtick sentences — ``fun `deinflect handles consecutive kana runs`()``
+- Pure logic (scheduling, statistics, deinflection, search ranking, parsers) is
+  tested; UI is not (yet)
 
 ## Git
 
-### Commit Messages
-```
-type(scope): description
+- Commits: `type(scope): description` — one coherent change per commit
+- Branches: `feature/…`, `fix/…`, `docs/…`, `refactor/…` off `develop`
+- PRs to `develop`, squash-merged (see `GITHUB_WORKFLOW.md`)
 
-[optional body]
+## Related
 
-[optional footer]
-```
-
-Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `style`, `chore`
-
-### Branch Names
-```
-type/description
-```
-Examples: `feature/floating-sidebar`, `fix/window-drag`, `docs/architecture`
+- `AI_CONTEXT.md` — project facts, screen pattern registration, import rules
+- `docs/design/UI_SYSTEM.md` — the component catalog
+- `docs/engineering/ENGINEERING_STANDARDS.md` — the engineering contract

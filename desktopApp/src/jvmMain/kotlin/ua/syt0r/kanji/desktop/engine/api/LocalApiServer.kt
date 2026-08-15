@@ -175,7 +175,13 @@ class LocalApiServer(
                         lastRequest = req
                         val card = mining.mine(req.toPayload())
                         call.respondBytes(
-                            json.encodeToString(ApiMineResponse(true, card.id, "Card \"${req.word}\" created")).toByteArray(),
+                            json.encodeToString(
+                                ApiMineResponse(
+                                    true,
+                                    card?.id ?: "",
+                                    if (card != null) "Card \"${req.word}\" created" else "Card \"${req.word}\" sent to Anki"
+                                )
+                            ).toByteArray(),
                             ContentType.Application.Json
                         )
                     }

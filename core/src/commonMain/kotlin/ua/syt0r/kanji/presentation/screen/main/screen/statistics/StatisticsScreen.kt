@@ -64,6 +64,7 @@ import ua.syt0r.kanji.core.statistics.LearningGoal
 import ua.syt0r.kanji.core.statistics.StudySessionRecord
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 import kotlin.math.roundToInt
 
@@ -1111,7 +1112,7 @@ private fun ExamConfigDialog(
     var includeProduction by remember { mutableStateOf(true) }
     var timed by remember { mutableStateOf(false) }
 
-    androidx.compose.material3.AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         containerColor = surfaceColors.surface,
         title = { Text("New exam", color = surfaceColors.textPrimary) },
@@ -1333,7 +1334,7 @@ private fun AddGoalDialog(onDismiss: () -> Unit, onAdd: (LearningGoal) -> Unit) 
     var target by remember { mutableStateOf("20") }
     var period by remember { mutableStateOf(GoalPeriod.Daily) }
 
-    androidx.compose.material3.AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         containerColor = surfaceColors.surface,
         title = { Text("Add goal", color = surfaceColors.textPrimary) },

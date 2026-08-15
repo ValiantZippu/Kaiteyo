@@ -1,16 +1,15 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalUriHandler
+import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.getMultiplatformViewModel
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.features.DeckFeaturesController
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.data.DeckDetailsScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerScreenConfiguration
-
-
-private const val DownloadsUrl = "https://valiantzippu.github.io/Kaiteyo"
 
 @Composable
 fun GeneralDashboardScreen(
@@ -18,7 +17,17 @@ fun GeneralDashboardScreen(
     viewModel: GeneralDashboardScreenContract.ViewModel = getMultiplatformViewModel()
 ) {
 
-    val uriHandler = LocalUriHandler.current
+    val deckFeaturesController = koinInject<DeckFeaturesController>()
+
+    // Keep the deck summaries loaded so the browser and other surfaces stay
+    // in lockstep whenever a deck or a study session changes.
+    LaunchedEffect(Unit) {
+        deckFeaturesController.ensureLoaded()
+        deckFeaturesController.loadDecks()
+        deckFeaturesController.deckChangesFlow.collect {
+            deckFeaturesController.loadDecks()
+        }
+    }
 
     GeneralDashboardScreenUI(
         state = viewModel.state.collectAsState(),
@@ -43,15 +52,13 @@ fun GeneralDashboardScreen(
             mainNavigationState.navigate(MainDestination.DeckDetails(configuration))
         },
         navigateToSearch = { mainNavigationState.navigate(MainDestination.SearchEngine) },
-        navigateToCardBrowser = { mainNavigationState.navigate(MainDestination.CardBrowser) },
+        navigateToCardBrowser = { mainNavigationState.navigate(MainDestination.CardBrowser()) },
         navigateToStatistics = { mainNavigationState.navigate(MainDestination.StatisticsDashboard) },        navigateToImportExport = {
             mainNavigationState.navigate(MainDestination.ImportExport)
         },
         navigateToCollections = {
             mainNavigationState.navigate(MainDestination.Collections)
         },
-        downloadsClick = { uriHandler.openUri(DownloadsUrl) },
-        socialClick = { uriHandler.openUri(it.url) },
         retryLoad = { viewModel.retryLoad() },
         textAnalysisClick = { mainNavigationState.navigate(MainDestination.TextAnalysis) }
     )

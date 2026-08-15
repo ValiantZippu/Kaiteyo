@@ -1,0 +1,55 @@
+{% extends "layouts/project.html" %}
+{% set project_active = "whiteboard" %}
+{% import "partials/project-macros.html" as pm %}
+
+{% block project_head_extra %}
+<script>
+window.KAITEYO_WHITEBOARD = {{ whiteboard_json | safe }};
+</script>
+{% endblock %}
+
+{% block project_content %}
+<header class="project-header">
+  <h1>Whiteboard</h1>
+  <p class="text-secondary">The Kaiteyo system, visually. Pan and zoom to explore how every subsystem
+    connects — nodes are real systems with real status, edges are typed relationships
+    (DEPENDS_ON, USES, PRODUCES, FEEDS, CONTAINS…). Click any node to open its documentation.
+    This is a live canvas built from <code>website/config/project/whiteboard.json</code>;
+    editing it is a documented backend feature (<a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/website/API.md" target="_blank" rel="noopener">API contract</a>).</p>
+</header>
+
+<div class="whiteboard-wrap">
+  <div class="whiteboard-toolbar" role="toolbar" aria-label="Whiteboard controls">
+    <button id="wb-zoom-in" class="btn btn-ghost btn-sm" type="button" aria-label="Zoom in">+</button>
+    <button id="wb-zoom-out" class="btn btn-ghost btn-sm" type="button" aria-label="Zoom out">−</button>
+    <button id="wb-reset" class="btn btn-ghost btn-sm" type="button">Fit</button>
+    <span id="wb-hint" class="whiteboard-hint">Scroll / pinch to zoom · drag to pan · click a node</span>
+  </div>
+  <div id="wb-canvas" class="whiteboard-canvas" role="application" aria-label="Kaiteyo architecture whiteboard">
+    <noscript>
+      <div class="whiteboard-noscript">
+        <p>The whiteboard is interactive and requires JavaScript. The underlying data is available
+        in <a href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/website/config/project/whiteboard.json" target="_blank" rel="noopener">whiteboard.json</a>.</p>
+      </div>
+    </noscript>
+  </div>
+</div>
+
+<section class="whiteboard-legend">
+  <h2>Legend</h2>
+  <ul class="whiteboard-legend-list">
+    <li><span class="badge badge-accent">Live</span> implemented</li>
+    <li><span class="badge badge-warning">Partial</span> partially implemented</li>
+    <li><span class="badge badge-info">Target</span> architected, not built</li>
+    <li><span class="badge badge-error">Scaffold</span> placeholder / prototype</li>
+  </ul>
+  <p class="text-secondary">Node kinds are shown as shapes: <span class="wb-kind-demo wb-kind-system">system</span>
+    <span class="wb-kind-demo wb-kind-feature">feature</span>
+    <span class="wb-kind-demo wb-kind-database">database</span>
+    <span class="wb-kind-demo wb-kind-api">API</span>
+    <span class="wb-kind-demo wb-kind-integration">integration</span>
+    <span class="wb-kind-demo wb-kind-game">game</span>.</p>
+</section>
+
+<script src="{{ basePath }}assets/scripts/whiteboard.js" defer></script>
+{% endblock %}

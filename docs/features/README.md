@@ -36,3 +36,16 @@ Each feature specification includes:
 | 🚧 In Progress | Being actively developed |
 | 📋 Planned | Scheduled for future release |
 | 💡 Future Idea | Under consideration |
+
+## Grounding
+
+Every spec is written against the **actual code**, not a wishlist:
+
+- `FEATURES.md` ends with a **code map** — the key files behind every status row.
+- `LIBRARY.md`, `THEMES.md`, `DESKTOP.md`, `MEDIA.md`, `STATISTICS.md` reference the
+  real composables and engines (e.g. `LibraryScreen.kt`, `ThemeStudioView.kt`,
+  `WorkspaceShell.kt`, `MediaEngine.kt`, `StatisticsController`).
+- Full engineering depth lives under `docs/architecture/` (dictionary, media, mining,
+  study engine, statistics, exams, …); these specs are the user/feature view.
+
+If a spec disagrees with the code, the code wins — report it per `CONTRIBUTING.md`.

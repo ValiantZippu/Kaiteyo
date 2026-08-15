@@ -61,6 +61,8 @@ fun NavigationPreview(
         Box(
             modifier = Modifier
                 .size(PreviewWidth, PreviewHeight)
+                // Shadow before clip/background so it renders behind the mock.
+                .materialShadow(10.dp, RoundedCornerShape(18.dp))
                 .clip(RoundedCornerShape(18.dp))
                 .background(surfaceColors.surface)
                 .border(
@@ -68,7 +70,6 @@ fun NavigationPreview(
                     color = surfaceColors.border.copy(alpha = 0.45f),
                     shape = RoundedCornerShape(18.dp)
                 )
-                .materialShadow(10.dp, RoundedCornerShape(18.dp))
         ) {
             if (mode == NavigationMode.Floating) {
                 PreviewContent(edge = null)
@@ -350,9 +351,9 @@ private fun PreviewBubble(
             modifier = Modifier
                 .offset(x = animatedX - bubbleRadius, y = animatedY - bubbleRadius)
                 .size(bubbleSize)
+                .materialShadow(6.dp, CircleShape)
                 .clip(CircleShape)
                 .background(accent)
-                .materialShadow(6.dp, CircleShape)
                 .border(1.5.dp, Color.White.copy(alpha = 0.35f), CircleShape)
         )
     }

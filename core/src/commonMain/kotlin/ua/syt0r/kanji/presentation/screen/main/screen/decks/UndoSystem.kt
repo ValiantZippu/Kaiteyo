@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -247,7 +248,7 @@ private fun UndoHistoryDialog(
     onDismiss: () -> Unit,
     onUndoFromHistory: (UndoableAction) -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Action History") },
         text = {

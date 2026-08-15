@@ -1,0 +1,63 @@
+{
+  "$comment": "Forward-looking roadmap (WHERE Kaiteyo is going). Mirrors docs/roadmap/ROADMAP.md + docs/production/phases.md + MASTER_TODO packages. Status: DONE / PARTIAL / ACTIVE / TARGET (architected, not built) / PLANNED. 'kanban' links a work-package filter on the kanban page. Product roadmap (historical releases) lives at /roadmap/.",
+  "phases": [
+    {
+      "id": "foundation",
+      "title": "Foundation",
+      "description": "The base everything else builds on — shipped and stable.",
+      "items": [
+        { "id": "ROADMAP-01", "title": "Database", "status": "DONE", "kanban": "P2", "docs": "/docs/architecture/database/", "note": "Two SQLDelight DBs, 15 migrations, kjd ingestion." },
+        { "id": "ROADMAP-02", "title": "Dictionary", "status": "PARTIAL", "kanban": "P3", "docs": "/docs/architecture/dictionary/", "note": "Bundled data + suite import/popup; product integration gated on ADR-0017." },
+        { "id": "ROADMAP-03", "title": "Learning engine", "status": "DONE", "kanban": "P8", "docs": "/docs/architecture/study-engine/", "note": "FSRS-5 SRS, review flow, writing practice." },
+        { "id": "ROADMAP-04", "title": "Node layer & knowledge graph", "status": "TARGET", "kanban": "P2", "docs": "/docs/architecture/node_architecture/", "note": "Typed nodes + edges + event-derived user knowledge (ADR-0013/0016)." }
+      ]
+    },
+    {
+      "id": "core-experience",
+      "title": "Core experience",
+      "description": "The current product surface — one cohesive app for reading, mining, studying.",
+      "items": [
+        { "id": "ROADMAP-05", "title": "Library & decks", "status": "DONE", "kanban": "P7", "docs": "/docs/features/library/" },
+        { "id": "ROADMAP-06", "title": "Mining", "status": "PARTIAL", "kanban": "P12", "docs": "/docs/architecture/mining/", "note": "Suite pipeline works; graph edges + product integration target." },
+        { "id": "ROADMAP-07", "title": "Media centre", "status": "PARTIAL", "kanban": "P11", "docs": "/docs/architecture/media/", "note": "Suite backends + subtitles; product integration gated on ADR-0017." },
+        { "id": "ROADMAP-08", "title": "Statistics", "status": "DONE", "kanban": "P9", "docs": "/docs/architecture/statistics/", "note": "Event-driven; node-level drill-down target." },
+        { "id": "ROADMAP-09", "title": "One product", "status": "TARGET", "kanban": "P0", "docs": "/docs/architecture/decisions/0017-one-product-architecture/", "note": "Resolve the two-app split; suite engines into the shipped app (ADR-0017)." }
+      ]
+    },
+    {
+      "id": "advanced-learning",
+      "title": "Advanced learning",
+      "description": "Structured paths, deeper assessment, and honest adaptive difficulty.",
+      "items": [
+        { "id": "ROADMAP-10", "title": "Curriculum", "status": "TARGET", "kanban": "P21", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/learning/curriculum-engine.md", "note": "Graph-based courses, evidence-based prerequisites." },
+        { "id": "ROADMAP-11", "title": "Exams", "status": "DONE", "kanban": "P10", "docs": "/docs/architecture/exams/", "note": "Generated + weekly; adaptive + listening/writing sections target." },
+        { "id": "ROADMAP-12", "title": "Adaptive learning", "status": "TARGET", "kanban": "P21", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/learning/adaptive-learning.md" },
+        { "id": "ROADMAP-13", "title": "Grammar & pitch data", "status": "PARTIAL", "kanban": "P6", "docs": "/docs/architecture/language-model/", "note": "Grammar starter deck shipped; open datasets under research." }
+      ]
+    },
+    {
+      "id": "kaiteyo-world",
+      "title": "Kaiteyo World (the Journey)",
+      "description": "An actual game — the 3D Japanese-learning world. Target architecture; no code yet.",
+      "items": [
+        { "id": "ROADMAP-14", "title": "Game engine", "status": "TARGET", "kanban": "P19", "docs": "/docs/architecture/decisions/0018-game-engine-evaluation/", "note": "Evaluation + ADR-0018 gates all Journey code." },
+        { "id": "ROADMAP-15", "title": "World", "status": "TARGET", "kanban": "P20", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/game/world-architecture.md", "note": "Kamakura + Enoshima vertical slice first." },
+        { "id": "ROADMAP-16", "title": "Quests & stories", "status": "TARGET", "kanban": "P22", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/game/quest-system.md" },
+        { "id": "ROADMAP-17", "title": "NPCs & dialogue", "status": "TARGET", "kanban": "P23", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/game/npc-system.md" },
+        { "id": "ROADMAP-18", "title": "Children's world", "status": "TARGET", "kanban": "P21", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/vision/child-experience.md", "note": "Same runtime, different content/UX (after the slice)." }
+      ]
+    },
+    {
+      "id": "expansion",
+      "title": "Expansion",
+      "description": "Beyond the core — platform, community, and content at scale.",
+      "items": [
+        { "id": "ROADMAP-19", "title": "Mobile parity", "status": "PARTIAL", "kanban": "P17", "docs": "/docs/platform/android/", "note": "On-device verification of iOS/Android actuals blocked on hardware." },
+        { "id": "ROADMAP-20", "title": "Web trial", "status": "PLANNED", "kanban": "P16", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/website/README.md", "note": "A real slice of Kaiteyo in the browser — never the full app." },
+        { "id": "ROADMAP-21", "title": "Community", "status": "PLANNED", "kanban": "P1", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/planning/FUTURE_IDEAS.md", "note": "Shared decks, marketplace, study groups — opt-in, secondary." },
+        { "id": "ROADMAP-22", "title": "World expansion", "status": "PLANNED", "kanban": "P20", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/game/world-architecture.md", "note": "New regions as content packages — after the slice proof gate." },
+        { "id": "ROADMAP-23", "title": "Command center backend", "status": "PLANNED", "kanban": "P16", "docs": "https://github.com/ValiantZippu/Kaiteyo/blob/develop/docs/website/API.md", "note": "The interactive layer for this website (kanban edits, whiteboard, suggestions, approval) per the documented API contracts — KT-WEB-004…009." }
+      ]
+    }
+  ]
+}

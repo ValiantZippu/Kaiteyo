@@ -2,12 +2,11 @@ package ua.syt0r.kanji.desktopApp
 
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -37,9 +36,17 @@ import ua.syt0r.kanji.di.appModules
 import ua.syt0r.kanji.presentation.KaiteyoApp
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.screen.main.screen.credits.GetCreditLibrariesUseCase
+import ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent
 
 val desktopAppModule = module {
     factory<GetCreditLibrariesUseCase> { JvmGetCreditLibrariesUseCase }
+
+    // The Media Centre destination's real implementation — the desktop suite's
+    // MediaView (player, subtitles, dictionary, mining) mounted with its own
+    // AppState. Overrides the core default (honest desktop-only placeholder).
+    // Koin 4 overrides duplicate definitions automatically (last module wins),
+    // so no `override` flag is needed (it no longer exists in the DSL).
+    single<MediaCentreContent> { DesktopMediaCentreContent }
 
     // Background scope for long-running engines (update checks, downloads).
     single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
@@ -93,23 +100,35 @@ fun main(args: Array<String>) = application {
         ?: if (captureState != null) 20_000L else 0L
 
     // Capture mode forces a fixed window so every screenshot is identical,
-    // and never reads/writes the user's saved bounds.
-    val savedBounds = if (captureState != null) {
-        SavedWindowBounds(width = 1200, height = 800)
+    // and never reads/writes the user's saved bounds. Normal runs restore the
+    // saved geometry corrected against the current display work areas, so the
+    // window can never reopen under the taskbar or off-screen.
+    val startup = if (captureState != null) {
+        WindowStartupBounds(
+            widthDp = 1200f,
+            heightDp = 800f,
+            xDp = null,
+            yDp = null,
+            maximized = false
+        )
     } else {
         WindowStateStore.load()
     }
     val windowState = rememberWindowState(
-        size = DpSize(
-            savedBounds.width.takeIf { it > 0 }?.dp ?: 1200.dp,
-            savedBounds.height.takeIf { it > 0 }?.dp ?: 800.dp
-        ),
-        position = if (captureState == null && savedBounds.x != null && savedBounds.y != null) {
-            WindowPosition(savedBounds.x.dp, savedBounds.y.dp)
+        size = DpSize(startup.widthDp.dp, startup.heightDp.dp),
+        position = if (captureState == null && startup.xDp != null && startup.yDp != null) {
+            WindowPosition(startup.xDp.dp, startup.yDp.dp)
         } else {
             WindowPosition.PlatformDefault
         }
     )
+
+    // Reopen maximized when the previous session ended maximized. Maximizing
+    // is delegated to the OS (MAXIMIZED_BOTH / zoom), which respects the
+    // usable work area on every platform.
+    LaunchedEffect(Unit) {
+        if (startup.maximized) windowState.placement = WindowPlacement.Maximized
+    }
 
     Window(
         onCloseRequest = { exitApplication() },
@@ -129,17 +148,22 @@ fun main(args: Array<String>) = application {
                 .checkOnStartup("stable")
         }
 
-        KaiteyoWindow(
-            windowState = windowState,
-            onClose = { exitApplication() },
-            rememberWindowBounds = captureState == null,
-            captureState = captureState,
-            content = {
-                KaiteyoApp(
-                    windowSizeClass = calculateWindowSizeClass()
-                )
-            }
-        )
+        // The KaiteyoApp theme root lives ABOVE the window shell, so the
+        // custom title bar and chrome render with the real Kaiteyo theme
+        // (never the untinted OLED default) and live Theme Studio edits reach
+        // the window surface immediately. `shell` mounts KaiteyoWindow inside
+        // that theme, wrapping the app content.
+        KaiteyoApp(
+            windowSizeClass = calculateWindowSizeClass()
+        ) { appContent ->
+            KaiteyoWindow(
+                windowState = windowState,
+                onClose = { exitApplication() },
+                rememberWindowBounds = captureState == null,
+                captureState = captureState,
+                content = { appContent() }
+            )
+        }
     }
 
     // Capture mode: exit on our own once the script has had time to shoot.

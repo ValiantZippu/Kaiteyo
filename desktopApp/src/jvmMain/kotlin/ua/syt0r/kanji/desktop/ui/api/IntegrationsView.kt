@@ -262,13 +262,13 @@ private fun AnkiCard(state: AppState, scope: CoroutineScope) {
             }
             Text(
                 if (enabled)
-                    "Mined cards are forwarded to Anki (Kaiteyo → Anki) when \"Forward mined cards\" is on. Kaiteyo stays the primary destination."
+                    "Each mine can target Kaiteyo, Anki, or both (chosen in the mining dialog; default from Settings → Media). Kaiteyo stays the primary destination and never depends on Anki."
                 else "Enable AnkiConnect in Settings → Media → Integrations to send mined cards to Anki desktop.",
                 color = sc.textSecondary,
                 fontSize = DsType.Body
             )
             Text(
-                "Capabilities: ✓ list/create decks ✓ create Basic notes ✓ tags ✓ screenshot/audio media ✓ duplicate detection ✓ import decks/notes/cards/tags into Kaiteyo.",
+                "Capabilities: ✓ list/create decks ✓ create Basic notes ✓ tags ✓ screenshot/audio media ✓ duplicate detection ✓ retryable export queue ✓ import decks/notes/cards/tags into Kaiteyo.",
                 color = sc.textMuted,
                 fontSize = DsType.Caption
             )
@@ -296,6 +296,34 @@ private fun AnkiCard(state: AppState, scope: CoroutineScope) {
                     }
                 )
                 testResult?.let { Text(it, color = sc.textSecondary, fontSize = DsType.Caption) }
+            }
+            val pending = state.mining.pendingExports
+            if (pending.isNotEmpty()) {
+                var retrying by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    DsBadge(text = "${pending.size} pending export(s)", tint = sc.textSecondary)
+                    Text("Kaiteyo already saved these — retry sends only to Anki, no duplicates.", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(1f))
+                    DsButton(
+                        text = if (retrying) "Retrying…" else "Retry exports",
+                        kind = DsButtonKind.Secondary,
+                        compact = true,
+                        enabled = !retrying && anki.configured,
+                        onClick = {
+                            retrying = true
+                            scope.launch(Dispatchers.IO) {
+                                state.mining.retryPendingAnki()
+                                retrying = false
+                            }
+                        }
+                    )
+                }
+                pending.take(3).forEach { p ->
+                    Text(
+                        "• ${p.payload.headword} — attempt ${p.attempts}${p.lastError.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ""}",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
             }
             anki.lastError?.let { err ->
                 Text("Last error: $err", color = sc.textMuted, fontSize = DsType.Caption)

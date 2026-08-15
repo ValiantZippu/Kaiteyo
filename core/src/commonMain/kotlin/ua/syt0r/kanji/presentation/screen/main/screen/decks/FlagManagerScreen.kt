@@ -41,6 +41,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ════════════════════════════════════════════
 // FLAGS SYSTEM — Full flag manager
@@ -417,7 +418,7 @@ private fun FlagBulkDialog(
     }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Bulk Flag Cards") },
         text = {

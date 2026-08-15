@@ -84,4 +84,32 @@ class MediaShortcutsTest {
         chords.forEach { assertFalse(it.key.isBlank(), "no action may bind an empty key") }
         assertNotNull(MediaActions.defaultChord("play-pause"))
     }
+
+    @Test
+    fun `rendering and transport extras resolve their defaults`() {
+        val h = hotkeys()
+        assertEquals("mute", h.actionForPressed("q", false, false, false, false)?.id)
+        assertEquals("fullscreen", h.actionForPressed("f11", false, false, false, false)?.id)
+        assertEquals("subtitle-delay-back", h.actionForPressed("j", false, false, false, false)?.id)
+        assertEquals("subtitle-delay-reset", h.actionForPressed("k", false, false, false, false)?.id)
+        assertEquals("subtitle-delay-forward", h.actionForPressed("l", false, true, false, false)?.id)
+        assertEquals("speed-down", h.actionForPressed("openbracket", false, false, false, false)?.id)
+        assertEquals("speed-up", h.actionForPressed("closebracket", false, false, false, false)?.id)
+        assertEquals("frame-step-back", h.actionForPressed("comma", false, false, false, false)?.id)
+        assertEquals("frame-step-forward", h.actionForPressed("period", false, false, false, false)?.id)
+        assertEquals("chapter-previous", h.actionForPressed("pageup", false, false, false, false)?.id)
+        assertEquals("chapter-next", h.actionForPressed("pagedown", false, false, false, false)?.id)
+        assertEquals("cycle-display", h.actionForPressed("i", false, false, false, false)?.id)
+        assertEquals("cycle-aspect", h.actionForPressed("o", false, false, false, false)?.id)
+    }
+
+    @Test
+    fun `new tuning chords rebind cleanly`() {
+        val h = hotkeys()
+        assertTrue(h.bind("mute", KeyChord("x")))
+        assertNull(h.actionForPressed("q", false, false, false, false))
+        assertEquals("mute", h.actionForPressed("x", false, false, false, false)?.id)
+        // Original default is now free for another action.
+        assertTrue(h.bind("cycle-display", KeyChord("q")))
+    }
 }

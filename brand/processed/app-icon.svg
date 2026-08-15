@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Kaiteyo app icon master — 1024×1024 square.
+       The Kaiteyo mark (brush strokes + accent dot) on the brand tile.
+       Derived from brand/source/marks/app-mark.svg scaled ×32. -->
+  <rect width="1024" height="1024" rx="224" fill="#050505" />
+  <!-- Main brush stroke -->
+  <path d="M320,256 Q512,224 640,416 Q704,512 672,640"
+        stroke="#C2FC8B" stroke-width="96" fill="none"
+        stroke-linecap="round" />
+  <!-- Crossing brush stroke -->
+  <path d="M352,448 Q512,384 640,512"
+        stroke="#C2FC8B" stroke-width="48" fill="none"
+        stroke-linecap="round" opacity="0.85" />
+  <!-- Accent dot -->
+  <circle cx="672" cy="640" r="64" fill="#FEAB57" />
+</svg>

@@ -28,6 +28,7 @@ import java.io.File
 // ============================================
 
 /** Everything a mined card needs, independent of its source. */
+@Serializable
 data class MiningPayload(
     val headword: String,
     val reading: String = "",
@@ -62,7 +63,8 @@ data class MiningTemplate(
 private data class MiningStateDto(
     val recentSources: List<String> = emptyList(),
     val templates: List<MiningTemplate> = emptyList(),
-    val mines: List<MinedRecord> = emptyList()
+    val mines: List<MinedRecord> = emptyList(),
+    val pendingExports: List<PendingAnkiExport> = emptyList()
 )
 
 /** A record of a completed mine (activity feed + repeat protection). */
@@ -72,7 +74,25 @@ data class MinedRecord(
     val headword: String,
     val createdAt: String,
     val source: String,
-    val cardId: String = ""
+    val cardId: String = "",
+    val destination: String = "kaiteyo",
+    val ankiStatus: String = "",
+    val ankiError: String = ""
+)
+
+/**
+ * A mine that Kaiteyo accepted but AnkiConnect could not receive.
+ * Kept in the mining state file so the user can retry later without
+ * re-mining (and without duplicating the Kaiteyo card).
+ */
+@Serializable
+data class PendingAnkiExport(
+    val id: String,
+    val mineId: String,
+    val payload: MiningPayload,
+    val createdAt: String,
+    val attempts: Int = 0,
+    val lastError: String = ""
 )
 
 enum class MiningSource(val label: String) {
@@ -102,6 +122,9 @@ class MiningEngine(val state: AppState) {
     val recentSources = mutableStateListOf<String>()
     val templates = mutableStateListOf<MiningTemplate>()
     val minedRecords = mutableStateListOf<MinedRecord>()
+    val pendingExports = mutableStateListOf<PendingAnkiExport>()
+
+    val pendingExportCount: Int get() = pendingExports.size
 
     init {
         load()
@@ -116,8 +139,56 @@ class MiningEngine(val state: AppState) {
      * Duplicate policy (create / skip / update) is applied per the
      * settings; identical sentence+target pairs are detected across the
      * existing card pool.
+     *
+     * @param destinationOverride where this mine should go; defaults to the
+     *   `media.mine-destination` setting. `Anki` sends only to Anki and
+     *   returns null on success (no Kaiteyo card); if Anki is unreachable
+     *   the word falls back to a native card so nothing is ever lost.
      */
-    fun mine(payload: MiningPayload): DesktopCard {
+    fun mine(payload: MiningPayload, destinationOverride: CardDestination? = null): DesktopCard? {
+        val destination = resolveDestination(destinationOverride)
+
+        // Anki-only path: the card lives in Anki. If Anki is unreachable the
+        // word is never lost — it falls back to a native Kaiteyo card and (when
+        // the integration is enabled) the export is queued for retry.
+        if (destination == CardDestination.Anki) {
+            val results = state.miningIntegration.forward(payload, destination)
+            val ankiResult = results.firstOrNull { (t, _) -> t is AnkiConnectTransport }?.second
+            if (ankiResult?.isSuccess == true) {
+                state.activityLog.record(
+                    ActivityCategory.Study,
+                    "Mined \"${payload.headword}\" → Anki",
+                    details = payload.definition.take(120)
+                )
+                recordMine(payload, cardId = "", destination = destination, ankiStatus = "success")
+                state.toastHost.show("Mined \"${payload.headword}\" → Anki", kind = ToastKind.Success)
+                return null
+            }
+            // Anki unreachable (or disabled) — never lose the word.
+            val ankiEnabled = state.settings.getBool("media.anki.enabled")
+            val error = ankiResult?.exceptionOrNull()?.message ?: "AnkiConnect is unavailable"
+            val fallback = createNativeCard(payload)
+            state.addCard(fallback)
+            state.activityLog.record(
+                ActivityCategory.Study,
+                "Mined \"${payload.headword}\" from ${payload.source}",
+                details = payload.definition.take(120),
+                cardIds = listOf(fallback.id)
+            )
+            if (ankiEnabled) {
+                enqueuePendingExport(payload, fallback.id, error)
+            }
+            recordMine(payload, fallback.id, destination, "failed", error)
+            state.toastHost.show(
+                if (ankiEnabled)
+                    "Anki unavailable — \"${payload.headword}\" saved to Kaiteyo, export queued for retry"
+                else
+                    "AnkiConnect is disabled — \"${payload.headword}\" saved to Kaiteyo",
+                kind = ToastKind.Warning
+            )
+            return fallback
+        }
+
         val definition = payload.definition
             .ifBlank { "(no definition)" }
             .lineSequence()
@@ -151,9 +222,74 @@ class MiningEngine(val state: AppState) {
             }
         }
 
+        val card = createNativeCard(payload)
+        state.addCard(card)
+        state.activityLog.record(
+            ActivityCategory.Study,
+            "Mined \"${payload.headword}\" from ${payload.source}",
+            details = definition,
+            cardIds = listOf(card.id)
+        )
+
+        // External transports (GameSentenceMiner / AnkiConnect) when enabled —
+        // Kaiteyo mining never depends on them. Anki failures are queued as
+        // pending exports so they can be retried without re-mining.
+        var ankiStatus = ""
+        var ankiError = ""
+        state.miningIntegration.forward(payload, destination).forEach { (transport, result) ->
+            if (transport is AnkiConnectTransport) {
+                if (result.isSuccess) {
+                    ankiStatus = "success"
+                } else {
+                    ankiStatus = "failed"
+                    ankiError = result.exceptionOrNull()?.message ?: "Anki send failed"
+                    enqueuePendingExport(payload, card.id, ankiError)
+                }
+            }
+            result.onSuccess {
+                state.activityLog.record(ActivityCategory.Study, "Forwarded \"${payload.headword}\" to ${transport.name}")
+            }.onFailure {
+                state.toastHost.show("${transport.name} forward failed: ${it.message}", kind = ToastKind.Warning)
+            }
+        }
+        recordMine(payload, card.id, destination, ankiStatus, ankiError)
+
+        // OS notification when the app is in the background (opt-in).
+        state.media.notifyMined(payload.headword)
+
+        // Media source link: cards mined from a subtitle keep a pointer back
+        // to the exact anime moment (Media → Card → Media round-trip).
+        if (payload.source == "subtitle" && state.media.currentItem != null) {
+            state.media.recordMiningEvent(card, payload)
+        }
+
+        state.toastHost.show("Mined \"${payload.headword}\" → study it in Review", kind = ToastKind.Success)
+        return card
+    }
+
+    /** The effective destination for a mine, from override or settings. */
+    fun resolveDestination(override: CardDestination?): CardDestination {
+        override?.let { return it }
+        return when (state.settings.getString("media.mine-destination", "kaiteyo")) {
+            "anki" -> CardDestination.Anki
+            "both" -> CardDestination.Both
+            else -> if (state.settings.getBool("media.anki.send-mined")) CardDestination.Both else CardDestination.Kaiteyo
+        }
+    }
+
+    /** Default destination for the mining dialog (settings, honoring legacy flag). */
+    fun defaultDestination(): CardDestination = resolveDestination(null)
+
+    /** Build the native DesktopCard for a payload (used by every path). */
+    private fun createNativeCard(payload: MiningPayload): DesktopCard {
+        val definition = payload.definition
+            .ifBlank { "(no definition)" }
+            .lineSequence()
+            .firstOrNull()
+            .orEmpty()
+            .take(400)
         val id = "mined-${payload.headword.hashCode().toUInt().toString(16)}-${payload.source.hashCode().toUInt().toString(16)}-${(payload.timestamp ?: 0.0).toLong()}"
-        val now = Clock.System.now()
-        val card = DesktopCard(
+        return DesktopCard(
             id = id,
             character = payload.headword,
             meaning = definition,
@@ -178,42 +314,12 @@ class MiningEngine(val state: AppState) {
             favorite = false,
             status = SrsStatus.New,
             deckId = payload.deckId.ifBlank { DesktopCard.DEFAULT_DECK_ID },
-            createdAt = now
+            createdAt = Clock.System.now()
         )
-        state.addCard(card)
-        state.activityLog.record(
-            ActivityCategory.Study,
-            "Mined \"${payload.headword}\" from ${payload.source}",
-            details = definition,
-            cardIds = listOf(card.id)
-        )
-        recordMine(payload, card.id)
-
-        // External transports (GameSentenceMiner / AnkiConnect) when enabled —
-        // Kaiteyo mining never depends on them.
-        state.miningIntegration.forward(payload).forEach { result ->
-            result.onSuccess {
-                state.activityLog.record(ActivityCategory.Study, "Forwarded \"${payload.headword}\" to an external integration")
-            }.onFailure {
-                state.toastHost.show("External forward failed: ${it.message}", kind = ToastKind.Warning)
-            }
-        }
-
-        // OS notification when the app is in the background (opt-in).
-        state.media.notifyMined(payload.headword)
-
-        // Media source link: cards mined from a subtitle keep a pointer back
-        // to the exact anime moment (Media → Card → Media round-trip).
-        if (payload.source == "subtitle" && state.media.currentItem != null) {
-            state.media.recordMiningEvent(card, payload)
-        }
-
-        state.toastHost.show("Mined \"${payload.headword}\" → study it in Review", kind = ToastKind.Success)
-        return card
     }
 
     /** Convenience: mine straight from a dictionary match. */
-    fun mineFromDictionary(match: DictionaryMatch): DesktopCard {
+    fun mineFromDictionary(match: DictionaryMatch): DesktopCard? {
         val entry = match.entry
         return mine(
             MiningPayload(
@@ -263,17 +369,27 @@ class MiningEngine(val state: AppState) {
     // Persistence
     // ------------------------------------------------------------
 
-    private fun recordMine(payload: MiningPayload, cardId: String = "") {
+    private fun recordMine(
+        payload: MiningPayload,
+        cardId: String = "",
+        destination: CardDestination = CardDestination.Kaiteyo,
+        ankiStatus: String = "",
+        ankiError: String = ""
+    ): String {
         // Every completed mine — from any source — feeds the mining statistics
         // store (per-day + per-source counters) so Statistics and the Dashboard
         // reflect real volume, not just the capped in-memory record feed.
         state.miningStatistics.recordMine(payload.source)
+        val id = "mine-${System.currentTimeMillis()}"
         val rec = MinedRecord(
-            id = "mine-${System.currentTimeMillis()}",
+            id = id,
             headword = payload.headword,
             createdAt = Clock.System.now().toString(),
             source = payload.source,
-            cardId = cardId
+            cardId = cardId,
+            destination = destination.name.lowercase(),
+            ankiStatus = ankiStatus,
+            ankiError = ankiError
         )
         minedRecords.add(0, rec)
         while (minedRecords.size > 200) minedRecords.removeAt(minedRecords.lastIndex)
@@ -282,6 +398,61 @@ class MiningEngine(val state: AppState) {
             while (recentSources.size > 20) recentSources.removeAt(recentSources.lastIndex)
         }
         save()
+        return id
+    }
+
+    // ------------------------------------------------------------
+    // Pending Anki exports (retry without duplicating)
+    // ------------------------------------------------------------
+
+    /** Queue a mine whose Anki destination failed so it can be retried later. */
+    private fun enqueuePendingExport(payload: MiningPayload, mineId: String, error: String) {
+        // Never queue the same mine twice.
+        if (pendingExports.any { it.mineId == mineId && it.payload.headword == payload.headword }) return
+        pendingExports.add(
+            PendingAnkiExport(
+                id = "pending-${System.currentTimeMillis()}",
+                mineId = mineId,
+                payload = payload,
+                createdAt = Clock.System.now().toString(),
+                attempts = 1,
+                lastError = error
+            )
+        )
+        save()
+    }
+
+    /**
+     * Re-attempt every queued Anki export. Returns the number that succeeded;
+     * successes are removed and their mine record is marked, failures keep
+     * their attempt counter. A retry never re-creates the Kaiteyo card.
+     */
+    fun retryPendingAnki(): Int {
+        var succeeded = 0
+        for (pending in pendingExports.toList()) {
+            val result = state.miningIntegration.anki.send(pending.payload)
+            if (result.isSuccess) {
+                val idx = minedRecords.indexOfFirst { it.id == pending.mineId }
+                if (idx >= 0) {
+                    minedRecords[idx] = minedRecords[idx].copy(ankiStatus = "success", ankiError = "")
+                }
+                pendingExports.remove(pending)
+                succeeded++
+            } else {
+                val idx = pendingExports.indexOf(pending)
+                if (idx >= 0) {
+                    pendingExports[idx] = pending.copy(
+                        attempts = pending.attempts + 1,
+                        lastError = result.exceptionOrNull()?.message ?: "Anki send failed"
+                    )
+                }
+            }
+        }
+        save()
+        if (succeeded > 0) {
+            state.toastHost.show("$succeeded pending export(s) sent to Anki", kind = ToastKind.Success)
+        }
+        return succeeded
     }
 
     private fun load() {
@@ -291,6 +462,7 @@ class MiningEngine(val state: AppState) {
             recentSources.clear(); recentSources.addAll(dto.recentSources)
             templates.clear(); templates.addAll(dto.templates)
             minedRecords.clear(); minedRecords.addAll(dto.mines)
+            pendingExports.clear(); pendingExports.addAll(dto.pendingExports)
         }
     }
 
@@ -298,7 +470,12 @@ class MiningEngine(val state: AppState) {
         runCatching {
             stateFile.writeText(
                 json.encodeToString(
-                    MiningStateDto(recentSources.toList(), templates.toList(), minedRecords.toList())
+                    MiningStateDto(
+                        recentSources = recentSources.toList(),
+                        templates = templates.toList(),
+                        mines = minedRecords.toList(),
+                        pendingExports = pendingExports.toList()
+                    )
                 )
             )
         }

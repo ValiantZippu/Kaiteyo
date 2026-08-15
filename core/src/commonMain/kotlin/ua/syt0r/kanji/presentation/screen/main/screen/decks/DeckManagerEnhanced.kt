@@ -123,7 +123,7 @@ fun DeckFeaturesHub(
 private fun KaiteyoFeature.toDestination(): MainDestination {
     return when (this) {
         KaiteyoFeature.DeckBrowser -> MainDestination.DeckBrowser
-        KaiteyoFeature.CardBrowser -> MainDestination.CardBrowser
+        KaiteyoFeature.CardBrowser -> MainDestination.CardBrowser()
         KaiteyoFeature.Tags -> MainDestination.TagManager
         KaiteyoFeature.Flags -> MainDestination.FlagManager
         KaiteyoFeature.Notes -> MainDestination.NoteEditor

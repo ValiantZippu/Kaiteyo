@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -77,6 +78,7 @@ import ua.syt0r.kanji.presentation.common.textDp
 import ua.syt0r.kanji.presentation.common.ui.FilledTextField
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 
 
 @Composable
@@ -87,23 +89,32 @@ fun DeckDashboardLoadedStateContainer(
 
     val orientation = LocalOrientation.current
 
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .wrapContentWidth()
-            .widthIn(max = 400.dp)
-            .onGloballyPositioned { extraListSpacerState.updateList(it) }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ) {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier
+                .fillMaxHeight()
+                .wrapContentWidth()
+                .widthIn(max = rememberAdaptiveContentMaxWidth(
+                    phoneMax = 400.dp,
+                    mediumMax = 520.dp,
+                    wideMax = 720.dp
+                ))
+                .onGloballyPositioned { extraListSpacerState.updateList(it) }
+        ) {
 
-        if (orientation == Orientation.Landscape) {
-            item { Spacer(Modifier.height(20.dp)) }
+            if (orientation == Orientation.Landscape) {
+                item { Spacer(Modifier.height(20.dp)) }
+            }
+
+            content()
+
+            item { extraListSpacerState.ExtraSpacer() }
+
         }
-
-        content()
-
-        item { extraListSpacerState.ExtraSpacer() }
-
     }
 
 }

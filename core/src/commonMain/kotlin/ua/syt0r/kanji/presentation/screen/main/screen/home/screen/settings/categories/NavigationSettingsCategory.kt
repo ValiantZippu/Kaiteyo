@@ -8,7 +8,6 @@ import ua.syt0r.kanji.presentation.common.nav.LocalNavigationSettings
 import ua.syt0r.kanji.presentation.common.nav.NavigationSettingsPage
 import ua.syt0r.kanji.presentation.common.nav.NavigationSettingsState
 import ua.syt0r.kanji.presentation.common.nav.snapPointFor
-import ua.syt0r.kanji.presentation.common.nav.snapPointFor
 import ua.syt0r.kanji.presentation.common.nav.rememberFormFactor
 import ua.syt0r.kanji.presentation.common.resources.string.getStrings
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState

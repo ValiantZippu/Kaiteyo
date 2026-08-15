@@ -20,6 +20,9 @@ import ua.syt0r.kanji.di.appModules
 // Koin is started here (same modules as the main
 // app) so composables in the suite can use
 // koinInject() — e.g. the UpdateService in Settings.
+// The suite's own theme root wraps the window shell
+// (see the `shell` slot on KaiteyoDesktopSuite), so
+// the chrome follows the suite's Theme Studio theme.
 // ============================================
 
 fun desktopSuiteMain() = application {
@@ -36,15 +39,21 @@ fun desktopSuiteMain() = application {
         title = "Kaiteyo Desktop Suite",
         undecorated = true
     ) {
-        KaiteyoWindow(
-            windowState = windowState,
-            onClose = ::exitApplication,
-            // The dev suite keeps its own fixed size and never touches the
-            // saved window bounds of the main application.
-            rememberWindowBounds = false,
-            content = {
-                KaiteyoDesktopSuite()
-            }
-        )
+        KaiteyoDesktopSuite { suiteContent ->
+            KaiteyoWindow(
+                windowState = windowState,
+                onClose = ::exitApplication,
+                // The dev suite keeps its own fixed size and never touches the
+                // saved window bounds of the main application. Its minimum is
+                // smaller than the main app's so the compact tab-bar tier
+                // (WorkspaceShell, 720dp) is actually reachable while testing.
+                rememberWindowBounds = false,
+                minSize = DpSize(
+                    WindowConstraints.SuiteMinWidth,
+                    WindowConstraints.SuiteMinHeight
+                ),
+                content = { suiteContent() }
+            )
+        }
     }
 }

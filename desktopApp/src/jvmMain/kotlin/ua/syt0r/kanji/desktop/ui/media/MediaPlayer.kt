@@ -181,11 +181,15 @@ fun MediaPlayerWorkspace(state: AppState) {
     }
 
     // Controls auto-hide while playing; hovering the video brings them back.
+    // The inactivity delay is configurable (5/10/15/30 s, 0 = never hide).
     val videoInteraction = remember { MutableInteractionSource() }
     val videoHovered by videoInteraction.collectIsHoveredAsState()
-    LaunchedEffect(media.isPlaying, videoHovered) {
-        if (media.isPlaying && !videoHovered) {
-            delay(3000)
+    val hideDelayMs = remember {
+        state.settings.getInt("media.controls-hide-ms", 3000).coerceIn(0, 60000)
+    }
+    LaunchedEffect(media.isPlaying, videoHovered, hideDelayMs) {
+        if (media.isPlaying && !videoHovered && hideDelayMs > 0) {
+            delay(hideDelayMs.toLong())
             media.controlsVisible = false
         }
     }
@@ -543,7 +547,9 @@ fun SubtitleOverlay(state: AppState, modifier: Modifier = Modifier) {
     if (cue == null || cue.text.isBlank()) return
 
     val tokens = media.tokensFor(cue)
-    val fontSize = state.settings.getInt("media.subtitle-font-size", 20).sp
+    val baseSize = state.settings.getInt("media.subtitle-font-size", 20)
+    val scale = state.settings.getFloat("media.subtitle-scale", 1f).coerceIn(0.5f, 2f)
+    val fontSize = (baseSize * scale).sp
     val position = state.settings.getString("media.subtitle-position", "bottom")
 
     // Theme presets + custom overrides (opacity/weight) are applied here so
@@ -1177,8 +1183,11 @@ fun MediaSeekBar(state: AppState, modifier: Modifier = Modifier) {
     val ac = accent()
     val duration = media.durationMs.coerceAtLeast(1)
     val position = media.positionMs.coerceIn(0, duration)
+    val buffered = media.bufferedPositionMs.coerceIn(position, duration)
     val markers = remember(media.subtitles.activeTrackId, media.subtitles.tracks.size) { media.subtitles.cueMarkers() }
     val chapters = remember(media.activeBackend) { media.chapters }
+    // Hover timestamp: show the time under the cursor while dragging or hovering.
+    var hoverMs by remember { mutableStateOf<Long?>(null) }
 
     fun offsetToMs(x: Float, width: Float): Long = ((x / width.coerceAtLeast(1f)) * duration).toLong().coerceIn(0, duration)
 
@@ -1191,12 +1200,35 @@ fun MediaSeekBar(state: AppState, modifier: Modifier = Modifier) {
             }
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { offset -> media.seekTo(offsetToMs(offset.x, size.width.toFloat())) },
+                    onDragStart = { offset ->
+                        hoverMs = offsetToMs(offset.x, size.width.toFloat())
+                        media.seekTo(hoverMs!!)
+                    },
                     onDrag = { change, _ ->
                         change.consume()
-                        media.seekTo(offsetToMs(change.position.x, size.width.toFloat()))
-                    }
+                        hoverMs = offsetToMs(change.position.x, size.width.toFloat())
+                        media.seekTo(hoverMs!!)
+                    },
+                    onDragEnd = { hoverMs = null },
+                    onDragCancel = { hoverMs = null }
                 )
+            }
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull()
+                        val pos = change?.position
+                        if (pos == null) continue
+                        // Clear the preview once the pointer leaves the bar
+                        // (including above it — the bar is only 26 dp tall).
+                        if (pos.y !in 0f..size.height.toFloat() || pos.x !in 0f..size.width.toFloat()) {
+                            hoverMs = null
+                        } else if (change.pressed == false) {
+                            hoverMs = offsetToMs(pos.x, size.width.toFloat())
+                        }
+                    }
+                }
             }
     ) {
         Canvas(Modifier.fillMaxSize()) {
@@ -1210,8 +1242,15 @@ fun MediaSeekBar(state: AppState, modifier: Modifier = Modifier) {
                 size = androidx.compose.ui.geometry.Size(w, 2.dp.toPx()),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx())
             )
-            // played
+            // played + buffered region
             val playedX = (position.toFloat() / duration) * w
+            val bufferedX = (buffered.toFloat() / duration) * w
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.3f),
+                topLeft = Offset(playedX, trackY - 2.dp.toPx() / 2),
+                size = androidx.compose.ui.geometry.Size((bufferedX - playedX).coerceAtLeast(0f), 2.dp.toPx()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx())
+            )
             drawRoundRect(
                 color = ac.primary,
                 topLeft = Offset(0f, trackY - 2.dp.toPx() / 2),
@@ -1251,13 +1290,33 @@ fun MediaSeekBar(state: AppState, modifier: Modifier = Modifier) {
             // thumb
             drawCircle(color = Color.White, radius = 5.dp.toPx(), center = Offset(playedX, trackY))
             drawCircle(color = ac.primary, radius = 3.dp.toPx(), center = Offset(playedX, trackY))
+            // hover cursor + time preview
+            val hover = hoverMs
+            if (hover != null) {
+                val hx = (hover.toFloat() / duration) * w
+                drawLine(
+                    color = Color.White.copy(alpha = 0.8f),
+                    start = Offset(hx, trackY - 5.dp.toPx()),
+                    end = Offset(hx, trackY + 5.dp.toPx()),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
         }
-        Text(
-            "${MediaEngine.formatTime(position)} / ${MediaEngine.formatTime(duration)}",
-            color = sc.textMuted,
-            fontSize = 10.sp,
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp)
-        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                MediaEngine.formatTime(hoverMs ?: position),
+                color = sc.textPrimary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            Text(
+                "${MediaEngine.formatTime(position)} / ${MediaEngine.formatTime(duration)}",
+                color = sc.textMuted,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
     }
 }
 

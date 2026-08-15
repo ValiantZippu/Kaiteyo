@@ -70,15 +70,59 @@ class NavigationSettingsState(
         if (!stored.isNullOrBlank()) {
             decodeStored(stored)?.let { decoded ->
                 // "Remember previous mode" off → always start in the configured default.
-                return if (decoded.rememberPreviousMode) {
+                val restored = if (decoded.rememberPreviousMode) {
                     decoded.copy(mode = decoded.lastMode ?: decoded.mode)
                 } else {
                     decoded.copy(mode = decoded.defaultMode)
                 }
+                // Persisted values are validated before use: a stale or hand-edited
+                // blob (e.g. written by an older build or on a different device)
+                // can never produce out-of-range sizes, invalid phone edges or
+                // absurd snap offsets that crash layout after relaunch.
+                return sanitize(restored)
             }
         }
-        return migrateFromLegacy()
+        return sanitize(migrateFromLegacy())
     }
+
+    /**
+     * Clamp every persisted layout value to a safe range and convert impossible
+     * combinations (e.g. phone + left/right sidebar) to valid ones. Called on
+     * every load so invalid persisted state is corrected instead of crashing.
+     */
+    private fun sanitize(s: NavigationSettings): NavigationSettings = s.copy(
+        bubble = s.bubble.copy(
+            size = s.bubble.size.coerceIn(40, 84),
+            iconSize = s.bubble.iconSize.coerceIn(14, 40),
+            snapSensitivity = s.bubble.snapSensitivity.coerceIn(20, 200),
+            snapDistance = s.bubble.snapDistance.coerceIn(20, 400),
+            safeMargin = s.bubble.safeMargin.coerceIn(4, 48),
+            holdDurationMs = s.bubble.holdDurationMs.coerceIn(200, 2000),
+            idleTimeoutMs = s.bubble.idleTimeoutMs.coerceIn(2000, 120_000),
+            fadeOpacity = s.bubble.fadeOpacity.coerceIn(0.15f, 0.8f),
+            animationSpeed = s.bubble.animationSpeed.coerceIn(0.25f, 3f),
+            elevation = s.bubble.elevation.coerceIn(0, 40)
+        ),
+        snapOffsetX = s.snapOffsetX.coerceIn(-4000, 4000),
+        snapOffsetY = s.snapOffsetY.coerceIn(-4000, 4000),
+        phone = s.phone.copy(
+            edge = if (s.phone.edge == SidebarPosition.Left || s.phone.edge == SidebarPosition.Right)
+                SidebarPosition.Bottom else s.phone.edge,
+            snapOffsetX = s.phone.snapOffsetX.coerceIn(-4000, 4000),
+            snapOffsetY = s.phone.snapOffsetY.coerceIn(-4000, 4000)
+        ),
+        animationDurationMs = s.animationDurationMs.coerceIn(0, 2000),
+        sidebar = s.sidebar.copy(
+            expandedWidthIndex = s.sidebar.expandedWidthIndex.coerceIn(0, ExpandedWidthOptions.lastIndex),
+            iconSize = s.sidebar.iconSize.coerceIn(12, 48),
+            compactSpacing = s.sidebar.compactSpacing.coerceIn(2, 32)
+        ),
+        launchpad = s.launchpad.copy(
+            scale = s.launchpad.scale.coerceIn(0.6f, 1.4f),
+            spacing = s.launchpad.spacing.coerceIn(0.6f, 1.6f),
+            opacity = s.launchpad.opacity.coerceIn(0.5f, 1f)
+        )
+    )
 
     /**
      * Decode the persisted blob. Tries the current schema first; when the

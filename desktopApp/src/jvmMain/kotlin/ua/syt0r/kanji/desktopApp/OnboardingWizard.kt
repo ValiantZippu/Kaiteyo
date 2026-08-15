@@ -78,7 +78,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -92,6 +91,7 @@ import ua.syt0r.kanji.desktop.engine.theming.colorToHex
 import ua.syt0r.kanji.desktop.engine.theming.hexToColor
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import ua.syt0r.kanji.presentation.common.theme.AllAccentSchemes
 import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
 import ua.syt0r.kanji.presentation.common.theme.BaseMode
@@ -616,28 +616,19 @@ private fun WizardLogo(size: Dp, pulse: Boolean) {
         1f
     }
     val scale = if (pulse) glow else 1f
-    val logoFontSize = with(LocalDensity.current) { (size * 0.5f).toSp() }
     Box(
         modifier = Modifier
             .size(size)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-            }
-            .clip(RoundedCornerShape(size * 0.24f))
-            .background(
-                Brush.linearGradient(
-                    listOf(ac.primary, ac.secondary, ac.tertiary ?: ac.secondary)
-                )
-            ),
+            },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "K",
-            color = ac.onPrimary,
-            fontSize = logoFontSize,
-            fontWeight = FontWeight.Bold
-        )
+        // The real Kaiteyo mark — centralized brand asset, not a "K".
+        // The mark carries its own brand tile, so no synthetic gradient
+        // backdrop is needed behind it.
+        BrandMark(modifier = Modifier.fillMaxSize(), contentDescription = "Kaiteyo")
     }
     // Soft glow ring behind the logo.
     if (pulse) {
@@ -1025,15 +1016,11 @@ private fun StepScaling(state: AppState, ac: KaiteyoAccentScheme) {
                 .padding(Wiz.s4)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size((40 * preview).dp)
-                        .clip(RoundedCornerShape((10 * preview).dp))
-                        .background(ac.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("K", color = ac.onPrimary, fontSize = (18 * preview).sp, fontWeight = FontWeight.Bold)
-                }
+                // The real Kaiteyo mark — centralized brand asset, not a "K".
+                BrandMark(
+                    modifier = Modifier.size((40 * preview).dp),
+                    contentDescription = null
+                )
                 Spacer(Modifier.width((16 * preview).dp))
                 Column {
                     Text(

@@ -145,7 +145,7 @@ fun MainScreen(
                         subtitle = "Browse and manage deck cards",
                         keywords = "decks cards manager anki",
                         category = "Navigate"
-                    ) { navigationState.navigate(MainDestination.CardBrowser) }
+                    ) { navigationState.navigate(MainDestination.CardBrowser()) }
                 )
                 add(
                     PaletteAction(
@@ -154,6 +154,14 @@ fun MainScreen(
                         keywords = "stats statistics dashboard heatmap",
                         category = "Navigate"
                     ) { navigationState.navigate(MainDestination.StatisticsDashboard) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Media Centre",
+                        subtitle = "Immersion workspace: player, subtitles, dictionary, mining",
+                        keywords = "media video anime player subtitles immersion dictionary mining",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.Media) }
                 )
                 add(
                     PaletteAction(

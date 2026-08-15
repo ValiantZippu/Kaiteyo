@@ -106,8 +106,9 @@ fun NavigationSettingsOverlay(
                     }
                 )
                 .fillMaxHeight(if (formFactor.isPhone) 0.94f else 0.9f)
-                .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusXl)))
-                .materialShadow(28.dp, RoundedCornerShape(scaledRadius(Dimens.RadiusXl))),
+                // Shadow before clip/background so it renders behind the surface.
+                .materialShadow(28.dp, RoundedCornerShape(scaledRadius(Dimens.RadiusXl)))
+                .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusXl))),
             shape = RoundedCornerShape(scaledRadius(Dimens.RadiusXl)),
             color = surfaceColors.surfaceElevated
         ) {
@@ -568,24 +569,67 @@ private fun FloatingSection(navSettings: NavigationSettingsState, formFactor: Fo
             valueLabel = { "${it.toInt()} dp" },
             onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(iconSize = it.toInt())) } }
         )
-        ToggleRow(
-            label = "Auto fade when idle",
-            checked = bubble.autoFade,
-            onChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(autoFade = it)) } }
+        SliderRow(
+            label = resolveString { nav.holdDurationLabel },
+            value = bubble.holdDurationMs.toFloat(),
+            range = 200f..1500f,
+            valueLabel = { "${it.toInt()} ms" },
+            onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(holdDurationMs = it.toLong())) } }
         )
-        if (bubble.autoFade) {
+        SliderRow(
+            label = resolveString { nav.safeMarginLabel },
+            value = bubble.safeMargin.toFloat(),
+            range = 4f..48f,
+            valueLabel = { "${it.toInt()} dp" },
+            onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(safeMargin = it.toInt())) } }
+        )
+        // Resolve in composable context — optionLabel itself is a plain lambda.
+        val neverLabel = resolveString { nav.autoHideNever }
+        val tenSecondsLabel = resolveString { nav.autoHideTenSeconds }
+        val twentySecondsLabel = resolveString { nav.autoHideTwentySeconds }
+        val thirtySecondsLabel = resolveString { nav.autoHideThirtySeconds }
+        val oneMinuteLabel = resolveString { nav.autoHideOneMinute }
+        val customLabel = resolveString { nav.autoHideCustom }
+        ChoiceRow(
+            label = resolveString { nav.autoHideLabel },
+            options = AutoHidePreset.entries,
+            optionLabel = { preset ->
+                when (preset) {
+                    AutoHidePreset.Never -> neverLabel
+                    AutoHidePreset.TenSeconds -> tenSecondsLabel
+                    AutoHidePreset.TwentySeconds -> twentySecondsLabel
+                    AutoHidePreset.ThirtySeconds -> thirtySecondsLabel
+                    AutoHidePreset.OneMinute -> oneMinuteLabel
+                    AutoHidePreset.Custom -> customLabel
+                }
+            },
+            selected = bubble.autoHide,
+            onSelect = { preset ->
+                navSettings.update { current ->
+                    current.copy(
+                        bubble = current.bubble.copy(
+                            autoHide = preset,
+                            autoFade = preset != AutoHidePreset.Never
+                        )
+                    )
+                }
+            }
+        )
+        if (bubble.autoHide == AutoHidePreset.Custom && bubble.autoFade) {
             SliderRow(
                 label = "Idle timeout",
                 value = bubble.idleTimeoutMs.toFloat(),
-                range = 2000f..20000f,
+                range = 2000f..60000f,
                 valueLabel = { "${(it / 1000).toInt()}s" },
                 onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(idleTimeoutMs = it.toLong())) } }
             )
-            ToggleRow(
-                label = "Hover reveal",
-                checked = bubble.hoverReveal,
-                onChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(hoverReveal = it)) } }
-            )
+        }
+        ToggleRow(
+            label = "Hover reveal",
+            checked = bubble.hoverReveal,
+            onChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(hoverReveal = it)) } }
+        )
+        if (bubble.autoFade) {
             SliderRow(
                 label = "Idle opacity",
                 value = bubble.fadeOpacity,

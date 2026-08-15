@@ -28,6 +28,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 
 // ============================================
 // KAITEYO v1.2 — REVIEW SETTINGS & KEYBOARD SHORTCUTS
@@ -553,7 +554,7 @@ fun KeyboardShortcutsFullScreen(
 
     // Recording dialog
     showRecordingDialog?.let { shortcut ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = {
                 showRecordingDialog = null
                 isRecording = false
@@ -659,7 +660,7 @@ fun KeyboardShortcutsFullScreen(
 
     // Conflict dialog
     showConflictDialog?.let { msg ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showConflictDialog = null },
             title = { Text("Conflict Detected") },
             text = { Text(msg) },
@@ -805,7 +806,7 @@ private fun ProfileDialog(
     var showCreateField by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Shortcut Profiles") },
         text = {
@@ -886,7 +887,7 @@ private fun ImportShortcutsDialog(
     var jsonText by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Import Shortcuts") },
         text = {
@@ -931,7 +932,7 @@ private fun ExportShortcutsDialog(
         }.let { "[\n  $it\n]" }
     }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Export Shortcuts") },
         text = {

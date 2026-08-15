@@ -32,6 +32,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import kotlin.math.roundToInt
 
 // ============================================
@@ -46,6 +47,7 @@ fun CardBrowserFullScreen(
     cards: List<KaiteyoCard>,
     presetCardIds: Set<String> = emptySet(),
     presetLabel: String? = null,
+    initialDeckFilter: String? = null,
     onFlagCard: (String, CardFlagType) -> Unit = { _, _ -> },
     onStatusChange: (String, CardStatus) -> Unit = { _, _ -> },
     onUpdateCard: (KaiteyoCard) -> Unit = {},
@@ -65,7 +67,7 @@ fun CardBrowserFullScreen(
     var showFilterPanel by remember { mutableStateOf(false) }
     var flagFilter by remember { mutableStateOf<CardFlagType?>(null) }
     var statusFilter by remember { mutableStateOf<CardStatus?>(null) }
-    var deckFilter by remember { mutableStateOf<String?>(null) }
+    var deckFilter by remember { mutableStateOf(initialDeckFilter) }
     var tagFilter by remember { mutableStateOf<String?>(null) }
     // Optional day-filter preset: landing view for "cards practiced on <day>".
     var dayCardIds by remember { mutableStateOf(presetCardIds) }
@@ -825,7 +827,7 @@ private fun ColumnPickerDialog(
     onToggleColumn: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Visible Columns") },
         text = {
@@ -864,7 +866,7 @@ private fun CardDetailDialog(
     var editedCard by remember { mutableStateOf(card) }
     var isEditing by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {

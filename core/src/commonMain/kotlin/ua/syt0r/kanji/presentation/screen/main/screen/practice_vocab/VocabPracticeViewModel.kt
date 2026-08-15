@@ -9,7 +9,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.minus
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
+import ua.syt0r.kanji.core.srs.VocabSrsManager
+import ua.syt0r.kanji.core.time.TimeUtils
+import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCardsSelectorState
@@ -29,10 +34,18 @@ class VocabPracticeViewModel(
     private val practicePreferences: PreferencesContract.PracticePreferences,
     private val getQueueDataUseCase: GetVocabPracticeQueueDataUseCase,
     private val practiceQueue: VocabPracticeQueue,
-    private val analyticsManager: AnalyticsManager
+    private val analyticsManager: AnalyticsManager,
+    private val vocabSrsManager: VocabSrsManager,
+    private val reviewHistoryRepository: ReviewHistoryRepository,
+    private val appPreferences: PreferencesContract.AppPreferences,
+    private val timeUtils: TimeUtils
 ) : VocabPracticeScreenContract.ViewModel {
 
     private lateinit var configuration: VocabPracticeScreenConfiguration
+
+    // Loaded once per session for the desktop context panel.
+    private var deckTitles: Map<Long, String> = emptyMap()
+    private var currentStreak: Int = 0
 
     private lateinit var _reviewState: MutableState<VocabPracticeQueueState.Review>
     private val _state = MutableStateFlow<ScreenState>(ScreenState.Loading)
@@ -90,6 +103,9 @@ class VocabPracticeViewModel(
                 vocabWritingShowKanaReading.set(configurationState.writing.showKanaReading.value)
                 vocabWritingStrictness.set(configurationState.writing.strictness.value.toRepoType())
             }
+
+            deckTitles = vocabSrsManager.getDecks().decks.associate { it.id to it.title }
+            currentStreak = getCurrentStreak()
 
             practiceQueue.initialize(
                 items = getQueueDataUseCase(configuration, configurationState)
@@ -159,8 +175,24 @@ class VocabPracticeViewModel(
         return VocabPracticeReviewState(
             progress = progress,
             reviewState = state.asImmutable,
-            answers = answers
+            answers = answers,
+            deckTitle = deckTitles[deckId],
+            currentStreak = currentStreak
         )
+    }
+
+    private suspend fun getCurrentStreak(): Int {
+        val resetTime = appPreferences.dailyResetTime.get()
+        val streaks = reviewHistoryRepository.getStreaks(resetTime)
+
+        val currentDate = timeUtils.getCurrentDate()
+        val currentStreakSearchDates = setOf(
+            currentDate, currentDate.minus(1, DateTimeUnit.DAY)
+        )
+
+        return streaks.find { streak ->
+            currentStreakSearchDates.any { it in streak.start..streak.end }
+        }?.length ?: 0
     }
 
 }

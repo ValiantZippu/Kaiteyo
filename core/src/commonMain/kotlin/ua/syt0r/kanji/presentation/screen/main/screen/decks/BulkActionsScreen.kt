@@ -32,6 +32,7 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.datetime.Clock
 
@@ -338,7 +339,7 @@ fun BulkActionsFullScreen(
 
     // Delete confirmation dialog
     if (showConfirmDelete) {
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showConfirmDelete = false },
             title = { Text("Delete Cards?") },
             text = {
@@ -367,7 +368,7 @@ fun BulkActionsFullScreen(
 
     // Result snackbar
     showResultMessage?.let { message ->
-        AlertDialog(
+        KaiteyoAlertDialog(
             onDismissRequest = { showResultMessage = null },
             confirmButton = {
                 TextButton(onClick = { showResultMessage = null }) {
@@ -500,7 +501,7 @@ private fun TagPickerDialog(
     val filteredTags = if (searchTagQuery.isBlank()) tags
     else tags.filter { it.name.contains(searchTagQuery, ignoreCase = true) }
 
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select Tags to Apply") },
         text = {
@@ -579,7 +580,7 @@ private fun FlagPickerDialog(
     onConfirm: (CardFlagType) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select Flag") },
         text = {
@@ -619,7 +620,7 @@ private fun DeckPickerDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    KaiteyoAlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
         title = { Text("Select Destination Deck") },

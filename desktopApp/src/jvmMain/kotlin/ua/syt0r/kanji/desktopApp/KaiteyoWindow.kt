@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isAltPressed
@@ -53,8 +55,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.PointerType
-import java.awt.Cursor
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -66,23 +66,32 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.window.WindowPosition
-import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.distinctUntilChanged
-import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
-import ua.syt0r.kanji.presentation.common.nav.DesktopWindowPlacement
-import ua.syt0r.kanji.presentation.common.nav.LocalWindowPlacement
+import java.awt.Cursor
+import java.awt.Dimension
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.ui.workspace.LocalCaptureState
 import ua.syt0r.kanji.desktop.ui.workspace.LocalWindowControls
 import ua.syt0r.kanji.desktop.ui.workspace.WindowActionsMenu
 import ua.syt0r.kanji.desktop.ui.workspace.WindowControls
-import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.nav.DesktopWindowPlacement
+import ua.syt0r.kanji.presentation.common.nav.LocalWindowPlacement
+import ua.syt0r.kanji.presentation.common.nav.LocalWindowResizing
+import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
+
+/** How often the floating-window work-area safety check runs (ms). */
+private const val WorkAreaWatchIntervalMs = 2_000L
 
 // ============================================
 // KAITEYO WINDOW
@@ -91,11 +100,21 @@ import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
 // - A real 44dp title bar: app title (draggable,
 //   double-click toggles maximize/restore) plus
 //   native-style window controls on the right.
-// - A full-window background fill underneath the
-//   rounded app surface so the corner cutouts
-//   never reveal the OS window's black backdrop.
-// - Rounded corners only while floating; square
-//   edges while maximized, matching the OS.
+// - The shell is composed INSIDE the KaiteyoApp
+//   theme root, so the title bar, divider and
+//   window surface all use the live theme tokens
+//   (light / dark / OLED / Theme Studio presets).
+// - Rounded corners: Windows 11 hands the actual
+//   rounding to DWM (square while maximized,
+//   matching the OS); everywhere else the rounded
+//   app surface sits on the theme background, so
+//   corner cutouts never reveal OS black.
+// - The window is constrained to the OS work area
+//   (taskbar on any edge, macOS menu bar + dock):
+//   startup geometry is corrected before show,
+//   resize drags clamp to the work area, and a
+//   periodic watch recovers the window if the
+//   display topology changes underneath it.
 // ============================================
 
 @Composable
@@ -104,12 +123,24 @@ fun FrameWindowScope.KaiteyoWindow(
     onClose: () -> Unit,
     content: @Composable () -> Unit,
     rememberWindowBounds: Boolean = true,
-    captureState: String? = null
+    captureState: String? = null,
+    // Content-derived minimum size for the main app; the dev suite passes a
+    // smaller bound so its compact tab-bar tier (720dp) is reachable. Kept as
+    // a parameter instead of a global so the two entry points never fight.
+    minSize: DpSize = DpSize(
+        WindowConstraints.MinWidth,
+        WindowConstraints.MinHeight
+    )
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val density = LocalDensity.current
     var isMaximized by remember { mutableStateOf(false) }
     isMaximized = windowState.placement == WindowPlacement.Maximized
+
+    // True while a resize drag is active, so layout elements that normally
+    // animate (dock width, etc.) can follow the window instantly instead of
+    // chasing a moving target on every frame.
+    var windowResizing by remember { mutableStateOf(false) }
 
     // Where the custom system menu opens (right-click on the title bar,
     // Alt+Space, or the context-menu key). Null = closed.
@@ -124,32 +155,68 @@ fun FrameWindowScope.KaiteyoWindow(
     }
 
     // Persist the floating window's size/position (throttled to ~4 writes/s)
-    // so it reopens where the user left it. Maximized/minimized geometry is
-    // never saved.
+    // so it reopens where the user left it. Maximized geometry is never saved;
+    // instead the last floating bounds are kept and the maximize state is
+    // remembered so the window reopens maximized. Minimized/fullscreen are
+    // skipped entirely.
     if (rememberWindowBounds) {
         LaunchedEffect(Unit) {
             var lastSavedAt = 0L
+            var lastFloating = SavedWindowBounds(width = 0, height = 0, x = 0, y = 0)
             snapshotFlow {
                 Triple(windowState.placement, windowState.size, windowState.position)
             }
                 .distinctUntilChanged()
                 .collect { (placement, size, position) ->
-                    if (placement != WindowPlacement.Floating) return@collect
+                    // Minimized geometry is garbage and fullscreen is never
+                    // persisted; only floating (size/position) and maximized
+                    // (the flag) are remembered.
+                    if (placement == WindowPlacement.Fullscreen) return@collect
                     if (position == WindowPosition.PlatformDefault) return@collect
                     val now = System.currentTimeMillis()
                     if (now - lastSavedAt < 250) return@collect
                     lastSavedAt = now
-                    with(density) {
-                        WindowStateStore.save(
-                            SavedWindowBounds(
-                                width = size.width.roundToPx(),
-                                height = size.height.roundToPx(),
-                                x = position.x.roundToPx(),
-                                y = position.y.roundToPx()
-                            )
+                    val bounds = with(density) {
+                        SavedWindowBounds(
+                            width = size.width.roundToPx(),
+                            height = size.height.roundToPx(),
+                            x = position.x.roundToPx(),
+                            y = position.y.roundToPx()
                         )
                     }
+                    if (placement == WindowPlacement.Floating) lastFloating = bounds
+                    if (placement == WindowPlacement.Maximized) {
+                        if (lastFloating.isUsable) {
+                            WindowStateStore.save(lastFloating.copy(maximized = true))
+                        }
+                    } else if (placement == WindowPlacement.Floating) {
+                        WindowStateStore.save(bounds)
+                    }
                 }
+        }
+    }
+
+    // Safety net for display-topology changes while the app is running
+    // (monitor unplugged, taskbar/dock moved, display rotated). Only corrects
+    // a floating window that is fully outside its work area or larger than it
+    // — it never fights a normal drag or a legitimate partial overlap.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(WorkAreaWatchIntervalMs)
+            if (windowState.placement != WindowPlacement.Floating) continue
+            if (windowState.isMinimized) continue
+            val bounds = runCatching { window.bounds }.getOrNull() ?: continue
+            if (bounds.width <= 0 || bounds.height <= 0) continue
+            val workArea = WindowWorkAreas.forBounds(bounds)
+            val needsFix = workArea.intersectionArea(bounds) == 0 ||
+                bounds.width > workArea.width ||
+                bounds.height > workArea.height
+            if (!needsFix) continue
+            val clamped = workArea.clampRect(bounds)
+            with(density) {
+                windowState.position = WindowPosition(clamped.x.toDp(), clamped.y.toDp())
+                windowState.size = DpSize(clamped.width.toDp(), clamped.height.toDp())
+            }
         }
     }
 
@@ -160,8 +227,44 @@ fun FrameWindowScope.KaiteyoWindow(
         onClose = onClose
     )
 
-    val cornerRadius = if (isMaximized) 0.dp else 20.dp
+    // The window's corner radius comes from the shared radius tokens, so the
+    // Theme Studio's radius setting shapes the window chrome too. Maximized
+    // windows are square, matching the OS.
+    val cornerRadius = if (isMaximized) 0.dp else DsRadius.Xl
     val surfaceShape = RoundedCornerShape(cornerRadius)
+
+    // Windows 11: hand the OS the rounding and a theme-colored hairline
+    // border. Retried until the frame is realized (the HWND peer only exists
+    // once the window is shown), then re-applied whenever the maximized state
+    // or the theme border changes. Best effort — the rounded app surface
+    // below remains the universal fallback on Windows 10 / Linux / macOS.
+    LaunchedEffect(isMaximized, surfaceColors.border) {
+        repeat(5) {
+            if (NativeWindowChrome.update(
+                    frame = window,
+                    isMaximized = isMaximized,
+                    borderColorArgb = surfaceColors.border.toArgb()
+                )
+            ) {
+                return@LaunchedEffect
+            }
+            delay(100L)
+        }
+    }
+
+    // Enforce the minimum size at the AWT level as well, so every resize path
+    // (native + custom handles) respects it.
+    val minimumSize = remember(density, minSize) {
+        with(density) {
+            Dimension(
+                minSize.width.roundToPx(),
+                minSize.height.roundToPx()
+            )
+        }
+    }
+    SideEffect {
+        runCatching { window.minimumSize = minimumSize }
+    }
 
     Box(
         modifier = Modifier
@@ -233,6 +336,7 @@ fun FrameWindowScope.KaiteyoWindow(
                     if (isMaximized) DesktopWindowPlacement.Maximized
                     else DesktopWindowPlacement.Floating,
                 LocalWindowControls provides windowControls,
+                LocalWindowResizing provides windowResizing,
                 LocalCaptureState provides captureState
             ) {
                 Column(Modifier.fillMaxSize()) {
@@ -261,9 +365,16 @@ fun FrameWindowScope.KaiteyoWindow(
             // Invisible edge/corner resize zones (only while floating — a
             // maximized window never resizes). These are the resize handles
             // for undecorated windows on macOS/Linux, and work alongside the
-            // OS border on Windows.
+            // OS border on Windows. Every drag is clamped to the work area of
+            // the display the window is on, so resizing can never push the
+            // window under the taskbar or off the usable desktop.
             if (!isMaximized) {
-                WindowResizeHandles(windowState = windowState)
+                WindowResizeHandles(
+                    windowState = windowState,
+                    frame = window,
+                    minSize = minSize,
+                    onResizeActive = { windowResizing = it }
+                )
             }
         }
 
@@ -387,7 +498,7 @@ private fun FrameWindowScope.KaiteyoTitleBar(
 }
 
 // ============================================
-// Window Icon — the "K" mark. Native-style: a
+// Window Icon — the Kaiteyo mark. Native-style: a
 // click opens the system menu; it never drags.
 // ============================================
 
@@ -397,12 +508,10 @@ private fun WindowTitleLogo(
     onDoubleClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val accent = LocalKaiteyoAccent.current
     Box(
         modifier = modifier
             .size(20.dp)
             .clip(RoundedCornerShape(5.dp))
-            .background(accent.primary.copy(alpha = 0.2f))
             .pointerInput(Unit) {
                 detectTapGestures(
                     // The tap fires after the double-tap window elapses, so a
@@ -413,20 +522,18 @@ private fun WindowTitleLogo(
             },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "K",
-            color = accent.primary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
+        // The real Kaiteyo app mark — centralized brand asset, not a "K".
+        BrandMark(modifier = Modifier.fillMaxSize(), contentDescription = null)
     }
 }
 
 // ============================================
 // WINDOW CONTROLS — minimize · maximize · close
 // Native-style: transparent until hover; the close
-// button turns red on hover like a standard title bar.
+// button turns red on hover like a standard title
+// bar. Idle/hover glyph colors come from the theme
+// so the controls adapt to light/dark/custom
+// presets; hover transitions honor reduced motion.
 // ============================================
 
 @Composable
@@ -473,27 +580,29 @@ private fun WindowControlButton(
     contentDescription: String,
     size: Dp = 40.dp
 ) {
+    val sc = LocalSurfaceColors.current
+    val reducedMotion = LocalAnimationConfig.current.reducedMotion
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
     val bgColor by animateColorAsState(
         targetValue = if (isHovered) glowColor.copy(alpha = 0.9f)
         else Color.Transparent,
-        animationSpec = tween(120),
+        animationSpec = tween(if (reducedMotion) 0 else 120),
         label = "windowControlBg"
     )
     val textColor by animateColorAsState(
         targetValue = when {
             isHovered && glowColor != Color.Transparent -> hoverTextColor
-            isHovered -> Color(0xFFE0E0E0)
-            else -> Color(0xFF8A8A8A)
+            isHovered -> sc.textPrimary
+            else -> sc.textMuted
         },
-        animationSpec = tween(120),
+        animationSpec = tween(if (reducedMotion) 0 else 120),
         label = "windowControlColor"
     )
     val scale by animateFloatAsState(
         targetValue = if (isHovered) 1.08f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+        animationSpec = if (reducedMotion) tween(0) else spring(dampingRatio = 0.5f, stiffness = 500f),
         label = "windowControlScale"
     )
 
@@ -529,6 +638,7 @@ private fun WindowControlButton(
 // STARTUP FADE-IN
 // The app surface fades in gently on first show,
 // giving the window a deliberate, premium open.
+// Skipped under reduced motion.
 // ============================================
 
 @Composable
@@ -538,9 +648,10 @@ private fun WindowContentFade(
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
+    val reducedMotion = LocalAnimationConfig.current.reducedMotion
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(320),
+        animationSpec = tween(if (reducedMotion) 0 else 320),
         label = "windowFadeIn"
     )
     Box(
@@ -560,6 +671,11 @@ private fun WindowContentFade(
 // are what make edge/corner resizing work on
 // macOS and Linux, and they coexist with the
 // native border on Windows.
+//
+// Every drag is clamped to the work area of the
+// display the window is on (captured at drag
+// start), so resizing can never place the window
+// under the taskbar or beyond the usable desktop.
 // ============================================
 
 private enum class ResizeZone(
@@ -579,21 +695,28 @@ private enum class ResizeZone(
     West(PointerIcon(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR)), west = true)
 }
 
-private data class ResizeStart(val size: DpSize, val position: WindowPosition)
+private data class ResizeStart(
+    val size: DpSize,
+    val position: WindowPosition,
+    val workArea: WorkArea
+)
 
 /**
- * Resize-drag modifier: captures the window's size/position on drag start and
- * applies the standard 8-zone resize math on every drag delta, clamped to the
- * minimum window size. The window stays in place on the anchored side while
- * the dragged edge follows the pointer.
+ * Resize-drag modifier: captures the window's size/position and work area on
+ * drag start and applies the standard 8-zone resize math on every drag delta.
+ * The window stays in place on the anchored side while the dragged edge
+ * follows the pointer; the resulting bounds are clamped to the minimum size
+ * and the captured work area.
  */
 @Composable
 private fun Modifier.windowResizeZone(
     zone: ResizeZone,
     windowState: WindowState,
+    frame: java.awt.Frame,
     minWidthPx: Int,
     minHeightPx: Int,
-    density: Density
+    density: Density,
+    onResizeActive: (Boolean) -> Unit
 ): Modifier {
     var start by remember { mutableStateOf<ResizeStart?>(null) }
 
@@ -601,39 +724,73 @@ private fun Modifier.windowResizeZone(
         .pointerInput(zone) {
             detectDragGestures(
                 onDragStart = {
-                    start = ResizeStart(windowState.size, windowState.position)
+                    start = ResizeStart(
+                        size = windowState.size,
+                        position = windowState.position,
+                        workArea = WindowWorkAreas.forBounds(runCatching { frame.bounds }.getOrNull()
+                            ?: java.awt.Rectangle(0, 0, 0, 0))
+                    )
+                    onResizeActive(true)
                 },
-                onDragEnd = { start = null },
-                onDragCancel = { start = null },
+                onDragEnd = {
+                    start = null
+                    onResizeActive(false)
+                },
+                onDragCancel = {
+                    start = null
+                    onResizeActive(false)
+                },
                 onDrag = { change, dragAmount ->
                     change.consume()
                     val s = start ?: return@detectDragGestures
+                    val wa = s.workArea
                     val startW = with(density) { s.size.width.roundToPx() }
                     val startH = with(density) { s.size.height.roundToPx() }
+                    val startX = with(density) { s.position.x.roundToPx() }
+                    val startY = with(density) { s.position.y.roundToPx() }
                     val dx = dragAmount.x.roundToInt()
                     val dy = dragAmount.y.roundToInt()
 
-                    var x = s.position.x
-                    var y = s.position.y
+                    var x = startX
+                    var y = startY
                     var w = startW
                     var h = startH
 
-                    if (zone.west) {
-                        w = (startW - dx).coerceAtLeast(minWidthPx)
-                        x = s.position.x + (startW - w).dp
-                    }
-                    if (zone.east) {
-                        w = (startW + dx).coerceAtLeast(minWidthPx)
-                    }
-                    if (zone.north) {
-                        h = (startH - dy).coerceAtLeast(minHeightPx)
-                        y = s.position.y + (startH - h).dp
-                    }
-                    if (zone.south) {
-                        h = (startH + dy).coerceAtLeast(minHeightPx)
+                    when {
+                        zone.west -> {
+                            // Right edge anchored; left edge follows the
+                            // pointer but never leaves the work area.
+                            w = startW - dx
+                            x = startX + (startW - w)
+                            x = x.coerceAtLeast(wa.x)
+                            val maxW = wa.right - x
+                            w = if (maxW < minWidthPx) maxW else w.coerceIn(minWidthPx, maxW)
+                        }
+                        zone.east -> {
+                            w = startW + dx
+                            val maxW = wa.right - x
+                            w = if (maxW < minWidthPx) maxW else w.coerceIn(minWidthPx, maxW)
+                        }
+                        zone.north -> {
+                            // Bottom edge anchored; top edge never leaves the
+                            // work area (a top taskbar stays uncovered).
+                            h = startH - dy
+                            y = startY + (startH - h)
+                            y = y.coerceAtLeast(wa.y)
+                            val maxH = wa.bottom - y
+                            h = if (maxH < minHeightPx) maxH else h.coerceIn(minHeightPx, maxH)
+                        }
+                        zone.south -> {
+                            h = startH + dy
+                            val maxH = wa.bottom - y
+                            h = if (maxH < minHeightPx) maxH else h.coerceIn(minHeightPx, maxH)
+                        }
                     }
 
-                    windowState.position = WindowPosition(x, y)
+                    windowState.position = WindowPosition(
+                        with(density) { x.toDp() },
+                        with(density) { y.toDp() }
+                    )
                     windowState.size = DpSize(
                         with(density) { w.toDp() },
                         with(density) { h.toDp() }
@@ -646,27 +803,28 @@ private fun Modifier.windowResizeZone(
 @Composable
 private fun WindowResizeHandles(
     windowState: WindowState,
-    minWidth: Dp = 860.dp,
-    minHeight: Dp = 600.dp
+    frame: java.awt.Frame,
+    minSize: DpSize,
+    onResizeActive: (Boolean) -> Unit
 ) {
     val density = LocalDensity.current
     val edge = 5.dp
     val corner = 10.dp
-    val minWidthPx = with(density) { minWidth.roundToPx() }
-    val minHeightPx = with(density) { minHeight.roundToPx() }
+    val minWidthPx = with(density) { minSize.width.roundToPx() }
+    val minHeightPx = with(density) { minSize.height.roundToPx() }
 
     Box(Modifier.fillMaxSize()) {
         // Corner zones (10×10dp) cover the strip ends; the edge zones are
         // padded away from them, so the zones never overlap and the cursor
         // always matches the nearest resize direction.
-        Box(Modifier.align(Alignment.TopStart).size(corner).windowResizeZone(ResizeZone.NorthWest, windowState, minWidthPx, minHeightPx, density))
-        Box(Modifier.align(Alignment.TopEnd).size(corner).windowResizeZone(ResizeZone.NorthEast, windowState, minWidthPx, minHeightPx, density))
-        Box(Modifier.align(Alignment.BottomStart).size(corner).windowResizeZone(ResizeZone.SouthWest, windowState, minWidthPx, minHeightPx, density))
-        Box(Modifier.align(Alignment.BottomEnd).size(corner).windowResizeZone(ResizeZone.SouthEast, windowState, minWidthPx, minHeightPx, density))
+        Box(Modifier.align(Alignment.TopStart).size(corner).windowResizeZone(ResizeZone.NorthWest, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
+        Box(Modifier.align(Alignment.TopEnd).size(corner).windowResizeZone(ResizeZone.NorthEast, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
+        Box(Modifier.align(Alignment.BottomStart).size(corner).windowResizeZone(ResizeZone.SouthWest, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
+        Box(Modifier.align(Alignment.BottomEnd).size(corner).windowResizeZone(ResizeZone.SouthEast, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
         // Edges — inset from the corners so the corner zones win at the joints.
-        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(edge).padding(horizontal = corner).windowResizeZone(ResizeZone.North, windowState, minWidthPx, minHeightPx, density))
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(edge).padding(horizontal = corner).windowResizeZone(ResizeZone.South, windowState, minWidthPx, minHeightPx, density))
-        Box(Modifier.align(Alignment.CenterStart).fillMaxHeight().width(edge).padding(vertical = corner).windowResizeZone(ResizeZone.West, windowState, minWidthPx, minHeightPx, density))
-        Box(Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(edge).padding(vertical = corner).windowResizeZone(ResizeZone.East, windowState, minWidthPx, minHeightPx, density))
+        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(edge).padding(horizontal = corner).windowResizeZone(ResizeZone.North, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(edge).padding(horizontal = corner).windowResizeZone(ResizeZone.South, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
+        Box(Modifier.align(Alignment.CenterStart).fillMaxHeight().width(edge).padding(vertical = corner).windowResizeZone(ResizeZone.West, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
+        Box(Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(edge).padding(vertical = corner).windowResizeZone(ResizeZone.East, windowState, frame, minWidthPx, minHeightPx, density, onResizeActive))
     }
 }

@@ -120,6 +120,21 @@ val BubbleEdgeMargin: Dp = Dimens.Space3
 // BUBBLE SETTINGS
 // ============================================
 
+/**
+ * Auto-hide (fade) presets. [Custom] uses [BubbleSettings.idleTimeoutMs].
+ * The bubble never fully disappears — its hitbox stays interactive and the
+ * glyph fades back in on hover (see [BubbleSettings.hoverReveal]).
+ */
+@Serializable
+enum class AutoHidePreset(val timeoutMs: Long?) {
+    Never(null),
+    TenSeconds(10_000L),
+    TwentySeconds(20_000L),
+    ThirtySeconds(30_000L),
+    OneMinute(60_000L),
+    Custom(null)
+}
+
 @Serializable
 data class BubbleSettings(
     val size: Int = 56,
@@ -130,12 +145,25 @@ data class BubbleSettings(
      * on release. Larger = more aggressive snapping.
      */
     val snapDistance: Int = 140,
+    /**
+     * Minimum clearance (dp) the bubble keeps from the window edges, system
+     * insets and the title bar area. Every snap anchor and every drag clamp
+     * is derived from this value — positions are always validated against it.
+     */
+    val safeMargin: Int = 12,
+    /**
+     * How long a press must be held before the hold panel (mode controls)
+     * opens, in milliseconds. Shorter presses are interpreted as clicks.
+     */
+    val holdDurationMs: Long = 480,
     val autoFade: Boolean = true,
+    /** Auto-hide preset; [AutoHidePreset.Custom] uses [idleTimeoutMs]. */
+    val autoHide: AutoHidePreset = AutoHidePreset.TwentySeconds,
     val fadeDelayMs: Long = 4000,
     val fadeOpacity: Float = 0.35f,
     /**
-     * Idle timeout (ms) before the bubble starts fading. Independent of the
-     * fade animation duration.
+     * Idle timeout (ms) used when [autoHide] is [AutoHidePreset.Custom],
+     * before the bubble starts fading.
      */
     val idleTimeoutMs: Long = 6000,
     /**
@@ -146,7 +174,14 @@ data class BubbleSettings(
     val animationSpeed: Float = 1.0f,
     /** Shadow elevation of the bubble glyph, in dp. */
     val elevation: Int = 12
-)
+) {
+    /** Effective fade timeout for the current preset; null = never hide. */
+    fun effectiveIdleTimeoutMs(): Long? = when {
+        !autoFade || autoHide == AutoHidePreset.Never -> null
+        autoHide == AutoHidePreset.Custom -> idleTimeoutMs
+        else -> autoHide.timeoutMs
+    }
+}
 
 // ============================================
 // LAUNCHPAD SETTINGS

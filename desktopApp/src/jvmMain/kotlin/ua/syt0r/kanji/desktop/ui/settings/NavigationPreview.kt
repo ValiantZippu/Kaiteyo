@@ -47,6 +47,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
 import kotlin.math.roundToInt
 
 // ============================================
@@ -257,7 +258,9 @@ private fun BoxScope.BubbleMock(
                 .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "K", color = ac.onPrimary, fontSize = DsType.Caption, fontWeight = FontWeight.Bold)
+            // The launcher bubble carries the real Kaiteyo mark —
+            // centralized brand asset, not a "K".
+            BrandMark(modifier = Modifier.size(16.dp), contentDescription = null)
         }
     }
 }

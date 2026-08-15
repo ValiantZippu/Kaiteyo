@@ -54,3 +54,11 @@ Where in the codebase this decision is realized.
 | [0009](0009-github-sync-and-account.md) | GitHub device-flow OAuth + private-gist sync (no central service) | Accepted |
 | [0010](0010-installer-decoupling.md) | Installer subsystem decoupled from the Gradle build | Accepted |
 | [0011](0011-plugin-security-first.md) | Plugin runtime loading deferred (security first) | Accepted |
+| [0012](0012-engineering-standards.md) | Professional engineering standards adopted (§163–§376) | Accepted |
+| [0013](0013-node-architecture.md) | Node-based architecture as the connective tissue (§76–§162) | Proposed |
+| [0014](0014-journey-target-architecture.md) | Journey as target architecture (possible separate runtime, vertical slice first) | Proposed |
+| [0015](0015-content-authoring.md) | Data-driven content authoring with hard validation gates | Proposed |
+| [0016](0016-event-driven-user-knowledge.md) | Event-driven user knowledge (dimensioned, FSRS-owned scheduling) | Proposed |
+| [0017](0017-one-product-architecture.md) | One product — resolve the two parallel applications | Proposed |
+| [0018](0018-game-engine-evaluation.md) | Game engine evaluation (no Journey code before acceptance) | Proposed |
+| [0019](0019-website-command-center.md) | Website as project command center (corpus-first render, documented backend contracts) | Proposed |

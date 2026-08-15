@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.core.theme_manager.ThemeManager
-import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme
 import ua.syt0r.kanji.presentation.common.theme.AppTheme
 import ua.syt0r.kanji.presentation.common.theme.BaseMode
@@ -39,12 +38,48 @@ import ua.syt0r.kanji.presentation.screen.main.features.DeepLinkHandler
  * @param windowSizeClass The current window size class, used to determine layout orientation.
  * @param deepLinkHandler Handles incoming deep links (e.g. `kaiteyo://` scheme navigation).
  * @param themeManager Provides the current theme preference and persists theme changes.
+ * @param shell Optional desktop shell mounted *inside* the theme root, so window
+ *   chrome (title bar, controls, window surface) renders with the same theme
+ *   tokens as the content — never an untinted default. Defaults to the identity
+ *   and is unused on mobile.
  */
 @Composable
 fun KaiteyoApp(
     windowSizeClass: WindowSizeClass,
     deepLinkHandler: DeepLinkHandler = koinInject(),
-    themeManager: ThemeManager = koinInject()
+    themeManager: ThemeManager = koinInject(),
+    shell: @Composable (content: @Composable () -> Unit) -> Unit = { content -> content() }
+) {
+    KaiteyoThemeRoot(
+        windowSizeClass = windowSizeClass,
+        themeManager = themeManager
+    ) {
+        shell {
+            Surface {
+                Box(
+                    modifier = Modifier.safeDrawingPadding()
+                ) {
+                    MainScreen(deepLinkHandler)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Single theme root for the Kaiteyo application.
+ *
+ * Owns the live [KaiteyoThemeState], restores and persists the appearance
+ * configuration (accent, radius, density, motion, typography) and provides the
+ * theme to everything composed beneath it. The desktop window shell is mounted
+ * through [KaiteyoApp.shell], so its chrome participates in the same animated
+ * theme — Theme Studio edits reach the window surface live.
+ */
+@Composable
+fun KaiteyoThemeRoot(
+    windowSizeClass: WindowSizeClass,
+    themeManager: ThemeManager = koinInject(),
+    content: @Composable () -> Unit
 ) {
 
     val orientation = when (windowSizeClass.widthSizeClass) {
@@ -54,7 +89,6 @@ fun KaiteyoApp(
 
     // themeManager.currentTheme is a compose State<PreferencesTheme>, so 'by' delegate works with import
     val currentPrefTheme: PreferencesTheme by themeManager.currentTheme
-    val appPreferences = koinInject<PreferencesContract.AppPreferences>()
     val themeState = remember { KaiteyoThemeState() }
 
     // Persisted appearance configuration (accent, radius, density, motion,
@@ -105,20 +139,21 @@ fun KaiteyoApp(
     ) {
         AppTheme(
             useDarkTheme = useDarkTheme,
-            useAmoledTheme = currentPrefTheme == ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme.Amoled,
+            useAmoledTheme = currentPrefTheme == PreferencesTheme.Amoled,
             orientation = orientation,
             baseMode = baseMode,
             accentScheme = accentScheme,
+            // Feed the live Theme Studio state through so Motion / Layout /
+            // Glow / Radius edits apply app-wide instantly (and persist via
+            // the snapshotFlow below). Previously only accent + type scale
+            // reached AppTheme, which made those studio tabs cosmetic.
+            animationConfig = themeState.animationConfig,
+            radiusConfig = themeState.radiusConfig,
+            glowConfig = themeState.glowConfig,
+            layoutConfig = themeState.layoutConfig,
             typeScale = themeState.typeScale
         ) {
-            Surface {
-                Box(
-                    modifier = Modifier.safeDrawingPadding()
-                ) {
-                    MainScreen(deepLinkHandler)
-                }
-            }
+            content()
         }
     }
-
 }

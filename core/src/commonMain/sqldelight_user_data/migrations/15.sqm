@@ -1,0 +1,6 @@
+PRAGMA user_version = 16;
+
+-- The actual schema work for this step lives in the idempotent
+-- UserDataDatabaseMigrationAfter15 Kotlin migration (replay of the
+-- After13 column additions and After14 statistics tables), which
+-- SQLDelight runs through the AfterVersion callback for this range.

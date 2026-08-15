@@ -1,52 +1,165 @@
-{# Landing page layout — hero + sections rendered from page content. #}
+{# Landing page — storytelling product page. Hero with product mockup,
+   Try Kaiteyo CTA, ecosystem diagram, then narrative sections from index.md. #}
 {% extends "base.html" %}
+
+{% block title %}{{ site.name }} — A complete Japanese learning environment{% endblock %}
+{% block description %}Study kanji, kana and vocabulary with spaced repetition, stroke-order writing practice and a built-in dictionary. Offline-first, free, and open source. Try it in your browser.{% endblock %}
 
 {% block main_class %}is-fullwidth{% endblock %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="{{ basePath }}assets/styles/landing.css" />
+{% endblock %}
+
 {% block content %}
-<section class="hero">
+
+{# ============================ Hero ============================ #}
+<section class="landing-hero">
   <div class="hero-badge-row">
     <span class="badge badge-secondary">Free &amp; open source</span>
     <span class="badge badge-accent">v{{ site.version }}</span>
     <span class="badge badge-muted">Windows · macOS · Linux · Android · iOS</span>
   </div>
 
-  <h1>
+  <h1 class="landing-title">
     <span class="lang-ja">書いてよ</span><br />
-    Kaiteyo
+    <span class="landing-title-en">A complete Japanese<br />learning environment.</span>
   </h1>
-  <p class="hero-lead">
-    A quiet, futuristic studio for mastering Japanese.
-    Study kanji, kana, and vocabulary with spaced repetition,
-    stroke-order writing practice, and a built-in dictionary —
-    offline-first, across every platform you use.
+
+  <p class="landing-lead">
+    Kaiteyo connects everything Japanese study touches — kanji, vocabulary,
+    writing, spaced repetition, dictionaries, media, mining and statistics —
+    into one quiet, offline-first environment. Study the way you actually learn.
   </p>
 
   <div class="hero-actions">
-    <a class="btn btn-primary btn-lg" href="{{ basePath }}download/">
+    <a class="btn btn-primary btn-lg" href="{{ basePath }}try/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+      Try Kaiteyo in your browser
+    </a>
+    <a class="btn btn-ghost btn-lg" href="{{ basePath }}download/">
       <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
       Download for free
-    </a>
-    <a class="btn btn-ghost btn-lg" href="{{ site.repository }}" target="_blank" rel="noopener">
-      <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
-      GitHub
-    </a>
-    <a class="btn btn-ghost btn-lg" href="{{ basePath }}docs/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg>
-      Documentation
     </a>
   </div>
 
   <div class="hero-meta">
-    <span>GPL-3.0</span>
+    <span>No account · nothing leaves your device</span>
     <span>&middot;</span>
-    <span>Kotlin Multiplatform &amp; Compose</span>
+    <a href="{{ site.repository }}" target="_blank" rel="noopener">Open source on GitHub</a>
     <span>&middot;</span>
-    <a href="{{ site.repository }}/releases" target="_blank" rel="noopener">Release notes</a>
+    <a href="{{ basePath }}docs/">Documentation</a>
   </div>
 </section>
 
-<div class="prose">
+{# ============================ Product mockup ============================ #}
+<section class="landing-showcase" aria-label="Kaiteyo interface preview">
+  <div class="app-frame">
+    <div class="app-frame-bar">
+      <span class="app-frame-dot" aria-hidden="true"></span>
+      <span class="app-frame-dot" aria-hidden="true"></span>
+      <span class="app-frame-dot" aria-hidden="true"></span>
+      <span class="app-frame-path">{{ site.url | replace("https://", "") }}/try/</span>
+    </div>
+    <div class="app-frame-body">
+      <div class="app-frame-sidebar">
+        <div class="app-frame-brand">書<span class="app-frame-brand-sub">KAITEYO</span></div>
+        <div class="app-frame-nav-item is-active">Home</div>
+        <div class="app-frame-nav-item">Browse</div>
+        <div class="app-frame-nav-item">Study <span class="app-frame-badge">12</span></div>
+        <div class="app-frame-nav-item">Writing</div>
+        <div class="app-frame-nav-item">Progress</div>
+        <div class="app-frame-nav-spacer"></div>
+        <div class="app-frame-nav-item is-muted">Theme</div>
+      </div>
+      <div class="app-frame-main">
+        <div class="app-frame-kicker">TODAY</div>
+        <div class="app-frame-stats">
+          <div class="app-frame-stat"><span class="app-frame-stat-value">12</span><span class="app-frame-stat-label">Due</span></div>
+          <div class="app-frame-stat"><span class="app-frame-stat-value">8</span><span class="app-frame-stat-label">New</span></div>
+          <div class="app-frame-stat"><span class="app-frame-stat-value">3</span><span class="app-frame-stat-label">Learning</span></div>
+          <div class="app-frame-stat"><span class="app-frame-stat-value">24m</span><span class="app-frame-stat-label">Study time</span></div>
+        </div>
+        <div class="app-frame-kanji-row">
+          <div class="app-frame-kanji-card">
+            <span class="app-frame-kanji">学校</span>
+            <span class="app-frame-kanji-reading">がっこう</span>
+            <span class="app-frame-kanji-meaning">school</span>
+          </div>
+          <div class="app-frame-kanji-card">
+            <span class="app-frame-kanji">書く</span>
+            <span class="app-frame-kanji-reading">かく</span>
+            <span class="app-frame-kanji-meaning">to write</span>
+          </div>
+          <div class="app-frame-kanji-card">
+            <span class="app-frame-kanji">勉強</span>
+            <span class="app-frame-kanji-reading">べんきょう</span>
+            <span class="app-frame-kanji-meaning">study</span>
+          </div>
+        </div>
+        <div class="app-frame-decks">
+          <div class="app-frame-deck"><span class="app-frame-deck-name">JLPT N5</span><span class="app-frame-deck-count">5 due</span></div>
+          <div class="app-frame-deck"><span class="app-frame-deck-name">Anime mining</span><span class="app-frame-deck-count">2 due</span></div>
+          <div class="app-frame-deck"><span class="app-frame-deck-name">Handwriting</span><span class="app-frame-deck-count">7 due</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ============================ One system ============================ #}
+<section class="landing-section">
+  <div class="section-header">
+    <div class="section-kicker">One connected system</div>
+    <h2>Not a pile of separate tools.</h2>
+    <p class="landing-section-lead">
+      Meet a word in anime, look it up, write it, add it to a deck, review it,
+      and watch it show up in your statistics. Every action feeds the same
+      learning system.
+    </p>
+  </div>
+
+  <div class="ecosystem" aria-label="The Kaiteyo learning loop">
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-play"/></svg><span>Media</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg><span>Look up</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg><span>Mine</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg><span>Deck</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-flip"/></svg><span>Study</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-pen"/></svg><span>Write</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-milestone"/></svg><span>Stats</span></div>
+    <div class="ecosystem-arrow" aria-hidden="true"></div>
+    <div class="ecosystem-node"><svg class="icon" aria-hidden="true"><use href="#icon-review"/></svg><span>Exam</span></div>
+  </div>
+</section>
+
+{# ============================ Narrative sections ============================ #}
+<div class="landing-narrative">
   {{ content_html | safe }}
 </div>
+
+{# ============================ Final CTA ============================ #}
+<section class="landing-cta">
+  <h2>Try it in your browser. It takes a minute.</h2>
+  <p>
+    Study real flashcards, browse kanji and vocabulary, trace stroke order,
+    and see progress — all with sample data that never leaves your browser.
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="{{ basePath }}try/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+      Try Kaiteyo
+    </a>
+    <a class="btn btn-ghost btn-lg" href="{{ basePath }}download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Get the full app
+    </a>
+  </div>
+</section>
+
 {% endblock %}

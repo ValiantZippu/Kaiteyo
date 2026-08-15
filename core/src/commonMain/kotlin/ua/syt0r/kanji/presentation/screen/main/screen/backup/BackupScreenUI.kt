@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.presentation.common.MultiplatformDialog
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.neutralButtonColors
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupScreenContract.ScreenState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,7 +74,11 @@ fun BackupScreenUI(
             modifier = Modifier.padding(paddingValues)
                 .fillMaxSize()
                 .wrapContentWidth()
-                .widthIn(max = 400.dp)
+                .widthIn(max = rememberAdaptiveContentMaxWidth(
+                    phoneMax = 400.dp,
+                    mediumMax = 560.dp,
+                    wideMax = 720.dp
+                ))
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)

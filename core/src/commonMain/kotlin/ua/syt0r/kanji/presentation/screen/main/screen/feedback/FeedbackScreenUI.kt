@@ -48,6 +48,7 @@ import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.theme.neutralButtonColors
 import ua.syt0r.kanji.presentation.common.theme.neutralColors
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 
 private const val MaxFeedbackMessageLength = 400
 
@@ -134,7 +135,11 @@ fun FeedbackScreenUI(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .wrapContentWidth()
-                    .widthIn(max = 400.dp)
+                    .widthIn(max = rememberAdaptiveContentMaxWidth(
+                        phoneMax = 400.dp,
+                        mediumMax = 560.dp,
+                        wideMax = 720.dp
+                    ))
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {

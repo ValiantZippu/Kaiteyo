@@ -104,15 +104,20 @@ data class DashboardDeckSummary(
 )
 
 data class GeneralDashboardStats(
-    val currentStreak: Int,
-    val longestStreak: Int,
-    val reviewsToday: Int,
-    val totalReviews: Long,
-    val weeklySummary: List<DashboardDaySummary>,
-    val newReviewedToday: Int,
-    val dueReviewedToday: Int,
-    val newLeftoverToday: Int,
-    val dueLeftoverToday: Int
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val reviewsToday: Int = 0,
+    val totalReviews: Long = 0,
+    val weeklySummary: List<DashboardDaySummary> = emptyList(),
+    /**
+     * Daily review counts covering the last 12 weeks (oldest first), used to
+     * render the header activity heatmap at a glance.
+     */
+    val heatmapSummary: List<DashboardDaySummary> = emptyList(),
+    val newReviewedToday: Int = 0,
+    val dueReviewedToday: Int = 0,
+    val newLeftoverToday: Int = 0,
+    val dueLeftoverToday: Int = 0
 ) {
 
     val reviewedToday: Int get() = newReviewedToday + dueReviewedToday

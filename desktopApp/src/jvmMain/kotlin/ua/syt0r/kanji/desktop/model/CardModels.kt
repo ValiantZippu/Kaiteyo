@@ -117,7 +117,13 @@ data class StudyDaySummary(
         get() = if (correctCount + wrongCount == 0) 0f else correctCount.toFloat() / (correctCount + wrongCount)
 }
 
-/** User-defined named collection (manual, automatic or smart). */
+/**
+ * User-defined named collection (manual, automatic or smart). A collection
+ * is a container: it owns [cardIds] directly and, since the Library is the
+ * learning hub, it can also own whole decks via [deckIds]. Decks listed here
+ * belong to the collection; cards inside those decks are included in
+ * [CollectionStore.resolveCards] automatically.
+ */
 @Serializable
 data class CollectionDef(
     val id: String,
@@ -130,6 +136,8 @@ data class CollectionDef(
     val archived: Boolean = false,
     val smartRule: SmartCollectionRule? = null,
     val cardIds: List<String> = emptyList(),
+    /** Decks owned by this collection (membership, not copies). */
+    val deckIds: List<String> = emptyList(),
     val createdAt: Instant = Clock.System.now()
 )
 

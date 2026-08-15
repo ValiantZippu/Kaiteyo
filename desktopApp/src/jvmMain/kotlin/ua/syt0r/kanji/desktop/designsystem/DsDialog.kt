@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -70,6 +71,11 @@ fun DsDialog(
     title: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    // Compact dialogs (confirms/prompts) stay readable; rich dialogs spread
+    // on wide windows. Measured against the window the dialog opens in, so a
+    // maximized 2560px window gets a generously sized panel instead of a
+    // 480dp box floating in the middle.
+    compact: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val sc = surfaceColors()
@@ -78,22 +84,27 @@ fun DsDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Column(
-            modifier = modifier
-                .width(480.dp)
-                .clip(RoundedCornerShape(DsRadius.Xl))
-                .background(sc.surfaceElevated)
-                .graphicsLayer(layer)
-                .padding(DsSpacing.Xl)
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().padding(DsSpacing.Lg)
         ) {
-            Text(
-                text = title,
-                color = sc.textPrimary,
-                fontSize = DsType.Title,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(DsSpacing.Lg))
-            content()
+            val width = adaptiveDialogWidth(maxWidth, compact = compact)
+            Column(
+                modifier = modifier
+                    .width(width)
+                    .clip(RoundedCornerShape(DsRadius.Xl))
+                    .background(sc.surfaceElevated)
+                    .graphicsLayer(layer)
+                    .padding(DsSpacing.Xl)
+            ) {
+                Text(
+                    text = title,
+                    color = sc.textPrimary,
+                    fontSize = DsType.Title,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                content()
+            }
         }
     }
 }
@@ -110,7 +121,7 @@ fun DsConfirmDialog(
 ) {
     val sc = surfaceColors()
     val ac = accent()
-    DsDialog(title = title, onDismiss = onDismiss, modifier = modifier) {
+    DsDialog(title = title, onDismiss = onDismiss, modifier = modifier, compact = true) {
         Text(
             text = message,
             color = sc.textSecondary,
@@ -144,7 +155,7 @@ fun DsPromptDialog(
     modifier: Modifier = Modifier
 ) {
     var value by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(initialValue) }
-    DsDialog(title = title, onDismiss = onDismiss, modifier = modifier) {
+    DsDialog(title = title, onDismiss = onDismiss, modifier = modifier, compact = true) {
         DsTextField(
             value = value,
             onValueChange = { value = it },
@@ -178,7 +189,7 @@ fun DsProgressDialog(
 ) {
     val sc = surfaceColors()
     val ac = accent()
-    DsDialog(title = title, onDismiss = {}, modifier = modifier) {
+    DsDialog(title = title, onDismiss = {}, modifier = modifier, compact = true) {
         Text(
             text = message,
             color = sc.textSecondary,

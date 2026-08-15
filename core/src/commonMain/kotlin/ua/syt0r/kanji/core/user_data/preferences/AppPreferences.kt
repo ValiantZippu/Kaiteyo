@@ -178,6 +178,13 @@ class AppPreferences(
         initialValue = { false }
     )
 
+    override val onboardingCompleted: SuspendedProperty<Boolean> = createProperty(
+        type = BooleanSuspendedPropertyType,
+        key = "onboarding_completed",
+        initialValue = { false },
+        enableBackup = false
+    )
+
     override val generalDashboardStudyTargets: SuspendedProperty<Map<String, Boolean>> =
         createProperty(
             type = jsonPojoSuspendedPropertyType(),
@@ -311,6 +318,12 @@ class AppPreferences(
     override val savedSearchesJson: SuspendedProperty<String> = createProperty(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_saved_searches_json",
+        initialValue = { "" }
+    )
+
+    override val deckFavoritesJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_deck_favorites_json",
         initialValue = { "" }
     )
 

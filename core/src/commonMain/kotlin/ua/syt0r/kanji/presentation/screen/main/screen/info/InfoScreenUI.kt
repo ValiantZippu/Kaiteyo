@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyListScope
@@ -74,15 +74,20 @@ import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.neutralButtonColors
 import ua.syt0r.kanji.presentation.common.trackOverlay
 import ua.syt0r.kanji.presentation.common.ui.ClickableFuriganaText
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LetterInfoUI
+import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningAction
 import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.VocabInfoUI
+import ua.syt0r.kanji.presentation.screen.main.screen.info.use_case.ItemLearningState
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InfoScreenUI(
     state: State<ScreenState>,
+    learningState: ItemLearningState?,
+    learningActions: List<LearningAction>,
     onUpButtonClick: () -> Unit,
     onLetterClick: (String) -> Unit,
     onWordClick: (JapaneseWord) -> Unit
@@ -105,6 +110,8 @@ fun InfoScreenUI(
                 letterData = data,
                 listState = listState,
                 listSpacerState = listSpacerState,
+                learningState = learningState,
+                learningActions = learningActions,
                 onFuriganaClick = onLetterClick,
                 onWordClick = onWordClick
             )
@@ -114,6 +121,8 @@ fun InfoScreenUI(
                 vocabData = data,
                 listState = listState,
                 listSpacerState = listSpacerState,
+                learningState = learningState,
+                learningActions = learningActions,
                 onLetterClick = onLetterClick
             )
         },
@@ -138,7 +147,11 @@ fun InfoScreenUI(
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentWidth()
-                    .width(Dimens.ScreenWidth)
+                    .widthIn(max = rememberAdaptiveContentMaxWidth(
+                        phoneMax = Dimens.ScreenWidth,
+                        mediumMax = 480.dp,
+                        wideMax = 560.dp
+                    ))
                     .padding(Dimens.ContentPadding)
             ) {
 

@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.core.srs.SrsAnswer
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
+import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import kotlin.time.Duration
 
 data class PracticeAnswers(
@@ -296,7 +297,11 @@ private fun SrsWholeRowButton(
             modifier = Modifier
                 .fillMaxSize()
                 .wrapContentWidth()
-                .width(400.dp)
+                .widthIn(max = rememberAdaptiveContentMaxWidth(
+                    phoneMax = 400.dp,
+                    mediumMax = 480.dp,
+                    wideMax = 560.dp
+                ))
                 .padding(horizontal = 20.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .clickable(onClick = onClick)

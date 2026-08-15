@@ -231,6 +231,115 @@ private fun ReviewLaunchPanel(state: AppState) {
                 )
             }
         }
+
+        // Unified learning-store review: queue comes from the real StudyEngine
+        // (due + new across the store), grading writes full-fidelity events.
+        val unifiedDue = state.learning.dueToday()
+        val unifiedNew = state.learning.cards.count { it.isNew && !it.isSuspended && !it.buried }
+        DsCard(elevated = true) {
+            Column(Modifier.padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                Text("Unified study", color = sc.textPrimary, fontSize = DsType.Heading, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "Review from the unified learning store — the same queue exams, mistakes and statistics read from. Grading writes full-fidelity review events.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Body
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    DsBadge(text = "$unifiedDue due", tint = accent().primary)
+                    DsBadge(text = "$unifiedNew new", tint = Color(0xFFC2FC8B))
+                    DsBadge(text = "${state.learning.reviewEvents.size} recorded reviews", tint = Color(0xFF7BC8FF))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md), verticalAlignment = Alignment.CenterVertically) {
+                    DsButton(
+                        text = "Start unified review",
+                        icon = Icons.Default.PlayArrow,
+                        enabled = unifiedDue + unifiedNew > 0,
+                        onClick = { state.startUnifiedReview() }
+                    )
+                    DsButton(
+                        text = "Study by deck…",
+                        icon = Icons.Default.Schedule,
+                        kind = DsButtonKind.Secondary,
+                        enabled = state.library.rootDecks().isNotEmpty(),
+                        onClick = { state.currentView = ua.syt0r.kanji.desktop.appstate.WorkspaceView.Library }
+                    )
+                }
+
+                // Per-deck launch grid — real due/new counts straight from the
+                // unified store's card state; one click starts that deck's
+                // unified review.
+                Spacer(Modifier.height(DsSpacing.Sm))
+                val deckRows = state.library.allDecks()
+                    .filter { !it.archived }
+                    .mapNotNull { deck ->
+                        val totals = state.learning.deckTotals(deck.id)
+                        if (totals.total == 0) null else deck to totals
+                    }
+                    .sortedByDescending { (_, t) -> t.due + t.new }
+                    .take(10)
+                if (deckRows.isNotEmpty()) {
+                    Text(
+                        text = "DECKS — click to start that deck's unified review",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption,
+                        fontWeight = FontWeight.Medium
+                    )
+                    deckRows.forEach { (deck, totals) ->
+                        val interaction = remember(deck.id) { MutableInteractionSource() }
+                        val hovered by interaction.collectIsHoveredAsState()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(DsRadius.Md))
+                                .background(if (hovered) sc.surfaceInteractive else sc.surfaceElevated)
+                                .clickable(
+                                    interactionSource = interaction,
+                                    indication = null
+                                ) {
+                                    if (totals.due + totals.new > 0) {
+                                        state.startUnifiedDeckReview(deck.id, ua.syt0r.kanji.desktop.model.StudyMode.Flashcards)
+                                    } else {
+                                        state.toastHost.show("Nothing due in \"${deck.name}\"", kind = ua.syt0r.kanji.desktop.model.ToastKind.Info)
+                                    }
+                                }
+                                .hoverable(interaction)
+                                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = deck.name,
+                                color = sc.textPrimary,
+                                fontSize = DsType.Body,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                            DeckQueueBadge("${totals.new} new", Color(0xFFC2FC8B), totals.new > 0)
+                            DeckQueueBadge("${totals.learning} learning", infoColor(), totals.learning > 0)
+                            DeckQueueBadge("${totals.due} due", accent().primary, totals.due > 0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeckQueueBadge(text: String, tint: Color, active: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(if (active) tint else surfaceColors().border.copy(alpha = 0.3f))
+        )
+        Text(
+            text = text,
+            color = if (active) surfaceColors().textSecondary else surfaceColors().textMuted.copy(alpha = 0.6f),
+            fontSize = DsType.Caption
+        )
+        Spacer(Modifier.width(DsSpacing.Sm))
     }
 }
 

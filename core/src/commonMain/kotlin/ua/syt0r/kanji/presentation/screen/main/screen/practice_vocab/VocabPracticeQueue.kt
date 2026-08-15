@@ -91,7 +91,8 @@ class DefaultVocabPracticeQueue(
         return VocabPracticeQueueState.Review(
             progress = getProgress(),
             state = item.data.await().toReviewState(coroutineScope),
-            answers = answers
+            answers = answers,
+            deckId = item.deckId
         )
     }
 
