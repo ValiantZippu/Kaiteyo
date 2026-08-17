@@ -37,7 +37,7 @@ sealed interface SearchExpr {
 
 @Serializable
 enum class SearchField {
-    Character, Meaning, Reading, OnReading, KunReading,
+    Id, Character, Meaning, Reading, OnReading, KunReading,
     Radical, Component, Stroke, Jlpt, Grade, Frequency,
     Tag, Flag, Status, Favorite, Note, Deck, Accuracy,
     Interval, Lapses, Reps, Due, Ease, Kind

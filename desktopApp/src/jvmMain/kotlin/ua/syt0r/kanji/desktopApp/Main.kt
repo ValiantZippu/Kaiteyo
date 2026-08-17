@@ -36,6 +36,7 @@ import ua.syt0r.kanji.di.appModules
 import ua.syt0r.kanji.presentation.KaiteyoApp
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.screen.main.screen.credits.GetCreditLibrariesUseCase
+import ua.syt0r.kanji.presentation.screen.main.screen.game.GameCentreContent
 import ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent
 
 val desktopAppModule = module {
@@ -47,6 +48,11 @@ val desktopAppModule = module {
     // Koin 4 overrides duplicate definitions automatically (last module wins),
     // so no `override` flag is needed (it no longer exists in the DSL).
     single<MediaCentreContent> { DesktopMediaCentreContent }
+
+    // The Kaiteyo World destination's real implementation — the desktop suite's
+    // exploration game mounted with its own AppState. Overrides the core
+    // default (the node-based curriculum game). Same last-module-wins rule.
+    single<GameCentreContent> { DesktopGameCentreContent }
 
     // Background scope for long-running engines (update checks, downloads).
     single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }

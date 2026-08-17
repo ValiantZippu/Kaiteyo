@@ -20,6 +20,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.deck_edit.DeckEditScreenCo
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.DeckPickerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.feedback.FeedbackScreen
+import ua.syt0r.kanji.presentation.screen.main.screen.game.GameScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.feedback.FeedbackTopic
 import ua.syt0r.kanji.presentation.screen.main.screen.home.HomeScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreen
@@ -35,7 +36,6 @@ import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.SuggestedVocabC
 import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.VocabCardScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.VocabCardScreenMode
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardManager
-import ua.syt0r.kanji.presentation.screen.main.screen.decks.DeckFeaturesHub
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.PluginManagerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.BackupManagerScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.ImportExportScreen
@@ -445,6 +445,9 @@ interface MainDestination {
         override fun Content(state: MainNavigationState) {
             BackupRoute(
                 controller = koinInject(),
+                // Create/restore launch the real file-based backup screen — the
+                // deck-features manager is a history + launcher, never a fake engine.
+                onOpenBackup = { state.navigate(MainDestination.Backup) },
                 onClose = { state.navigateBack() }
             )
         }
@@ -678,6 +681,31 @@ interface MainDestination {
 
     }
 
+    // ==================== KAITEYO WORLD (GAME) ====================
+
+    /**
+     * Kaiteyo World. The desktop app mounts the exploration game through the
+     * [ua.syt0r.kanji.presentation.screen.main.screen.game.GameCentreContent]
+     * contract (mirroring the Media Centre); every other platform gets the
+     * core node-based curriculum game that runs on top of the user's real
+     * study state.
+     */
+    @Serializable
+    object Game : MainDestination {
+
+        override val analyticsName: String = "game"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            val content = koinInject<ua.syt0r.kanji.presentation.screen.main.screen.game.GameCentreContent>()
+            content.Content(
+                navigationState = state,
+                onClose = { state.navigateBack() }
+            )
+        }
+
+    }
+
 }
 
 /**
@@ -774,4 +802,5 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.KanjiBrowser::class.configuration(),
     MainDestination.Collections.configuration(),
     MainDestination.Media.configuration(),
+    MainDestination.Game.configuration(),
 )

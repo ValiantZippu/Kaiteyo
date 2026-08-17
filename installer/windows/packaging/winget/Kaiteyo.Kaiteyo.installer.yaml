@@ -1,0 +1,25 @@
+# WinGet installer manifest — Kaiteyo
+# Status: defined in-repo; NOT yet submitted to winget-pkgs.
+# Regenerate InstallerSha256 from the actual signed EXE at publish time:
+#   Get-FileHash .\Kaiteyo-Setup-2.2.1.exe -Algorithm SHA256
+PackageIdentifier: Kaiteyo.Kaiteyo
+PackageVersion: 2.2.1
+InstallerLocale: en-US
+InstallerType: exe
+Scope: machine
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+InstallerSwitches:
+  Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+  SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
+  InstallLocation: /DIR={path}
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/ValiantZippu/Kaiteyo/releases/download/v2.2.1/Kaiteyo-2.2.1-windows-setup.exe
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    ProductCode: "{12C852A8-6E21-41A7-BD47-3BEC9FF5C5DF}"
+ManifestType: installer
+ManifestVersion: 1.6.0

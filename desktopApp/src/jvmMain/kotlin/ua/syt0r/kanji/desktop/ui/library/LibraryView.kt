@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MoreVert
@@ -232,6 +233,8 @@ private fun restoreLibraryScope(name: String, state: AppState): LibraryScope = w
 
 private fun restoreDeckSort(name: String): DeckSort =
     DeckSort.entries.firstOrNull { it.name == name } ?: DeckSort.Name
+
+private fun restoreLibraryView(name: String): String = if (name == "list") "list" else "grid"
 
 // ============================================
 // Merged search — one model over decks, legacy
@@ -630,6 +633,16 @@ private fun CollectionStripCard(
                     DsBadge(text = "Smart", tint = Color(0xFFA78BFA))
                 }
             }
+            if (cards.isNotEmpty()) {
+                Spacer(Modifier.height(2.dp))
+                DsButton(
+                    text = "Study",
+                    icon = Icons.Default.PlayArrow,
+                    compact = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { state.startReview(collection = def) }
+                )
+            }
         }
     }
 }
@@ -660,6 +673,7 @@ private fun DeckCatalog(
 
     var folderPath by remember(scope) { mutableStateOf<List<String>>(emptyList()) }
     var sortMode by remember(scope) { mutableStateOf(restoreDeckSort(state.settings.getString("browser.library-sort", "name"))) }
+    var viewMode by remember(scope) { mutableStateOf(restoreLibraryView(state.settings.getString("browser.library-view", "grid"))) }
     var selectionMode by remember { mutableStateOf(false) }
     var jlptFilter by remember(scope) { mutableStateOf(state.settings.getInt("browser.library-filter-jlpt", 0).takeIf { it > 0 }) }
     var difficultyFilter by remember(scope) { mutableStateOf(state.settings.getInt("browser.library-filter-difficulty", 0).takeIf { it > 0 }) }
@@ -719,6 +733,18 @@ private fun DeckCatalog(
                 fontSize = DsType.Heading,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
+            )
+            DsIconButton(
+                icon = Icons.Default.GridView,
+                onClick = { viewMode = "grid"; state.settings.set("browser.library-view", viewMode) },
+                contentDescription = "Grid view",
+                tint = if (viewMode == "grid") accent().primary else sc.textMuted
+            )
+            DsIconButton(
+                icon = Icons.Default.ViewList,
+                onClick = { viewMode = "list"; state.settings.set("browser.library-view", viewMode) },
+                contentDescription = "List view",
+                tint = if (viewMode == "list") accent().primary else sc.textMuted
             )
             DsSelect(
                 selected = sortMode,
@@ -920,47 +946,83 @@ private fun DeckCatalog(
                                 )
                             }
                         }
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(300.dp),
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentPadding = PaddingValues(
-                                start = DsSpacing.Xl, end = DsSpacing.Xl, bottom = DsSpacing.Xl
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md),
-                            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
-                        ) {
-                            items(folders, key = { it.id }) { folder ->
-                                DeckCard(
-                                    state = state,
-                                    deck = folder,
-                                    now = now,
-                                    isFolder = true,
-                                    selectionMode = selectionMode,
-                                    selected = folder.id in selectedIds,
-                                    onToggleSelect = {
-                                        if (folder.id in selectedIds) selectedIds.remove(folder.id)
-                                        else selectedIds.add(folder.id)
-                                    },
-                                    onOpen = {
-                                        if (scope is LibraryScope.All) folderPath = folderPath + folder.id
-                                        else onOpen(folder)
-                                    }
-                                )
+                        val toggleSelect: (DeckDef) -> Unit = { deck ->
+                            if (deck.id in selectedIds) selectedIds.remove(deck.id)
+                            else selectedIds.add(deck.id)
+                        }
+                        if (viewMode == "list") {
+                            LazyColumn(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentPadding = PaddingValues(
+                                    start = DsSpacing.Xl, end = DsSpacing.Xl, bottom = DsSpacing.Xl
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+                            ) {
+                                items(folders, key = { it.id }) { folder ->
+                                    DeckListRow(
+                                        state = state,
+                                        deck = folder,
+                                        now = now,
+                                        isFolder = true,
+                                        selectionMode = selectionMode,
+                                        selected = folder.id in selectedIds,
+                                        onToggleSelect = { toggleSelect(folder) },
+                                        onOpen = {
+                                            if (scope is LibraryScope.All) folderPath = folderPath + folder.id
+                                            else onOpen(folder)
+                                        }
+                                    )
+                                }
+                                items(leafDecks, key = { it.id }) { deck ->
+                                    DeckListRow(
+                                        state = state,
+                                        deck = deck,
+                                        now = now,
+                                        isFolder = false,
+                                        selectionMode = selectionMode,
+                                        selected = deck.id in selectedIds,
+                                        onToggleSelect = { toggleSelect(deck) },
+                                        onOpen = { onOpen(deck) }
+                                    )
+                                }
                             }
-                            items(leafDecks, key = { it.id }) { deck ->
-                                DeckCard(
-                                    state = state,
-                                    deck = deck,
-                                    now = now,
-                                    isFolder = false,
-                                    selectionMode = selectionMode,
-                                    selected = deck.id in selectedIds,
-                                    onToggleSelect = {
-                                        if (deck.id in selectedIds) selectedIds.remove(deck.id)
-                                        else selectedIds.add(deck.id)
-                                    },
-                                    onOpen = { onOpen(deck) }
-                                )
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Adaptive(300.dp),
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                contentPadding = PaddingValues(
+                                    start = DsSpacing.Xl, end = DsSpacing.Xl, bottom = DsSpacing.Xl
+                                ),
+                                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md),
+                                verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+                            ) {
+                                items(folders, key = { it.id }) { folder ->
+                                    DeckCard(
+                                        state = state,
+                                        deck = folder,
+                                        now = now,
+                                        isFolder = true,
+                                        selectionMode = selectionMode,
+                                        selected = folder.id in selectedIds,
+                                        onToggleSelect = { toggleSelect(folder) },
+                                        onOpen = {
+                                            if (scope is LibraryScope.All) folderPath = folderPath + folder.id
+                                            else onOpen(folder)
+                                        }
+                                    )
+                                }
+                                items(leafDecks, key = { it.id }) { deck ->
+                                    DeckCard(
+                                        state = state,
+                                        deck = deck,
+                                        now = now,
+                                        isFolder = false,
+                                        selectionMode = selectionMode,
+                                        selected = deck.id in selectedIds,
+                                        onToggleSelect = { toggleSelect(deck) },
+                                        onOpen = { onOpen(deck) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -1044,13 +1106,31 @@ private fun EntryScopeGrid(
 ) {
     val sc = surfaceColors()
     Column(Modifier.fillMaxSize().padding(horizontal = DsSpacing.Xl)) {
-        Text(
-            text = title,
-            color = sc.textPrimary,
-            fontSize = DsType.Heading,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = DsSpacing.Md)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = DsSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = sc.textPrimary,
+                fontSize = DsType.Heading,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            if (entries.isNotEmpty()) {
+                DsButton(
+                    text = "Study these ${entries.size}",
+                    icon = Icons.Default.PlayArrow,
+                    compact = true,
+                    onClick = {
+                        // Exact queue: the very cards shown in this grid, via
+                        // the id: filter (id:a OR id:b OR …).
+                        val query = entries.take(500).joinToString(" OR ") { "id:${it.id}" }
+                        state.startReview(query = query)
+                    }
+                )
+            }
+        }
         if (entries.isEmpty()) {
             DsEmptyState(
                 title = "Nothing here yet",
@@ -1189,6 +1269,128 @@ private fun DeckCard(
                     )
                 }
             }
+        }
+    }
+
+    if (manageOpen && manageAnchor != null) {
+        val pos = manageAnchor!!.positionInWindow()
+        Popup(
+            onDismissRequest = { manageOpen = false },
+            offset = IntOffset(pos.x.roundToInt(), pos.y.roundToInt() + manageAnchor!!.size.height),
+            properties = PopupProperties(focusable = true)
+        ) {
+            DeckActionsMenu(
+                state = state,
+                deck = deck,
+                onAction = { deckAction = it },
+                onDismiss = { manageOpen = false }
+            )
+        }
+    }
+
+    if (deckAction != null) {
+        DeckActionDialogs(
+            state = state,
+            deck = deck,
+            action = deckAction,
+            onClose = { deckAction = null },
+            onBackToCatalog = {}
+        )
+    }
+}
+
+/** Dense single-row deck representation for the Library's list view. */
+@Composable
+private fun DeckListRow(
+    state: AppState,
+    deck: DeckDef,
+    now: Instant,
+    isFolder: Boolean,
+    selectionMode: Boolean,
+    selected: Boolean,
+    onToggleSelect: () -> Unit,
+    onOpen: () -> Unit
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val stats = state.library.deckStats(deck, state.cards.toList(), now)
+    val childCount = state.library.childrenOf(deck.id).size
+    var manageOpen by remember { mutableStateOf(false) }
+    var manageAnchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var deckAction by remember { mutableStateOf<DeckAction?>(null) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(DsRadius.Md))
+            .background(if (selected) ac.primary.copy(alpha = 0.12f) else sc.surface)
+            .hoverable(remember { MutableInteractionSource() })
+            .clickable { if (selectionMode) onToggleSelect() else onOpen() }
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (selectionMode) {
+            Icon(
+                if (selected) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                contentDescription = null,
+                tint = if (selected) ac.primary else sc.textMuted,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(DsSpacing.Sm))
+        }
+        if (isFolder) {
+            Icon(Icons.Default.Folder, contentDescription = null, tint = ac.primary, modifier = Modifier.size(18.dp))
+        } else {
+            Text(
+                text = deck.icon.ifBlank { deck.kind.glyph },
+                color = ac.primary,
+                fontSize = DsType.Title,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.width(28.dp)
+            )
+        }
+        Spacer(Modifier.width(DsSpacing.Md))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = deck.name,
+                color = sc.textPrimary,
+                fontSize = DsType.Body,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = if (isFolder && childCount > 0) "Folder · $childCount item${if (childCount == 1) "" else "s"}"
+                else deck.description.ifBlank { deck.kind.label },
+                color = sc.textMuted,
+                fontSize = DsType.Caption,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Spacer(Modifier.width(DsSpacing.Sm))
+        DsBadge(text = deck.kind.label, tint = ac.primary)
+        if (stats.anyDue > 0) DsBadge(text = "${stats.anyDue} due", tint = dueColor())
+        if (stats.anyNew > 0) DsBadge(text = "${stats.anyNew} new", tint = infoColor())
+        DsBadge(text = "${stats.total} cards", tint = sc.textMuted)
+        Spacer(Modifier.width(DsSpacing.Sm))
+        DsButton(
+            text = if (isFolder) "Open" else "Study",
+            icon = if (isFolder) Icons.Default.Folder else Icons.Default.PlayArrow,
+            compact = true,
+            onClick = onOpen
+        )
+        Box(
+            modifier = Modifier
+                .onGloballyPositioned { if (manageAnchor != it) manageAnchor = it }
+                .padding(2.dp)
+        ) {
+            DsIconButton(
+                icon = Icons.Default.MoreVert,
+                onClick = { manageOpen = true },
+                contentDescription = "Deck actions",
+                size = 30.dp
+            )
         }
     }
 

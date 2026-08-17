@@ -1,0 +1,371 @@
+{
+  "quests": [
+    {
+      "id": "welcome",
+      "title": "Find the station",
+      "titleJp": "駅を見つける",
+      "description": "A summer arrival: find the station and meet the station master.",
+      "category": "Exploration",
+      "level": 1,
+      "prerequisites": [],
+      "objectives": [
+        { "id": "reach-station", "kind": "ReachLocation", "targetId": "station", "count": 1, "description": "Walk to the station", "descriptionJp": "駅まで歩く" },
+        { "id": "talk-ekicho", "kind": "TalkToNpc", "targetId": "ekicho", "count": 1, "description": "Talk to the station master", "descriptionJp": "駅長さんと話す" },
+        { "id": "learn-eki", "kind": "LearnWord", "targetId": "eki", "count": 1, "description": "Learn 駅 (station)", "jpHint": "えき" }
+      ],
+      "rewards": { "xp": 40, "stamps": ["stamp-station"], "knowledge": ["eki"] },
+      "learningTargets": ["eki", "densha"],
+      "locationId": "station",
+      "dialogueId": "welcome"
+    },
+    {
+      "id": "buy-drink",
+      "title": "Buy a drink",
+      "titleJp": "飲み物を買う",
+      "description": "The shopkeeper points at the vending machine. 飲み物を買おう！",
+      "category": "Vocabulary",
+      "level": 1,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "buy", "kind": "BuyItem", "targetId": "drink", "count": 1, "description": "Buy a drink from the vending machine", "descriptionJp": "自動販売機で飲み物を買う" },
+        { "id": "learn-nomimono", "kind": "LearnWord", "targetId": "nomimono", "count": 1, "description": "Learn 飲み物 (drink)", "jpHint": "のみもの" }
+      ],
+      "rewards": { "xp": 30, "items": ["Postcard"], "stamps": ["stamp-shop"], "knowledge": ["nomimono"] },
+      "learningTargets": ["nomimono", "mizu", "ocha", "juice"],
+      "locationId": "shop",
+      "dialogueId": "buy-drink"
+    },
+    {
+      "id": "beach-sign",
+      "title": "Read the beach sign",
+      "titleJp": "海の看板を読む",
+      "description": "The old man points at the sign near the beach. What does it say?",
+      "category": "Reading",
+      "level": 1,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "reach-beach", "kind": "ReachLocation", "targetId": "beach", "count": 1, "description": "Walk to the beach", "descriptionJp": "浜辺まで歩く" },
+        { "id": "read-sign", "kind": "ReadSign", "targetId": "obj-beach-sign", "count": 1, "description": "Read the sign on the beach", "descriptionJp": "海の看板を読む" },
+        { "id": "learn-umi", "kind": "LearnWord", "targetId": "umi", "count": 1, "description": "Learn 海 (sea)", "jpHint": "うみ" }
+      ],
+      "rewards": { "xp": 30, "stamps": ["stamp-beach"], "knowledge": ["umi"] },
+      "learningTargets": ["umi", "suna", "sora"],
+      "locationId": "beach",
+      "dialogueId": "beach-sign"
+    },
+    {
+      "id": "photo-walk",
+      "title": "Take three photos",
+      "titleJp": "写真を三枚撮る",
+      "description": "Yui challenges you: capture the town with your camera.",
+      "category": "Photography",
+      "level": 2,
+      "prerequisites": ["buy-drink", "beach-sign"],
+      "objectives": [
+        { "id": "photos", "kind": "TakePhoto", "targetId": "", "count": 3, "description": "Take 3 photos", "descriptionJp": "写真を三枚撮る" },
+        { "id": "learn-shashin", "kind": "LearnWord", "targetId": "shashin", "count": 1, "description": "Learn 写真 (photo)", "jpHint": "しゃしん" }
+      ],
+      "rewards": { "xp": 50, "cosmetics": ["yukata"], "stamps": ["stamp-lighthouse"], "knowledge": ["shashin"] },
+      "learningTargets": ["shashin", "toru"],
+      "locationId": "beach",
+      "dialogueId": "photo-walk"
+    },
+    {
+      "id": "station-travel",
+      "title": "Board the train",
+      "titleJp": "電車に乗る",
+      "description": "The sea line leaves from Hamanaka. Ask the station master and board.",
+      "category": "Travel",
+      "level": 2,
+      "prerequisites": ["photo-walk"],
+      "objectives": [
+        { "id": "talk-again", "kind": "TalkToNpc", "targetId": "ekicho", "count": 1, "description": "Talk to the station master again", "descriptionJp": "駅長さんと話す" },
+        { "id": "learn-densha", "kind": "LearnWord", "targetId": "densha", "count": 1, "description": "Learn 電車 (train)", "jpHint": "でんしゃ" }
+      ],
+      "rewards": { "xp": 60, "items": ["Postcard"], "unlocks": ["station:kamakura"], "stamps": ["stamp-park"], "knowledge": ["densha"] },
+      "learningTargets": ["densha", "kippu", "kaisatsu", "homu"],
+      "locationId": "station",
+      "dialogueId": "welcome"
+    },
+    {
+      "id": "kamakura-arrival",
+      "title": "Arrive in Kamakura",
+      "titleJp": "鎌倉に着く",
+      "description": "The sea line pulls into Kamakura. Step onto the platform and read the town sign.",
+      "category": "Travel",
+      "level": 2,
+      "prerequisites": ["station-travel"],
+      "objectives": [
+        { "id": "reach-kmk-station", "kind": "ReachLocation", "targetId": "kamakura-station", "count": 1, "description": "Reach Kamakura Station", "descriptionJp": "鎌倉駅に着く" },
+        { "id": "learn-kamakura", "kind": "LearnWord", "targetId": "kamakura", "count": 1, "description": "Learn 鎌倉 (Kamakura)", "jpHint": "かまくら" }
+      ],
+      "rewards": { "xp": 40, "stamps": ["stamp-kamakura"], "knowledge": ["kamakura"] },
+      "learningTargets": ["kamakura", "eki"],
+      "locationId": "kamakura-station",
+      "dialogueId": "kamakura-arrival"
+    },
+    {
+      "id": "komachi-walk",
+      "title": "Walk Komachi-dōri",
+      "titleJp": "小町通りを歩く",
+      "description": "The shopping street is full of signs and sweets. Read the shop sign.",
+      "category": "Reading",
+      "level": 2,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "reach-komachi", "kind": "ReachLocation", "targetId": "komachi", "count": 1, "description": "Reach Komachi-dōri", "descriptionJp": "小町通りに着く" },
+        { "id": "read-komachi-sign", "kind": "ReadSign", "targetId": "obj-komachi-shop", "count": 1, "description": "Read the shop sign", "descriptionJp": "看板を読む" },
+        { "id": "learn-komachi", "kind": "LearnWord", "targetId": "komachi", "count": 1, "description": "Learn 小町通り (Komachi-dōri)", "jpHint": "こまちどおり" }
+      ],
+      "rewards": { "xp": 40, "stamps": ["stamp-komachi"], "knowledge": ["komachi"] },
+      "learningTargets": ["komachi", "kanban", "omiyage"],
+      "locationId": "komachi",
+      "dialogueId": "kamakura-shop"
+    },
+    {
+      "id": "hachimangu-visit",
+      "title": "Visit the great shrine",
+      "titleJp": "八幡宮を訪ねる",
+      "description": "Pass under the torii and talk to the priest on the gravel approach.",
+      "category": "Exploration",
+      "level": 3,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "reach-hachimangu", "kind": "ReachLocation", "targetId": "hachimangu", "count": 1, "description": "Reach Tsurugaoka Hachimangū", "descriptionJp": "八幡宮に着く" },
+        { "id": "talk-kanushi", "kind": "TalkToNpc", "targetId": "kanushi", "count": 1, "description": "Talk to the priest", "descriptionJp": "神主さんと話す" },
+        { "id": "learn-torii", "kind": "LearnWord", "targetId": "torii", "count": 1, "description": "Learn 鳥居 (torii gate)", "jpHint": "とりい" }
+      ],
+      "rewards": { "xp": 50, "stamps": ["stamp-hachimangu"], "knowledge": ["torii", "omikuji"] },
+      "learningTargets": ["torii", "sandou", "omikuji"],
+      "locationId": "hachimangu",
+      "dialogueId": "kamakura-shrine"
+    },
+    {
+      "id": "hasedera-visit",
+      "title": "Find the Great Buddha",
+      "titleJp": "大仏を見つける",
+      "description": "Up the hill at Hase-dera, a bronze Buddha watches over the town.",
+      "category": "Exploration",
+      "level": 3,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "reach-hasedera", "kind": "ReachLocation", "targetId": "hasedera", "count": 1, "description": "Reach Hase-dera", "descriptionJp": "長谷寺に着く" },
+        { "id": "read-daibutsu", "kind": "ReadSign", "targetId": "obj-daibutsu", "count": 1, "description": "Inspect the Great Buddha", "descriptionJp": "大仏を見る" },
+        { "id": "learn-tera", "kind": "LearnWord", "targetId": "tera", "count": 1, "description": "Learn 寺 (temple)", "jpHint": "てら" }
+      ],
+      "rewards": { "xp": 50, "stamps": ["stamp-hasedera"], "knowledge": ["tera", "daibutsu"] },
+      "learningTargets": ["tera", "hasedera", "daibutsu"],
+      "locationId": "hasedera",
+      "dialogueId": "kamakura-temple"
+    },
+    {
+      "id": "yuigahama-visit",
+      "title": "Walk Yuigahama beach",
+      "titleJp": "由比ヶ浜を歩く",
+      "description": "Follow the sound of the waves to the wide beach and say hello to the lifeguard.",
+      "category": "Exploration",
+      "level": 3,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "reach-yuigahama", "kind": "ReachLocation", "targetId": "yuigahama", "count": 1, "description": "Reach Yuigahama beach", "descriptionJp": "由比ヶ浜に着く" },
+        { "id": "talk-lifeguard", "kind": "TalkToNpc", "targetId": "lifeguard", "count": 1, "description": "Talk to the lifeguard", "descriptionJp": "監視員さんと話す" },
+        { "id": "learn-yuigahama", "kind": "LearnWord", "targetId": "yuigahama", "count": 1, "description": "Learn 由比ヶ浜 (Yuigahama)", "jpHint": "ゆいがはま" }
+      ],
+      "rewards": { "xp": 50, "stamps": ["stamp-yuigahama"], "knowledge": ["yuigahama", "suna"] },
+      "learningTargets": ["yuigahama", "umi", "suna", "sora"],
+      "locationId": "yuigahama",
+      "dialogueId": "kamakura-beach"
+    },
+    {
+      "id": "writing-kana",
+      "title": "Trace the kana",
+      "titleJp": "かなを書く",
+      "description": "The writing desk by the park has a chalkboard. Trace the kana it shows.",
+      "category": "Writing",
+      "level": 1,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "write-a", "kind": "WriteKana", "targetId": "kana-a", "count": 1, "description": "Trace あ on the writing desk", "descriptionJp": "あを書く" },
+        { "id": "write-i", "kind": "WriteKana", "targetId": "kana-i", "count": 1, "description": "Trace い", "descriptionJp": "いを書く" },
+        { "id": "write-u", "kind": "WriteKana", "targetId": "kana-u", "count": 1, "description": "Trace う", "descriptionJp": "うを書く" }
+      ],
+      "rewards": { "xp": 35, "stamps": ["stamp-writing"], "knowledge": ["kana-a", "kana-i", "kana-u"] },
+      "learningTargets": ["kana-a", "kana-i", "kana-u", "kana-e", "kana-o"],
+      "locationId": "park"
+    },
+    {
+      "id": "festival-1",
+      "title": "Meet the festival",
+      "titleJp": "お祭りに会う",
+      "description": "The square comes alive at dusk. Find the festival grounds and say hello to Aoi.",
+      "category": "Social",
+      "level": 1,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "reach-festival", "kind": "ReachLocation", "targetId": "festival-grounds", "count": 1, "description": "Reach the festival grounds", "descriptionJp": "祭り広場に着く" },
+        { "id": "talk-aoi", "kind": "TalkToNpc", "targetId": "aoi", "count": 1, "description": "Talk to Aoi (evening only)", "descriptionJp": "あおいと話す" }
+      ],
+      "rewards": { "xp": 35, "stamps": ["stamp-festival"], "knowledge": ["matsuri", "yukata"] },
+      "learningTargets": ["matsuri", "yukata", "chouchin"],
+      "locationId": "festival-grounds"
+    },
+    {
+      "id": "festival-2",
+      "title": "Buy takoyaki",
+      "titleJp": "たこ焼きを買う",
+      "description": "The stall owner sings while he cooks. 熱々のたこ焼きを買おう！",
+      "category": "Vocabulary",
+      "level": 1,
+      "prerequisites": ["festival-1"],
+      "objectives": [
+        { "id": "order-takoyaki", "kind": "OrderFood", "targetId": "stall-takoyaki", "count": 1, "description": "Order takoyaki from the stall's Japanese menu", "descriptionJp": "屋台のメニューでたこ焼きを注文する", "jpHint": "たこやきを ください" },
+        { "id": "learn-takoyaki", "kind": "LearnWord", "targetId": "takoyaki", "count": 1, "description": "Learn たこ焼き (octopus dumplings)", "jpHint": "たこやき" }
+      ],
+      "rewards": { "xp": 30, "items": ["Takoyaki"], "stamps": ["stamp-takoyaki"], "knowledge": ["takoyaki"] },
+      "learningTargets": ["takoyaki", "yatai", "ramune"],
+      "locationId": "festival-grounds"
+    },
+    {
+      "id": "festival-3",
+      "title": "Evening sounds",
+      "titleJp": "夜の音",
+      "description": "Listen to the festival sounds and capture the lantern light.",
+      "category": "Listening",
+      "level": 2,
+      "prerequisites": ["festival-2"],
+      "objectives": [
+        { "id": "listen-stall", "kind": "Listen", "targetId": "tk1", "count": 1, "description": "Listen to the stall owner's welcome", "descriptionJp": "屋台の声を聞く" },
+        { "id": "photo-lantern", "kind": "TakePhoto", "targetId": "", "count": 1, "description": "Take a photo of the festival lights", "descriptionJp": "祭りの灯りを撮る" }
+      ],
+      "rewards": { "xp": 40, "stamps": ["stamp-hanabi"], "knowledge": ["hanabi", "yoru"] },
+      "learningTargets": ["chouchin", "hanabi", "yoru"],
+      "locationId": "festival-grounds"
+    },
+    {
+      "id": "kamakura-night-lanterns",
+      "title": "The night lanterns",
+      "titleJp": "夜の提灯",
+      "description": "At dusk the Lantern Keeper lights the stone lanterns on the Hachimangū approach. Help her find the ones that went out.",
+      "category": "Exploration",
+      "level": 3,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "talk-sakura", "kind": "TalkToNpc", "targetId": "sakura", "count": 1, "description": "Talk to the Lantern Keeper at night", "descriptionJp": "提灯番と話す" },
+        { "id": "read-lantern", "kind": "ReadSign", "targetId": "obj-kmk-stone-lantern", "count": 1, "description": "Inspect a stone lantern", "descriptionJp": "石灯籠を見る" },
+        { "id": "photo-moon", "kind": "TakePhoto", "targetId": "", "count": 1, "description": "Take a photo of the night approach", "descriptionJp": "夜の参道を撮る" }
+      ],
+      "rewards": { "xp": 45, "stamps": ["stamp-kamakura-night"], "knowledge": ["chouchin", "tsuki", "yoru"] },
+      "learningTargets": ["chouchin", "tsuki", "yoru"],
+      "locationId": "komachi",
+      "dialogueId": "kamakura-night"
+    },
+    {
+      "id": "winter-candy",
+      "title": "Warm candy, cold air",
+      "titleJp": "冬の飴細工",
+      "description": "The candy vendor only appears in winter, shaping warm sugar in the cold. Find them when it snows.",
+      "category": "Vocabulary",
+      "level": 2,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "season-winter", "kind": "Season", "targetId": "Winter", "count": 1, "description": "Experience winter", "descriptionJp": "冬を体験する" },
+        { "id": "weather-snow", "kind": "Weather", "targetId": "Snow", "count": 1, "description": "Wait for snow", "descriptionJp": "雪が降るのを待つ" },
+        { "id": "talk-amezaiku", "kind": "TalkToNpc", "targetId": "amezaiku-ya", "count": 1, "description": "Talk to the candy vendor", "descriptionJp": "飴細工屋さんと話す" },
+        { "id": "learn-ame", "kind": "LearnWord", "targetId": "ame", "count": 1, "description": "Learn 飴 (candy)", "jpHint": "あめ" }
+      ],
+      "rewards": { "xp": 40, "items": ["CandyAnimal"], "stamps": ["stamp-amezaiku"], "knowledge": ["ame", "fuyu", "yuki"] },
+      "learningTargets": ["ame", "fuyu", "yuki"],
+      "locationId": "park",
+      "dialogueId": "winter-candy"
+    },
+    {
+      "id": "winter-market",
+      "title": "Warm up at the winter market",
+      "titleJp": "冬市で暖まる",
+      "description": "The winter market appears when it snows. Drink warm cocoa and learn the winter words.",
+      "category": "Vocabulary",
+      "level": 2,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "season-winter-2", "kind": "Season", "targetId": "Winter", "count": 1, "description": "Experience winter", "descriptionJp": "冬を体験する" },
+        { "id": "talk-yuki", "kind": "TalkToNpc", "targetId": "yuki-chan", "count": 1, "description": "Talk to the cocoa vendor", "descriptionJp": "ココア屋さんと話す" },
+        { "id": "read-winter-stall", "kind": "ReadSign", "targetId": "obj-winter-stall", "count": 1, "description": "Read the winter stall sign", "descriptionJp": "冬の屋台の看板を読む" },
+        { "id": "learn-atatakai", "kind": "LearnWord", "targetId": "atatakai", "count": 1, "description": "Learn 暖かい (warm)", "jpHint": "あたたかい" }
+      ],
+      "rewards": { "xp": 45, "items": ["HotCocoa"], "stamps": ["stamp-winter-market"], "knowledge": ["atatakai", "fuyu"] },
+      "learningTargets": ["atatakai", "fuyu", "yuki"],
+      "locationId": "festival-grounds",
+      "dialogueId": "winter-market"
+    },
+    {
+      "id": "spring-blossoms",
+      "title": "Blossom viewing",
+      "titleJp": "お花見",
+      "description": "In spring the Kamakura trees bloom. Join the picnic under the blossoms and learn the season's words.",
+      "category": "Exploration",
+      "level": 3,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "season-spring", "kind": "Season", "targetId": "Spring", "count": 1, "description": "Experience spring", "descriptionJp": "春を体験する" },
+        { "id": "talk-hana", "kind": "TalkToNpc", "targetId": "hana", "count": 1, "description": "Talk to the blossom watcher", "descriptionJp": "お花見の人と話す" },
+        { "id": "learn-hanami", "kind": "LearnWord", "targetId": "hanami", "count": 1, "description": "Learn 花見 (blossom viewing)", "jpHint": "はなみ" }
+      ],
+      "rewards": { "xp": 50, "stamps": ["stamp-hanami"], "knowledge": ["hanami", "sakura"] },
+      "learningTargets": ["sakura", "hanami"],
+      "locationId": "hachimangu",
+      "dialogueId": "spring-blossoms"
+    },
+    {
+      "id": "summer-festival",
+      "title": "The summer festival dance",
+      "titleJp": "夏祭りの盆踊り",
+      "description": "On summer evenings the bon dance starts on the beach. Join the circle and learn the festival words.",
+      "category": "Social",
+      "level": 1,
+      "prerequisites": ["welcome"],
+      "objectives": [
+        { "id": "season-summer", "kind": "Season", "targetId": "Summer", "count": 1, "description": "Experience summer", "descriptionJp": "夏を体験する" },
+        { "id": "talk-dancer", "kind": "TalkToNpc", "targetId": "bon-dancer", "count": 1, "description": "Talk to the bon dancer in the evening", "descriptionJp": "盆踊りの人と話す" },
+        { "id": "learn-bonodori", "kind": "LearnWord", "targetId": "bonodori", "count": 1, "description": "Learn 盆踊り (bon festival dance)", "jpHint": "ぼんおどり" }
+      ],
+      "rewards": { "xp": 40, "stamps": ["stamp-summer-festival"], "knowledge": ["bonodori", "natsu", "matsuri"] },
+      "learningTargets": ["bonodori", "natsu", "matsuri"],
+      "locationId": "festival-grounds",
+      "dialogueId": "summer-festival"
+    },
+    {
+      "id": "collect-drinks",
+      "title": "Collect two drinks",
+      "titleJp": "飲み物を二つ集める",
+      "description": "The vending machine gives a different drink each time. Collect two to fill your bag.",
+      "category": "Collection",
+      "level": 1,
+      "prerequisites": ["buy-drink"],
+      "objectives": [
+        { "id": "collect-2-drinks", "kind": "Collect", "targetId": "", "count": 2, "description": "Collect 2 drinks", "descriptionJp": "飲み物を二つ集める" }
+      ],
+      "rewards": { "xp": 25, "items": ["DrinkTea"], "stamps": ["stamp-shop"], "knowledge": ["ocha"] },
+      "learningTargets": ["ocha", "juice"],
+      "locationId": "shop"
+    },
+    {
+      "id": "autumn-leaves",
+      "title": "The autumn leaves path",
+      "titleJp": "紅葉の小道",
+      "description": "In autumn the temple path turns red and gold. Walk it with the leaf watcher and collect a persimmon.",
+      "category": "Exploration",
+      "level": 3,
+      "prerequisites": ["kamakura-arrival"],
+      "objectives": [
+        { "id": "season-autumn", "kind": "Season", "targetId": "Autumn", "count": 1, "description": "Experience autumn", "descriptionJp": "秋を体験する" },
+        { "id": "talk-momiji", "kind": "TalkToNpc", "targetId": "momiji-sensei", "count": 1, "description": "Talk to the leaf watcher", "descriptionJp": "紅葉を見る人と話す" },
+        { "id": "learn-momiji", "kind": "LearnWord", "targetId": "momiji", "count": 1, "description": "Learn 紅葉 (autumn leaves)", "jpHint": "もみじ" },
+        { "id": "learn-kaki", "kind": "LearnWord", "targetId": "kaki", "count": 1, "description": "Learn 柿 (persimmon)", "jpHint": "かき" }
+      ],
+      "rewards": { "xp": 55, "stamps": ["stamp-autumn-leaves"], "knowledge": ["momiji", "aki", "kaki"] },
+      "learningTargets": ["momiji", "aki", "kaki"],
+      "locationId": "hachimangu",
+      "dialogueId": "autumn-leaves"
+    }
+  ]
+}

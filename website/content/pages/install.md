@@ -3,22 +3,22 @@ title: Install
 description: Install Kaiteyo on Windows, macOS, Linux, Android or iOS — plus how to try it in the browser first.
 ---
 
-Kaiteyo is available on every major platform. The quickest way to see if it's right for you is the [web trial](/try/) — no installation needed, sample data, and nothing leaves your browser.
+Kaiteyo is available on every major platform. Installers are direct downloads — no app store, no account, and no tracking.
 
 ## Quick start
 
 <div class="feature-grid">
   <div class="feature-card">
-    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg></div>
-    <h3>Try in the browser</h3>
-    <p>A working slice of Kaiteyo with sample data. Study, write, browse — all client-side.</p>
-    <a class="btn btn-primary btn-sm" href="/try/">Open the web trial</a>
-  </div>
-  <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg></div>
     <h3>Download the app</h3>
     <p>Stable and beta builds for Windows, macOS, Linux and Android on the downloads page.</p>
-    <a class="btn btn-ghost btn-sm" href="/download/">Go to downloads</a>
+    <a class="btn btn-primary btn-sm" href="/download/">Go to downloads</a>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-image"/></svg></div>
+    <h3>See it in action</h3>
+    <p>Browse the feature overview and screenshots before you install.</p>
+    <a class="btn btn-ghost btn-sm" href="/screenshots/">View screenshots</a>
   </div>
 </div>
 

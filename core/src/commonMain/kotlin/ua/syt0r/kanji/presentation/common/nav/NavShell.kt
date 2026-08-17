@@ -1,6 +1,5 @@
 package ua.syt0r.kanji.presentation.common.nav
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -11,13 +10,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +22,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -53,7 +44,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ViewSidebar
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -80,7 +71,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow as materialShadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
@@ -249,7 +239,7 @@ private fun AdaptiveNavigation(
     // The docked region size: width for a vertical sidebar, height for a
     // horizontal bar. Both the content reservation and the bar surface derive
     // from this single value so they can never disagree.
-    val dockedSize = dockedBarSize(settings, formFactor, expanded, vertical, containerWidthDp)
+    val dockedSize = NavGeometry.dockedBarSize(settings, formFactor, expanded, vertical, containerWidthDp)
     val bottomInset = if (edge == SidebarPosition.Bottom) horizontalBarInsetDp(edge) else 0.dp
     val bubbleBottomSpace = if (mode == NavigationMode.Floating) {
         val snap = settings.snapPointFor(formFactor)
@@ -268,67 +258,68 @@ private fun AdaptiveNavigation(
 
     val sections = buildPrimaryNavSections(navigationState, homeNavState)
 
-    // The docked bar reserves space in sidebar mode only; in floating mode the
-    // content owns the whole surface. The reserve animates across the switch
-    // so the mode transition feels like one continuous layout.
-    val horizontalInset = if (vertical) 0.dp else horizontalBarInsetDp(edge)
-    val dockedReserve = if (mode == NavigationMode.Sidebar) dockedSize + horizontalInset else 0.dp
-    // During a live resize drag the reserve follows the window instantly — a
+    // During a live resize drag the dock follows the window instantly — a
     // spring toward a size that changes every frame only adds lag and jitter.
     // Provided by the desktop window shell (see LocalWindowResizing).
     val resizing = LocalWindowResizing.current
-    val animatedReserve by animateDpAsState(
-        targetValue = dockedReserve,
-        animationSpec = if (resizing) snap() else navAnimSpec(animations),
-        label = "contentReserve"
+    val dockAnimSpec = if (resizing) snap() else navAnimSpec(animations)
+
+    // The dock occupies REAL layout space next to the content — never a
+    // padding hack and never a full-window overlay stacked on top of it.
+    // Each edge slot animates its own size, so switching modes grows the dock
+    // out of its edge (and shrinks it back), switching edges slides it across,
+    // and the content — a weighted sibling — always keeps the remaining
+    // space. The content can never be covered, zero-sized or negatively
+    // padded, and the old "padding must be non-negative" crash is impossible
+    // because there is no padding.
+    val isSidebar = mode == NavigationMode.Sidebar
+    val dockLeft by animateDpAsState(
+        targetValue = if (isSidebar && edge == SidebarPosition.Left) dockedSize else 0.dp,
+        animationSpec = dockAnimSpec,
+        label = "dockLeft"
+    )
+    val dockRight by animateDpAsState(
+        targetValue = if (isSidebar && edge == SidebarPosition.Right) dockedSize else 0.dp,
+        animationSpec = dockAnimSpec,
+        label = "dockRight"
+    )
+    val dockTop by animateDpAsState(
+        targetValue = if (isSidebar && edge == SidebarPosition.Top) dockedSize else 0.dp,
+        animationSpec = dockAnimSpec,
+        label = "dockTop"
+    )
+    val dockBottom by animateDpAsState(
+        targetValue = if (isSidebar && edge == SidebarPosition.Bottom) dockedSize else 0.dp,
+        animationSpec = dockAnimSpec,
+        label = "dockBottom"
     )
 
     val transitionMs = settings.effectiveDurationMs(animations)
-    val enterSpring: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
-        spring(dampingRatio = 0.7f, stiffness = 300f)
     val fadeInSpec: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
         if (animations) tween(transitionMs) else snap()
     val fadeOutSpec: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
         if (animations) tween(transitionMs) else snap()
 
-    // Where the floating bubble sits (from the persisted snap point) and where
-    // the sidebar sits (from the current edge) — these drive the transform
-    // origins so one mode visibly grows out of the other.
-    val snapOrigin = snapPointTransformOrigin(settings.snapPointFor(formFactor))
-    val edgeOrigin = edgeTransformOrigin(edge)
-
-    val floatingEnter: EnterTransition = fadeIn(fadeInSpec) + scaleIn(
-        initialScale = 0.86f,
-        transformOrigin = edgeOrigin,
-        animationSpec = enterSpring
-    )
-    val floatingExit: ExitTransition = fadeOut(fadeOutSpec) + scaleOut(
-        targetScale = 0.86f,
-        transformOrigin = edgeOrigin,
-        animationSpec = if (animations) tween(transitionMs) else snap()
-    )
-    val sidebarEnter: EnterTransition = fadeIn(fadeInSpec) + scaleIn(
-        initialScale = 0.9f,
-        transformOrigin = snapOrigin,
-        animationSpec = enterSpring
-    )
-    val sidebarExit: ExitTransition = fadeOut(fadeOutSpec) + scaleOut(
-        targetScale = 0.9f,
-        transformOrigin = snapOrigin,
-        animationSpec = if (animations) tween(transitionMs) else snap()
-    )
+    // The floating layer simply fades in place over the full-width content;
+    // the dock slides in/out by animating its own width/height alongside the
+    // content (no scale-from-corner sweep that read as "the sidebar covers
+    // the whole screen").
+    val floatingEnter: EnterTransition = fadeIn(fadeInSpec)
+    val floatingExit: ExitTransition = fadeOut(fadeOutSpec)
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.B) {
+                    // Ctrl+B toggles the presentation mode both ways: Floating
+                    // ↔ Sidebar. (Expansion is controlled from the sidebar
+                    // header, not this shortcut.)
                     navSettings.update { current ->
-                        if (current.mode == NavigationMode.Floating) current.copy(mode = NavigationMode.Sidebar)
-                        else current.copy(
-                            sidebarExpansion = if (current.sidebarExpansion == SidebarExpansion.Expanded)
-                                SidebarExpansion.Compact
-                            else SidebarExpansion.Expanded
+                        current.copy(
+                            mode = if (current.mode == NavigationMode.Floating)
+                                NavigationMode.Sidebar
+                            else NavigationMode.Floating
                         )
                     }
                     true
@@ -337,23 +328,81 @@ private fun AdaptiveNavigation(
                 }
             }
     ) {
-        // Content — reserved space follows the active mode.
-        Box(
-            Modifier
-                .fillMaxSize()
-                .then(
-                    when (edge) {
-                        SidebarPosition.Left -> Modifier.padding(start = animatedReserve)
-                        SidebarPosition.Right -> Modifier.padding(end = animatedReserve)
-                        SidebarPosition.Top -> Modifier.padding(top = animatedReserve)
-                        else -> Modifier.padding(bottom = animatedReserve)
-                    }
-                )
-        ) {
-            content()
+        // The dock takes real layout space on its edge; the content is a
+        // weighted sibling that always receives the remaining space. The
+        // sidebar physically cannot swallow the window or blank the content.
+        if (vertical) {
+            Row(Modifier.fillMaxSize()) {
+                if (dockLeft > 0.dp) {
+                    DockedSidebar(
+                        sections = sections,
+                        navigationState = navigationState,
+                        homeNavState = homeNavState,
+                        navSettings = navSettings,
+                        formFactor = formFactor,
+                        edge = SidebarPosition.Left,
+                        vertical = true,
+                        dockSize = dockLeft,
+                        modifier = Modifier.fillMaxHeight()
+                    )
+                }
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                ) {
+                    content()
+                }
+                if (dockRight > 0.dp) {
+                    DockedSidebar(
+                        sections = sections,
+                        navigationState = navigationState,
+                        homeNavState = homeNavState,
+                        navSettings = navSettings,
+                        formFactor = formFactor,
+                        edge = SidebarPosition.Right,
+                        vertical = true,
+                        dockSize = dockRight,
+                        modifier = Modifier.fillMaxHeight()
+                    )
+                }
+            }
+        } else {
+            Column(Modifier.fillMaxSize()) {
+                if (dockTop > 0.dp) {
+                    DockedSidebar(
+                        sections = sections,
+                        navigationState = navigationState,
+                        homeNavState = homeNavState,
+                        navSettings = navSettings,
+                        formFactor = formFactor,
+                        edge = SidebarPosition.Top,
+                        vertical = false,
+                        dockSize = dockTop,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    content()
+                }
+                if (dockBottom > 0.dp) {
+                    DockedSidebar(
+                        sections = sections,
+                        navigationState = navigationState,
+                        homeNavState = homeNavState,
+                        navSettings = navSettings,
+                        formFactor = formFactor,
+                        edge = SidebarPosition.Bottom,
+                        vertical = false,
+                        dockSize = dockBottom,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
 
-        // Floating mode chrome — the draggable launcher bubble.
+        // Floating mode chrome — the draggable launcher bubble. It overlays
+        // the content (the bubble itself is the only chrome in this mode).
         AnimatedVisibility(
             visible = mode == NavigationMode.Floating,
             modifier = Modifier.fillMaxSize(),
@@ -369,85 +418,6 @@ private fun AdaptiveNavigation(
                 modifier = Modifier.fillMaxSize()
             )
         }
-
-        // Sidebar mode chrome — the docked navigation on the selected edge.
-        AnimatedVisibility(
-            visible = mode == NavigationMode.Sidebar,
-            modifier = Modifier.fillMaxSize(),
-            enter = sidebarEnter,
-            exit = sidebarExit
-        ) {
-            DockedNavigation(
-                sections = sections,
-                navigationState = navigationState,
-                homeNavState = homeNavState,
-                navSettings = navSettings,
-                formFactor = formFactor,
-                edge = edge,
-                vertical = vertical,
-                animations = animations,
-                dockSize = dockedSize
-            )
-        }
-    }
-}
-
-// ============================================
-// DOCKED NAVIGATION — Sidebar mode
-// ============================================
-
-@Composable
-private fun DockedNavigation(
-    sections: List<NavSection>,
-    navigationState: MainNavigationState,
-    homeNavState: HomeNavigationState,
-    navSettings: NavigationSettingsState,
-    formFactor: FormFactor,
-    edge: SidebarPosition,
-    vertical: Boolean,
-    animations: Boolean,
-    dockSize: Dp
-) {
-    // Switching edges reflows the sidebar — the old dock slides away while the
-    // new one enters from its edge, so the sidebar never teleports.
-    AnimatedContent(
-        targetState = edge,
-        transitionSpec = {
-            val forward = SidebarPosition.entries.indexOf(targetState) > SidebarPosition.entries.indexOf(initialState)
-            // Slides animate in pixel space; a Dp spec is meaningless here.
-            val spec: androidx.compose.animation.core.FiniteAnimationSpec<IntOffset> =
-                if (animations) spring(dampingRatio = 0.7f, stiffness = 300f)
-                else androidx.compose.animation.core.snap()
-            val enterSlide = when (targetState) {
-                SidebarPosition.Left -> slideInHorizontally(spec) { -it }
-                SidebarPosition.Right -> slideInHorizontally(spec) { it }
-                SidebarPosition.Top -> slideInVertically(spec) { -it }
-                else -> slideInVertically(spec) { it }
-            }
-            val exitSlide = when (initialState) {
-                SidebarPosition.Left -> slideOutHorizontally(spec) { -it / 3 }
-                SidebarPosition.Right -> slideOutHorizontally(spec) { it / 3 }
-                SidebarPosition.Top -> slideOutVertically(spec) { -it / 3 }
-                else -> slideOutVertically(spec) { it / 3 }
-            }
-            val fade: androidx.compose.animation.core.FiniteAnimationSpec<Float> =
-                if (animations) tween(180) else snap()
-            (enterSlide + fadeIn(fade)) togetherWith (exitSlide + fadeOut(fade))
-        },
-        label = "navEdge"
-    ) { targetEdge ->
-        val targetVertical = targetEdge == SidebarPosition.Left || targetEdge == SidebarPosition.Right
-        DockedSidebar(
-            sections = sections,
-            navigationState = navigationState,
-            homeNavState = homeNavState,
-            navSettings = navSettings,
-            formFactor = formFactor,
-            edge = targetEdge,
-            vertical = targetVertical,
-            dockSize = dockSize,
-            modifier = Modifier.fillMaxSize()
-        )
     }
 }
 
@@ -475,6 +445,13 @@ private fun DockedSidebar(
     val margin = if (formFactor.isPhone) 0.dp else NavTokens.SidebarMargin
     val itemSpacing = settings.sidebar.compactSpacing.dp
 
+    // Render-time guard on top of the NavGeometry clamp: even if upstream
+    // state ever regresses, the dock surface can never exceed half the window
+    // — the sidebar physically cannot swallow the screen at the drawing node.
+    val density = LocalDensity.current
+    val containerWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val safeDockSize = dockSize.coerceAtMost(containerWidthDp * 0.5f)
+
     // The horizontal bar must be exactly as tall as the reserved content
     // space (dockSize + system inset) so it never overlaps the content.
     val barInsetDp = if (vertical) 0.dp else horizontalBarInsetDp(edge)
@@ -489,7 +466,7 @@ private fun DockedSidebar(
                         // — never the full window width. Without this the inner
                         // fillMaxSize column measures against the whole window
                         // and the "sidebar" swallows 100% of the screen.
-                        vertical -> Modifier.fillMaxHeight().width(dockSize)
+                        vertical -> Modifier.fillMaxHeight().width(safeDockSize)
                             .padding(vertical = margin)
                         else -> Modifier.fillMaxWidth().height(dockSize + barInsetDp)
                             .padding(horizontal = margin)
@@ -1422,19 +1399,19 @@ private fun buildPrimaryNavSections(
             title = null,
             entries = listOf(
                 homeEntry(HomeScreenTab.GeneralDashboard, { resolveString { nav.homeLabel } }),
-                homeEntry(HomeScreenTab.Library, { resolveString { nav.libraryLabel } }),
-                // Study — the deck/study workspace. Stays highlighted for the
-                // whole deck feature family so the user always knows where they
-                // are inside it.
-                NavEntry(
-                    id = "primary_study",
-                    label = { resolveString { nav.studyLabel } },
-                    icon = Icons.Default.CollectionsBookmark,
-                    iconContent = null,
-                    selected = currentDestination == MainDestination.DeckBrowser ||
+                // Library — the primary learning workspace. The unified
+                // Library screen hosts decks, the study entry points (continue
+                // studying, due/new counts), kanji + vocabulary browsing and
+                // the manage tools, so the separate Study destination is folded
+                // in here. Stays highlighted for the whole deck feature family
+                // (deck browser, card browser, study history) so the user
+                // always knows where they are inside it.
+                homeEntry(
+                    HomeScreenTab.Library,
+                    { resolveString { nav.libraryLabel } },
+                    extraSelected = currentDestination == MainDestination.DeckBrowser ||
                         currentDestination is MainDestination.CardBrowser ||
-                        currentDestination == MainDestination.StudyHistory,
-                    onClick = { navigationState.navigate(MainDestination.DeckBrowser) }
+                        currentDestination == MainDestination.StudyHistory
                 ),
                 homeEntry(
                     HomeScreenTab.Search,
@@ -1455,6 +1432,15 @@ private fun buildPrimaryNavSections(
                     selected = currentDestination == MainDestination.Media,
                     onClick = { navigationState.navigate(MainDestination.Media) }
                 ),
+                // Kaiteyo World — the node-based curriculum over real study state.
+                NavEntry(
+                    id = "primary_game",
+                    label = { "World" },
+                    icon = Icons.Default.Face,
+                    iconContent = null,
+                    selected = currentDestination == MainDestination.Game,
+                    onClick = { navigationState.navigate(MainDestination.Game) }
+                ),
                 homeEntry(HomeScreenTab.Settings, { resolveString { home.settingsTabLabel } })
             )
         )
@@ -1471,43 +1457,6 @@ private fun defaultHomeTab(appPreferences: PreferencesContract.AppPreferences): 
         PreferencesDefaultHomeTab.Letters -> HomeScreenTab.Library
         PreferencesDefaultHomeTab.Vocab -> HomeScreenTab.Library
     }
-}
-
-/**
- * Size of the docked navigation region for the current sidebar layout and
- * form factor: width for a vertical sidebar, height for a horizontal bar.
- * Shared by the content reservation, the bar surface and the published
- * bottom-bar space so they always agree.
- */
-private fun dockedBarSize(
-    settings: NavigationSettings,
-    formFactor: FormFactor,
-    expanded: Boolean,
-    vertical: Boolean,
-    containerWidthDp: Dp
-): Dp = when {
-    vertical && expanded -> adaptiveSidebarWidth(containerWidthDp, settings)
-    vertical -> NavTokens.CompactRailWidth
-    // Phone bars use a fixed comfortable height for touch; expanded vs
-    // compact differs only by whether labels are shown.
-    formFactor.isPhone -> NavTokens.PhoneBarHeight
-    expanded -> NavTokens.HorizontalBarHeight
-    else -> NavTokens.HorizontalBarCompactHeight
-}
-
-/**
- * Adaptive sidebar width: roughly 20% of the available window width so the
- * content always keeps ~80%, clamped to sensible bounds so the sidebar stays
- * usable on small windows and never becomes enormous on very wide ones. The
- * configured expanded-width preference picks the target ratio (0.16–0.22).
- */
-private fun adaptiveSidebarWidth(
-    availableWidth: Dp,
-    settings: NavigationSettings
-): Dp {
-    val ratios = listOf(0.16f, 0.18f, 0.20f, 0.22f)
-    val ratio = ratios.getOrElse(settings.sidebar.expandedWidthIndex) { 0.20f }
-    return (availableWidth * ratio).coerceIn(208.dp, 384.dp)
 }
 
 /**
@@ -1535,28 +1484,13 @@ private fun sidebarAlignment(position: SidebarPosition): Alignment {
 }
 
 private fun navAnimSpec(animations: Boolean): androidx.compose.animation.core.FiniteAnimationSpec<Dp> {
-    return if (animations) spring(dampingRatio = 0.7f, stiffness = 280f)
+    // Critically damped (dampingRatio = 1.0): the content reserve settles
+    // without overshoot. An underdamped spring dipping below zero while
+    // animating the reserve DOWN (Sidebar → Floating) is what previously fed
+    // negative Dp into Modifier.padding and crashed with "Padding must be
+    // non-negative".
+    return if (animations) spring(dampingRatio = 1f, stiffness = 380f)
     else androidx.compose.animation.core.snap()
-}
-
-/** Where the floating bubble sits, as a fraction for scale origins. */
-private fun snapPointTransformOrigin(snap: BubbleSnapPoint): TransformOrigin = when (snap) {
-    BubbleSnapPoint.TopLeft, BubbleSnapPoint.LeftTop -> TransformOrigin(0f, 0f)
-    BubbleSnapPoint.TopCenter -> TransformOrigin(0.5f, 0f)
-    BubbleSnapPoint.TopRight, BubbleSnapPoint.RightTop -> TransformOrigin(1f, 0f)
-    BubbleSnapPoint.BottomLeft, BubbleSnapPoint.LeftBottom -> TransformOrigin(0f, 1f)
-    BubbleSnapPoint.BottomCenter -> TransformOrigin(0.5f, 1f)
-    BubbleSnapPoint.BottomRight, BubbleSnapPoint.RightBottom -> TransformOrigin(1f, 1f)
-    BubbleSnapPoint.LeftCenter -> TransformOrigin(0f, 0.5f)
-    BubbleSnapPoint.RightCenter -> TransformOrigin(1f, 0.5f)
-}
-
-/** Where the sidebar edge sits, as a fraction for scale origins. */
-private fun edgeTransformOrigin(edge: SidebarPosition): TransformOrigin = when (edge) {
-    SidebarPosition.Left -> TransformOrigin(0f, 0.5f)
-    SidebarPosition.Right -> TransformOrigin(1f, 0.5f)
-    SidebarPosition.Top -> TransformOrigin(0.5f, 0f)
-    SidebarPosition.Bottom -> TransformOrigin(0.5f, 1f)
 }
 
 @Composable
@@ -1568,7 +1502,7 @@ private fun scaledRadius(base: Dp): Dp {
 private fun Modifier.shadow(
     elevation: Dp,
     shape: androidx.compose.ui.graphics.Shape
-): Modifier = Modifier.materialShadow(
+): Modifier = this.materialShadow(
     elevation = elevation,
     shape = shape,
     ambientColor = Color.Black.copy(alpha = 0.25f),

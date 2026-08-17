@@ -14,6 +14,7 @@ import ua.syt0r.kanji.core.backup.BackupManager
 import ua.syt0r.kanji.core.file.PlatformFile
 import ua.syt0r.kanji.core.toLocalDateTime
 import ua.syt0r.kanji.core.user_data.db.UserDataDatabase
+import ua.syt0r.kanji.core.user_data.database.CardDatabaseManager
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupScreenContract.ScreenState
@@ -33,6 +34,7 @@ fun Module.backupScreenComponents() {
         JvmBackupScreenViewModel(
             viewModelScope = it.component1(),
             backupManager = get(),
+            cardDatabaseManager = get(),
             analyticsManager = get()
         )
     }
@@ -78,6 +80,7 @@ object JvmBackupScreenContent : BackupScreenContract.Content {
 class JvmBackupScreenViewModel(
     private val viewModelScope: CoroutineScope,
     private val backupManager: BackupManager,
+    private val cardDatabaseManager: CardDatabaseManager,
     private val analyticsManager: AnalyticsManager
 ) {
 
@@ -95,6 +98,15 @@ class JvmBackupScreenViewModel(
 
             screenStateFlow.value = runCatching {
                 backupManager.backupTo(file)
+                // Record real metadata for the Backup Manager history list —
+                // filename and size come from the file actually written.
+                cardDatabaseManager.recordBackup(
+                    filename = file.javaFile.name,
+                    fileSize = file.javaFile.length(),
+                    checksum = "",
+                    isAutomatic = false,
+                    notes = "Manual backup"
+                )
                 analyticsManager.sendEvent("backup_created")
                 ScreenState.ActionCompleted
             }.getOrElse {

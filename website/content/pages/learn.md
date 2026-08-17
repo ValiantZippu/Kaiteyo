@@ -9,22 +9,22 @@ The learning hub connects you to everything you need to start — and keep — l
 
 <div class="feature-grid">
   <div class="feature-card">
-    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg></div>
-    <h3>Try Kaiteyo</h3>
-    <p>Study flashcards, browse kanji and vocabulary, and practice writing in your browser — no installation, sample data, nothing leaves your machine.</p>
-    <a class="btn btn-primary btn-sm" href="/try/">Open the web trial</a>
-  </div>
-  <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg></div>
     <h3>Install the app</h3>
     <p>Windows, macOS, Linux, Android and iOS — grab the right build and follow the platform installation guide.</p>
-    <a class="btn btn-ghost btn-sm" href="/download/">Downloads</a>
+    <a class="btn btn-primary btn-sm" href="/download/">Downloads</a>
   </div>
   <div class="feature-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg></div>
     <h3>Getting started</h3>
     <p>First-launch walkthrough, creating your first deck, and your first study session.</p>
     <a class="btn btn-ghost btn-sm" href="/docs/user-guide/getting_started/">Read the guide</a>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-layers"/></svg></div>
+    <h3>What Kaiteyo does</h3>
+    <p>The complete feature story — learning, writing, decks, media, mining, statistics and exams.</p>
+    <a class="btn btn-ghost btn-sm" href="/features/">Explore the product</a>
   </div>
 </div>
 

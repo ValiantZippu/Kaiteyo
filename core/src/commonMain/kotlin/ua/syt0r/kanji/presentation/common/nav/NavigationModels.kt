@@ -141,8 +141,9 @@ data class BubbleSettings(
     val iconSize: Int = 26,
     val snapSensitivity: Int = 80,
     /**
-     * Maximum distance (dp) from a snap anchor at which the bubble magnetizes
-     * on release. Larger = more aggressive snapping.
+     * Size (dp) of the drag target preview ring shown while dragging. The
+     * bubble always snaps to the nearest edge anchor on release; this only
+     * controls how big the target telegraph is.
      */
     val snapDistance: Int = 140,
     /**
@@ -353,4 +354,83 @@ fun legacyAnchorToSnapPoint(anchor: String?): BubbleSnapPoint = when (anchor) {
     "BottomLeft" -> BubbleSnapPoint.BottomLeft
     "BottomRight" -> BubbleSnapPoint.BottomRight
     else -> BubbleSnapPoint.BottomRight
+}
+
+// ============================================
+// NAV GEOMETRY — pure layout math
+// The docked navigation size, the adaptive
+// sidebar width and the content reservation are
+// derived from one model shared by the content
+// padding, the bar surface and the published
+// bottom-bar space — so they can never disagree
+// and the layout can never produce negative
+// geometry (the old padding crash). Pure and
+// unit-tested; NavShell only renders these.
+// ============================================
+
+object NavGeometry {
+
+    /** Expanded-sidebar width ratios by [SidebarSettings.expandedWidthIndex]. */
+    val ExpandedWidthRatios = listOf(0.16f, 0.18f, 0.20f, 0.22f)
+
+    /** Hard bounds for an expanded vertical sidebar, in dp. */
+    val MinSidebarWidth = 208.dp
+    val MaxSidebarWidth = 384.dp
+
+    /**
+     * Adaptive sidebar width: roughly 20% of the available window width so the
+     * content always keeps ~80%, clamped to sensible bounds so the sidebar stays
+     * usable on small windows and never becomes enormous on very wide ones. The
+     * configured expanded-width preference picks the target ratio (0.16–0.22).
+     */
+    fun adaptiveSidebarWidth(
+        availableWidth: Dp,
+        settings: NavigationSettings
+    ): Dp {
+        val ratio = ExpandedWidthRatios.getOrElse(settings.sidebar.expandedWidthIndex) { 0.20f }
+        return (availableWidth * ratio).coerceIn(MinSidebarWidth, MaxSidebarWidth)
+    }
+
+    /**
+     * Size of the docked navigation region for the current sidebar layout and
+     * form factor: width for a vertical sidebar, height for a horizontal bar.
+     */
+    fun dockedBarSize(
+        settings: NavigationSettings,
+        formFactor: FormFactor,
+        expanded: Boolean,
+        vertical: Boolean,
+        containerWidthDp: Dp
+    ): Dp {
+        val size = when {
+            vertical && expanded -> adaptiveSidebarWidth(containerWidthDp, settings)
+            vertical -> NavTokens.CompactRailWidth
+            // Phone bars use a fixed comfortable height for touch; expanded vs
+            // compact differs only by whether labels are shown.
+            formFactor.isPhone -> NavTokens.PhoneBarHeight
+            expanded -> NavTokens.HorizontalBarHeight
+            else -> NavTokens.HorizontalBarCompactHeight
+        }
+        // Hard safety at the layout boundary: the docked region can never
+        // consume more than half the window in its docked dimension, so the
+        // sidebar can never become the entire screen no matter what settings
+        // or persisted state produced the value upstream.
+        val maxDocked = if (vertical) containerWidthDp * 0.5f else containerWidthDp * 0.4f
+        return size.coerceAtMost(maxDocked)
+    }
+
+    /**
+     * Content reservation for the active mode: the docked region (plus system
+     * inset) in Sidebar mode, zero in Floating mode where the bubble overlays
+     * the whole surface. Always non-negative — the transition animates between
+     * two valid geometries and can never produce invalid padding.
+     */
+    fun contentReserve(
+        mode: NavigationMode,
+        dockedSize: Dp,
+        horizontalInset: Dp
+    ): Dp = when (mode) {
+        NavigationMode.Sidebar -> dockedSize + horizontalInset
+        NavigationMode.Floating -> 0.dp
+    }
 }

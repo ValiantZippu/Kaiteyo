@@ -646,9 +646,9 @@ private fun FloatingSection(navSettings: NavigationSettingsState, formFactor: Fo
             onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(elevation = it.toInt())) } }
         )
         SliderRow(
-            label = "Snap distance",
+            label = "Snap preview size",
             value = bubble.snapDistance.toFloat(),
-            range = 40f..300f,
+            range = 40f..120f,
             valueLabel = { "${it.toInt()} dp" },
             onValueChange = { navSettings.update { current -> current.copy(bubble = current.bubble.copy(snapDistance = it.toInt())) } }
         )

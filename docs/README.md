@@ -97,10 +97,16 @@ docs/
 │   ├── normal-user-experience.md  Two interconnected experiences
 │   └── long-term-vision.md        The arc to a language platform
 │
-├── game/                          Journey — the game as a real game (target)
-│   ├── README.md                  Game docs index & map
-│   ├── game-overview.md           Genre, pillars, core loop, scope gates
-│   ├── world-architecture.md      Hierarchy, fidelity L0–L4, packages
+├── game/                          Journey — the game as a real game
+│   ├── README.md                  Game docs index & map (implementation + target)
+│   ├── ENGINE_DECISION.md         Why the engine core is 2.5D Canvas today + 3D swap path
+│   ├── ARCHITECTURE.md            The implemented architecture (desktop/game package map)
+│   ├── WORLD.md                   World structure + content pipeline (add a region/quest/word)
+│   ├── VERTICAL_SLICE.md          Honest per-system status of the playable slice
+│   ├── ROADMAP.md                 Living roadmap (foundation → slice → regions → expansion)
+│   ├── TODO.md                    Massive categorized backlog (spec §133)
+│   ├── game-overview.md           Genre, pillars, core loop, scope gates (target)
+│   ├── world-architecture.md      Hierarchy, fidelity L0–L4, packages (target)
 │   ├── map-system.md              Map modes, reveal, knowledge-density overlay
 │   ├── world-streaming.md         Chunks, managers, budgets, travel
 │   ├── camera.md                  First/third person + camera modes
@@ -116,7 +122,6 @@ docs/
 │   ├── learning-in-world.md       WORLD_TEXT_SELECTED → knowledge flow
 │   ├── save-system.md             Versioned, checksummed, split-rule saves
 │   ├── game-audio.md              Audio buses, zones, mixing
-│   ├── player.md                  Player/avatar, camera & input abstraction
 │   └── asset-pipeline.md          Game asset pipeline (naming, formats, licenses, packages)
 │
 ├── rendering/                     Journey rendering direction (target)
@@ -229,6 +234,22 @@ docs/
 │   ├── README.md                  Release section index
 │   ├── RELEASE_PROCESS.md         End-to-end release workflow
 │   └── RELEASE_CHECKLIST.md       Pre-release verification checklist
+│
+├── distribution/                  Distribution, packaging & installation
+│   ├── README.md                  Package matrix + index (Windows/Linux/Android)
+│   ├── architecture.md            Build → package → install → update → sign → release
+│   ├── windows.md                 Windows: EXE/MSI/portable, silent, package managers
+│   ├── windows-package-managers.md  WinGet / Chocolatey / Scoop manifests
+│   ├── linux.md · linux-appimage.md · linux-debian.md · linux-ubuntu.md
+│   ├── linux-fedora.md · linux-flatpak.md · linux-arch.md
+│   ├── android.md                 Flavors, APK/AAB, signing, Play/F-Droid
+│   ├── installers.md · uninstall.md · signing.md · updates.md · checksums.md
+│   ├── release-process.md · ci-cd.md · security.md
+│   ├── onboarding.md · first-launch.md · troubleshooting.md · faq.md
+│   └── artifacts.md · versioning.md · localization.md
+│
+├── packaging/                     Packaging SOURCE index (installer/ tree)
+│   └── README.md                  installer/ layout → doc map
 │
 ├── security/                      Security & privacy
 │   ├── README.md                  Threat model (see also root SECURITY.md)

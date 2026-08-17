@@ -1,10 +1,12 @@
 package ua.syt0r.kanji.desktop.ui.browser
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -27,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
@@ -34,10 +38,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
@@ -46,6 +53,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,11 +61,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import kotlin.math.roundToInt
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.BrowserViewMode
+import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
@@ -122,6 +143,20 @@ fun BrowserView(state: AppState) {
     var activeStateFilter by remember { mutableStateOf<String?>(null) }
     var pendingAddToDeck by remember { mutableStateOf<List<String>?>(null) }
     var batchEditDialog by remember { mutableStateOf(false) }
+    // Keyboard navigation over the result list: ↑/↓ move, Enter opens,
+    // Esc clears. Arrows are ignored while the search field is focused so
+    // caret movement inside the field keeps working.
+    var focusedIndex by remember { mutableStateOf(-1) }
+    var searchFocused by remember { mutableStateOf(false) }
+    // Live suggestions under the search field (recent searches, tags, flags,
+    // query operators). Keyboard: arrows move, Enter applies, Esc dismisses.
+    var suggestionsVisible by remember { mutableStateOf(false) }
+    var suggestionIndex by remember { mutableStateOf(0) }
+    var searchFieldPos by remember { mutableStateOf<IntOffset?>(null) }
+    var searchFieldHeight by remember { mutableStateOf(0) }
+    // Query that was just applied from the dropdown — typing it back into the
+    // field must not instantly re-open the dropdown.
+    var lastAppliedQuery by remember { mutableStateOf<String?>(null) }
 
     val selectionActive = selectionMode || state.selectedCardIds.isNotEmpty()
 
@@ -146,7 +181,113 @@ fun BrowserView(state: AppState) {
     }
     val results = sortCards(state.searchCards(query), sortMode)
 
-    Column(Modifier.fillMaxSize()) {
+    // Typing or a filter/sort change resets keyboard focus so navigation
+    // always starts from the top of the freshly computed list.
+    LaunchedEffect(query, results.size) { focusedIndex = -1 }
+
+    // Suggestions recompute from the raw query and the card pool; any query
+    // change re-shows them (unless the user explicitly dismissed with Esc).
+    val suggestions = remember(state.browserQuery, state.cards) { buildBrowseSuggestions(state, state.browserQuery) }
+    LaunchedEffect(state.browserQuery) {
+        suggestionIndex = 0
+        if (state.browserQuery != lastAppliedQuery) suggestionsVisible = true
+    }
+    val showSuggestions = suggestionsVisible && searchFocused && suggestions.isNotEmpty()
+    val applySuggestion: (BrowseSuggestion) -> Unit = { suggestion ->
+        lastAppliedQuery = suggestion.query
+        state.browserQuery = suggestion.query
+        suggestionsVisible = false
+    }
+
+    // Mouse clicks sync the keyboard focus so arrows continue from the
+    // row the user just clicked.
+    val syncFocus: (DesktopCard) -> Unit = { card ->
+        focusedIndex = results.indexOfFirst { it.id == card.id }
+    }
+    val openCard: (DesktopCard) -> Unit = { card ->
+        syncFocus(card)
+        handleCardClick(state, card, selectionMode)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionDown -> {
+                        when {
+                            results.isEmpty() -> false
+                            searchFocused && suggestions.isNotEmpty() -> {
+                                suggestionIndex = (suggestionIndex + 1) % suggestions.size
+                                true
+                            }
+                            searchFocused -> false
+                            else -> {
+                                focusedIndex = if (focusedIndex < 0) 0 else (focusedIndex + 1).coerceAtMost(results.lastIndex)
+                                true
+                            }
+                        }
+                    }
+                    Key.DirectionUp -> {
+                        when {
+                            results.isEmpty() -> false
+                            searchFocused && suggestions.isNotEmpty() -> {
+                                suggestionIndex = (suggestionIndex - 1 + suggestions.size) % suggestions.size
+                                true
+                            }
+                            searchFocused -> false
+                            else -> {
+                                focusedIndex = if (focusedIndex <= 0) 0 else focusedIndex - 1
+                                true
+                            }
+                        }
+                    }
+                    Key.Enter -> {
+                        when {
+                            searchFocused && suggestions.isNotEmpty() -> {
+                                applySuggestion(suggestions[suggestionIndex])
+                                true
+                            }
+                            searchFocused && results.isNotEmpty() -> {
+                                openCard(results[0])
+                                true
+                            }
+                            focusedIndex in results.indices -> {
+                                openCard(results[focusedIndex])
+                                true
+                            }
+                            else -> false
+                        }
+                    }
+                    Key.Escape -> {
+                        if (searchFocused) {
+                            when {
+                                showSuggestions -> { suggestionsVisible = false; true }
+                                state.browserQuery.isNotBlank() -> { state.browserQuery = ""; true }
+                                else -> false
+                            }
+                        } else when {
+                            selectionActive -> {
+                                state.selectedCardIds.clear()
+                                selectionMode = false
+                                true
+                            }
+                            activePreset != null || activeTag != null || activeFlag != null || activeStateFilter != null -> {
+                                activePreset = null
+                                activeTag = null
+                                activeFlag = null
+                                activeStateFilter = null
+                                true
+                            }
+                            state.selectedCard != null -> { state.selectedCard = null; true }
+                            else -> false
+                        }.also { focusedIndex = -1 }
+                    }
+                    else -> false
+                }
+            }
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -154,12 +295,40 @@ fun BrowserView(state: AppState) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
         ) {
-            DsSearchField(
-                value = state.browserQuery,
-                onValueChange = { state.browserQuery = it },
-                placeholder = "水 meaning:water on:スイ tag:jlpt-4 flag:red interval:>=21 …",
-                modifier = Modifier.weight(1f)
-            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .onGloballyPositioned { coords ->
+                        val pos = coords.positionInWindow()
+                        searchFieldPos = IntOffset(pos.x.roundToInt(), pos.y.roundToInt())
+                        searchFieldHeight = coords.size.height
+                    }
+                    .onFocusChanged { searchFocused = it.isFocused }
+            ) {
+                DsSearchField(
+                    value = state.browserQuery,
+                    onValueChange = { state.browserQuery = it },
+                    placeholder = "水 meaning:water on:スイ tag:jlpt-4 flag:red interval:>=21 …",
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (showSuggestions) {
+                    val pos = searchFieldPos
+                    if (pos != null) {
+                        Popup(
+                            onDismissRequest = {},
+                            offset = IntOffset(pos.x, pos.y + searchFieldHeight + 6),
+                            properties = PopupProperties(focusable = false)
+                        ) {
+                            SuggestionDropdown(
+                                suggestions = suggestions,
+                                selectedIndex = suggestionIndex,
+                                onSelect = applySuggestion,
+                                onHover = { suggestionIndex = it }
+                            )
+                        }
+                    }
+                }
+            }
             DsSelect(
                 selected = activePreset ?: ReviewFilterPreset.All,
                 options = ReviewFilterPreset.entries.toList(),
@@ -214,7 +383,7 @@ fun BrowserView(state: AppState) {
             )
             Spacer(Modifier.weight(1f))
             Text(
-                text = "${results.size} cards",
+                text = "${results.size} cards · ↑↓ navigate · Enter open · Esc clear",
                 color = surfaceColors().textMuted,
                 fontSize = DsType.Caption
             )
@@ -395,7 +564,25 @@ fun BrowserView(state: AppState) {
                     DsEmptyState(
                         title = "No cards match",
                         message = "Try a broader search or clear the filters.",
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
+                        action = {
+                            val filtersActive = state.browserQuery.isNotBlank() ||
+                                activePreset != null || activeTag != null || activeFlag != null || activeStateFilter != null
+                            if (filtersActive) {
+                                DsButton(
+                                    text = "Clear search & filters",
+                                    kind = DsButtonKind.Secondary,
+                                    compact = true,
+                                    onClick = {
+                                        state.browserQuery = ""
+                                        activePreset = null
+                                        activeTag = null
+                                        activeFlag = null
+                                        activeStateFilter = null
+                                    }
+                                )
+                            }
+                        }
                     )
                 }
                 state.browserViewMode == BrowserViewMode.Details && state.browserShowPreview -> {
@@ -404,7 +591,16 @@ fun BrowserView(state: AppState) {
                         initialFraction = 0.58f,
                         modifier = Modifier.fillMaxSize(),
                         first = {
-                            BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
+                            BrowserList(
+                                state = state,
+                                cards = results,
+                                selectionMode = selectionMode,
+                                focusedCardId = focusedIndex.takeIf { it in results.indices }?.let { results[it].id },
+                                onSelect = openCard,
+                                onRequestAddTag = { tagDialogCard = it },
+                                onRequestAddFlag = { flagDialogCard = it },
+                                onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) }
+                            )
                         },
                         second = {
                             CardDetailPanel(state, state.selectedCard, onRequestAddTag = { tagDialogCard = it })
@@ -413,9 +609,36 @@ fun BrowserView(state: AppState) {
                 }
                 else -> {
                     when (state.browserViewMode) {
-                        BrowserViewMode.Grid -> BrowserGrid(state, results, selectionMode, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
-                        BrowserViewMode.List -> BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
-                        BrowserViewMode.Details -> BrowserList(state, results, selectionMode, onSelect = { handleCardClick(state, it, selectionMode) }, onRequestAddTag = { tagDialogCard = it }, onRequestAddFlag = { flagDialogCard = it }, onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) })
+                        BrowserViewMode.Grid -> BrowserGrid(
+                            state = state,
+                            cards = results,
+                            selectionMode = selectionMode,
+                            focusedCardId = focusedIndex.takeIf { it in results.indices }?.let { results[it].id },
+                            onFocusCard = syncFocus,
+                            onRequestAddTag = { tagDialogCard = it },
+                            onRequestAddFlag = { flagDialogCard = it },
+                            onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) }
+                        )
+                        BrowserViewMode.List -> BrowserList(
+                            state = state,
+                            cards = results,
+                            selectionMode = selectionMode,
+                            focusedCardId = focusedIndex.takeIf { it in results.indices }?.let { results[it].id },
+                            onSelect = openCard,
+                            onRequestAddTag = { tagDialogCard = it },
+                            onRequestAddFlag = { flagDialogCard = it },
+                            onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) }
+                        )
+                        BrowserViewMode.Details -> BrowserList(
+                            state = state,
+                            cards = results,
+                            selectionMode = selectionMode,
+                            focusedCardId = focusedIndex.takeIf { it in results.indices }?.let { results[it].id },
+                            onSelect = openCard,
+                            onRequestAddTag = { tagDialogCard = it },
+                            onRequestAddFlag = { flagDialogCard = it },
+                            onRequestAddToDeck = { pendingAddToDeck = listOf(it.id) }
+                        )
                     }
                 }
             }
@@ -509,9 +732,16 @@ private fun BrowserGrid(
     selectionMode: Boolean,
     onRequestAddTag: (DesktopCard) -> Unit,
     onRequestAddFlag: (DesktopCard) -> Unit,
-    onRequestAddToDeck: (DesktopCard) -> Unit = {}
+    onRequestAddToDeck: (DesktopCard) -> Unit = {},
+    focusedCardId: String? = null,
+    onFocusCard: (DesktopCard) -> Unit = {}
 ) {
     val gridState = rememberLazyGridState()
+    // Keyboard focus scrolls the focused cell into view.
+    LaunchedEffect(focusedCardId) {
+        val index = cards.indexOfFirst { it.id == focusedCardId }
+        if (index >= 0) gridState.animateScrollToItem(index)
+    }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(190.dp),
         state = gridState,
@@ -521,9 +751,19 @@ private fun BrowserGrid(
         horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
         itemsIndexed(cards, key = { _, card -> card.id }) { _, card ->
-            BrowserCell(state, card, selectionMode, onRequestAddTag, onRequestAddFlag, onRequestAddToDeck) {
-                handleCardClick(state, card, selectionMode)
-            }
+            BrowserCell(
+                state = state,
+                card = card,
+                selectionMode = selectionMode,
+                focused = card.id == focusedCardId,
+                onRequestAddTag = onRequestAddTag,
+                onRequestAddFlag = onRequestAddFlag,
+                onRequestAddToDeck = onRequestAddToDeck,
+                onClick = {
+                    onFocusCard(card)
+                    handleCardClick(state, card, selectionMode)
+                }
+            )
         }
     }
 }
@@ -533,6 +773,7 @@ private fun BrowserCell(
     state: AppState,
     card: DesktopCard,
     selectionMode: Boolean,
+    focused: Boolean = false,
     onRequestAddTag: (DesktopCard) -> Unit,
     onRequestAddFlag: (DesktopCard) -> Unit,
     onRequestAddToDeck: (DesktopCard) -> Unit,
@@ -548,6 +789,7 @@ private fun BrowserCell(
             .fillMaxWidth()
             .clip(RoundedCornerShape(DsRadius.Lg))
             .background(if (selected) ac.primary.copy(alpha = 0.12f) else sc.surface)
+            .then(if (focused) Modifier.border(1.5.dp, ac.primary, RoundedCornerShape(DsRadius.Lg)) else Modifier)
     ) {
         DsContextMenuHost(enabled = true, menuItems = menuItems) {
             Column(
@@ -606,10 +848,18 @@ private fun BrowserList(
     onSelect: (DesktopCard) -> Unit,
     onRequestAddTag: (DesktopCard) -> Unit = {},
     onRequestAddFlag: (DesktopCard) -> Unit = {},
-    onRequestAddToDeck: (DesktopCard) -> Unit = {}
+    onRequestAddToDeck: (DesktopCard) -> Unit = {},
+    focusedCardId: String? = null
 ) {
     val sc = surfaceColors()
+    val listState = rememberLazyListState()
+    // Keyboard focus scrolls the focused row into view.
+    LaunchedEffect(focusedCardId) {
+        val index = cards.indexOfFirst { it.id == focusedCardId }
+        if (index >= 0) listState.animateScrollToItem(index)
+    }
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(DsSpacing.Md)
     ) {
@@ -619,7 +869,7 @@ private fun BrowserList(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(DsRadius.Md))
-                        .background(if (card.id == state.selectedCard?.id || card.id in state.selectedCardIds) sc.surfaceInteractive else Color.Transparent)
+                        .background(if (card.id == state.selectedCard?.id || card.id in state.selectedCardIds || card.id == focusedCardId) sc.surfaceInteractive else Color.Transparent)
                         .hoverable(remember { MutableInteractionSource() })
                         .clickable { onSelect(card) }
                         .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
@@ -803,11 +1053,23 @@ fun CardDetailPanel(
         }
 
         Spacer(Modifier.height(DsSpacing.Sm))
-        DsButton(
-            text = "Review this card",
-            icon = Icons.Default.PlayArrow,
-            onClick = { state.startReview(query = "id:${card.id}") }
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+            DsButton(
+                text = "Review this card",
+                icon = Icons.Default.PlayArrow,
+                onClick = { state.startReview(query = "id:${card.id}") }
+            )
+            DsButton(
+                text = "Look up in dictionary",
+                icon = Icons.Default.MenuBook,
+                kind = DsButtonKind.Secondary,
+                enabled = card.character.isNotBlank(),
+                onClick = {
+                    state.dictionary.query = card.character
+                    state.currentView = WorkspaceView.Dictionary
+                }
+            )
+        }
     }
 }
 
@@ -1120,4 +1382,148 @@ private fun bulkDelete(state: AppState, ids: List<String>) {
     state.selectedCardIds.removeAll(ids.toSet())
     state.activityLog.record(ActivityCategory.Study, "Deleted ${ids.size} cards")
     state.toastHost.show("Deleted ${ids.size} cards", kind = ToastKind.Info)
+}
+
+// ============================================
+// SEARCH SUGGESTIONS
+// Live suggestions under the search field as the
+// user types: recent searches, tags, flag colors
+// and query operators. All in-memory and fast;
+// applying a suggestion is just setting the query.
+// ============================================
+
+private data class BrowseSuggestion(
+    val label: String,
+    val subtitle: String,
+    val query: String,
+    val kind: String // recent | tag | flag | operator
+)
+
+private fun buildBrowseSuggestions(state: AppState, raw: String): List<BrowseSuggestion> {
+    val q = raw.trim().lowercase()
+    val out = LinkedHashMap<String, BrowseSuggestion>()
+
+    fun matches(text: String) = q.isBlank() || text.lowercase().contains(q)
+    fun add(suggestion: BrowseSuggestion) {
+        if (out.size < 8) out.putIfAbsent(suggestion.query, suggestion)
+    }
+
+    // Recent searches (most recent first).
+    state.filterStore.recent.forEach { filter ->
+        if (matches(filter.name)) {
+            add(BrowseSuggestion(filter.name, "recent search", filter.query, "recent"))
+        }
+    }
+
+    // Saved filters (pinned / most-used first) — the same list Sync shows.
+    state.filterStore.all().forEach { filter ->
+        if (matches(filter.name) || matches(filter.query)) {
+            add(BrowseSuggestion("Saved: ${filter.name}", filter.query, filter.query, "saved"))
+        }
+    }
+
+    // Tags actually present in the card pool.
+    state.cards.flatMap { it.tags }.distinct().sorted().forEach { tag ->
+        if (matches(tag)) {
+            add(BrowseSuggestion("tag:$tag", "filter by tag", "tag:$tag", "tag"))
+        }
+    }
+
+    // Flag colors.
+    flagColors.keys.sorted().forEach { color ->
+        if (matches(color)) {
+            add(BrowseSuggestion("flag:$color", "filter by flag color", "flag:$color", "flag"))
+        }
+    }
+
+    // Query operators — only while the user is typing the operator itself
+    // (no colon yet), so they never fight with tag/flag value matches.
+    if (!q.contains(":")) {
+        val text = raw.trim()
+        listOf(
+            "meaning:" to "search the meaning text",
+            "on:" to "match an on-yomi reading",
+            "kun:" to "match a kun-yomi reading",
+            "tag:" to "filter by tag",
+            "flag:" to "filter by flag color",
+            "status:" to "filter by SRS state (new/learning/review/…)",
+            "interval:" to "filter by interval (e.g. interval:>=21)",
+            "id:" to "match a specific card id"
+        ).forEach { (op, description) ->
+            if (q.isBlank() || op.startsWith(q)) {
+                val query = if (text.isBlank()) op else "$text $op"
+                add(BrowseSuggestion(op, description, query, "operator"))
+            }
+        }
+    }
+
+    return out.values.toList()
+}
+
+@Composable
+private fun SuggestionDropdown(
+    suggestions: List<BrowseSuggestion>,
+    selectedIndex: Int,
+    onSelect: (BrowseSuggestion) -> Unit,
+    onHover: (Int) -> Unit
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+
+    Column(
+        modifier = Modifier
+            .width(380.dp)
+            .clip(RoundedCornerShape(DsRadius.Md))
+            .background(sc.surfaceElevated)
+            .border(1.dp, sc.border.copy(alpha = 0.6f), RoundedCornerShape(DsRadius.Md))
+            .padding(4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        suggestions.forEachIndexed { index, suggestion ->
+            val interaction = remember { MutableInteractionSource() }
+            val hovered by interaction.collectIsHoveredAsState()
+            val selected = index == selectedIndex
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(DsRadius.Sm))
+                    .background(if (selected) sc.surfaceInteractive else Color.Transparent)
+                    .hoverable(interaction)
+                    .clickable(interactionSource = interaction, indication = null) { onSelect(suggestion) }
+                    .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = when (suggestion.kind) {
+                        "recent" -> Icons.Default.History
+                        "saved" -> Icons.Default.Bookmarks
+                        "tag" -> Icons.Default.Label
+                        "flag" -> Icons.Default.Flag
+                        else -> Icons.Default.Search
+                    },
+                    contentDescription = null,
+                    tint = if (selected) ac.primary else sc.textMuted,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(DsSpacing.Sm))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = suggestion.label,
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = suggestion.subtitle,
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption,
+                        maxLines = 1
+                    )
+                }
+            }
+            LaunchedEffect(hovered) {
+                if (hovered) onHover(index)
+            }
+        }
+    }
 }

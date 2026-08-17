@@ -2,6 +2,7 @@ package ua.syt0r.kanji.core.statistics
 
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCard
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCardParams
 import ua.syt0r.kanji.core.srs.fsrs.FsrsCardStatus
@@ -10,6 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Unit tests for the pure statistics calculations. Every metric definition
@@ -179,7 +181,7 @@ class StatisticsCalculatorTest {
             monthReviews = month,
             yearReviews = year,
             totalReviews = 1000,
-            totalStudyTime = 3_600_000.millisecondsSafe(),
+            totalStudyTime = 3_600_000L.millisecondsSafe,
             streaks = 2 to 7,
             statusCounts = CardStatusCounts(total = 30),
             forecastNextDays = listOf(3, 1, 0),
@@ -408,11 +410,13 @@ class StatisticsCalculatorTest {
     @Test
     fun forecastBucketsDueCardsByDay() {
         val now = Instant.fromEpochMilliseconds(1_000_000)
+        // Instants cannot subtract date units (DAY is date-based); use Duration
+        // arithmetic: lastReview = now - N days, interval = 2 days.
         val cards = listOf(
-            (now.minus(1, kotlinx.datetime.DateTimeUnit.DAY) to 2.days), // due +1
-            (now.minus(2, kotlinx.datetime.DateTimeUnit.DAY) to 2.days), // due 0
+            (now - 1.days to 2.days), // due +1
+            (now - 2.days to 2.days), // due 0
             (null to 1.days), // never reviewed — skipped
-            (now.minus(10, kotlinx.datetime.DateTimeUnit.DAY) to 2.days) // due in the past — skipped
+            (now - 10.days to 2.days) // due in the past — skipped
         )
         val forecast = StatisticsCalculator.buildForecast(cards, days = 7, now = now)
         assertEquals(listOf(1, 1, 0, 0, 0, 0, 0), forecast)
@@ -442,5 +446,5 @@ class StatisticsCalculatorTest {
     }
 
     private val Long.millisecondsSafe: kotlin.time.Duration
-        get() = kotlin.time.Duration.Companion.milliseconds(this)
+        get() = this.milliseconds
 }

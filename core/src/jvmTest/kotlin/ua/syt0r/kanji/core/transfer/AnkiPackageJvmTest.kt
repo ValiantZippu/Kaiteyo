@@ -56,7 +56,7 @@ class AnkiPackageJvmTest {
         assertNotNull(byChar["水"])
         assertEquals("Water", byChar["水"]?.meaning)
         assertEquals("みず / スイ", byChar["水"]?.reading)
-        assertEquals(listOf("jlpt-n5", "weather"), byChar["水"]?.tagNames)
+        assertEquals(listOf("jlpt-n5", "weather"), byChar["水"]?.tagNames?.toList())
         assertEquals("jlpt-n4", byChar["猫"]?.tagNames?.getOrNull(1))
 
         // Scheduling state must survive the conversion.

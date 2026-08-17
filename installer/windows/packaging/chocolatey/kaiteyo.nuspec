@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chocolatey package — Kaiteyo
+  Status: defined in-repo; NOT yet pushed to the community repository
+          (see docs/distribution/windows-package-managers.md).
+  Version must match installer/common/version.json at publish time.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>kaiteyo</id>
+    <version>2.2.1</version>
+    <packageSourceUrl>https://github.com/ValiantZippu/Kaiteyo</packageSourceUrl>
+    <owners>syt0r</owners>
+    <title>Kaiteyo</title>
+    <authors>syt0r</authors>
+    <projectUrl>https://github.com/ValiantZippu/Kaiteyo</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/ValiantZippu/Kaiteyo/main/brand/icon.png</iconUrl>
+    <licenseUrl>https://www.gnu.org/licenses/gpl-3.0.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/ValiantZippu/Kaiteyo</projectSourceUrl>
+    <docsUrl>https://github.com/ValiantZippu/Kaiteyo/wiki</docsUrl>
+    <mailingListUrl>https://github.com/ValiantZippu/Kaiteyo/discussions</mailingListUrl>
+    <bugTrackerUrl>https://github.com/ValiantZippu/Kaiteyo/issues</bugTrackerUrl>
+    <tags>japanese kanji kana language-learning srs flashcards dictionary</tags>
+    <summary>Japanese language learning app — writing, flashcards, dictionary</summary>
+    <description>Kaiteyo (書いてよ) is a premium cross-platform Japanese language learning app. Learn kana and kanji with writing practice, review with FSRS spaced repetition, and look up words in a built-in dictionary. Offline-first and free.</description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

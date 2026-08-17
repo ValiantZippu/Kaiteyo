@@ -56,10 +56,8 @@ fun BackupManagerScreen(
     backups: List<BackupMetadata> = emptyList(),
     config: BackupConfig = BackupConfig(),
     onDismiss: () -> Unit,
-    onCreateBackup: (Boolean) -> Unit,
-    onRestoreBackup: (BackupMetadata) -> Unit,
+    onOpenBackup: () -> Unit,
     onDeleteBackup: (BackupMetadata) -> Unit,
-    onVerifyBackup: (BackupMetadata) -> Unit,
     onUpdateConfig: (BackupConfig) -> Unit
 ) {
     var selectedTab by remember { mutableStateOf("Backups") }
@@ -70,7 +68,9 @@ fun BackupManagerScreen(
                 title = { Text("Backup & Restore") },
                 navigationIcon = { IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Close") } },
                 actions = {
-                    IconButton(onClick = { onCreateBackup(false) }) { Icon(Icons.Default.Backup, "Backup Now") }
+                    // Create goes through the real backup flow (platform file
+                    // picker + BackupManager), never a metadata-only stub.
+                    IconButton(onClick = onOpenBackup) { Icon(Icons.Default.Backup, "Backup Now") }
                 }
             )
         }
@@ -89,12 +89,11 @@ fun BackupManagerScreen(
                 "Backups" -> BackupsList(
                     backups = backups,
                     config = config,
-                    onCreateBackup = { onCreateBackup(false) },
-                    onRestore = onRestoreBackup,
-                    onDelete = onDeleteBackup,
-                    onVerify = onVerifyBackup
+                    onCreateBackup = onOpenBackup,
+                    onRestore = onOpenBackup,
+                    onDelete = onDeleteBackup
                 )
-                "Restore" -> RestoreTab()
+                "Restore" -> RestoreTab(onRestore = onOpenBackup)
                 "Settings" -> BackupSettingsTab(config = config, onUpdateConfig = onUpdateConfig)
                 "Schedule" -> BackupScheduleTab(config = config, onUpdateConfig = onUpdateConfig)
             }
@@ -107,9 +106,8 @@ private fun BackupsList(
     backups: List<BackupMetadata>,
     config: BackupConfig,
     onCreateBackup: () -> Unit,
-    onRestore: (BackupMetadata) -> Unit,
-    onDelete: (BackupMetadata) -> Unit,
-    onVerify: (BackupMetadata) -> Unit
+    onRestore: () -> Unit,
+    onDelete: (BackupMetadata) -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
@@ -171,9 +169,8 @@ private fun BackupsList(
                 items(backups, key = { it.id }) { backup ->
                     BackupListItem(
                         backup = backup,
-                        onRestore = { onRestore(backup) },
-                        onDelete = { onDelete(backup) },
-                        onVerify = { onVerify(backup) }
+                        onRestore = onRestore,
+                        onDelete = { onDelete(backup) }
                     )
                 }
             }
@@ -185,8 +182,7 @@ private fun BackupsList(
 private fun BackupListItem(
     backup: BackupMetadata,
     onRestore: () -> Unit,
-    onDelete: () -> Unit,
-    onVerify: () -> Unit
+    onDelete: () -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
     var showMenu by remember { mutableStateOf(false) }
@@ -226,10 +222,10 @@ private fun BackupListItem(
                     Icon(Icons.Default.MoreVert, "Options", Modifier.size(18.dp))
                 }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(text = { Text("Restore") }, onClick = { showMenu = false; onRestore() },
+                    // Restore opens the real backup flow — the metadata row does
+                    // not hold the backup file itself, so the file must be picked.
+                    DropdownMenuItem(text = { Text("Restore…") }, onClick = { showMenu = false; onRestore() },
                         leadingIcon = { Icon(Icons.Default.Restore, null, Modifier.size(18.dp)) })
-                    DropdownMenuItem(text = { Text("Verify") }, onClick = { showMenu = false; onVerify() },
-                        leadingIcon = { Icon(Icons.Default.Verified, null, Modifier.size(18.dp)) })
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                         onClick = { showMenu = false; onDelete() },
@@ -241,43 +237,37 @@ private fun BackupListItem(
 }
 
 @Composable
-private fun RestoreTab() {
+private fun RestoreTab(onRestore: () -> Unit) {
     val surfaceColors = LocalSurfaceColors.current
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Restore from Backup", style = MaterialTheme.typography.titleSmall)
-        Text("Select a backup from the list to restore your data. Your current data will be backed up automatically before restoration.",
-            style = MaterialTheme.typography.bodySmall, color = surfaceColors.textMuted)
+        Text(
+            "Restoring replaces your current data with the contents of a backup file. Pick the .zip backup you created — Kaiteyo verifies the database version before restoring.",
+            style = MaterialTheme.typography.bodySmall, color = surfaceColors.textMuted
+        )
 
         HorizontalDivider()
 
-        Text("Restore Options", style = MaterialTheme.typography.titleSmall)
-        var restoreCards by remember { mutableStateOf(true) }
-        var restorePreferences by remember { mutableStateOf(true) }
-        var restoreHistory by remember { mutableStateOf(true) }
-        var restorePlugins by remember { mutableStateOf(false) }
-
-        listOf("Cards" to restoreCards, "Preferences" to restorePreferences,
-            "Study History" to restoreHistory, "Plugins" to restorePlugins).forEach { (label, value) ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = value, onCheckedChange = {
-                    when (label) {
-                        "Cards" -> restoreCards = it
-                        "Preferences" -> restorePreferences = it
-                        "Study History" -> restoreHistory = it
-                        "Plugins" -> restorePlugins = it
-                    }
-                })
-                Spacer(Modifier.width(4.dp))
-                Text(label, style = MaterialTheme.typography.bodyMedium)
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.RestorePage, null, Modifier.size(48.dp), tint = surfaceColors.textMuted.copy(alpha = 0.3f))
+                Spacer(Modifier.height(8.dp))
+                Text("Restore from a backup file", style = MaterialTheme.typography.bodyMedium, color = surfaceColors.textSecondary)
+                Text(
+                    "Opens the backup screen where you pick the file, review it and confirm.",
+                    style = MaterialTheme.typography.bodySmall, color = surfaceColors.textMuted
+                )
             }
         }
 
-        Spacer(Modifier.height(8.dp))
-        Button(onClick = { }, modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+        Button(
+            onClick = onRestore,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+        ) {
             Icon(Icons.Default.RestorePage, null)
             Spacer(Modifier.width(8.dp))
-            Text("Start Restore", fontWeight = FontWeight.SemiBold)
+            Text("Restore from backup file…", fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -287,8 +277,13 @@ private fun BackupSettingsTab(
     config: BackupConfig,
     onUpdateConfig: (BackupConfig) -> Unit
 ) {
+    val surfaceColors = LocalSurfaceColors.current
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Backup Settings", style = MaterialTheme.typography.titleSmall)
+        Text(
+            "Automatic backup scheduling is not active in this build — these preferences are stored for future use. Create backups manually from the Backup screen.",
+            style = MaterialTheme.typography.bodySmall, color = surfaceColors.textMuted
+        )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = config.automaticBackups, onCheckedChange = { onUpdateConfig(config.copy(automaticBackups = it)) })
@@ -338,6 +333,10 @@ private fun BackupScheduleTab(
         Text("Backup Schedule", style = MaterialTheme.typography.titleSmall)
         Text("Set how often automatic backups should be created.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "Automatic backups are not scheduled in this build — this setting is stored for when scheduling ships.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         Text("Interval: Every ${config.backupIntervalHours} hours", style = MaterialTheme.typography.bodyMedium)
         Slider(value = config.backupIntervalHours.toFloat(), onValueChange = { onUpdateConfig(config.copy(backupIntervalHours = it.toInt())) },

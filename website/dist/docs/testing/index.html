@@ -1,0 +1,2114 @@
+
+<!DOCTYPE html>
+<html lang="en" data-base-path="/Kaiteyo/">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Testing — Kaiteyo</title>
+  <meta name="description" content="Test strategy: where tests live, test levels, and coverage gaps." />
+  <meta name="generator" content="Kaiteyo website builder" />
+
+  
+  <meta name="keywords" content="kaiteyo, kanji, japanese, learning, spaced repetition, srs, flashcards, writing practice, kotlin, compose multiplatform, open source" />
+  
+
+  <link rel="canonical" href="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/testing/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Kaiteyo" />
+  <meta property="og:title" content="Testing — Kaiteyo" />
+  <meta property="og:description" content="Test strategy: where tests live, test levels, and coverage gaps." />
+  <meta property="og:url" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/testing/" />
+  <meta property="og:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  
+  <meta name="twitter:site" content="@KaiteyoApp" />
+  
+  <meta name="twitter:title" content="Testing — Kaiteyo" />
+  <meta name="twitter:description" content="Test strategy: where tests live, test levels, and coverage gaps." />
+  <meta name="twitter:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
+
+  <!-- Icons -->
+  <link rel="icon" href="/Kaiteyo/assets/images/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/Kaiteyo/assets/images/kaiteyo-mark.svg" />
+  <link rel="mask-icon" href="/Kaiteyo/assets/images/kaiteyo-mark.svg" color="#C2FC8B" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Kaiteyo (書いてよ)",
+    "alternateName": "書いてよ",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Windows, macOS, Linux, Android, iOS",
+    "description": "Kaiteyo is a premium, cross-platform Japanese language learning application. Study kanji and kana with spaced repetition, writing practice, and a built-in dictionary \u2014 offline-first, and free.",
+    "url": "https://valiantzippu.github.io/Kaiteyo",
+    "softwareVersion": "2.2.1",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css?v=1786940608" />
+
+  <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
+  <script>
+    (function () {
+      try {
+        var theme = JSON.parse(localStorage.getItem("kaiteyo:theme"));
+        var root = document.documentElement;
+        if (theme && theme.baseMode) {
+          root.dataset.baseMode = theme.baseMode;
+          root.dataset.accent = theme.accent || "signature";
+          root.dataset.glass = theme.glass ? "true" : "false";
+        } else {
+          root.dataset.baseMode =
+            window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "oled";
+          root.dataset.accent = "signature";
+        }
+        var nav = JSON.parse(localStorage.getItem("kaiteyo:nav"));
+        if (nav) {
+          root.dataset.navPosition = nav.mode === "floating" ? "floating" : (nav.position || "left");
+          root.dataset.navCollapsed = nav.collapsed ? "true" : "false";
+          root.dataset.navAutoHide = nav.autoHide ? "true" : "false";
+          if (nav.width && nav.width !== "default") {
+            var widths = { compact: 220, wide: 300 };
+            root.style.setProperty("--sidebar-width", widths[nav.width] + "px");
+          }
+          if (nav.floating) {
+            root.style.setProperty("--floating-x", nav.floating.x + "px");
+            root.style.setProperty("--floating-y", nav.floating.y + "px");
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+  
+</head>
+
+<body>
+  <a class="skip-link" href="#mainContent">Skip to content</a>
+
+  
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+  <defs>
+    <symbol id="icon-dashboard" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/>
+      <rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/>
+    </symbol>
+    <symbol id="icon-layers" viewBox="0 0 24 24">
+      <path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17 9 5 9-5"/>
+    </symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="3"/>
+      <circle cx="9" cy="10" r="2"/><path d="m4 18 6-6 4 4 3-3 3 3"/>
+    </symbol>
+    <symbol id="icon-palette" viewBox="0 0 24 24">
+      <path d="M12 3a9 9 0 0 0 0 18h1.5a1.5 1.5 0 0 0 0-3H12a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2h3a2 2 0 0 0 2-2v-1a5 5 0 0 0-5-5Z"/>
+      <circle cx="8" cy="9" r="1"/><circle cx="11" cy="6.5" r="1"/><circle cx="15" cy="7" r="1"/>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path d="M12 3v12"/><path d="m6 10 6 6 6-6"/><path d="M4 20h16"/>
+    </symbol>
+    <symbol id="icon-book" viewBox="0 0 24 24">
+      <path d="M12 6.5C10.5 4.8 8.3 4 5.5 4c-1 0-2 .2-2.5.5v14c.5-.3 1.5-.5 2.5-.5 2.8 0 5 .8 6.5 2.5 1.5-1.7 3.7-2.5 6.5-2.5 1 0 2 .2 2.5.5v-14C21 4.2 20 4 19 4c-2.8 0-5 .8-6.5 2.5Z"/>
+      <path d="M12 6.5V21"/>
+    </symbol>
+    <symbol id="icon-compass" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>
+    </symbol>
+    <symbol id="icon-help" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.6-2.5 2-2.5 3.8"/><circle cx="12" cy="16.5" r="0.5" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-keyboard" viewBox="0 0 24 24">
+      <rect x="2" y="6" width="20" height="13" rx="2"/>
+      <path d="M6 9.5h.01M10 9.5h.01M14 9.5h.01M18 9.5h.01M7 13h10M6 16h.01M10 16h.01M14 16h.01"/>
+    </symbol>
+    <symbol id="icon-milestone" viewBox="0 0 24 24">
+      <path d="M5 3v18"/><path d="M5 4h11l2.5 3.5L16 11H5"/>
+    </symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24">
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v4l3 2"/>
+    </symbol>
+    <symbol id="icon-contribute" viewBox="0 0 24 24">
+      <path d="M12 20.5S4 15.5 4 9.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8 2.8c0 5.7-8 10.7-8 10.7Z"/>
+    </symbol>
+    <symbol id="icon-puzzle" viewBox="0 0 24 24">
+      <path d="M9 4h6v3h1a2 2 0 0 1 2 2v1h-3a1.5 1.5 0 0 0 0 3h3v1a2 2 0 0 1-2 2h-1v-3a1.5 1.5 0 0 0-3 0v3H9v-1a2 2 0 0 1-2-2v-1h3a1.5 1.5 0 0 0 0-3H7V9a2 2 0 0 1 2-2v-3Z"/>
+    </symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <circle cx="9" cy="8" r="3.5"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a4.5 4.5 0 0 1 4.5 4.5"/>
+    </symbol>
+    <symbol id="icon-scale" viewBox="0 0 24 24">
+      <path d="M12 4v16"/><path d="M8 4h8"/><path d="M4 8l-1 6a3 3 0 0 0 6 0L8 8"/><path d="M16 8l-1 6a3 3 0 0 0 6 0l-1-6"/><path d="M3 20h18"/>
+    </symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"/>
+    </symbol>
+    <symbol id="icon-tag" viewBox="0 0 24 24">
+      <path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="8" cy="8" r="1.5"/>
+    </symbol>
+    <symbol id="icon-chat" viewBox="0 0 24 24">
+      <path d="M21 12a8 8 0 0 1-8 8H4l2.5-3A8 8 0 1 1 21 12Z"/>
+    </symbol>
+    <symbol id="icon-github" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.58 9.58 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7"/><path d="m20 20-4.5-4.5"/>
+    </symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6 6 18"/>
+    </symbol>
+    <symbol id="icon-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4.5"/>
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/>
+    </symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24">
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/>
+    </symbol>
+    <symbol id="icon-layout" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <path d="M9 3v18M3 12h6"/>
+    </symbol>
+    <symbol id="icon-grip" viewBox="0 0 24 24">
+      <circle cx="9" cy="6" r="1.3" fill="currentColor" stroke="none"/>
+      <circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/>
+      <circle cx="9" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+      <circle cx="15" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+      <circle cx="9" cy="18" r="1.3" fill="currentColor" stroke="none"/>
+      <circle cx="15" cy="18" r="1.3" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24">
+      <rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m4 12.5 5 5L20 6.5"/>
+    </symbol>
+    <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+      <path d="M4 12h16"/><path d="m14 6 6 6-6 6"/>
+    </symbol>
+    <symbol id="icon-arrow-left" viewBox="0 0 24 24">
+      <path d="M20 12H4"/><path d="m10 6-6 6 6 6"/>
+    </symbol>
+    <symbol id="icon-arrow-up" viewBox="0 0 24 24">
+      <path d="M12 20V4"/><path d="m6 10 6-6 6 6"/>
+    </symbol>
+    <symbol id="icon-arrow-down" viewBox="0 0 24 24">
+      <path d="M12 4v16"/><path d="m6 14 6 6 6-6"/>
+    </symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+      <path d="m6 9 6 6 6-6"/>
+    </symbol>
+    <symbol id="icon-chevron-right" viewBox="0 0 24 24">
+      <path d="m9 6 6 6-6 6"/>
+    </symbol>
+    <symbol id="icon-external" viewBox="0 0 24 24">
+      <path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>
+    </symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24">
+      <path d="M4 7h16M4 12h16M4 17h16"/>
+    </symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.3l-5.9 3.2 1.2-6.5L2.5 9.4l6.6-.9 2.9-6Z"/>
+    </symbol>
+    <symbol id="icon-terminal" viewBox="0 0 24 24">
+      <rect x="2.5" y="4.5" width="19" height="15" rx="2"/>
+      <path d="m7 9 3 3-3 3"/><path d="M12.5 15H17"/>
+    </symbol>
+    <symbol id="icon-file" viewBox="0 0 24 24">
+      <path d="M6 2.5h8L20 8.5v13H6v-19Z"/><path d="M14 2.5v6h6"/>
+    </symbol>
+    <symbol id="icon-sparkles" viewBox="0 0 24 24">
+      <path d="M12 4 13.8 9 19 10.8 13.8 12.6 12 17.8 10.2 12.6 5 10.8 10.2 9 12 4Z"/>
+      <path d="M19 3.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8ZM5 15l.6 1.4L7 17l-1.4.6L5 19l-.6-1.4L3 17l1.4-.6L5 15Z"/>
+    </symbol>
+    <symbol id="icon-flag" viewBox="0 0 24 24">
+      <path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/>
+    </symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24">
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24">
+      <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17l-1 4Z"/>
+    </symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M8 5.5v13l11-6.5L8 5.5Z"/>
+    </symbol>
+    <symbol id="icon-zap" viewBox="0 0 24 24">
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
+    </symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
+    </symbol>
+    <symbol id="icon-windows" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M3 5.5 10.5 4.3v7.3H3V5.5Zm8.5-.8L21 3.2v8.4h-9.5V4.7ZM3 13.4h7.5v7.3L3 19.5v-6.1Zm9.5 0H21v8.4l-9.5-1.3v-7.1Z"/>
+    </symbol>
+    <symbol id="icon-apple" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M16.7 12.8c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.9-.8-1.5 0-2.9.9-3.6 2.2-1.6 2.7-.4 6.7 1.1 8.9.7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7c1.2 0 2-1.1 2.7-2.2.9-1.2 1.2-2.4 1.2-2.5-.1 0-2.4-.9-2.5-3.6ZM14.2 6c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 0 1.9-.5 2.5-1.3Z"/>
+    </symbol>
+    <symbol id="icon-android" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M7.5 10.5h9v6.5a1.5 1.5 0 0 1-1.5 1.5H16v2a1 1 0 0 1-2 0v-2h-4v2a1 1 0 0 1-2 0v-2h-1a1.5 1.5 0 0 1-1.5-1.5v-6.5Zm2.5-4.5 1-1.5M14 6l1-1.5M7 5a9 9 0 0 1 10 0M8 8.5h8l-1 2H9l-1-2Z"/>
+    </symbol>
+    <symbol id="icon-linux" viewBox="0 0 24 24">
+      <path fill="currentColor" stroke="none" d="M12 3c1.5 0 2.4 1.2 2.3 2.6l-.3 2.2 2.3-1c1.5-.6 3 0 3 1.6 0 .7-.4 1.2-1 1.6l-.9.6.9.6c.6.4 1 1 1 1.7 0 1.6-1.5 2.2-3 1.6l-2.3-1 .3 2.2c.1 1.4-.8 2.6-2.3 2.6s-2.4-1.2-2.3-2.6l.3-2.2-2.3 1c-1.5.6-3 0-3-1.6 0-.7.4-1.2 1-1.6l.9-.6-.9-.6c-.6-.4-1-1-1-1.7 0-1.6 1.5-2.2 3-1.6l2.3 1-.3-2.2C9.6 4.2 10.5 3 12 3Z"/>
+    </symbol>
+    <symbol id="icon-mobile" viewBox="0 0 24 24">
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/>
+      <path d="M11 5h2M10.5 18.5h3"/>
+    </symbol>
+    <symbol id="icon-monitor" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="13" rx="2"/>
+      <path d="M9 21h6M12 17v4"/>
+    </symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="10" rx="2"/>
+      <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+    </symbol>
+    <symbol id="icon-heart" viewBox="0 0 24 24">
+      <path d="M12 20.5S4 15.5 4 9.8A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8 2.8c0 5.7-8 10.7-8 10.7Z"/>
+    </symbol>
+    <symbol id="icon-folder" viewBox="0 0 24 24">
+      <path d="M3 6a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"/>
+    </symbol>
+    <symbol id="icon-rss" viewBox="0 0 24 24">
+      <path d="M4 4a16 16 0 0 1 16 16"/><path d="M4 11a9 9 0 0 1 9 9"/><circle cx="5.5" cy="18.5" r="1.3" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="icon-bolt" viewBox="0 0 24 24">
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
+    </symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>
+    </symbol>
+    <symbol id="icon-pen" viewBox="0 0 24 24">
+      <path d="m4 20 1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1Z"/><path d="m14 6.5 3 3"/>
+    </symbol>
+    <symbol id="icon-flip" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="8" rx="2"/><rect x="6" y="16" width="12" height="4" rx="1.5"/>
+      <path d="M6.5 3v2M17.5 3v2"/>
+    </symbol>
+    <symbol id="icon-review" viewBox="0 0 24 24">
+      <path d="M12 3v18"/><path d="m6 7 6 6 6-6"/><path d="M4 21h16"/>
+    </symbol>
+    <symbol id="icon-dark-mode" viewBox="0 0 24 24">
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/>
+    </symbol>
+    <symbol id="icon-offline" viewBox="0 0 24 24">
+      <path d="M12 3a8.5 8.5 0 0 1 8.5 8.5c0 1.6-.4 3-1.2 4.3M3.7 15.5A8.4 8.4 0 0 1 3.5 11.5"/>
+      <path d="M7 21h10"/><path d="M12 13v5"/><path d="M4 4l16 16"/>
+    </symbol>
+    <symbol id="icon-sync" viewBox="0 0 24 24">
+      <path d="M4 10a8 8 0 0 1 14.5-2.5"/><path d="M20 6v4h-4"/>
+      <path d="M20 14a8 8 0 0 1-14.5 2.5"/><path d="M4 18v-4h4"/>
+    </symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5.1 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1c.6.5 1.3.9 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/>
+    </symbol>
+    <symbol id="icon-font" viewBox="0 0 24 24">
+      <path d="M5 6h14"/><path d="M12 6v13"/><path d="M9 19h6"/>
+    </symbol>
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M3 12h18M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9Z"/>
+    </symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24">
+      <path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5"/><path d="M13 16V7"/><path d="M18 16v-3"/>
+    </symbol>
+    <symbol id="icon-api" viewBox="0 0 24 24">
+      <path d="M7 8 3 12l4 4M17 8l4 4-4 4M14 4l-4 16"/>
+    </symbol>
+  </defs>
+</svg>
+
+  <div class="app-window">
+    
+<nav class="nav-panel" id="navPanel" aria-label="Site navigation">
+  <div class="drag-handle" data-tooltip="Drag to move" aria-hidden="true"></div>
+  <div class="nav-inner">
+    <a class="nav-brand" href="/Kaiteyo/">
+      <img class="nav-logo" src="/Kaiteyo/assets/images/kaiteyo-mark.svg" alt="Kaiteyo logo" width="36" height="36" />
+      <span class="nav-brand-text">
+        <span class="nav-brand-name">KAITEYO</span>
+        <span class="nav-brand-tagline"><span class="lang-ja">書いてよ</span> — Write. Practice. Master.</span>
+      </span>
+    </a>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-groups">
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Learn</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/download/"
+               data-badge="v2.2.1">
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
+              <span class="nav-label">Download</span>
+              <span class="badge badge-muted nav-badge">v2.2.1</span>
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/product/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Product</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/learn/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-book"/></svg>
+              <span class="nav-label">Learn</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/features/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Features</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/screenshots/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-image"/></svg>
+              <span class="nav-label">Screenshots</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/theme-gallery/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-palette"/></svg>
+              <span class="nav-label">Theme Gallery</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Explore</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/docs/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-file"/></svg>
+              <span class="nav-label">Documentation</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/wiki/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Wiki</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/guides/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Guides</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/faq/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-help"/></svg>
+              <span class="nav-label">Q&amp;A</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/shortcuts/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-keyboard"/></svg>
+              <span class="nav-label">Keyboard Shortcuts</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Product Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/changelog/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Changelog</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Command Center</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Project Status</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/kanban/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Kanban</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/whiteboard/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Whiteboard</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/suggestions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Suggestions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/decisions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">Architecture Decisions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/activity/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Activity</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/contributing/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+              <span class="nav-label">Contributing</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Community</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/integrations/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sync"/></svg>
+              <span class="nav-label">Integrations</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/install/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-monitor"/></svg>
+              <span class="nav-label">Install</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/about/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-users"/></svg>
+              <span class="nav-label">About</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/community/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Community</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/data/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+              <span class="nav-label">Data &amp; Attribution</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/plugins/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-puzzle"/></svg>
+              <span class="nav-label">Plugins</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/credits/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-heart"/></svg>
+              <span class="nav-label">Credits</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/license/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">License</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/privacy/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-lock"/></svg>
+              <span class="nav-label">Privacy Policy</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/security/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-shield"/></svg>
+              <span class="nav-label">Security</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-footer">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
+        <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+        <span class="nav-cta-label">Download Kaiteyo</span>
+      </a>
+      <div class="flex gap-2 items-center">
+        <button class="btn-icon" type="button" data-nav-collapse-toggle
+                data-tooltip="Toggle collapsed" aria-label="Toggle navigation collapsed state">
+          <svg class="icon" aria-hidden="true"><use href="#icon-layout"/></svg>
+        </button>
+        <button class="btn-icon" type="button" data-open-theme
+                data-tooltip="Theme" aria-label="Open theme settings">
+          <svg class="icon" aria-hidden="true"><use href="#icon-palette"/></svg>
+        </button>
+        <button class="btn-icon" type="button" data-open-nav-settings
+                data-tooltip="Navigation" aria-label="Open navigation settings">
+          <svg class="icon" aria-hidden="true"><use href="#icon-layout"/></svg>
+        </button>
+        <a class="btn-icon" href="https://github.com/ValiantZippu/Kaiteyo" data-tooltip="GitHub" aria-label="Kaiteyo on GitHub" target="_blank" rel="noopener">
+          <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+    <div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
+
+    <div class="content-panel">
+      
+<header class="topbar">
+  <button class="btn-icon topbar-menu" type="button" data-nav-open aria-label="Open navigation">
+    <svg class="icon" aria-hidden="true"><use href="#icon-menu"/></svg>
+  </button>
+  <div class="topbar-title">
+    <h1>Testing</h1>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" type="button" data-open-search aria-label="Open search">
+      <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+      Search
+      <kbd>Ctrl K</kbd>
+    </button>
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download
+    </a>
+    <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
+      <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
+    </button>
+    <button class="btn-icon" type="button" data-open-nav-settings data-tooltip="Navigation settings" aria-label="Open navigation settings">
+      <svg class="icon" aria-hidden="true"><use href="#icon-layout"/></svg>
+    </button>
+    <a class="btn-icon" href="https://github.com/ValiantZippu/Kaiteyo" data-tooltip="GitHub" aria-label="Kaiteyo on GitHub" target="_blank" rel="noopener">
+      <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+    </a>
+  </div>
+</header>
+
+      <main class="content-main is-fullwidth" id="mainContent" tabindex="-1">
+        
+<div class="docs-layout">
+  <aside class="docs-sidebar" aria-label="Documentation sections">
+    <div class="docs-sidebar-title">Documentation</div>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">2</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/start-here/readme/">Kaiteyo (書いてよ) — Documentation</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/start-here/project_vision/">Kaiteyo (書いてよ) — Project Vision</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">8</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/brand_guidelines/">Kaiteyo (書いてよ) — Brand Guidelines</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/design_language/">Kaiteyo (書いてよ) — Design Language</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/branding/">Kaiteyo (書いてよ) — Branding</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/ui_system/">Kaiteyo (書いてよ) — UI System</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/theme_system/">Kaiteyo (書いてよ) — Theme System</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/animation_system/">Kaiteyo (書いてよ) — Animation System</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/readme/">🎯 branding — Kaiteyo Brand Assets</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/design/readme/">🎨 design — Kaiteyo Design System</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">7</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/features/">Kaiteyo (書いてよ) — Feature Status</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/desktop/">Kaiteyo — Desktop Experience Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/library/">📚 Library — Unified Content Hub</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/media/">Media — Immersion Workspace</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/statistics/">Statistics &amp; Examination System</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System &amp; Theme Studio</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/features/readme/">⚡ features — Kaiteyo Feature Specifications</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">28</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/overview/">Kaiteyo (書いてよ) — Architecture Overview</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/data_platform/">Japanese Language Data Platform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/node_architecture/">Kaiteyo Node Architecture — Master Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/database/">Kaiteyo Architecture — Database Specification &amp; Migration Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/dictionary/">Kaiteyo Architecture — Dictionary Engine Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/language-model/">Kaiteyo Architecture — Language Data Model &amp; Knowledge Graph</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/study-engine/">Kaiteyo Architecture — Study Engine &amp; Card Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/statistics/">Kaiteyo Architecture — Statistics &amp; Event Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/exams/">Kaiteyo Architecture — Exam System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/media/">Kaiteyo Architecture — Media, Playback &amp; Subtitle Engine</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/mining/">Kaiteyo Architecture — Mining Workflow Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/localization/">Kaiteyo Architecture — Localization Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/browser/">Kaiteyo Architecture — Embedded Browser (Planned)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/sync/">Kaiteyo Synchronization Architecture v1.2</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/account/">Kaiteyo Account &amp; Synchronization Structure v1.2</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/navigation/">Kaiteyo (書いてよ) — Navigation System</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/file_structure/">Repository File Structure Reference</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/performance/">Kaiteyo Architecture — Performance Strategy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/toolchain/">Kaiteyo Architecture — Toolchain &amp; Development Environment</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/content/">Kaiteyo Architecture — Content System &amp; Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/backup/">Kaiteyo Architecture — Backup, Import &amp; Export</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/accessibility/">Kaiteyo Architecture — Accessibility Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/ci-cd/">Kaiteyo Architecture — CI/CD &amp; Release Pipeline</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/assets/">Kaiteyo Architecture — Asset System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/integrations/">Kaiteyo Architecture — Integrations Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/journey/">Kaiteyo Architecture — Journey, World &amp; Game Runtime Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/pitch-frequency/">Pitch Accent &amp; Frequency Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/readme/">🔌 api — Kaiteyo API Documentation</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">19</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0001-brand/">ADR-0001: Kaiteyo Brand Identity</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0002-theme/">ADR-0002: Theme System Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0003-kotlin-multiplatform/">ADR-0003: Kotlin Multiplatform + Compose Multiplatform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0004-shared-ui-and-screen-pattern/">ADR-0004: Shared UI with the 4-File Screen Pattern + Koin DI</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0005-sqldelight-two-databases/">ADR-0005: Two SQLDelight Databases (immutable app data / mutable user data)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0006-fsrs-srs/">ADR-0006: FSRS-5 for Spaced Repetition</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0007-kjd-data-platform/">ADR-0007: KJD — Standalone Data Platform for the Bundled Language Database</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0008-desktop-suite/">ADR-0008: Desktop Immersion Suite as a Self-Contained Module</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0009-github-sync-and-account/">ADR-0009: GitHub Device-Flow OAuth + Private-Gist Sync (No Central Service)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0010-installer-decoupling/">ADR-0010: Installer Subsystem Decoupled from the Gradle Build</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0011-plugin-security-first/">ADR-0011: Plugin Runtime Loading Deferred (Security First)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0012-engineering-standards/">ADR-0012: Professional Engineering Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0013-node-architecture/">ADR-0013: Node-Based Architecture (Target)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0014-journey-target-architecture/">ADR-0014: Journey as Target Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0015-content-authoring/">ADR-0015: Data-Driven Content Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/">ADR-0016: Event-Driven User Knowledge (Dimensioned, FSRS-Owned Scheduling)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0017-one-product-architecture/">ADR-0017: One Product — Resolve the Two Parallel Applications</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0018-game-engine-evaluation/">ADR-0018: Game Engine Evaluation (Decision Pending)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0019-website-command-center/">ADR-0019: Website as Project Command Center</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">3</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/data/architecture/">Data Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/data/sources/">Open-Source Data Sources &amp; Attribution</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/data/readme/">Data &amp; Attribution</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">6</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/integrations/anki/">Anki Integration</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/integrations/yomitan_dictionaries/">Yomitan-Style Dictionaries &amp; Popup Lookup</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/integrations/media_backends/">Media Playback Backends</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/integrations/local_api/">Local HTTP API (desktop)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/integrations/plugins/">Plugin Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/integrations/readme/">Integrations</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">5</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/user-guide/getting_started/">Getting Started</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/user-guide/studying/">Studying with Kaiteyo</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/user-guide/desktop_suite/">The Desktop Suite (Windows / macOS / Linux)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/user-guide/customization/">Customization</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/user-guide/readme/">User Guide</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">3</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/guides/beginner_guide/">Kaiteyo — Beginner&#39;s Guide</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/guides/git_guide/">Kaiteyo — Git Guide</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/guides/setup_guide/">Kaiteyo — Setup Guide</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">12</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/developer_guide/">Kaiteyo (書いてよ) — Development Guide</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/coding_standards/">Kaiteyo (書いてよ) — Coding Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/assets/">Kaiteyo (書いてよ) — Assets</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/release_process/">Kaiteyo (書いてよ) — Release Process</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/release_checklist/">Release Checklist</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/firstbuild/">First Build</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/freshsetup/">Fresh Setup</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/requiredsoftware/">Required Software</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/updatingdependencies/">Updating Dependencies</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/dependencyupdates/">Dependency Updates</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/versionhistory/">Version History and Build History</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/development/knownlimitations/">Known Limitations</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">6</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/platform/windows/">Windows</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/platform/linux/">Linux</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/platform/macos/">macOS</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/platform/android/">Android</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/platform/ios/">iOS</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/platform/readme/">Platform Documentation</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">2</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/security/privacy/">Privacy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/security/readme/">Security</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">2</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/legal/third_party_notices/">Third-Party Notices</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/legal/readme/">Legal &amp; Licensing</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/testing/readme/">Testing Strategy</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">12</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/android/">Android</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/builderrors/">Build Errors</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/commonproblems/">Common Problems</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/desktop/">Desktop</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/git/">Git</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/gradle/">Gradle</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/ios/">iOS</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/java/">Java</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/linux/">Linux</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/macos/">macOS</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/vscode/">VS Code</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/troubleshooting/windows/">Windows</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/readme/">Kaiteyo Website</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/architecture/">Website Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/data_model/">Website — Unified Project Data Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/api/">Website — API Contracts (interactive layer)</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">2</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/contributing/contributing/">Contributing to Kaiteyo</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/contributing/development_setup/">Kaiteyo — Development Setup</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/ai/ai_agent_guide/">AI Agent Guide</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/planning/roadmap/">Kaiteyo (書いてよ) — Roadmap</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/planning/completed/">Kaiteyo — Completed Features</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/planning/future_ideas/">Kaiteyo — Future Ideas</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/planning/current_issues/">Kaiteyo — Current Issues</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+
+    <div class="docs-sidebar-footer">
+      <a class="btn btn-ghost btn-sm" href="https://github.com/ValiantZippu/Kaiteyo/tree/develop/docs" target="_blank" rel="noopener">
+        <svg class="icon" aria-hidden="true"><use href="#icon-github"/></svg>
+        Source in the repository
+      </a>
+    </div>
+  </aside>
+
+  <article class="docs-article prose">
+    
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumbs">
+        
+        <li>
+          
+          <a href="/Kaiteyo/docs/">Documentation</a>
+          <span class="breadcrumb-sep" aria-hidden="true">/</span>
+          
+        </li>
+        
+        <li>
+          
+          <span class="current">Testing</span>
+          
+        </li>
+        
+      </ol>
+    </nav>
+    <div style="height: var(--space-5)"></div>
+    
+
+    <header style="margin-bottom: var(--space-8)">
+      <h1>Testing</h1>
+      <p style="font-size: var(--text-lg); color: var(--text-secondary)">Test strategy: where tests live, test levels, and coverage gaps.</p>
+      
+    </header>
+
+    <a class='card card-hover link-card' href='/Kaiteyo/docs/testing/readme/' style='display:block; padding: var(--space-5); margin-bottom: var(--space-4); text-decoration:none'><div class='card-title' style='margin-bottom: var(--space-2)'>Testing Strategy</div><p class='card-description'>Tests use kotlin.test with JUnit Platform (useJUnitPlatform() in the module build</p></a>
+
+    
+  </article>
+</div>
+
+      </main>
+
+      
+<footer class="content-footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a class="nav-brand" href="/Kaiteyo/" style="padding: 0; margin-bottom: var(--space-4)">
+        <img class="nav-logo" src="/Kaiteyo/assets/images/kaiteyo-mark.svg" alt="Kaiteyo logo" width="32" height="32" />
+        <span class="nav-brand-text">
+          <span class="nav-brand-name">KAITEYO</span>
+          <span class="nav-brand-tagline"><span class="lang-ja">書いてよ</span> — Write. Practice. Master.</span>
+        </span>
+      </a>
+      <p>A premium, cross-platform Japanese language learning application.
+         Study kanji, kana, and vocabulary with spaced repetition and writing practice — offline-first and free.</p>
+      <p>
+        <span class="badge badge-accent">v2.2.1</span>
+        <span class="badge badge-muted">GPL-3.0</span>
+      </p>
+    </div>
+
+    
+    <div class="footer-column">
+      <h4>Learn</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/download/">Download</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/product/">Product</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/learn/">Learn</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/features/">Features</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/screenshots/">Screenshots</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/theme-gallery/">Theme Gallery</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Explore</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/docs/">Documentation</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/wiki/">Wiki</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/guides/">Guides</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/faq/">Q&amp;A</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/shortcuts/">Keyboard Shortcuts</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/roadmap/">Product Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/changelog/">Changelog</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Command Center</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/">Project Status</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/kanban/">Kanban</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/roadmap/">Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/whiteboard/">Whiteboard</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/suggestions/">Suggestions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/decisions/">Architecture Decisions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/activity/">Activity</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/contributing/">Contributing</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/integrations/">Integrations</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/install/">Install</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/about/">About</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/community/">Community</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/plugins/">Plugins</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/credits/">Credits</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/license/">License</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/privacy/">Privacy Policy</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/security/">Security</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="https://github.com/ValiantZippu/Kaiteyo" target="_blank" rel="noopener">GitHub</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="https://github.com/ValiantZippu/Kaiteyo/releases" target="_blank" rel="noopener">Releases</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="https://github.com/ValiantZippu/Kaiteyo/discussions" target="_blank" rel="noopener">Discussions</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+  </div>
+
+  <div class="footer-bottom">
+    <span>&copy; <span data-year>2026</span> Kaiteyo contributors</span>
+    <span class="lang-ja">書いてよ</span>
+    <span>Built with Kotlin Multiplatform &amp; Compose</span>
+    <a href="/Kaiteyo/changelog/">Changelog</a>
+    <a href="/Kaiteyo/rss.xml" target="_blank" rel="noopener">
+      <svg class="icon" style="width: 14px; height: 14px" aria-hidden="true"><use href="#icon-rss"/></svg>
+      RSS
+    </a>
+    <span style="margin-left: auto">The website is an extension of the application.</span>
+  </div>
+</footer>
+    </div>
+  </div>
+
+  
+
+<dialog id="themeDialog" data-dialog aria-labelledby="themeDialogTitle">
+  <div class="dialog-header">
+    <div>
+      <h2 id="themeDialogTitle">Theme</h2>
+      <p>Base mode, accent, and display preferences. Saved on this device.</p>
+    </div>
+    <button class="btn-icon dialog-close" type="button" data-close-dialog aria-label="Close">
+      <svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg>
+    </button>
+  </div>
+
+  <div class="dialog-section-title">Base Mode</div>
+  <div class="grid-2">
+    
+    <button class="theme-swatch" type="button" data-theme-base="oled"
+            style="--preview-bg: #050505; --preview-surface: #0D0D0D; --preview-border: #2A2A2A; --preview-accent: #C2FC8B">
+      <span class="theme-swatch-preview" aria-hidden="true">
+        <span class="theme-swatch-bar"></span>
+        <span class="theme-swatch-accent"></span>
+        <span class="theme-swatch-bar" style="width: 80%"></span>
+      </span>
+      <span>
+        <span class="theme-swatch-name">OLED Black</span>
+        
+      </span>
+    </button>
+    
+    <button class="theme-swatch" type="button" data-theme-base="dark"
+            style="--preview-bg: #121212; --preview-surface: #1A1A1A; --preview-border: #2A2A2A; --preview-accent: #C2FC8B">
+      <span class="theme-swatch-preview" aria-hidden="true">
+        <span class="theme-swatch-bar"></span>
+        <span class="theme-swatch-accent"></span>
+        <span class="theme-swatch-bar" style="width: 80%"></span>
+      </span>
+      <span>
+        <span class="theme-swatch-name">Dark Gray</span>
+        
+      </span>
+    </button>
+    
+    <button class="theme-swatch" type="button" data-theme-base="light"
+            style="--preview-bg: #F5F5F5; --preview-surface: #EEEEEE; --preview-border: #D0D0D0; --preview-accent: #C2FC8B">
+      <span class="theme-swatch-preview" aria-hidden="true">
+        <span class="theme-swatch-bar"></span>
+        <span class="theme-swatch-accent"></span>
+        <span class="theme-swatch-bar" style="width: 80%"></span>
+      </span>
+      <span>
+        <span class="theme-swatch-name">Light</span>
+        
+      </span>
+    </button>
+    
+    <button class="theme-swatch" type="button" data-theme-base="sepia"
+            style="--preview-bg: #F5F0E8; --preview-surface: #EDE5D8; --preview-border: #D4C8B8; --preview-accent: #C2FC8B">
+      <span class="theme-swatch-preview" aria-hidden="true">
+        <span class="theme-swatch-bar"></span>
+        <span class="theme-swatch-accent"></span>
+        <span class="theme-swatch-bar" style="width: 80%"></span>
+      </span>
+      <span>
+        <span class="theme-swatch-name">Sepia</span>
+        
+        <span class="theme-swatch-sub">Reading mode</span>
+        
+      </span>
+    </button>
+    
+  </div>
+
+  <div class="dialog-section-title">Accent</div>
+  <div class="flex gap-3" style="flex-wrap: wrap">
+    
+    <button class="accent-swatch" type="button" data-theme-accent="signature"
+            data-tooltip="Signature Pineapple" aria-label="Accent: Signature Pineapple"
+            style="background: #C2FC8B"></button>
+    
+    <button class="accent-swatch" type="button" data-theme-accent="cotton-candy"
+            data-tooltip="Cotton Candy" aria-label="Accent: Cotton Candy"
+            style="background: #D4A5F0"></button>
+    
+    <button class="accent-swatch" type="button" data-theme-accent="ocean"
+            data-tooltip="Ocean" aria-label="Accent: Ocean"
+            style="background: #00D4AA"></button>
+    
+    <button class="accent-swatch" type="button" data-theme-accent="forest"
+            data-tooltip="Forest" aria-label="Accent: Forest"
+            style="background: #81C784"></button>
+    
+    <button class="accent-swatch" type="button" data-theme-accent="sunset"
+            data-tooltip="Sunset" aria-label="Accent: Sunset"
+            style="background: #FF6B6B"></button>
+    
+    <button class="accent-swatch" type="button" data-theme-accent="lavender"
+            data-tooltip="Lavender" aria-label="Accent: Lavender"
+            style="background: #B39DDB"></button>
+    
+    <button class="accent-swatch" type="button" data-theme-accent="monochrome"
+            data-tooltip="Monochrome" aria-label="Accent: Monochrome"
+            style="background: #E0E0E0"></button>
+    
+  </div>
+
+  <div class="dialog-section-title">Display</div>
+  <div class="flex-col gap-3">
+    <label class="switch">
+      <input type="checkbox" data-theme-glass />
+      <span class="switch-track" aria-hidden="true"></span>
+      Glass panels <small class="text-muted">(transparency + blur)</small>
+    </label>
+    <label class="switch">
+      <input type="checkbox" data-theme-motion />
+      <span class="switch-track" aria-hidden="true"></span>
+      Reduce motion
+    </label>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn btn-ghost" type="button" data-theme-reset>Reset to defaults</button>
+    <button class="btn btn-primary" type="button" data-close-dialog>Done</button>
+  </div>
+</dialog>
+
+<dialog id="navSettingsDialog" data-dialog aria-labelledby="navSettingsTitle">
+  <div class="dialog-header">
+    <div>
+      <h2 id="navSettingsTitle">Navigation</h2>
+      <p>Position and behavior. Like the application sidebar, your choices are remembered.</p>
+    </div>
+    <button class="btn-icon dialog-close" type="button" data-close-dialog aria-label="Close">
+      <svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg>
+    </button>
+  </div>
+
+  <div class="dialog-section-title">Position</div>
+  <div class="nav-pos-grid">
+    <button class="nav-pos-card" type="button" data-nav-pos="left" aria-label="Left">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="21" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="21" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Left</span>
+    </button>
+    <button class="nav-pos-card" type="button" data-nav-pos="right" aria-label="Right">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="45.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="2.5" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="2.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Right</span>
+    </button>
+    <button class="nav-pos-card" type="button" data-nav-pos="top" aria-label="Top">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="17" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="28" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Top</span>
+    </button>
+    <button class="nav-pos-card" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="30.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Bottom</span>
+    </button>
+    <button class="nav-pos-card" type="button" data-nav-pos="floating" aria-label="Floating">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+        <circle class="np-bubble" cx="50" cy="32" r="7"/>
+      </svg>
+      <span class="nav-pos-name">Floating</span>
+    </button>
+  </div>
+
+  <div class="dialog-section-title">Width</div>
+  <div class="segmented" role="group" aria-label="Navigation width">
+    <button class="segmented-btn" type="button" data-nav-width="compact">Compact</button>
+    <button class="segmented-btn" type="button" data-nav-width="default">Default</button>
+    <button class="segmented-btn" type="button" data-nav-width="wide">Wide</button>
+  </div>
+
+  <div class="dialog-section-title">Behavior</div>
+  <div class="flex-col gap-3">
+    <label class="switch">
+      <input type="checkbox" data-nav-collapse />
+      <span class="switch-track" aria-hidden="true"></span>
+      Collapsed (icons only)
+    </label>
+    <label class="switch">
+      <input type="checkbox" data-nav-autohide-toggle />
+      <span class="switch-track" aria-hidden="true"></span>
+      Auto-hide (reveal at the screen edge)
+    </label>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="btn btn-ghost" type="button" data-nav-reset>Reset</button>
+    <button class="btn btn-primary" type="button" data-close-dialog>Done</button>
+  </div>
+</dialog>
+
+<dialog id="commandPalette" class="palette" data-dialog aria-label="Search">
+  <div class="palette-input">
+    <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+    <input type="search" placeholder="Search pages, documentation, wiki, shortcuts…"
+           autocomplete="off" spellcheck="false" aria-label="Search the website" />
+    <kbd>Esc</kbd>
+  </div>
+  <div class="palette-results" role="listbox" aria-label="Search results"></div>
+  <div class="palette-empty" hidden>Type to search the site, documentation, wiki, and more.</div>
+  <div class="palette-footer">
+    <span class="flex gap-1 items-center"><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span>
+    <span class="flex gap-1 items-center"><kbd>Enter</kbd> open</span>
+    <span class="flex gap-1 items-center"><kbd>Esc</kbd> close</span>
+  </div>
+</dialog>
+
+  <script type="module" src="/Kaiteyo/assets/scripts/main.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/theme.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/components.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/search.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/utils.js?v=1786940608"></script>
+</body>
+</html>

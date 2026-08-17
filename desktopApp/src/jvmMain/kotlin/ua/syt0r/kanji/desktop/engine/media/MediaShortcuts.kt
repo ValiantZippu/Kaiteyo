@@ -47,6 +47,8 @@ object MediaActions {
         MediaAction("library", "Toggle library panel", KeyChord("m"), "Show or hide the media library"),
         MediaAction("replay", "Replay subtitle", KeyChord("r"), "Replay the current subtitle"),
         MediaAction("loop", "Loop subtitle", KeyChord("l"), "Loop the current subtitle"),
+        MediaAction("set-loop-a", "Set A–B loop point A", KeyChord("u"), "Mark the start of an A–B repeat range"),
+        MediaAction("set-loop-b", "Set A–B loop point B", KeyChord("p"), "Mark the end of an A–B repeat range"),
         MediaAction("screenshot", "Capture screenshot", KeyChord("s"), "Capture the current video frame"),
         MediaAction("condensed", "Toggle condensed playback", KeyChord("e"), "Skip unsubtitled sections"),
         MediaAction("capture-audio", "Capture audio clip", KeyChord("c"), "Extract the current subtitle's audio"),

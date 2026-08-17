@@ -5,7 +5,6 @@
       "id": "learn",
       "title": "Learn",
       "items": [
-        { "id": "try", "title": "Try Kaiteyo", "url": "/try/", "icon": "sparkles", "badge": "Web" },
         { "id": "download", "title": "Download", "url": "/download/", "icon": "download", "badge": "v2.2.1" },
         { "id": "product", "title": "Product", "url": "/product/", "icon": "layers" },
         { "id": "learn-hub", "title": "Learn", "url": "/learn/", "icon": "book" },

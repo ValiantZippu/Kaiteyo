@@ -43,14 +43,35 @@
     {
       "id": "architecture",
       "title": "Architecture",
-      "description": "How Kaiteyo is built: architecture, sync, accounts, navigation, data platform, API, and design decisions.",
+      "description": "How Kaiteyo is built: architecture, data platform, language model, study engine, media, mining, statistics, sync, accounts, navigation, and design decisions.",
       "files": [
         "architecture/OVERVIEW.md",
         "architecture/DATA_PLATFORM.md",
+        "architecture/NODE_ARCHITECTURE.md",
+        "architecture/database.md",
+        "architecture/dictionary.md",
+        "architecture/language-model.md",
+        "architecture/study-engine.md",
+        "architecture/statistics.md",
+        "architecture/exams.md",
+        "architecture/media.md",
+        "architecture/mining.md",
+        "architecture/localization.md",
+        "architecture/browser.md",
         "architecture/SYNC.md",
         "architecture/ACCOUNT.md",
         "architecture/NAVIGATION.md",
         "architecture/FILE_STRUCTURE.md",
+        "architecture/performance.md",
+        "architecture/toolchain.md",
+        "architecture/content.md",
+        "architecture/backup.md",
+        "architecture/accessibility.md",
+        "architecture/ci-cd.md",
+        "architecture/assets.md",
+        "architecture/integrations.md",
+        "architecture/journey.md",
+        "architecture/pitch-frequency.md",
         "api/README.md"
       ]
     },
@@ -183,6 +204,14 @@
       "files": [
         "contributing/CONTRIBUTING.md",
         "development/DEVELOPMENT_SETUP.md"
+      ]
+    },
+    {
+      "id": "ai",
+      "title": "AI Agents",
+      "description": "The contract for AI agents working on the Kaiteyo repository.",
+      "files": [
+        "ai/AI_AGENT_GUIDE.md"
       ]
     },
     {

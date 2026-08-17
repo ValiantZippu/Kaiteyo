@@ -263,6 +263,13 @@ class MediaEngine(private val state: AppState) {
     val scanner = MediaScanner(library)
     val backends = BackendManager()
 
+    /**
+     * Library-wide subtitle index: every subtitle file associated with any
+     * library item, so a Japanese word can be found across ALL media (not
+     * just the loaded episode) and opened at its timestamp.
+     */
+    val subtitleSearchIndex = SubtitleSearchIndex(library)
+
     // ---- Immersion analytics -------------------------------------------
     val statistics = MediaStatisticsStore()
 
@@ -860,6 +867,46 @@ class MediaEngine(private val state: AppState) {
     }
 
     // ------------------------------------------------------------
+    // Library-wide subtitle search
+    // ------------------------------------------------------------
+
+    /** Search every indexed subtitle track in the library for [query]. */
+    fun subtitleSearch(query: String, limit: Int = 500): List<SubtitleSearchHit> =
+        subtitleSearchIndex.search(query, limit)
+
+    /**
+     * Open the media a subtitle search hit belongs to, at the hit's
+     * timestamp, with the hit's track active and the transcript open so
+     * the matching line is visible and highlighted.
+     */
+    fun openSubtitleHit(hit: SubtitleSearchHit) {
+        val item = library.item(hit.mediaId) ?: library.itemByPath(hit.mediaPath)
+        if (item == null) {
+            state.toastHost.show("This media is no longer in the library", kind = ToastKind.Warning)
+            return
+        }
+        openItem(item, resume = false)
+        // Make sure the hit's track is the active one (openItem auto-attaches
+        // the item's stored track; a companion hit needs explicit loading).
+        if (subtitles.activeTrack?.path != hit.trackPath) {
+            val trackFile = File(hit.trackPath)
+            if (trackFile.exists()) openSubtitleFile(trackFile)
+        }
+        seekTo(hit.startMs + subtitles.globalOffsetMs)
+        play()
+        transcriptOpen = true
+        state.activityLog.record(
+            ActivityCategory.Study,
+            "Opened subtitle search hit",
+            details = "${item.name} @ ${formatTime(hit.startMs)} · ${hit.cueText.take(60)}"
+        )
+        state.toastHost.show(
+            "${item.name} · ${formatTime(hit.startMs)} · ${hit.cueText.take(40)}",
+            kind = ToastKind.Info
+        )
+    }
+
+    // ------------------------------------------------------------
     // Desktop notifications (tray balloons — opt-in via settings)
     // ------------------------------------------------------------
 
@@ -1126,6 +1173,10 @@ class MediaEngine(private val state: AppState) {
         activeBackend?.selectTrack(trackId)
     }
 
+    fun selectVideoTrack(trackId: String?) {
+        activeBackend?.selectTrack(trackId)
+    }
+
     fun setSubtitleDelay(delayMs: Long) {
         subtitleDelayMs = delayMs.coerceIn(-10000, 10000)
         activeBackend?.setSubtitleDelay(subtitleDelayMs)
@@ -1223,10 +1274,23 @@ class MediaEngine(private val state: AppState) {
         return lastScreenshotPath
     }
 
-    fun captureAudioClip(cue: SubtitleCue, paddingMs: Long = 200): String? {
+    /**
+     * Extract the cue's audio range, honoring the configurable padding
+     * (before/after) and an optional hard cap on clip length so a long
+     * subtitle never produces a massive file. Reads the settings when the
+     * defaults are used; explicit values (e.g. from the mining dialog)
+     * override the settings.
+     */
+    fun captureAudioClip(
+        cue: SubtitleCue,
+        paddingBeforeMs: Long = state.settings.getInt("media.audio-padding-before-ms", 200).toLong(),
+        paddingAfterMs: Long = state.settings.getInt("media.audio-padding-after-ms", 200).toLong(),
+        maxDurationMs: Long = state.settings.getInt("media.audio-max-duration-ms", 10000).toLong()
+    ): String? {
         val item = currentItem ?: return null
-        val start = (cue.startMs - paddingMs).coerceAtLeast(0)
-        val end = cue.endMs + paddingMs
+        val start = (cue.startMs - paddingBeforeMs).coerceAtLeast(0)
+        val rawEnd = cue.endMs + paddingAfterMs
+        val end = if (maxDurationMs > 0) minOf(rawEnd, start + maxDurationMs) else rawEnd
         val label = cue.text.take(24).replace(Regex("[^\\p{L}\\p{N}]"), "")
         val result = MediaCapture.extractAudioClip(item.path, start, end, label)
         result.onSuccess { file ->
@@ -1318,6 +1382,28 @@ class MediaEngine(private val state: AppState) {
         loopStartMs = startMs
         loopEndMs = endMs
         loopMode = if (endMs > startMs) LoopMode.Range else LoopMode.Off
+    }
+
+    /**
+     * Mark point A of an A–B repeat range at the current position. When a
+     * range is already active and the playhead has moved past A, the click
+     * completes the range by setting B instead (matches the on-screen chips).
+     */
+    fun setLoopPointA() {
+        if (loopMode == LoopMode.Range && loopStartMs > 0 && positionMs > loopStartMs) {
+            loopEndMs = positionMs
+        } else {
+            loopStartMs = positionMs
+            loopMode = LoopMode.Range
+        }
+        state.toastHost.show("A–B loop: ${formatTime(loopStartMs)} → ${formatTime(loopEndMs)}", kind = ToastKind.Info)
+    }
+
+    /** Mark point B of an A–B repeat range at the current position. */
+    fun setLoopPointB() {
+        loopEndMs = positionMs
+        loopMode = LoopMode.Range
+        state.toastHost.show("A–B loop: ${formatTime(loopStartMs)} → ${formatTime(loopEndMs)}", kind = ToastKind.Info)
     }
 
     fun toggleCondensed() {
@@ -1910,7 +1996,7 @@ class MediaEngine(private val state: AppState) {
             shot = captureScreenshot()
         }
         if (captureAudio && MediaCapture.ffmpegAvailable) {
-            audio = captureAudioClip(cue, state.settings.getInt("media.audio-padding-ms", 200).toLong())
+            audio = captureAudioClip(cue)
         }
         if (captureVideo && MediaCapture.ffmpegAvailable) {
             video = captureVideoClip(cue, state.settings.getInt("media.audio-padding-ms", 200).toLong())
@@ -2256,6 +2342,8 @@ class MediaEngine(private val state: AppState) {
             "library" -> libraryOpen = !libraryOpen
             "replay" -> replayCue()
             "loop" -> toggleLoopCue()
+            "set-loop-a" -> setLoopPointA()
+            "set-loop-b" -> setLoopPointB()
             "screenshot" -> captureScreenshot()
             "condensed" -> toggleCondensed()
             "capture-audio" -> if (activeCue != null) captureAudioClip(activeCue!!)

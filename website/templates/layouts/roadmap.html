@@ -18,7 +18,7 @@
     <p class="text-secondary">{{ phase.description }}</p>
   </header>
   <div class="roadmap-items">
-    {% for item in phase.items %}
+    {% for item in phase["items"] %}
     <article class="card roadmap-item" id="item-{{ item.id|lower }}">
       <div class="roadmap-item-head">
         <span class="roadmap-item-id">{{ item.id }}</span>

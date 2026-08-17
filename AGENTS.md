@@ -138,13 +138,15 @@ Never change schema without explicit request (see AI_CONTEXT "never change" list
 
 ### Desktop
 
-Two entry points in `desktopApp`:
+One entry point in `desktopApp`:
 - `desktopApp/Main.kt` `main()` — the real app: `startKoin` with `appModules + desktopAppModule`,
-  undecorated `Window` wrapped in `KaiteyoWindow`.
-- `desktopApp/SuiteMain.kt` `desktopSuiteMain()` — standalone desktop suite
-  (`ua.syt0r.kanji.desktop.ui.KaiteyoDesktopSuite`); **not** a `main()` (named main is owned by Main.kt).
+  undecorated `Window` wrapped in `KaiteyoWindow`. The standalone suite entry
+  (`desktopSuiteMain()` / `SuiteMain.kt`) was retired — there is exactly one shell.
 
-The suite lives in `ua.syt0r.kanji.desktop.*` with its own layered structure:
+The former suite now lives in `ua.syt0r.kanji.desktop.*` as a JVM-only feature library
+folded into shipped destinations via Koin hosts: `DesktopMediaCentreContent` (Media) and
+`DesktopGameCentreContent` (Kaiteyo World), each mounting its views with its own `AppState`.
+It has its own layered structure:
 `engine/` (dictionary, ocr, mining, media, review/srs, sync, search, transfer, theming, history),
 `ui/` (views per domain), `designsystem/` (reusable `Ds*` components), `appstate/`, `model/`.
 This code is **JVM-only** — it does not exist on Android/iOS.

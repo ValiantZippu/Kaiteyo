@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import ua.syt0r.kanji.desktop.appstate.AppState
@@ -63,6 +65,7 @@ fun TranscriptPanel(state: AppState, modifier: Modifier = Modifier) {
     val sc = surfaceColors()
     val cues = media.subtitles.sortedCues()
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(TranscriptFilter.All) }
     var focused by remember { mutableStateOf(false) }
@@ -70,10 +73,22 @@ fun TranscriptPanel(state: AppState, modifier: Modifier = Modifier) {
     val selection = remember { mutableStateListOf<String>() }
     var dictForm by remember { mutableStateOf(false) }
 
-    // Follow the active cue — keep it on screen while playing.
+    // Follow the active cue, but never fight the user: only scroll when the
+    // current line is out of view. If it is already visible (or the user
+    // scrolled somewhere else with the line still on screen), playback keeps
+    // going and the header offers a subtle "Jump to current" instead of
+    // yanking the list around.
     val activeIndex = media.activeCueIndex
-    LaunchedEffect(activeIndex) {
-        if (activeIndex >= 0) listState.animateScrollToItem(activeIndex.coerceAtMost(cues.lastIndex.coerceAtLeast(0)))
+    LaunchedEffect(activeIndex, cues.size) {
+        if (activeIndex >= 0) {
+            val idx = activeIndex.coerceAtMost(cues.lastIndex.coerceAtLeast(0))
+            val info = listState.layoutInfo
+            val first = info.visibleItemsInfo.firstOrNull()?.index ?: -1
+            val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            if (idx < first || idx > last) {
+                listState.animateScrollToItem(idx)
+            }
+        }
     }
 
     // Keep the engine's text-input flag in sync so hotkeys stand down.
@@ -86,6 +101,15 @@ fun TranscriptPanel(state: AppState, modifier: Modifier = Modifier) {
         ) {
             Text("Transcript", color = sc.textPrimary, fontSize = DsType.Label, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text("${cues.size} lines", color = sc.textMuted, fontSize = DsType.Caption)
+            if (activeIndex >= 0) {
+                DsTextButton(
+                    text = "Jump to current",
+                    onClick = {
+                        val idx = activeIndex.coerceAtMost(cues.lastIndex.coerceAtLeast(0))
+                        scope.launch { listState.animateScrollToItem(idx) }
+                    }
+                )
+            }
             Spacer(Modifier.width(DsSpacing.Sm))
             if (selecting) {
                 DsButton(

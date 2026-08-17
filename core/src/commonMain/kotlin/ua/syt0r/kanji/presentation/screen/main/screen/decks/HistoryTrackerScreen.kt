@@ -37,41 +37,6 @@ import kotlinx.datetime.*
 // Supports filtering, search, and undo
 // ============================================
 
-fun generateMockHistory(): List<HistoryEntry> {
-    val now = Clock.System.now()
-    val types = HistoryEntryType.entries
-    return (0 until 50).map { i ->
-        val type = types[i % types.size]
-        val time = now.minus(i * 3600, DateTimeUnit.SECOND)
-        HistoryEntry(
-            id = i.toLong(),
-            type = type,
-            timestamp = time,
-            description = when (type) {
-                HistoryEntryType.Review -> "Reviewed card"
-                HistoryEntryType.Import -> "Imported 15 cards from CSV"
-                HistoryEntryType.Export -> "Exported 30 cards to APKG"
-                HistoryEntryType.Edit -> "Edited card meaning"
-                HistoryEntryType.Delete -> "Deleted 3 cards"
-                HistoryEntryType.Restore -> "Restored from backup"
-                HistoryEntryType.BulkOperation -> "Bulk tagged 12 cards"
-                HistoryEntryType.TagChange -> "Added tag 'JLPT N5'"
-                HistoryEntryType.FlagChange -> "Flagged card as Red"
-                HistoryEntryType.DeckChange -> "Moved cards to JLPT N4"
-                HistoryEntryType.NoteChange -> "Updated notes on card"
-                HistoryEntryType.StatusChange -> "Reset card progress"
-                HistoryEntryType.ScheduleChange -> "Rescheduled 5 cards"
-                HistoryEntryType.BackupCreated -> "Created backup v2.1"
-                HistoryEntryType.BackupRestored -> "Restored backup v2.0"
-                HistoryEntryType.PluginAction -> "Plugin: Export formatted"
-            },
-            cardIds = (0..(Math.random() * 5).toInt()).map { "card_$it" },
-            deckId = if (i % 3 == 0) "deck_001" else null,
-            undoable = Math.random() > 0.3
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryFullScreen(
@@ -82,10 +47,7 @@ fun HistoryFullScreen(
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
 
-    val historyEntries = remember(history) {
-        if (history.isNotEmpty()) history
-        else generateMockHistory()
-    }
+    val historyEntries = history
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedTypeFilter by remember { mutableStateOf<HistoryEntryType?>(null) }

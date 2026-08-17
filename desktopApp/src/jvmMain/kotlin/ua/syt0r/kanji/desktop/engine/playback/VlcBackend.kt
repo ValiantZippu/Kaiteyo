@@ -239,6 +239,7 @@ class VlcBackend(
         val id = trackId?.toIntOrNull() ?: return
         val track = availableTracks().firstOrNull { it.id == trackId }
         when (track?.kind) {
+            TrackKind.Video -> mp.video().setTrack(id)
             TrackKind.Audio -> mp.audio().setTrack(id)
             TrackKind.Subtitle -> mp.subpictures().setTrack(id)
             else -> Unit

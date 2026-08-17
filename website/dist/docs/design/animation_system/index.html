@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kaiteyo (書いてよ) — Animation System — Kaiteyo</title>
-  <meta name="description" content="Animations in Kaiteyo serve a purpose: they guide attention, provide feedback, and make the interface feel alive. Every animation should be:" />
+  <meta name="description" content="the user&#39;s speed multiplier." />
   <meta name="generator" content="Kaiteyo website builder" />
 
   
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Kaiteyo" />
   <meta property="og:title" content="Kaiteyo (書いてよ) — Animation System — Kaiteyo" />
-  <meta property="og:description" content="Animations in Kaiteyo serve a purpose: they guide attention, provide feedback, and make the interface feel alive. Every animation should be:" />
+  <meta property="og:description" content="the user&#39;s speed multiplier." />
   <meta property="og:url" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/animation_system/" />
   <meta property="og:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
@@ -28,7 +28,7 @@
   <meta name="twitter:site" content="@KaiteyoApp" />
   
   <meta name="twitter:title" content="Kaiteyo (書いてよ) — Animation System — Kaiteyo" />
-  <meta name="twitter:description" content="Animations in Kaiteyo serve a purpose: they guide attention, provide feedback, and make the interface feel alive. Every animation should be:" />
+  <meta name="twitter:description" content="the user&#39;s speed multiplier." />
   <meta name="twitter:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
   <!-- Icons -->
@@ -54,14 +54,14 @@
   </script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css?v=1786940608" />
 
   <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
   <script>
@@ -357,15 +357,6 @@
         <ul class="nav-list">
           
           <li>
-            <a class="nav-item" href="/Kaiteyo/try/"
-               data-badge="Web">
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-              <span class="nav-label">Try Kaiteyo</span>
-              <span class="badge badge-muted nav-badge">Web</span>
-            </a>
-          </li>
-          
-          <li>
             <a class="nav-item" href="/Kaiteyo/download/"
                data-badge="v2.2.1">
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
@@ -474,8 +465,8 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/roadmap/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
-              <span class="nav-label">Roadmap</span>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Product Roadmap</span>
               
             </a>
           </li>
@@ -493,7 +484,86 @@
       </div>
       
       <div class="nav-group">
-        <div class="nav-group-title">Project</div>
+        <div class="nav-group-title">Command Center</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Project Status</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/kanban/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Kanban</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/whiteboard/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Whiteboard</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/suggestions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Suggestions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/decisions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">Architecture Decisions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/activity/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Activity</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/contributing/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+              <span class="nav-label">Contributing</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Community</div>
         <ul class="nav-list">
           
           <li>
@@ -537,15 +607,6 @@
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
               <span class="nav-label">Data &amp; Attribution</span>
-              
-            </a>
-          </li>
-          
-          <li>
-            <a class="nav-item" href="/Kaiteyo/contributing/"
-               >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
-              <span class="nav-label">Contributing</span>
               
             </a>
           </li>
@@ -603,13 +664,9 @@
     <div class="nav-divider"></div>
 
     <div class="nav-footer">
-      <a class="btn btn-primary nav-cta" href="/Kaiteyo/try/">
-        <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-        <span class="nav-cta-label">Try Kaiteyo</span>
-      </a>
-      <a class="btn btn-ghost btn-sm nav-cta" href="/Kaiteyo/download/">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
         <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
-        <span class="nav-cta-label">Download</span>
+        <span class="nav-cta-label">Download Kaiteyo</span>
       </a>
       <div class="flex gap-2 items-center">
         <button class="btn-icon" type="button" data-nav-collapse-toggle
@@ -649,9 +706,9 @@
       Search
       <kbd>Ctrl K</kbd>
     </button>
-    <a class="btn btn-primary btn-sm" href="/Kaiteyo/try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download
     </a>
     <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
       <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
@@ -775,7 +832,7 @@
         
         <li>
           <a class="docs-link"
-             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System Specification</a>
+             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System &amp; Theme Studio</a>
         </li>
         
         <li>
@@ -789,7 +846,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">7</span>
+        <span class="docs-count">28</span>
       </summary>
       <ul class="docs-list">
         
@@ -801,6 +858,61 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/architecture/data_platform/">Japanese Language Data Platform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/node_architecture/">Kaiteyo Node Architecture — Master Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/database/">Kaiteyo Architecture — Database Specification &amp; Migration Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/dictionary/">Kaiteyo Architecture — Dictionary Engine Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/language-model/">Kaiteyo Architecture — Language Data Model &amp; Knowledge Graph</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/study-engine/">Kaiteyo Architecture — Study Engine &amp; Card Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/statistics/">Kaiteyo Architecture — Statistics &amp; Event Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/exams/">Kaiteyo Architecture — Exam System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/media/">Kaiteyo Architecture — Media, Playback &amp; Subtitle Engine</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/mining/">Kaiteyo Architecture — Mining Workflow Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/localization/">Kaiteyo Architecture — Localization Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/browser/">Kaiteyo Architecture — Embedded Browser (Planned)</a>
         </li>
         
         <li>
@@ -825,6 +937,56 @@
         
         <li>
           <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/performance/">Kaiteyo Architecture — Performance Strategy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/toolchain/">Kaiteyo Architecture — Toolchain &amp; Development Environment</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/content/">Kaiteyo Architecture — Content System &amp; Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/backup/">Kaiteyo Architecture — Backup, Import &amp; Export</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/accessibility/">Kaiteyo Architecture — Accessibility Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/ci-cd/">Kaiteyo Architecture — CI/CD &amp; Release Pipeline</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/assets/">Kaiteyo Architecture — Asset System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/integrations/">Kaiteyo Architecture — Integrations Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/journey/">Kaiteyo Architecture — Journey, World &amp; Game Runtime Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/pitch-frequency/">Pitch Accent &amp; Frequency Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
              href="/Kaiteyo/docs/architecture/readme/">🔌 api — Kaiteyo API Documentation</a>
         </li>
         
@@ -834,7 +996,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">11</span>
+        <span class="docs-count">19</span>
       </summary>
       <ul class="docs-list">
         
@@ -891,6 +1053,46 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/decisions/0011-plugin-security-first/">ADR-0011: Plugin Runtime Loading Deferred (Security First)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0012-engineering-standards/">ADR-0012: Professional Engineering Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0013-node-architecture/">ADR-0013: Node-Based Architecture (Target)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0014-journey-target-architecture/">ADR-0014: Journey as Target Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0015-content-authoring/">ADR-0015: Data-Driven Content Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/">ADR-0016: Event-Driven User Knowledge (Dimensioned, FSRS-Owned Scheduling)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0017-one-product-architecture/">ADR-0017: One Product — Resolve the Two Parallel Applications</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0018-game-engine-evaluation/">ADR-0018: Game Engine Evaluation (Decision Pending)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0019-website-command-center/">ADR-0019: Website as Project Command Center</a>
         </li>
         
       </ul>
@@ -1259,6 +1461,36 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/readme/">Kaiteyo Website</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/architecture/">Website Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/data_model/">Website — Unified Project Data Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/api/">Website — API Contracts (interactive layer)</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
         <span class="docs-count">2</span>
       </summary>
       <ul class="docs-list">
@@ -1271,6 +1503,21 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/contributing/development_setup/">Kaiteyo — Development Setup</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/ai/ai_agent_guide/">AI Agent Guide</a>
         </li>
         
       </ul>
@@ -1347,7 +1594,7 @@
 
     <header style="margin-bottom: var(--space-8)">
       <h1>Kaiteyo (書いてよ) — Animation System</h1>
-      <p style="font-size: var(--text-lg); color: var(--text-secondary)">Animations in Kaiteyo serve a purpose: they guide attention, provide feedback, and make the interface feel alive. Every animation should be:</p>
+      <p style="font-size: var(--text-lg); color: var(--text-secondary)">the user&#39;s speed multiplier.</p>
       
       <a class="prose-edit-link" href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/design/ANIMATION_SYSTEM.md" target="_blank" rel="noopener">
         <svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>
@@ -1357,351 +1604,181 @@
     </header>
 
     <h1 id="kaiteyo-animation-system">Kaiteyo (書いてよ) — Animation System</h1>
-<h2 id="animation-philosophy">Animation Philosophy</h2>
-<p>Animations in Kaiteyo serve a purpose: they guide attention, provide feedback, and make the interface feel alive. Every animation should be:
-- <strong>Subtle</strong> — Never distracting or gratuitous
-- <strong>Fast</strong> — Complete within 150-300ms for micro-interactions
-- <strong>Natural</strong> — Use spring physics for organic feel
-- <strong>Consistent</strong> — Same animation for same interaction everywhere</p>
-<h2 id="animation-presets">Animation Presets</h2>
-<h3 id="no-animation">No Animation</h3>
+<blockquote>
+<p>This document describes the animation system <strong>as implemented</strong>. Grounding:
+<code>core/.../presentation/common/theme/Theme.kt</code> (<code>AnimationConfig</code>, <code>AnimationSpeed</code>,
+<code>springAnim</code>, <code>tweenDuration</code>, <code>pageTransitionSpec</code>, theme crossfade) and
+<code>desktopApp/.../desktop/designsystem/DsTokens.kt</code> (<code>DsMotion</code>), plus the concrete
+patterns in <code>DsButtons.kt</code>, <code>DsDialog.kt</code>, <code>DsToast.kt</code>, <code>WorkspaceShell.kt</code>,
+<code>NavShell.kt</code>, <code>KaiteyoDesktopSuite.kt</code> and <code>OnboardingWizard.kt</code>.</p>
+</blockquote>
+<h2 id="animation-philosophy">Animation philosophy</h2>
 <ul>
-<li>All transitions instant (0ms)</li>
-<li>For accessibility (reduced motion)</li>
-<li>No spring physics</li>
+<li><strong>Subtle</strong> — never distracting; motion guides attention, never competes with it.</li>
+<li><strong>Fast</strong> — micro-interactions 120–380ms (<code>DsMotion.Fast/Normal/Slow</code>), scaled by
+  the user's speed multiplier.</li>
+<li><strong>Natural</strong> — springs for organic feel (<code>spring(damping=0.5..0.7)</code>).</li>
+<li><strong>Consistent</strong> — the same interaction animates the same way everywhere; every
+  animation goes through <code>springAnim()</code>/<code>tweenDuration()</code> so user config applies
+  globally.</li>
+<li><strong>Respectful</strong> — <code>reducedMotion</code> disables motion app-wide (all helpers return
+  instant specs), and <code>AnimationSpeed.Instant</code> zeroes durations.</li>
 </ul>
-<h3 id="minimal">Minimal</h3>
-<ul>
-<li>Duration: 100ms</li>
-<li>Easing: linear</li>
-<li>No spring physics</li>
-<li>Only essential transitions</li>
-</ul>
-<h3 id="standard-default">Standard (Default)</h3>
-<ul>
-<li>Duration: 200ms</li>
-<li>Easing: ease-in-out</li>
-<li>Spring damping: 0.7</li>
-<li>Spring stiffness: 300</li>
-</ul>
-<h3 id="smooth">Smooth</h3>
-<ul>
-<li>Duration: 300ms</li>
-<li>Easing: ease-out</li>
-<li>Spring damping: 0.5</li>
-<li>Spring stiffness: 200</li>
-</ul>
-<h3 id="bouncy">Bouncy</h3>
-<ul>
-<li>Duration: 400ms</li>
-<li>Easing: spring</li>
-<li>Spring damping: 0.3</li>
-<li>Spring stiffness: 150</li>
-</ul>
-<h2 id="animation-types">Animation Types</h2>
-<h3 id="hover-animations">Hover Animations</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Start</th>
-<th>End</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Scale</td>
-<td>1.0</td>
-<td>1.02-1.15</td>
-<td>150ms</td>
-<td>spring(damping=0.5)</td>
-</tr>
-<tr>
-<td>Background</td>
-<td>transparent</td>
-<td>glow color</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Text Color</td>
-<td>default</td>
-<td>hover color</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Shadow</td>
-<td>0dp</td>
-<td>4dp</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="press-animations">Press Animations</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Start</th>
-<th>End</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Scale</td>
-<td>1.0</td>
-<td>0.97</td>
-<td>80ms</td>
-<td>tween(ease-in)</td>
-</tr>
-<tr>
-<td>Background</td>
-<td>normal</td>
-<td>pressed</td>
-<td>80ms</td>
-<td>tween(ease-in)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="focus-animations">Focus Animations</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Start</th>
-<th>End</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Glow Ring</td>
-<td>invisible</td>
-<td>visible</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Border</td>
-<td>default</td>
-<td>accent</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="expandcollapse-animations">Expand/Collapse Animations</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Start</th>
-<th>End</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Width</td>
-<td>56dp</td>
-<td>280dp</td>
-<td>300ms</td>
-<td>spring(damping=0.6)</td>
-</tr>
-<tr>
-<td>Opacity</td>
-<td>0</td>
-<td>1</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Content Fade</td>
-<td>0</td>
-<td>1</td>
-<td>150ms (delayed)</td>
-<td>tween(ease-out)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="navigation-transitions">Navigation Transitions</h3>
-<table>
-<thead>
-<tr>
-<th>Type</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Page slide</td>
-<td>300ms</td>
-<td>spring(damping=0.7)</td>
-</tr>
-<tr>
-<td>Fade through</td>
-<td>250ms</td>
-<td>tween(ease-in-out)</td>
-</tr>
-<tr>
-<td>Shared element</td>
-<td>350ms</td>
-<td>spring(damping=0.6)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="theme-switching">Theme Switching</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Color transition</td>
-<td>400ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Background crossfade</td>
-<td>500ms</td>
-<td>tween(ease-in-out)</td>
-</tr>
-<tr>
-<td>Content fade</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="dialogmodal-animations">Dialog/Modal Animations</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Start</th>
-<th>End</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Scale</td>
-<td>0.9</td>
-<td>1.0</td>
-<td>250ms</td>
-<td>spring(damping=0.6)</td>
-</tr>
-<tr>
-<td>Opacity</td>
-<td>0</td>
-<td>1</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Backdrop</td>
-<td>0</td>
-<td>0.6</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="sidebar-animations">Sidebar Animations</h3>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Duration</th>
-<th>Easing</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Dock transition</td>
-<td>300ms</td>
-<td>spring(damping=0.5)</td>
-</tr>
-<tr>
-<td>Collapse/expand</td>
-<td>300ms</td>
-<td>spring(damping=0.6)</td>
-</tr>
-<tr>
-<td>Auto-hide reveal</td>
-<td>200ms</td>
-<td>tween(ease-out)</td>
-</tr>
-<tr>
-<td>Snap to position</td>
-<td>250ms</td>
-<td>spring(damping=0.7)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="implementation-patterns">Implementation Patterns</h2>
-<h3 id="using-animatexasstate">Using animateXAsState</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">scale</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">animateFloatAsState</span><span class="p">(</span>
-<span class="w">    </span><span class="n">targetValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isHovered</span><span class="p">)</span><span class="w"> </span><span class="m">1.05f</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="m">1f</span><span class="p">,</span>
-<span class="w">    </span><span class="n">animationSpec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">spring</span><span class="p">(</span>
-<span class="w">        </span><span class="n">dampingRatio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5f</span><span class="p">,</span>
-<span class="w">        </span><span class="n">stiffness</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">300f</span>
-<span class="w">    </span><span class="p">),</span>
-<span class="w">    </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;elementScale&quot;</span>
+<h2 id="motion-configuration-animationconfig">Motion configuration (<code>AnimationConfig</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">AnimationConfig</span><span class="p">(</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">speed</span><span class="p">:</span><span class="w"> </span><span class="n">AnimationSpeed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AnimationSpeed</span><span class="p">.</span><span class="na">Normal</span><span class="p">,</span><span class="w">   </span><span class="c1">// Slow 1.5× / Normal 1.0× / Fast 0.6× / Instant 0.0×</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">reducedMotion</span><span class="p">:</span><span class="w"> </span><span class="kt">Boolean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">springDamping</span><span class="p">:</span><span class="w"> </span><span class="kt">Float</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.6f</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">springStiffness</span><span class="p">:</span><span class="w"> </span><span class="kt">Float</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">300f</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">defaultDuration</span><span class="p">:</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">300</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">pageTransition</span><span class="p">:</span><span class="w"> </span><span class="n">PageTransitionType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PageTransitionType</span><span class="p">.</span><span class="na">FadeThrough</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">themeTransitionEnabled</span><span class="p">:</span><span class="w"> </span><span class="kt">Boolean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <span class="p">)</span>
 </code></pre></div>
 
-<h3 id="using-animatable">Using Animatable</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remember</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Animatable</span><span class="p">(</span><span class="m">1f</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
-<span class="n">LaunchedEffect</span><span class="p">(</span><span class="n">isHovered</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">scale</span><span class="p">.</span><span class="na">animateTo</span><span class="p">(</span>
-<span class="w">        </span><span class="n">targetValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isHovered</span><span class="p">)</span><span class="w"> </span><span class="m">1.05f</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="m">1f</span><span class="p">,</span>
-<span class="w">        </span><span class="n">animationSpec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">spring</span><span class="p">(</span><span class="n">dampingRatio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5f</span><span class="p">)</span>
-<span class="w">    </span><span class="p">)</span>
-<span class="p">}</span>
+<p><code>PageTransitionType</code>: Crossfade / Slide / FadeThrough (default) / Scale.</p>
+<h3 id="core-helpers-themekt">Core helpers (<code>Theme.kt</code>)</h3>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="kd">fun</span><span class="w"> </span><span class="nf">springAnim</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">dampingRatio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="na">springDamping</span><span class="p">,</span><span class="w"> </span><span class="n">stiffness</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="na">springStiffness</span><span class="p">):</span><span class="w"> </span><span class="n">FiniteAnimationSpec</span><span class="o">&lt;</span><span class="kt">Float</span><span class="o">&gt;</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">tweenDuration</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">baseDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">.</span><span class="na">defaultDuration</span><span class="p">):</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">    </span><span class="c1">// 0 when reducedMotion; else baseDuration × speed.multiplier</span>
+<span class="kd">fun</span><span class="w"> </span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">pageTransitionSpec</span><span class="p">(</span><span class="n">config</span><span class="p">):</span><span class="w"> </span><span class="n">AnimatedContentTransitionScope</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">.()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ContentTransform</span>
+<span class="w">    </span><span class="c1">// fade-through: fadeIn + fadeOut at 350ms base</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">snapSizeTransform</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">snapToBiggerSizeTransform</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+<span class="kd">fun</span><span class="w"> </span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">snapToBiggerContainerCrossfadeTransitionSpec</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
 </code></pre></div>
 
-<h3 id="using-transition">Using Transition</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="kd">val</span><span class="w"> </span><span class="nv">transition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">updateTransition</span><span class="p">(</span><span class="n">targetState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isHovered</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;hover&quot;</span><span class="p">)</span>
-<span class="kd">val</span><span class="w"> </span><span class="nv">bgColor</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">transition</span><span class="p">.</span><span class="na">animateColor</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;bg&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">hovered</span><span class="w"> </span><span class="o">-&gt;</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">hovered</span><span class="p">)</span><span class="w"> </span><span class="n">glowColor</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">Transparent</span>
-<span class="p">}</span>
-</code></pre></div>
-
-<h2 id="performance-guidelines">Performance Guidelines</h2>
+<p>Every view/component that animates uses these helpers — never raw constants — so a
+Motion Studio / onboarding speed change retunes the whole app instantly.</p>
+<h2 id="desktop-tokens-dsmotion">Desktop tokens (<code>DsMotion</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DsMotion.Fast</code></td>
+<td>120ms</td>
+</tr>
+<tr>
+<td><code>DsMotion.Normal</code></td>
+<td>240ms</td>
+</tr>
+<tr>
+<td><code>DsMotion.Slow</code></td>
+<td>380ms</td>
+</tr>
+</tbody>
+</table>
+<p><code>DsMotion.duration(base)</code> applies speed × reduced-motion the same way as the shared
+<code>tweenDuration</code>.</p>
+<h2 id="interaction-animations">Interaction animations</h2>
+<h3 id="buttons-dsbuttonskt">Buttons (<code>DsButtons.kt</code>)</h3>
+<ul>
+<li>Background color: <code>animateColorAsState</code>, <code>tween(160)</code> between rest/hover/pressed
+  (<code>colorsFor(kind)</code>).</li>
+<li>Scale: <code>animateFloatAsState</code> with <code>spring(damping=0.6, stiffness=500)</code> —
+  pressed 0.97, hovered 1.02, else 1.</li>
+<li>Icon buttons: background <code>tween(160)</code> on hover; tint flips to accent.</li>
+</ul>
+<h3 id="cards-dscardskt">Cards (<code>DsCards.kt</code>)</h3>
+<ul>
+<li>Interactive <code>DsCard</code> lifts: <code>animateDpAsState</code> elevation 0 → 2dp (<code>tween(200)</code>) and
+  reveals a 2dp accent top line on hover.</li>
+<li><code>DsSkeleton</code> pulses alpha 0.45↔1.0 with <code>infiniteRepeatable(tween(900), Reverse)</code>;
+  static at 0.6 alpha under reduced motion.</li>
+</ul>
+<h3 id="dialogs-dsdialogkt">Dialogs (<code>DsDialog.kt</code>)</h3>
+<p>Shared <code>dialogEntranceLayer()</code>: scale 0.94→1 with
+<code>spring(DampingRatioMediumBouncy, StiffnessMediumLow)</code> + fade <code>tween(180)</code> (0ms under
+reduced motion), applied via <code>graphicsLayer</code> so it never re-lays out.</p>
+<h3 id="menus-selects">Menus &amp; selects</h3>
+<ul>
+<li><code>DsSelect</code> chevron rotates 0→180° (<code>spring(0.6, 500)</code>).</li>
+<li><code>DsMenuItemRow</code> background <code>tween(140)</code> hover fill; selected row accent 14%.</li>
+<li><code>DsTagChip</code> background <code>tween(160)</code> between 16%/25%/35% alpha states.</li>
+</ul>
+<h3 id="toasts-dstoastkt">Toasts (<code>DsToast.kt</code>)</h3>
+<ul>
+<li>Entrance: slide up ¼ height + fade (<code>tween(240)</code> via <code>tweenDuration</code>).</li>
+<li>Icon spring pop: 0.5→1.08 (<code>spring(0.45, 480)</code>) then settle to 1
+  (<code>spring(0.55, 900)</code>); skipped for reduced motion / Instant speed.</li>
+</ul>
+<h2 id="navigation-layout-animations">Navigation &amp; layout animations</h2>
+<h3 id="navshell-navshellkt">NavShell (<code>NavShell.kt</code>)</h3>
+<ul>
+<li>Sidebar ↔ Floating mode crossfade: fade + scale (0.86/0.9) with transform origins
+  following the edge/snap point; springs <code>spring(0.7, 300)</code>; all specs swap to <code>snap()</code>
+  when animations are off.</li>
+<li>Dock edge change reflows with directional slide (spring) + fade (<code>tween(180)</code>).</li>
+<li>Content reserve (sidebar width) animates with <code>animateDpAsState</code> + <code>navAnimSpec</code>,
+  but <strong>snaps</strong> during a live window resize (<code>LocalWindowResizing</code>) to avoid
+  frame-chasing.</li>
+<li>Nav item hover/selected fills are immediate (state colors); focus shows 2dp accent
+  border.</li>
+</ul>
+<h3 id="workspace-shell-workspaceshellkt">Workspace shell (<code>WorkspaceShell.kt</code>)</h3>
+<ul>
+<li>Compact ↔ desktop layout tier flips via <code>AnimatedContent</code> fade (<code>tween(160)</code>,
+  duration resolved from config) — only when the tier actually flips (hysteresis).</li>
+<li>Dock show/hide: slide + fade <code>tween(240)</code> in the dock direction.</li>
+<li>View/tab transitions: <code>AnimatedContent</code> slide (direction follows tab order) + fade
+  at <code>tween(280)</code>; exit slides at ⅓ speed; each tab's subtree is recreated so
+  per-instance state restores from the snapshot.</li>
+</ul>
+<h3 id="floating-launcher-launchpad">Floating launcher &amp; launchpad</h3>
+<p><code>BubbleLauncher</code>/<code>Launchpad</code>/<code>FloatingLauncher</code> use scale + fade entrances with
+springs, per the <code>DESKTOP.md</code> spec (bubble scale follows <code>LayoutConfig.bubbleScale</code>).</p>
+<h2 id="theme-switching-the-big-crossfade">Theme switching (the big crossfade)</h2>
+<p><code>AppTheme</code> (Theme.kt) morphs <strong>every color in place</strong>:</p>
+<ul>
+<li><code>withThemeTransition()</code> wraps the whole Material <code>ColorScheme</code>, the <code>ExtraColorsScheme</code>,
+  <code>SurfaceColors</code> and <code>KaiteyoAccentScheme</code> in <code>animateColorAsState</code>
+  (<code>tween(450)</code> base × speed, or instant when disabled/reduced-motion).</li>
+<li>The UI tree never leaves composition — only colors animate toward their targets, so
+  state is preserved and the switch feels like a dissolve rather than a reload.</li>
+<li><code>KaiteyoDesktopSuite</code> adds a "settle" pop: after the crossfade finishes, the whole
+  window dips to 0.985 then springs back (<code>spring(0.55, 340)</code>), gated by the same
+  config and never played on first launch.</li>
+</ul>
+<h2 id="onboarding-wizard-onboardingwizardkt">Onboarding wizard (<code>OnboardingWizard.kt</code>)</h2>
+<ul>
+<li>Entrance: scale 0.96→1 (<code>spring(0.7, 220)</code>) + fade <code>tween(280)</code>.</li>
+<li>Step changes: <code>AnimatedContent</code> fade + directional slide (240ms, 40px).</li>
+<li>Progress segments pulse (active) via <code>infiniteRepeatable(tween(900), Reverse)</code>;
+  done segments fill accent.</li>
+<li>Selection cards: scale press 0.97 / hover 1.015 (<code>spring(0.7, 420)</code>), bg/border
+  <code>tween(180)</code>, check badge pops in with <code>scaleIn(0.4, spring(0.5, 600))</code>.</li>
+<li>Logo glow pulses (<code>tween(1400)</code> loop) behind the brand mark.</li>
+<li>All motion honors <code>reducedMotion</code>.</li>
+</ul>
+<h2 id="performance-guidelines">Performance guidelines</h2>
 <ol>
-<li><strong>Use <code>remember</code></strong> for animation states to avoid recomposition</li>
-<li><strong>Prefer <code>animateXAsState</code></strong> over <code>Animatable</code> for simple values</li>
-<li><strong>Use <code>LaunchedEffect</code></strong> for one-shot animations</li>
-<li><strong>Avoid animating layout properties</strong> (use <code>graphicsLayer</code> instead)</li>
-<li><strong>Keep animated composables small</strong> — don't re-animate entire trees</li>
-<li><strong>Use <code>@Stable</code> annotations</strong> on animation state holders</li>
-<li><strong>Target 60 FPS</strong> — if dropping frames, simplify animations</li>
-<li><strong>Use <code>derivedStateOf</code></strong> to avoid unnecessary animation recalculations</li>
+<li>Animate <code>graphicsLayer</code> (scale/alpha) not layout properties — dialogs, launcher,
+   wizard, toast icons all use <code>graphicsLayer</code>.</li>
+<li><code>animateXAsState</code> for simple values; <code>Animatable</code> for sequenced/loop animations.</li>
+<li><code>LaunchedEffect</code> for one-shot sequences; <code>rememberInfiniteTransition</code> for loops.</li>
+<li>Keep animated composables small; avoid re-animating whole trees.</li>
+<li>Target 60 FPS (120 for dock drags) — if frames drop, simplify or gate by
+   <code>reducedMotion</code>.</li>
+<li><code>derivedStateOf</code>/<code>remember</code> to avoid re-triggering animation specs per frame.</li>
+<li>Resolve durations <em>in the composable body</em> (transitionSpec lambdas can't read
+   CompositionLocals — see <code>WorkspaceLayout</code>).</li>
 </ol>
-<h2 id="reduced-motion">Reduced Motion</h2>
-<p>When the user's system prefers reduced motion:
-- Disable all spring animations (use tween with 0ms)
-- Skip hover scale animations
-- Use instant transitions for navigation
-- Fade instead of slide for page transitions
-- Disable parallax and decorative motion</p>
-<p>```kotlin
-val motionDuration = if (isReducedMotion) 0 else 200</p>
+<h2 id="reduced-motion">Reduced motion</h2>
+<p><code>reducedMotion</code> (from config, settings, or system) is honored in every helper and
+every component: durations become 0, springs become <code>snap()</code>, loops stop, and the
+theme crossfade/settle pop are skipped. <code>AnimationSpeed.Instant</code> behaves the same for
+durations while keeping immediate state changes.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><code>docs/design/THEME_SYSTEM.md</code> — the config objects behind motion</li>
+<li><code>docs/design/UI_SYSTEM.md</code> — components that use these animations</li>
+<li><code>docs/features/DESKTOP.md</code> — window/dock motion specifics</li>
+<li><code>docs/architecture/performance.md</code> — budgets and profiling</li>
+</ul>
 
     
     <nav class="pagination" aria-label="Pagination">
@@ -1742,12 +1819,6 @@ val motionDuration = if (isReducedMotion) 0 else 200</p>
     <div class="footer-column">
       <h4>Learn</h4>
       <ul>
-        
-        <li>
-          
-          <a href="/Kaiteyo/try/">Try Kaiteyo</a>
-          
-        </li>
         
         <li>
           
@@ -1824,7 +1895,7 @@ val motionDuration = if (isReducedMotion) 0 else 200</p>
         
         <li>
           
-          <a href="/Kaiteyo/roadmap/">Roadmap</a>
+          <a href="/Kaiteyo/roadmap/">Product Roadmap</a>
           
         </li>
         
@@ -1838,7 +1909,62 @@ val motionDuration = if (isReducedMotion) 0 else 200</p>
     </div>
     
     <div class="footer-column">
-      <h4>Project</h4>
+      <h4>Command Center</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/">Project Status</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/kanban/">Kanban</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/roadmap/">Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/whiteboard/">Whiteboard</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/suggestions/">Suggestions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/decisions/">Architecture Decisions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/activity/">Activity</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/contributing/">Contributing</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
       <ul>
         
         <li>
@@ -1868,12 +1994,6 @@ val motionDuration = if (isReducedMotion) 0 else 200</p>
         <li>
           
           <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
-          
-        </li>
-        
-        <li>
-          
-          <a href="/Kaiteyo/contributing/">Contributing</a>
           
         </li>
         
@@ -2089,49 +2209,59 @@ val motionDuration = if (isReducedMotion) 0 else 200</p>
   </div>
 
   <div class="dialog-section-title">Position</div>
-  <div class="grid-3" style="grid-template-columns: repeat(5, 1fr)">
-    <button class="theme-swatch" type="button" data-nav-pos="left" aria-label="Left">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Left</span>
+  <div class="nav-pos-grid">
+    <button class="nav-pos-card" type="button" data-nav-pos="left" aria-label="Left">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="21" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="21" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Left</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="right" aria-label="Right">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Right</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="right" aria-label="Right">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="45.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="2.5" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="2.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Right</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="top" aria-label="Top">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Top</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="top" aria-label="Top">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="17" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="28" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Top</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="bottom" aria-label="Bottom">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Bottom</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="30.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Bottom</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="floating" aria-label="Floating">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; gap: 4px; position: relative">
-        <span style="width: 36%; height: 70%; background: var(--preview-surface); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4)"></span>
-        <span style="flex: 1; height: 100%; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Floating</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="floating" aria-label="Floating">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+        <circle class="np-bubble" cx="50" cy="32" r="7"/>
+      </svg>
+      <span class="nav-pos-name">Floating</span>
     </button>
   </div>
 
   <div class="dialog-section-title">Width</div>
-  <div class="tabs" role="tablist" aria-label="Navigation width">
-    <button class="tab" type="button" data-nav-width="compact">Compact</button>
-    <button class="tab" type="button" data-nav-width="default">Default</button>
-    <button class="tab" type="button" data-nav-width="wide">Wide</button>
+  <div class="segmented" role="group" aria-label="Navigation width">
+    <button class="segmented-btn" type="button" data-nav-width="compact">Compact</button>
+    <button class="segmented-btn" type="button" data-nav-width="default">Default</button>
+    <button class="segmented-btn" type="button" data-nav-width="wide">Wide</button>
   </div>
 
   <div class="dialog-section-title">Behavior</div>
@@ -2170,12 +2300,12 @@ val motionDuration = if (isReducedMotion) 0 else 200</p>
   </div>
 </dialog>
 
-  <script type="module" src="/Kaiteyo/assets/scripts/main.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/theme.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/components.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/search.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/utils.js"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/main.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/theme.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/components.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/search.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/utils.js?v=1786940608"></script>
 </body>
 </html>

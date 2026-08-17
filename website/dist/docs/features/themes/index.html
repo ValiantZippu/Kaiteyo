@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kaiteyo — Theme System Specification — Kaiteyo</title>
-  <meta name="description" content="The theme system allows users to customize every visual aspect of Kaiteyo. It provides built-in themes, a full Appearance Studio for custom theme creation, and live preview of changes." />
+  <title>Kaiteyo — Theme System &amp; Theme Studio — Kaiteyo</title>
+  <meta name="description" content="Users can customize every visual aspect of Kaiteyo: base appearance, accent colors," />
   <meta name="generator" content="Kaiteyo website builder" />
 
   
@@ -17,8 +17,8 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Kaiteyo" />
-  <meta property="og:title" content="Kaiteyo — Theme System Specification — Kaiteyo" />
-  <meta property="og:description" content="The theme system allows users to customize every visual aspect of Kaiteyo. It provides built-in themes, a full Appearance Studio for custom theme creation, and live preview of changes." />
+  <meta property="og:title" content="Kaiteyo — Theme System &amp; Theme Studio — Kaiteyo" />
+  <meta property="og:description" content="Users can customize every visual aspect of Kaiteyo: base appearance, accent colors," />
   <meta property="og:url" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/themes/" />
   <meta property="og:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
@@ -27,8 +27,8 @@
   
   <meta name="twitter:site" content="@KaiteyoApp" />
   
-  <meta name="twitter:title" content="Kaiteyo — Theme System Specification — Kaiteyo" />
-  <meta name="twitter:description" content="The theme system allows users to customize every visual aspect of Kaiteyo. It provides built-in themes, a full Appearance Studio for custom theme creation, and live preview of changes." />
+  <meta name="twitter:title" content="Kaiteyo — Theme System &amp; Theme Studio — Kaiteyo" />
+  <meta name="twitter:description" content="Users can customize every visual aspect of Kaiteyo: base appearance, accent colors," />
   <meta name="twitter:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
   <!-- Icons -->
@@ -54,14 +54,14 @@
   </script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css?v=1786940608" />
 
   <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
   <script>
@@ -357,15 +357,6 @@
         <ul class="nav-list">
           
           <li>
-            <a class="nav-item" href="/Kaiteyo/try/"
-               data-badge="Web">
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-              <span class="nav-label">Try Kaiteyo</span>
-              <span class="badge badge-muted nav-badge">Web</span>
-            </a>
-          </li>
-          
-          <li>
             <a class="nav-item" href="/Kaiteyo/download/"
                data-badge="v2.2.1">
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
@@ -474,8 +465,8 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/roadmap/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
-              <span class="nav-label">Roadmap</span>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Product Roadmap</span>
               
             </a>
           </li>
@@ -493,7 +484,86 @@
       </div>
       
       <div class="nav-group">
-        <div class="nav-group-title">Project</div>
+        <div class="nav-group-title">Command Center</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Project Status</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/kanban/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Kanban</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/whiteboard/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Whiteboard</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/suggestions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Suggestions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/decisions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">Architecture Decisions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/activity/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Activity</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/contributing/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+              <span class="nav-label">Contributing</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Community</div>
         <ul class="nav-list">
           
           <li>
@@ -537,15 +607,6 @@
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
               <span class="nav-label">Data &amp; Attribution</span>
-              
-            </a>
-          </li>
-          
-          <li>
-            <a class="nav-item" href="/Kaiteyo/contributing/"
-               >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
-              <span class="nav-label">Contributing</span>
               
             </a>
           </li>
@@ -603,13 +664,9 @@
     <div class="nav-divider"></div>
 
     <div class="nav-footer">
-      <a class="btn btn-primary nav-cta" href="/Kaiteyo/try/">
-        <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-        <span class="nav-cta-label">Try Kaiteyo</span>
-      </a>
-      <a class="btn btn-ghost btn-sm nav-cta" href="/Kaiteyo/download/">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
         <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
-        <span class="nav-cta-label">Download</span>
+        <span class="nav-cta-label">Download Kaiteyo</span>
       </a>
       <div class="flex gap-2 items-center">
         <button class="btn-icon" type="button" data-nav-collapse-toggle
@@ -641,7 +698,7 @@
     <svg class="icon" aria-hidden="true"><use href="#icon-menu"/></svg>
   </button>
   <div class="topbar-title">
-    <h1>Kaiteyo — Theme System Specification</h1>
+    <h1>Kaiteyo — Theme System &amp; Theme Studio</h1>
   </div>
   <div class="topbar-actions">
     <button class="btn btn-ghost btn-sm" type="button" data-open-search aria-label="Open search">
@@ -649,9 +706,9 @@
       Search
       <kbd>Ctrl K</kbd>
     </button>
-    <a class="btn btn-primary btn-sm" href="/Kaiteyo/try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download
     </a>
     <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
       <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
@@ -775,7 +832,7 @@
         
         <li>
           <a class="docs-link is-active"
-             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System Specification</a>
+             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System &amp; Theme Studio</a>
         </li>
         
         <li>
@@ -789,7 +846,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">7</span>
+        <span class="docs-count">28</span>
       </summary>
       <ul class="docs-list">
         
@@ -801,6 +858,61 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/architecture/data_platform/">Japanese Language Data Platform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/node_architecture/">Kaiteyo Node Architecture — Master Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/database/">Kaiteyo Architecture — Database Specification &amp; Migration Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/dictionary/">Kaiteyo Architecture — Dictionary Engine Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/language-model/">Kaiteyo Architecture — Language Data Model &amp; Knowledge Graph</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/study-engine/">Kaiteyo Architecture — Study Engine &amp; Card Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/statistics/">Kaiteyo Architecture — Statistics &amp; Event Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/exams/">Kaiteyo Architecture — Exam System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/media/">Kaiteyo Architecture — Media, Playback &amp; Subtitle Engine</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/mining/">Kaiteyo Architecture — Mining Workflow Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/localization/">Kaiteyo Architecture — Localization Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/browser/">Kaiteyo Architecture — Embedded Browser (Planned)</a>
         </li>
         
         <li>
@@ -825,6 +937,56 @@
         
         <li>
           <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/performance/">Kaiteyo Architecture — Performance Strategy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/toolchain/">Kaiteyo Architecture — Toolchain &amp; Development Environment</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/content/">Kaiteyo Architecture — Content System &amp; Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/backup/">Kaiteyo Architecture — Backup, Import &amp; Export</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/accessibility/">Kaiteyo Architecture — Accessibility Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/ci-cd/">Kaiteyo Architecture — CI/CD &amp; Release Pipeline</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/assets/">Kaiteyo Architecture — Asset System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/integrations/">Kaiteyo Architecture — Integrations Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/journey/">Kaiteyo Architecture — Journey, World &amp; Game Runtime Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/pitch-frequency/">Pitch Accent &amp; Frequency Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
              href="/Kaiteyo/docs/architecture/readme/">🔌 api — Kaiteyo API Documentation</a>
         </li>
         
@@ -834,7 +996,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">11</span>
+        <span class="docs-count">19</span>
       </summary>
       <ul class="docs-list">
         
@@ -891,6 +1053,46 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/decisions/0011-plugin-security-first/">ADR-0011: Plugin Runtime Loading Deferred (Security First)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0012-engineering-standards/">ADR-0012: Professional Engineering Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0013-node-architecture/">ADR-0013: Node-Based Architecture (Target)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0014-journey-target-architecture/">ADR-0014: Journey as Target Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0015-content-authoring/">ADR-0015: Data-Driven Content Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/">ADR-0016: Event-Driven User Knowledge (Dimensioned, FSRS-Owned Scheduling)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0017-one-product-architecture/">ADR-0017: One Product — Resolve the Two Parallel Applications</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0018-game-engine-evaluation/">ADR-0018: Game Engine Evaluation (Decision Pending)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0019-website-command-center/">ADR-0019: Website as Project Command Center</a>
         </li>
         
       </ul>
@@ -1259,6 +1461,36 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/readme/">Kaiteyo Website</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/architecture/">Website Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/data_model/">Website — Unified Project Data Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/api/">Website — API Contracts (interactive layer)</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
         <span class="docs-count">2</span>
       </summary>
       <ul class="docs-list">
@@ -1271,6 +1503,21 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/contributing/development_setup/">Kaiteyo — Development Setup</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/ai/ai_agent_guide/">AI Agent Guide</a>
         </li>
         
       </ul>
@@ -1336,7 +1583,7 @@
         
         <li>
           
-          <span class="current">Kaiteyo — Theme System Specification</span>
+          <span class="current">Kaiteyo — Theme System &amp; Theme Studio</span>
           
         </li>
         
@@ -1346,8 +1593,8 @@
     
 
     <header style="margin-bottom: var(--space-8)">
-      <h1>Kaiteyo — Theme System Specification</h1>
-      <p style="font-size: var(--text-lg); color: var(--text-secondary)">The theme system allows users to customize every visual aspect of Kaiteyo. It provides built-in themes, a full Appearance Studio for custom theme creation, and live preview of changes.</p>
+      <h1>Kaiteyo — Theme System &amp; Theme Studio</h1>
+      <p style="font-size: var(--text-lg); color: var(--text-secondary)">Users can customize every visual aspect of Kaiteyo: base appearance, accent colors,</p>
       
       <a class="prose-edit-link" href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/features/THEMES.md" target="_blank" rel="noopener">
         <svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>
@@ -1356,109 +1603,176 @@
       
     </header>
 
-    <h1 id="kaiteyo-theme-system-specification">Kaiteyo — Theme System Specification</h1>
+    <h1 id="kaiteyo-theme-system-theme-studio">Kaiteyo — Theme System &amp; Theme Studio</h1>
+<blockquote>
+<p>This spec describes the theme feature <strong>as implemented</strong> (v2.2.1). The desktop
+Theme Studio lives in <code>desktopApp/.../desktop/ui/themes/ThemeStudioView.kt</code> and is
+backed by <code>desktop/.../engine/theming/ThemeManager.kt</code>; the shared engine theme is
+<code>core/.../presentation/common/theme/</code> (see <code>docs/design/THEME_SYSTEM.md</code> for the
+full token/architecture detail).</p>
+</blockquote>
 <h2 id="purpose">Purpose</h2>
-<p>The theme system allows users to customize every visual aspect of Kaiteyo. It provides built-in themes, a full Appearance Studio for custom theme creation, and live preview of changes.</p>
-<h2 id="user-experience">User Experience</h2>
-<h3 id="built-in-themes">Built-in Themes</h3>
-<p>Users can select from 8 built-in themes:
-1. <strong>Signature</strong> (default) — Lime + Orange, the official Kaiteyo identity
-2. <strong>OLED Black</strong> — True black for OLED displays
-3. <strong>Dark Gray</strong> — Softer dark mode
-4. <strong>Light</strong> — Clean light mode
-5. <strong>Reading</strong> — Warm paper tones for extended reading
-6. <strong>Cotton Candy</strong> — Soft pastels
-7. <strong>Ocean</strong> — Cool blue tones
-8. <strong>Forest</strong> — Earthy green tones</p>
-<h3 id="appearance-studio">Appearance Studio</h3>
-<p>A "+" button opens the full Appearance Studio with:</p>
-<p><strong>Color Studio:</strong>
-- Color wheels (RGB, HSV, HSL, HEX)
-- Opacity control
-- Gradient editor with multiple stops
-- Live preview of all changes</p>
-<p><strong>Motion Studio:</strong>
-- Animation presets: None, Minimal, Standard, Smooth, Bouncy
-- Speed control
-- Spring stiffness tuning</p>
-<p><strong>Layout Studio:</strong>
-- Sidebar position (Left, Right, Top, Bottom, Floating)
-- Density modes (Compact, Comfortable, Spacious)
-- Corner radius slider
-- Transparency/blur controls
-- Surface elevation controls</p>
-<h3 id="live-preview">Live Preview</h3>
-<p>Every change updates immediately in a preview panel showing:
-- Sidebar
-- Cards
-- Buttons
-- Lists
-- Dialogs
-- Navigation</p>
-<h3 id="theme-importexport">Theme Import/Export</h3>
+<p>Users can customize every visual aspect of Kaiteyo: base appearance, accent colors,
+typography, scaling, animation, effects and accessibility. Everything is live —
+edits apply to the whole app (including the window chrome) immediately and persist
+across restarts.</p>
+<h2 id="user-experience">User experience</h2>
+<h3 id="base-appearance-shared-all-platforms">Base appearance (shared, all platforms)</h3>
 <ul>
-<li>Export current theme as JSON</li>
-<li>Import theme from JSON file</li>
-<li>Shareable theme format</li>
+<li><strong>Base modes</strong> — OLED Black (default), Dark Gray, Light, Sepia (reading mode).</li>
+<li><strong>Accent schemes</strong> — 7 presets: Signature Pineapple (default), Cotton Candy,
+  Ocean, Forest, Sunset, Lavender, Monochrome.</li>
+<li>Available on mobile through <strong>Settings → Appearance</strong> and the <strong>Appearance Studio</strong>
+  (<code>core/.../screen/main/screen/settings/AppearanceStudio.kt</code>), and on desktop through
+  the Theme Studio.</li>
 </ul>
-<h2 id="technical-design">Technical Design</h2>
+<h3 id="desktop-theme-studio">Desktop Theme Studio</h3>
+<p>The Theme Studio is a workspace view (<code>WorkspaceView.ThemeStudio</code> → <code>ThemeStudioView</code>)
+with a theme library on the left (or a strip below 760dp) and a 7-tab editor:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>What it edits</th>
+<th>Backing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Colors</strong></td>
+<td>primary/secondary/tertiary, on-colors, background/surface/text/border</td>
+<td><code>updateActiveColors</code></td>
+</tr>
+<tr>
+<td><strong>Typography</strong></td>
+<td>base font size</td>
+<td><code>updateActiveTypography</code></td>
+</tr>
+<tr>
+<td><strong>Scaling</strong></td>
+<td>display scale (UI zoom)</td>
+<td><code>updateActiveScaling</code></td>
+</tr>
+<tr>
+<td><strong>Animation</strong></td>
+<td>speed multiplier, reduced motion, duration</td>
+<td><code>updateActiveAnimation</code></td>
+</tr>
+<tr>
+<td><strong>Effects</strong></td>
+<td>glow intensity/radius/opacity, blur, transparency, glass opacity</td>
+<td><code>updateActiveEffects</code></td>
+</tr>
+<tr>
+<td><strong>Accessibility</strong></td>
+<td>high-contrast and related a11y toggles</td>
+<td><code>ThemeAccessibilityEditor</code></td>
+</tr>
+<tr>
+<td><strong>Preview</strong></td>
+<td>full live preview of the current theme</td>
+<td><code>ThemePreviewTab</code></td>
+</tr>
+</tbody>
+</table>
+<p>Additional features:</p>
+<ul>
+<li><strong>Theme library</strong> — presets + custom + imported themes; duplicate, rename, set
+  description/author, favorite, delete, reset to preset values, reset all.</li>
+<li><strong>Live editing</strong> — editing a preset auto-promotes it to a custom copy so the
+  pristine preset stays intact (<code>ThemeManager.updateActive</code>).</li>
+<li><strong>JSON</strong> — toggle a JSON card showing the active theme; <strong>export</strong> the current
+  theme as JSON and <strong>import</strong> JSON themes (<code>ThemeManager.exportJson</code>/<code>importJson</code>;
+  imported preset ids get an <code>imported-</code> prefix).</li>
+<li><strong>Instant application</strong> — every mutation bumps <code>ThemeManager.revision</code> and the
+  suite re-derives <code>AppTheme</code> through <code>ThemeMapper</code>, so edits reach all <code>Ds*</code>
+  components and the window shell live (with the 450ms color crossfade).</li>
+<li><strong>Onboarding</strong> — first-run wizard steps choose theme, accent, scaling, font size,
+  navigation and motion (desktop only, re-openable from Settings).</li>
+</ul>
+<h2 id="technical-design">Technical design</h2>
 <h3 id="architecture">Architecture</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>ThemeManager (interface)
-  └── KaiteyoThemeState (mutable state holder)
-       ├── baseMode (Light/Dark/Oled)
-       ├── accentScheme (KaiteyoAccentScheme)
-       ├── glowConfig (GlowConfig)
-       ├── radiusConfig (RadiusConfig)
-       ├── animationConfig (AnimationConfig)
-       └── densityConfig (DensityConfig)
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>ThemeManager (desktop, ~/.kaiteyo/themes/)
+  ├── presets (ThemePresets.all)  +  customThemes (editable/imported)
+  ├── activeThemeId / revision (mutableState)
+  └── updateActive*(transform) → persist &lt;id&gt;.json + active.json
+        │
+        ▼
+ThemeMapper (desktop/engine/theming)
+  └── KaiteyoTheme → baseMode, accentScheme, surfaceColors, layoutConfig,
+                     radiusConfig, animationConfig, typeScale, typography
+        │
+        ▼
+AppTheme / KaiteyoThemeRoot (core/.../theme/Theme.kt)
+  └── Material ColorScheme + Shapes + TypeScale + CompositionLocals
+        │
+        ▼
+All shared UI + desktop Ds* components
 </code></pre></div>
 
-<h3 id="compositionlocals">CompositionLocals</h3>
+<p>Mobile uses the same <code>AppTheme</code>/<code>KaiteyoThemeState</code> but persistence flows through
+<code>ThemeSettingsState</code> (DataStore) instead of <code>ThemeManager</code>.</p>
+<h3 id="key-files">Key files</h3>
 <ul>
-<li><code>LocalKaiteyoThemeState</code> — Mutable theme state</li>
-<li><code>LocalKaiteyoAccent</code> — Current accent scheme</li>
-<li><code>LocalSurfaceColors</code> — Surface hierarchy colors</li>
-<li><code>LocalKaiteyoAccentList</code> — All available accent schemes</li>
+<li><code>desktopApp/.../desktop/ui/themes/ThemeStudioView.kt</code> — the Studio UI
+  (<code>ThemeLibraryRail</code>, <code>ThemeEditor</code>, tab editors, <code>ThemeJsonCard</code>)</li>
+<li><code>desktopApp/.../desktop/engine/theming/ThemeManager.kt</code> — library + persistence +
+  live edits (promote-to-custom, gradient stop syncing)</li>
+<li><code>desktopApp/.../desktop/engine/theming/ThemePresets.kt</code> — built-in <code>KaiteyoTheme</code>
+  presets</li>
+<li><code>desktopApp/.../desktop/engine/theming/ThemeStudio.kt</code> — <code>KaiteyoTheme</code> model +
+  <code>ThemeSerializer</code> (JSON validate/export/import)</li>
+<li><code>desktopApp/.../desktop/engine/theming/ThemeMapper.kt</code> — theme → shared AppTheme
+  inputs</li>
+<li><code>core/.../presentation/common/theme/Color.kt</code>, <code>Theme.kt</code>, <code>Typography.kt</code>,
+  <code>Dimens.kt</code> — shared engine theme</li>
+<li><code>core/.../presentation/common/theme/ThemeSettingsState.kt</code> — persisted shared
+  settings (accent, radius, density, motion, typography)</li>
+<li><code>core/.../screen/main/screen/settings/AppearanceStudio.kt</code> — mobile/desktop
+  Appearance Studio (color wheel, HSV/RGB/HSL/HEX, gradients, presets)</li>
 </ul>
-<h3 id="theme-json-format">Theme JSON Format</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;My Custom Theme&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;base&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;signature&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;colors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;primary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#C2FC8B&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secondary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#FEAB57&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;background&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#1A1A1A&quot;</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;gradient&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;start&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#C2FC8B&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#FEAB57&quot;</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;glow&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;intensity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;spread&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;radius&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;cornerRadius&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;customRadius&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;animation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;speed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;springStiffness&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;springDamping&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;density&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;comfortable&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;spacingMultiplier&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="w"> </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-
+<h3 id="persistence">Persistence</h3>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Desktop Theme Studio</td>
+<td><code>~/.kaiteyo/themes/</code> — <code>active.json</code> + <code>custom/&lt;id&gt;.json</code></td>
+</tr>
+<tr>
+<td>Shared engine settings (mobile + desktop)</td>
+<td>DataStore via <code>ThemeSettingsState</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="theme-json-format">Theme JSON format</h3>
+<p>See <code>docs/design/THEME_SYSTEM.md</code> → "Theme JSON format" for the full schema
+(<code>colors</code>, <code>gradient</code>, <code>typography</code>, <code>scaling</code>, <code>animation</code>, <code>spacing</code>, <code>corners</code>,
+<code>effects</code>, metadata).</p>
 <h2 id="dependencies">Dependencies</h2>
 <ul>
-<li>Compose Multiplatform</li>
-<li>Koin (for ThemeManager injection)</li>
-<li>DataStore (for theme persistence)</li>
+<li>Compose Multiplatform (Material3 <code>ColorScheme</code>/<code>Shapes</code>)</li>
+<li>Koin (<code>ThemeManager</code> injection on desktop; <code>ThemeSettingsState</code> shared)</li>
+<li>DataStore (shared settings persistence)</li>
+<li>kotlinx.serialization (theme JSON, <code>ThemeSerializer</code>)</li>
 </ul>
-<h2 id="future-improvements">Future Improvements</h2>
+<h2 id="future-improvements">Future improvements</h2>
 <ul>
-<li>Community theme sharing</li>
-<li>Theme marketplace</li>
+<li>Community theme sharing / marketplace</li>
 <li>AI-generated themes</li>
-<li>Dynamic theme based on wallpaper</li>
-<li>Time-based theme switching (auto dark/light)</li>
+<li>Time-based theme switching (auto dark/light by local time)</li>
+<li>Per-window theming (multiple windows, different themes)</li>
 </ul>
-<h2 id="open-questions">Open Questions</h2>
+<h2 id="open-questions">Open questions</h2>
 <ul>
-<li>Should themes sync across devices?</li>
-<li>Should there be a theme rating system?</li>
-<li>Should themes support animated backgrounds?</li>
+<li>Should themes sync across devices (e.g. via the GitHub gist sync)?</li>
+<li>Should a theme rating/review system exist?</li>
+<li>Should animated gradient backgrounds be supported?</li>
 </ul>
 
     
@@ -1500,12 +1814,6 @@
     <div class="footer-column">
       <h4>Learn</h4>
       <ul>
-        
-        <li>
-          
-          <a href="/Kaiteyo/try/">Try Kaiteyo</a>
-          
-        </li>
         
         <li>
           
@@ -1582,7 +1890,7 @@
         
         <li>
           
-          <a href="/Kaiteyo/roadmap/">Roadmap</a>
+          <a href="/Kaiteyo/roadmap/">Product Roadmap</a>
           
         </li>
         
@@ -1596,7 +1904,62 @@
     </div>
     
     <div class="footer-column">
-      <h4>Project</h4>
+      <h4>Command Center</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/">Project Status</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/kanban/">Kanban</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/roadmap/">Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/whiteboard/">Whiteboard</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/suggestions/">Suggestions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/decisions/">Architecture Decisions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/activity/">Activity</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/contributing/">Contributing</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
       <ul>
         
         <li>
@@ -1626,12 +1989,6 @@
         <li>
           
           <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
-          
-        </li>
-        
-        <li>
-          
-          <a href="/Kaiteyo/contributing/">Contributing</a>
           
         </li>
         
@@ -1847,49 +2204,59 @@
   </div>
 
   <div class="dialog-section-title">Position</div>
-  <div class="grid-3" style="grid-template-columns: repeat(5, 1fr)">
-    <button class="theme-swatch" type="button" data-nav-pos="left" aria-label="Left">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Left</span>
+  <div class="nav-pos-grid">
+    <button class="nav-pos-card" type="button" data-nav-pos="left" aria-label="Left">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="21" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="21" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Left</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="right" aria-label="Right">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Right</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="right" aria-label="Right">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="45.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="2.5" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="2.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Right</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="top" aria-label="Top">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Top</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="top" aria-label="Top">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="17" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="28" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Top</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="bottom" aria-label="Bottom">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Bottom</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="30.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Bottom</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="floating" aria-label="Floating">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; gap: 4px; position: relative">
-        <span style="width: 36%; height: 70%; background: var(--preview-surface); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4)"></span>
-        <span style="flex: 1; height: 100%; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Floating</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="floating" aria-label="Floating">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+        <circle class="np-bubble" cx="50" cy="32" r="7"/>
+      </svg>
+      <span class="nav-pos-name">Floating</span>
     </button>
   </div>
 
   <div class="dialog-section-title">Width</div>
-  <div class="tabs" role="tablist" aria-label="Navigation width">
-    <button class="tab" type="button" data-nav-width="compact">Compact</button>
-    <button class="tab" type="button" data-nav-width="default">Default</button>
-    <button class="tab" type="button" data-nav-width="wide">Wide</button>
+  <div class="segmented" role="group" aria-label="Navigation width">
+    <button class="segmented-btn" type="button" data-nav-width="compact">Compact</button>
+    <button class="segmented-btn" type="button" data-nav-width="default">Default</button>
+    <button class="segmented-btn" type="button" data-nav-width="wide">Wide</button>
   </div>
 
   <div class="dialog-section-title">Behavior</div>
@@ -1928,12 +2295,12 @@
   </div>
 </dialog>
 
-  <script type="module" src="/Kaiteyo/assets/scripts/main.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/theme.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/components.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/search.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/utils.js"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/main.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/theme.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/components.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/search.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/utils.js?v=1786940608"></script>
 </body>
 </html>

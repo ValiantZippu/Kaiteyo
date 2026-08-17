@@ -13,6 +13,7 @@ import ua.syt0r.kanji.core.srs.SrsScheduler
 import ua.syt0r.kanji.core.statistics.StatisticsRecorder
 import ua.syt0r.kanji.core.time.TimeUtils
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
+import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BasePracticeQueue
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueue
@@ -34,7 +35,8 @@ class DefaultLetterPracticeQueue(
     statisticsRecorder: StatisticsRecorder,
     srsScheduler: SrsScheduler,
     private val getQueueItemDataUseCase: GetLetterPracticeQueueItemDataUseCase,
-    analyticsManager: AnalyticsManager
+    analyticsManager: AnalyticsManager,
+    appPreferences: PreferencesContract.AppPreferences
 ) : BaseLetterPracticeQueue(
     practiceScope = coroutineScope,
     timeUtils = timeUtils,
@@ -42,7 +44,8 @@ class DefaultLetterPracticeQueue(
     srsCardRepository = srsCardRepository,
     reviewHistoryRepository = reviewHistoryRepository,
     statisticsRecorder = statisticsRecorder,
-    analyticsManager = analyticsManager
+    analyticsManager = analyticsManager,
+    appPreferences = appPreferences
 ), LetterPracticeQueue {
 
     override suspend fun LetterPracticeQueueItemDescriptor.toQueueItem(): LetterPracticeQueueItem {

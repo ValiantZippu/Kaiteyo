@@ -1,0 +1,579 @@
+{
+  "contentVersion": 1,
+  "defaultSpawn": {
+    "regionId": "hamanaka",
+    "cellId": "hamanaka-town",
+    "position": { "x": 900, "y": 700 },
+    "facing": "Down"
+  },
+  "regions": [
+    {
+      "id": "hamanaka",
+      "name": "Hamanaka",
+      "nameJp": "浜中",
+      "description": "A small seaside town: station, shop, park, and a wide summer beach.",
+      "theme": "summer",
+      "locations": [
+        {
+          "id": "station",
+          "name": "Hamanaka Station",
+          "nameJp": "浜中駅",
+          "cellId": "hamanaka-town",
+          "anchor": { "x": 1080, "y": 180 },
+          "radius": 150,
+          "kind": "Station",
+          "description": "The little station on the sea line.",
+          "learningTargets": ["eki", "densha", "kippu"]
+        },
+        {
+          "id": "shop",
+          "name": "Hamanaka Mart",
+          "nameJp": "浜中マート",
+          "cellId": "hamanaka-town",
+          "anchor": { "x": 1150, "y": 930 },
+          "radius": 140,
+          "kind": "Shop",
+          "description": "The town shop. The clerk is always smiling.",
+          "learningTargets": ["konbini", "tenin", "iriguchi"]
+        },
+        {
+          "id": "park",
+          "name": "Sunflower Park",
+          "nameJp": "ひまわり公園",
+          "cellId": "hamanaka-town",
+          "anchor": { "x": 380, "y": 460 },
+          "radius": 150,
+          "kind": "Park",
+          "description": "A quiet park with a little shrine.",
+          "learningTargets": ["koen", "jinja"]
+        },
+        {
+          "id": "beach",
+          "name": "Hamanaka Beach",
+          "nameJp": "浜中の浜",
+          "cellId": "hamanaka-town",
+          "anchor": { "x": 700, "y": 1160 },
+          "radius": 160,
+          "kind": "Beach",
+          "description": "Sand, waves and the sea breeze.",
+          "learningTargets": ["umi", "suna", "sora"]
+        },
+        {
+          "id": "lighthouse",
+          "name": "Shiokaze Lighthouse",
+          "nameJp": "潮風灯台",
+          "cellId": "hamanaka-town",
+          "anchor": { "x": 1900, "y": 1020 },
+          "radius": 130,
+          "kind": "Landmark",
+          "description": "The white lighthouse that watches over the bay.",
+          "learningTargets": ["toudai"]
+        },
+        {
+          "id": "festival-grounds",
+          "name": "Festival Grounds",
+          "nameJp": "祭り広場",
+          "cellId": "hamanaka-town",
+          "anchor": { "x": 960, "y": 720 },
+          "radius": 150,
+          "kind": "Town",
+          "description": "The square by the station road — empty by day, alive with stalls at dusk.",
+          "learningTargets": ["matsuri", "yatai"]
+        }
+      ],
+      "districts": [
+        {
+          "id": "town",
+          "name": "Town",
+          "nameJp": "町",
+          "cells": [
+            {
+              "id": "hamanaka-town",
+              "name": "Hamanaka Town",
+              "nameJp": "浜中",
+              "tiles": [
+                "...................--------...................",
+                "...................BBBBBBBB...................",
+                "...................BBBBBBBB...................",
+                "...................BBBBBBBB...................",
+                "...................--------...................",
+                "...................--------...................",
+                "......pppp...........===......................",
+                "......pppp...........===......................",
+                "......pppp...........===......................",
+                "......pppp...........===......................",
+                "......pppp...........===......................",
+                "......pppp...........===......................",
+                "......pppp...........===......................",
+                "...========================================...",
+                "...========================================...",
+                "...========================================...",
+                "...----------------------------------------...",
+                ".....BBBBBBB........BBBBBBBB.....BBBBBBB......",
+                ".....BBBBBBB........BBBBBBBB.....BBBBBBB......",
+                ".....BBBBBBB........BBBBBBBB.....BBBBBBB......",
+                ".....BBBBBBB..................................",
+                ".....BBBBBBB.....................BBBBBBBB.....",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+              ],
+              "legend": {
+                ".": { "color": 9203554 },
+                "-": { "color": 13228950 },
+                "=": { "color": 6118512 },
+                "B": { "color": 10395294, "solid": true },
+                "p": { "color": 14199715 },
+                ",": { "color": 15659936 },
+                "~": { "color": 5234167, "solid": true, "animated": true }
+              },
+              "objects": [
+                { "id": "obj-station", "kind": "Station", "position": { "x": 1080, "y": 120 }, "size": { "x": 120, "y": 84 }, "solid": true, "label": "浜中駅", "interactableId": "station:hamanaka-station", "learningTargets": ["eki"] },
+                { "id": "obj-eki-sign", "kind": "Sign", "position": { "x": 1344, "y": 288 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "駅", "reading": "えき", "meaning": "station", "interactableId": "read", "learningTargets": ["eki"] },
+                { "id": "obj-timetable", "kind": "NoticeBoard", "position": { "x": 864, "y": 288 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "時刻表", "reading": "じこくひょう", "meaning": "timetable", "interactableId": "read", "learningTargets": ["jikokuhyo"], "kidTargets": ["densha"] },
+                { "id": "obj-park-sign", "kind": "Sign", "position": { "x": 240, "y": 288 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "公園", "reading": "こうえん", "meaning": "park", "interactableId": "read", "learningTargets": ["koen"] },
+                { "id": "obj-shop", "kind": "Shop", "position": { "x": 1128, "y": 864 }, "size": { "x": 92, "y": 78 }, "solid": true, "label": "コンビニ" },
+                { "id": "obj-vending", "kind": "VendingMachine", "position": { "x": 1344, "y": 864 }, "size": { "x": 40, "y": 62 }, "solid": true, "label": "自動販売機", "reading": "じどうはんばいき", "meaning": "vending machine", "interactableId": "buy-drink", "learningTargets": ["nomimono", "mizu", "ocha", "juice"], "kidTargets": ["mizu", "ocha", "juice"] },
+                { "id": "obj-shop-sign", "kind": "Sign", "position": { "x": 1020, "y": 1000 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "入口", "reading": "いりぐち", "meaning": "entrance", "interactableId": "read", "learningTargets": ["iriguchi"] },
+                { "id": "obj-house-1", "kind": "House", "position": { "x": 384, "y": 864 }, "size": { "x": 84, "y": 64 }, "solid": true },
+                { "id": "obj-house-2", "kind": "House", "position": { "x": 1728, "y": 864 }, "size": { "x": 84, "y": 64 }, "solid": true },
+                { "id": "obj-lighthouse", "kind": "Lighthouse", "position": { "x": 1752, "y": 1008 }, "size": { "x": 34, "y": 90 }, "solid": true, "label": "灯台", "reading": "とうだい", "meaning": "lighthouse", "learningTargets": ["toudai"] },
+                { "id": "obj-shrine", "kind": "Shrine", "position": { "x": 432, "y": 336 }, "size": { "x": 64, "y": 58 }, "solid": true },
+                { "id": "obj-lantern-1", "kind": "Lantern", "position": { "x": 240, "y": 480 }, "size": { "x": 24, "y": 40 }, "solid": false },
+                { "id": "obj-lantern-2", "kind": "Lantern", "position": { "x": 528, "y": 480 }, "size": { "x": 24, "y": 40 }, "solid": false },
+                { "id": "obj-writing-desk", "kind": "NoticeBoard", "position": { "x": 672, "y": 528 }, "size": { "x": 56, "y": 44 }, "solid": false, "label": "書く", "reading": "かく", "meaning": "to write", "interactableId": "write", "learningTargets": ["kana-a", "kana-i", "kana-u", "kana-e", "kana-o"] },
+                { "id": "obj-takoyaki", "kind": "Stalls", "position": { "x": 960, "y": 720 }, "size": { "x": 76, "y": 60 }, "solid": true, "label": "たこ焼き", "reading": "たこやき", "meaning": "octopus dumplings", "interactableId": "order-food", "learningTargets": ["takoyaki"], "availablePhases": ["Evening"] },
+                { "id": "obj-taiyaki", "kind": "Stalls", "position": { "x": 1008, "y": 672 }, "size": { "x": 76, "y": 60 }, "solid": true, "label": "たい焼き", "reading": "たいやき", "meaning": "fish-shaped cake", "interactableId": "order-food", "learningTargets": ["taiyaki"], "availablePhases": ["Evening"] },
+                { "id": "obj-kingyo", "kind": "Stalls", "position": { "x": 1104, "y": 720 }, "size": { "x": 76, "y": 60 }, "solid": true, "label": "金魚すくい", "reading": "きんぎょすくい", "meaning": "goldfish scooping", "interactableId": "read", "learningTargets": ["kingyo"], "availablePhases": ["Evening"] },
+                { "id": "obj-chouchin-1", "kind": "Lantern", "position": { "x": 816, "y": 816 }, "size": { "x": 24, "y": 40 }, "solid": false, "label": "提灯", "reading": "ちょうちん", "meaning": "paper lantern", "interactableId": "read", "learningTargets": ["chouchin"], "availablePhases": ["Evening"] },
+                { "id": "obj-chouchin-2", "kind": "Lantern", "position": { "x": 1152, "y": 816 }, "size": { "x": 24, "y": 40 }, "solid": false, "label": "提灯", "reading": "ちょうちん", "meaning": "paper lantern", "interactableId": "read", "learningTargets": ["chouchin"], "availablePhases": ["Evening"] },
+                { "id": "obj-hanabi-sign", "kind": "Sign", "position": { "x": 480, "y": 1104 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "花火大会", "reading": "はなびたいかい", "meaning": "fireworks show", "interactableId": "read", "learningTargets": ["hanabi", "yoru"], "availablePhases": ["Night"] },
+                { "id": "obj-winter-stall", "kind": "Stalls", "position": { "x": 1056, "y": 672 }, "size": { "x": 76, "y": 60 }, "solid": true, "label": "冬の屋台", "reading": "ふゆのやたい", "meaning": "winter stall", "interactableId": "read", "learningTargets": ["atatakai", "fuyu"], "availableSeasons": ["Winter"] },
+                { "id": "obj-bench-park", "kind": "Bench", "position": { "x": 384, "y": 528 }, "size": { "x": 56, "y": 30 }, "solid": false, "interactableId": "sit", "learningTargets": ["suwaru"] },
+                { "id": "obj-bench-beach", "kind": "Bench", "position": { "x": 1440, "y": 1008 }, "size": { "x": 56, "y": 30 }, "solid": false, "interactableId": "sit", "learningTargets": ["suwaru"] },
+                { "id": "obj-beach-sign", "kind": "Sign", "position": { "x": 576, "y": 1104 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "海", "reading": "うみ", "meaning": "sea", "interactableId": "read", "learningTargets": ["umi"], "accent": 16039424 },
+                { "id": "obj-photo-beach", "kind": "CameraSpot", "position": { "x": 1008, "y": 1248 }, "size": { "x": 40, "y": 40 }, "solid": false, "label": "海の写真", "reading": "うみのしゃしん", "meaning": "photo of the sea", "interactableId": "photo-spot", "learningTargets": ["umi", "shashin"], "kidTargets": ["umi"] },
+                { "id": "obj-boat-1", "kind": "Boat", "position": { "x": 1680, "y": 1152 }, "size": { "x": 60, "y": 30 }, "solid": false },
+                { "id": "obj-boat-2", "kind": "Boat", "position": { "x": 1920, "y": 1200 }, "size": { "x": 60, "y": 30 }, "solid": false },
+                { "id": "obj-towel-1", "kind": "BeachTowel", "position": { "x": 720, "y": 1152 }, "size": { "x": 40, "y": 20 }, "solid": false },
+                { "id": "obj-towel-2", "kind": "BeachTowel", "position": { "x": 864, "y": 1200 }, "size": { "x": 40, "y": 20 }, "solid": false },
+                { "id": "obj-cat", "kind": "Cat", "position": { "x": 1152, "y": 1104 }, "size": { "x": 24, "y": 18 }, "solid": false, "label": "猫", "reading": "ねこ", "meaning": "cat", "learningTargets": ["neko"] },
+                { "id": "obj-bird", "kind": "Bird", "position": { "x": 1392, "y": 384 }, "size": { "x": 20, "y": 14 }, "solid": false, "label": "鳥", "reading": "とり", "meaning": "bird", "learningTargets": ["tori"] },
+                { "id": "obj-mailbox", "kind": "Mailbox", "position": { "x": 672, "y": 816 }, "size": { "x": 26, "y": 32 }, "solid": false },
+                { "id": "obj-bicycle", "kind": "Bicycle", "position": { "x": 1536, "y": 816 }, "size": { "x": 36, "y": 28 }, "solid": false },
+                { "id": "obj-well", "kind": "Well", "position": { "x": 1920, "y": 384 }, "size": { "x": 30, "y": 34 }, "solid": false },
+                { "id": "obj-tree-1", "kind": "Tree", "position": { "x": 192, "y": 384 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-2", "kind": "Tree", "position": { "x": 144, "y": 528 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-3", "kind": "Tree", "position": { "x": 576, "y": 432 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-4", "kind": "Tree", "position": { "x": 480, "y": 240 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-5", "kind": "Tree", "position": { "x": 1584, "y": 288 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-6", "kind": "Tree", "position": { "x": 1800, "y": 984 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-7", "kind": "Tree", "position": { "x": 480, "y": 1008 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-8", "kind": "Tree", "position": { "x": 672, "y": 1056 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-9", "kind": "Tree", "position": { "x": 1824, "y": 1104 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-tree-10", "kind": "Tree", "position": { "x": 336, "y": 1008 }, "size": { "x": 48, "y": 64 }, "solid": true }
+              ],
+              "bounds": { "x": 0, "y": 0, "width": 2208, "height": 1440 }
+            }
+          ]
+        }
+      ],
+      "spawn": {
+        "regionId": "hamanaka",
+        "cellId": "hamanaka-town",
+        "position": { "x": 900, "y": 700 },
+        "facing": "Down"
+      },
+      "bounds": { "x": 0, "y": 0, "width": 2208, "height": 1440 }
+    },
+    {
+      "id": "kamakura",
+      "name": "Kamakura",
+      "nameJp": "鎌倉",
+      "description": "A historic town of temples, shopping streets and a wide beach.",
+      "theme": "summer",
+      "locations": [
+        {
+          "id": "kamakura-station",
+          "name": "Kamakura Station",
+          "nameJp": "鎌倉駅",
+          "cellId": "kamakura-town",
+          "anchor": { "x": 1080, "y": 240 },
+          "radius": 160,
+          "kind": "Station",
+          "description": "The wooden station where the sea line arrives.",
+          "learningTargets": ["eki", "kamakura"]
+        },
+        {
+          "id": "komachi",
+          "name": "Komachi-dōri",
+          "nameJp": "小町通り",
+          "cellId": "kamakura-town",
+          "anchor": { "x": 1080, "y": 660 },
+          "radius": 170,
+          "kind": "Town",
+          "description": "The busy shopping street — shops, sweets and souvenirs.",
+          "learningTargets": ["komachi", "omiyage", "kanban"]
+        },
+        {
+          "id": "hachimangu",
+          "name": "Tsurugaoka Hachimangū",
+          "nameJp": "鶴岡八幡宮",
+          "cellId": "kamakura-town",
+          "anchor": { "x": 384, "y": 480 },
+          "radius": 160,
+          "kind": "Temple",
+          "description": "The great shrine behind the torii and the long gravel approach.",
+          "learningTargets": ["hachimangu", "torii", "sandou"]
+        },
+        {
+          "id": "hasedera",
+          "name": "Hase-dera Temple",
+          "nameJp": "長谷寺",
+          "cellId": "kamakura-town",
+          "anchor": { "x": 1776, "y": 840 },
+          "radius": 160,
+          "kind": "Temple",
+          "description": "A hillside temple with gardens and a view of the sea.",
+          "learningTargets": ["tera", "hasedera", "daibutsu"]
+        },
+        {
+          "id": "yuigahama",
+          "name": "Yuigahama Beach",
+          "nameJp": "由比ヶ浜",
+          "cellId": "kamakura-town",
+          "anchor": { "x": 1056, "y": 1104 },
+          "radius": 170,
+          "kind": "Beach",
+          "description": "Wide sand, gentle waves, and the Enoden train along the shore.",
+          "learningTargets": ["yuigahama", "umi", "suna", "sora"]
+        }
+      ],
+      "districts": [
+        {
+          "id": "old-town",
+          "name": "Old Town",
+          "nameJp": "古い町",
+          "cells": [
+            {
+              "id": "kamakura-town",
+              "name": "Kamakura Town",
+              "nameJp": "鎌倉",
+              "tiles": [
+                "...................BBBBBBBB...................",
+                "...................BBBBBBBB...................",
+                "...................--------...................",
+                "...................--------...................",
+                "...................BBBBBBBB...................",
+                "...................--------...................",
+                "......gggg...........===......................",
+                "......gggg...........===......................",
+                "......gggg...........===......................",
+                "......gggg...........===......................",
+                "......gggg...........===......................",
+                "......gggg...........===......................",
+                "......gggg...........===......................",
+                "...========================================...",
+                "...========================================...",
+                "...----------------------------------------...",
+                ".....BBBBBBB........BBBBBBBB.....BBBBBBB......",
+                ".....BBBBBBB........BBBBBBBB.....BBBBBBB......",
+                ".....BBBBBBB........BBBBBBBB.....BBBBBBB......",
+                ".....BBBBBBB..................................",
+                ".....BBBBBBB.....................BBBBBBBB.....",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+              ],
+              "legend": {
+                ".": { "color": 9203554 },
+                "-": { "color": 13228950 },
+                "=": { "color": 6118512 },
+                "B": { "color": 10395294, "solid": true },
+                "p": { "color": 14199715 },
+                "g": { "color": 13618344 },
+                ",": { "color": 15659936 },
+                "~": { "color": 5234167, "solid": true, "animated": true }
+              },
+              "objects": [
+                { "id": "obj-kmk-station", "kind": "Station", "position": { "x": 1080, "y": 120 }, "size": { "x": 120, "y": 84 }, "solid": true, "label": "鎌倉駅", "interactableId": "station:kamakura", "learningTargets": ["eki"] },
+                { "id": "obj-kmk-eki-sign", "kind": "Sign", "position": { "x": 1344, "y": 288 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "駅", "reading": "えき", "meaning": "station", "interactableId": "read", "learningTargets": ["eki"] },
+                { "id": "obj-kmk-kamakura-sign", "kind": "Sign", "position": { "x": 816, "y": 288 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "鎌倉", "reading": "かまくら", "meaning": "Kamakura", "interactableId": "read", "learningTargets": ["kamakura"] },
+                { "id": "obj-torii", "kind": "Shrine", "position": { "x": 384, "y": 384 }, "size": { "x": 80, "y": 70 }, "solid": true, "label": "鳥居", "reading": "とりい", "meaning": "torii gate", "interactableId": "read", "learningTargets": ["torii"] },
+                { "id": "obj-hachimangu", "kind": "Shrine", "position": { "x": 384, "y": 528 }, "size": { "x": 80, "y": 70 }, "solid": true, "label": "八幡宮", "reading": "はちまんぐう", "meaning": "Hachimangū shrine", "learningTargets": ["hachimangu"] },
+                { "id": "obj-hasedera", "kind": "Shrine", "position": { "x": 1776, "y": 816 }, "size": { "x": 90, "y": 76 }, "solid": true, "label": "長谷寺", "reading": "はせでら", "meaning": "Hase-dera temple", "learningTargets": ["tera", "hasedera"] },
+                { "id": "obj-daibutsu", "kind": "Shrine", "position": { "x": 1920, "y": 720 }, "size": { "x": 70, "y": 84 }, "solid": true, "label": "大仏", "reading": "だいぶつ", "meaning": "Great Buddha", "interactableId": "read", "learningTargets": ["daibutsu"] },
+                { "id": "obj-komachi-shop", "kind": "Shop", "position": { "x": 1008, "y": 720 }, "size": { "x": 92, "y": 78 }, "solid": true, "label": "小町通り", "interactableId": "read", "learningTargets": ["komachi"] },
+                { "id": "obj-sweets-shop", "kind": "Shop", "position": { "x": 1152, "y": 720 }, "size": { "x": 92, "y": 78 }, "solid": true, "label": "おみやげ" },
+                { "id": "obj-kmk-vending", "kind": "VendingMachine", "position": { "x": 1344, "y": 864 }, "size": { "x": 40, "y": 62 }, "solid": true, "label": "自動販売機", "interactableId": "buy-drink", "learningTargets": ["nomimono"], "kidTargets": ["mizu"] },
+                { "id": "obj-kmk-beach-sign", "kind": "Sign", "position": { "x": 576, "y": 1104 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "海", "reading": "うみ", "meaning": "sea", "interactableId": "read", "learningTargets": ["umi"], "accent": 16039424 },
+                { "id": "obj-kmk-lantern-1", "kind": "Lantern", "position": { "x": 240, "y": 480 }, "size": { "x": 24, "y": 40 }, "solid": false },
+                { "id": "obj-kmk-stone-lantern", "kind": "Lantern", "position": { "x": 672, "y": 600 }, "size": { "x": 28, "y": 44 }, "solid": false, "label": "石灯籠", "reading": "いしどうろう", "meaning": "stone lantern", "interactableId": "read", "learningTargets": ["chouchin", "tsuki"], "availablePhases": ["Evening", "Night"] },
+                { "id": "obj-kmk-lantern-2", "kind": "Lantern", "position": { "x": 528, "y": 480 }, "size": { "x": 24, "y": 40 }, "solid": false },
+                { "id": "obj-kmk-writing-desk", "kind": "NoticeBoard", "position": { "x": 528, "y": 660 }, "size": { "x": 56, "y": 44 }, "solid": false, "label": "書く", "reading": "かく", "meaning": "to write", "interactableId": "write", "learningTargets": ["kanji-eki", "kanji-umi", "kanji-machi"], "kidTargets": ["kanji-eki"] },
+                { "id": "obj-kmk-bench", "kind": "Bench", "position": { "x": 1440, "y": 1008 }, "size": { "x": 56, "y": 30 }, "solid": false, "interactableId": "sit", "learningTargets": ["suwaru"] },
+                { "id": "obj-kmk-house-1", "kind": "House", "position": { "x": 384, "y": 864 }, "size": { "x": 84, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-house-2", "kind": "House", "position": { "x": 1728, "y": 864 }, "size": { "x": 84, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-cat", "kind": "Cat", "position": { "x": 1152, "y": 1104 }, "size": { "x": 24, "y": 18 }, "solid": false, "label": "猫", "reading": "ねこ", "meaning": "cat", "learningTargets": ["neko"] },
+                { "id": "obj-kmk-sakura", "kind": "Tree", "position": { "x": 528, "y": 192 }, "size": { "x": 56, "y": 72 }, "solid": true, "label": "桜", "reading": "さくら", "meaning": "cherry blossom", "interactableId": "read", "learningTargets": ["sakura", "hanami"], "availableSeasons": ["Spring"] },
+                { "id": "obj-kmk-photo-sakura", "kind": "CameraSpot", "position": { "x": 624, "y": 288 }, "size": { "x": 40, "y": 40 }, "solid": false, "label": "桜の写真", "reading": "さくらのしゃしん", "meaning": "photo of the blossoms", "interactableId": "photo-spot", "learningTargets": ["sakura", "hanami"], "kidTargets": ["sakura"], "availableSeasons": ["Spring"] },
+                { "id": "obj-kmk-tree-1", "kind": "Tree", "position": { "x": 192, "y": 384 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-2", "kind": "Tree", "position": { "x": 144, "y": 528 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-3", "kind": "Tree", "position": { "x": 576, "y": 432 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-4", "kind": "Tree", "position": { "x": 480, "y": 240 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-5", "kind": "Tree", "position": { "x": 1584, "y": 288 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-6", "kind": "Tree", "position": { "x": 1800, "y": 984 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-7", "kind": "Tree", "position": { "x": 480, "y": 1008 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-8", "kind": "Tree", "position": { "x": 672, "y": 1056 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-9", "kind": "Tree", "position": { "x": 1824, "y": 1104 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-tree-10", "kind": "Tree", "position": { "x": 336, "y": 1008 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-kmk-towel", "kind": "BeachTowel", "position": { "x": 864, "y": 1152 }, "size": { "x": 40, "y": 20 }, "solid": false },
+                { "id": "obj-kmk-boat", "kind": "Boat", "position": { "x": 1680, "y": 1152 }, "size": { "x": 60, "y": 30 }, "solid": false },
+                { "id": "obj-kmk-bird", "kind": "Bird", "position": { "x": 672, "y": 816 }, "size": { "x": 20, "y": 14 }, "solid": false, "label": "鳥", "reading": "とり", "meaning": "bird", "learningTargets": ["tori"] }
+              ],
+              "bounds": { "x": 0, "y": 0, "width": 2208, "height": 1440 }
+            }
+          ]
+        }
+      ],
+      "spawn": {
+        "regionId": "kamakura",
+        "cellId": "kamakura-town",
+        "position": { "x": 1080, "y": 264 },
+        "facing": "Down"
+      },
+      "bounds": { "x": 0, "y": 0, "width": 2208, "height": 1440 }
+    },
+    {
+      "id": "enoshima",
+      "name": "Enoshima",
+      "nameJp": "江の島",
+      "description": "A small island across the water — shrine gardens, rocky caves and a wind-brushed beach.",
+      "theme": "island",
+      "locations": [
+        {
+          "id": "enoshima-station",
+          "name": "Enoshima Station",
+          "nameJp": "江の島駅",
+          "cellId": "enoshima-island",
+          "anchor": { "x": 1080, "y": 180 },
+          "radius": 150,
+          "kind": "Station",
+          "description": "The little station where the sea line crosses to the island.",
+          "learningTargets": ["eki", "enoshima"]
+        },
+        {
+          "id": "enoshima-bridge",
+          "name": "Benten Bridge",
+          "nameJp": "弁天橋",
+          "cellId": "enoshima-island",
+          "anchor": { "x": 1080, "y": 48 },
+          "radius": 130,
+          "kind": "Landmark",
+          "description": "The long bridge-causeway that connects the island to the shore.",
+          "learningTargets": ["hashi", "umi"]
+        },
+        {
+          "id": "samuel-garden",
+          "name": "Samuel Cocking Garden",
+          "nameJp": "サムエル・コッキング苑",
+          "cellId": "enoshima-island",
+          "anchor": { "x": 1704, "y": 600 },
+          "radius": 150,
+          "kind": "Park",
+          "description": "A flower garden with an observation tower looking out to sea.",
+          "learningTargets": ["teien", "tenbou"]
+        },
+        {
+          "id": "enoshima-shrine",
+          "name": "Enoshima Shrine",
+          "nameJp": "江島神社",
+          "cellId": "enoshima-island",
+          "anchor": { "x": 432, "y": 528 },
+          "radius": 150,
+          "kind": "Temple",
+          "description": "The island shrine to Benzaiten, goddess of music and the sea.",
+          "learningTargets": ["jinja", "benzaitei"]
+        },
+        {
+          "id": "iwaya-cave",
+          "name": "Iwaya Caves",
+          "nameJp": "岩屋",
+          "cellId": "enoshima-island",
+          "anchor": { "x": 1080, "y": 1224 },
+          "radius": 150,
+          "kind": "Landmark",
+          "description": "Sea caves carved by the tide at the island's southern tip.",
+          "learningTargets": ["iwaya", "umi"]
+        },
+        {
+          "id": "enoshima-beach",
+          "name": "Enoshima Beach",
+          "nameJp": "江の島の浜",
+          "cellId": "enoshima-island",
+          "anchor": { "x": 720, "y": 1248 },
+          "radius": 160,
+          "kind": "Beach",
+          "description": "Sand, wind and the sound of the tide around the island.",
+          "learningTargets": ["umi", "suna", "sora"]
+        }
+      ],
+      "districts": [
+        {
+          "id": "island",
+          "name": "Island",
+          "nameJp": "島",
+          "cells": [
+            {
+              "id": "enoshima-island",
+              "name": "Enoshima Island",
+              "nameJp": "江の島",
+              "tiles": [
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~--------------------------------~~~~~~~",
+                "~~~~~~~--------------------------------~~~~~~~",
+                "~~~~~~~--------------------------------~~~~~~~",
+                "~~~~pppppppppppppppppppppppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppppppppppppppppppppppppp~~~~",
+                "~~~~pppppppBBBBBpppppppppppppppppppppppppp~~~~",
+                "~~~~pppppppBBBBBpppppppppppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppppppppppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppppppppppppppppppppppppp~~~~",
+                "~~~~ppppgggggpppppp=====pppppppppppppppppp~~~~",
+                "~~~~ppppgggggpppppp=====pppppppppppppppppp~~~~",
+                "~~~~ppppgggggpppppp=====pppppppppppppppppp~~~~",
+                "~~~~ppppgggggpppppp=====pppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppp=====ppppggggggggggggg~~~~",
+                "~~~~pppppppppppppppp=====ppppggggggggggggg~~~~",
+                "~~~~pppppppppppppppp=====ppppggggggggggggg~~~~",
+                "~~~~pppppppppppppppp=====ppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppp=====ppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppp=====ppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppp=====ppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppp=====ppppppppppppppppp~~~~",
+                "~~~~pppppppppppppppp=====ppppppppppppppppp~~~~",
+                "~~~~,,,,,,,,,,,,,,,,=====,,,,,,,,,,,,,,,,,~~~~",
+                "~~~~,,,,,,,,,,,,,,,,=====,,,,,,,,,,,,,,,,,~~~~",
+                "~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~",
+                "~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~",
+                "~~~~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+              ],
+              "legend": {
+                ".": { "color": 9203554 },
+                "-": { "color": 13228950 },
+                "=": { "color": 6118512 },
+                "B": { "color": 10395294, "solid": true },
+                "p": { "color": 14199715 },
+                "g": { "color": 13618344 },
+                ",": { "color": 15659936 },
+                "~": { "color": 5234167, "solid": true, "animated": true }
+              },
+              "objects": [
+                { "id": "obj-eso-station", "kind": "Station", "position": { "x": 1080, "y": 120 }, "size": { "x": 120, "y": 84 }, "solid": true, "label": "江の島駅", "interactableId": "station:enoshima", "learningTargets": ["eki"] },
+                { "id": "obj-eso-eki-sign", "kind": "Sign", "position": { "x": 1344, "y": 288 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "駅", "reading": "えき", "meaning": "station", "interactableId": "read", "learningTargets": ["eki"] },
+                { "id": "obj-eso-bridge-sign", "kind": "Sign", "position": { "x": 864, "y": 96 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "弁天橋", "reading": "べんてんばし", "meaning": "Benten Bridge", "interactableId": "read", "learningTargets": ["hashi", "umi"] },
+                { "id": "obj-eso-torii", "kind": "Shrine", "position": { "x": 384, "y": 480 }, "size": { "x": 80, "y": 70 }, "solid": true, "label": "鳥居", "reading": "とりい", "meaning": "torii gate", "interactableId": "read", "learningTargets": ["torii"] },
+                { "id": "obj-eso-shrine", "kind": "Shrine", "position": { "x": 456, "y": 552 }, "size": { "x": 80, "y": 70 }, "solid": true, "label": "江島神社", "reading": "えのしまじんじゃ", "meaning": "Enoshima Shrine", "interactableId": "read", "learningTargets": ["jinja", "benzaitei"] },
+                { "id": "obj-eso-stone-lantern", "kind": "Lantern", "position": { "x": 528, "y": 528 }, "size": { "x": 28, "y": 44 }, "solid": false, "label": "石灯籠", "reading": "いしどうろう", "meaning": "stone lantern", "interactableId": "read", "learningTargets": ["chouchin", "tsuki"], "availablePhases": ["Evening", "Night"] },
+                { "id": "obj-eso-garden-sign", "kind": "Sign", "position": { "x": 1632, "y": 480 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "展望台", "reading": "てんぼうだい", "meaning": "observation deck", "interactableId": "read", "learningTargets": ["tenbou"] },
+                { "id": "obj-eso-lighthouse", "kind": "Lighthouse", "position": { "x": 1776, "y": 648 }, "size": { "x": 34, "y": 90 }, "solid": true, "label": "展望灯台", "reading": "てんぼうとうだい", "meaning": "observation lighthouse", "learningTargets": ["tenbou"] },
+                { "id": "obj-eso-cave-sign", "kind": "Sign", "position": { "x": 960, "y": 1152 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "岩屋", "reading": "いわや", "meaning": "rock cave", "interactableId": "read", "learningTargets": ["iwaya"] },
+                { "id": "obj-eso-cave", "kind": "Shrine", "position": { "x": 1080, "y": 1224 }, "size": { "x": 96, "y": 72 }, "solid": true, "label": "岩屋の洞窟", "reading": "いわやのどうくつ", "meaning": "Iwaya sea cave", "interactableId": "read", "learningTargets": ["iwaya", "umi"] },
+                { "id": "obj-eso-vending", "kind": "VendingMachine", "position": { "x": 1344, "y": 864 }, "size": { "x": 40, "y": 62 }, "solid": true, "label": "自動販売機", "reading": "じどうはんばいき", "meaning": "vending machine", "interactableId": "buy-drink", "learningTargets": ["nomimono", "mizu", "ocha", "juice"], "kidTargets": ["mizu", "ocha", "juice"] },
+                { "id": "obj-eso-writing-desk", "kind": "NoticeBoard", "position": { "x": 864, "y": 720 }, "size": { "x": 56, "y": 44 }, "solid": false, "label": "書く", "reading": "かく", "meaning": "to write", "interactableId": "write", "learningTargets": ["kanji-shima", "kanji-umi"] },
+                { "id": "obj-eso-bench", "kind": "Bench", "position": { "x": 1440, "y": 816 }, "size": { "x": 56, "y": 30 }, "solid": false, "interactableId": "sit", "learningTargets": ["suwaru"] },
+                { "id": "obj-eso-photo-cove", "kind": "CameraSpot", "position": { "x": 720, "y": 1200 }, "size": { "x": 40, "y": 40 }, "solid": false, "label": "海の写真", "reading": "うみのしゃしん", "meaning": "photo of the sea", "interactableId": "photo-spot", "learningTargets": ["umi", "shashin"], "kidTargets": ["umi"] },
+                { "id": "obj-eso-sea-sign", "kind": "Sign", "position": { "x": 576, "y": 1104 }, "size": { "x": 48, "y": 48 }, "solid": false, "label": "海", "reading": "うみ", "meaning": "sea", "interactableId": "read", "learningTargets": ["umi"], "accent": 16039424 },
+                { "id": "obj-eso-cat", "kind": "Cat", "position": { "x": 1152, "y": 960 }, "size": { "x": 24, "y": 18 }, "solid": false, "label": "猫", "reading": "ねこ", "meaning": "cat", "learningTargets": ["neko"] },
+                { "id": "obj-eso-bird", "kind": "Bird", "position": { "x": 672, "y": 816 }, "size": { "x": 20, "y": 14 }, "solid": false, "label": "鳥", "reading": "とり", "meaning": "bird", "learningTargets": ["tori"] },
+                { "id": "obj-eso-boat", "kind": "Boat", "position": { "x": 1680, "y": 1248 }, "size": { "x": 60, "y": 30 }, "solid": false },
+                { "id": "obj-eso-towel", "kind": "BeachTowel", "position": { "x": 864, "y": 1296 }, "size": { "x": 40, "y": 20 }, "solid": false },
+                { "id": "obj-eso-tree-1", "kind": "Tree", "position": { "x": 240, "y": 240 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-2", "kind": "Tree", "position": { "x": 192, "y": 384 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-3", "kind": "Tree", "position": { "x": 336, "y": 672 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-4", "kind": "Tree", "position": { "x": 720, "y": 336 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-5", "kind": "Tree", "position": { "x": 1584, "y": 288 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-6", "kind": "Tree", "position": { "x": 1800, "y": 336 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-7", "kind": "Tree", "position": { "x": 480, "y": 1008 }, "size": { "x": 48, "y": 64 }, "solid": true },
+                { "id": "obj-eso-tree-8", "kind": "Tree", "position": { "x": 672, "y": 1104 }, "size": { "x": 48, "y": 64 }, "solid": true }
+              ],
+              "bounds": { "x": 0, "y": 0, "width": 2208, "height": 1440 }
+            }
+          ]
+        }
+      ],
+      "spawn": {
+        "regionId": "enoshima",
+        "cellId": "enoshima-island",
+        "position": { "x": 1080, "y": 264 },
+        "facing": "Down"
+      },
+      "bounds": { "x": 0, "y": 0, "width": 2208, "height": 1440 }
+    }
+  ],
+  "travel": {
+    "stations": [
+      {
+        "id": "hamanaka-station",
+        "name": "Hamanaka",
+        "nameJp": "浜中",
+        "reading": "はまなか",
+        "cellId": "hamanaka-town",
+        "position": { "x": 1080, "y": 180 },
+        "lines": ["umi-line"],
+        "learningTargets": ["eki", "kippu", "kaisatsu", "homu"],
+        "arrivalDelayMinutes": 0
+      },
+      {
+        "id": "kamakura",
+        "name": "Kamakura",
+        "nameJp": "鎌倉",
+        "reading": "かまくら",
+        "cellId": "kamakura-town",
+        "position": { "x": 1080, "y": 264 },
+        "lines": ["umi-line"],
+        "learningTargets": ["eki", "densha", "kamakura"],
+        "arrivalDelayMinutes": 20,
+        "arrivalStoryId": "kamakura-summer"
+      },
+      {
+        "id": "enoshima",
+        "name": "Enoshima",
+        "nameJp": "江の島",
+        "reading": "えのしま",
+        "cellId": "enoshima-island",
+        "position": { "x": 1080, "y": 264 },
+        "lines": ["umi-line"],
+        "learningTargets": ["eki", "densha", "enoshima"],
+        "arrivalDelayMinutes": 25,
+        "arrivalStoryId": "enoshima-tide"
+      }
+    ],
+    "lines": [
+      {
+        "id": "umi-line",
+        "name": "Sea Line",
+        "color": 5234167,
+        "stations": ["hamanaka-station", "kamakura", "enoshima"]
+      }
+    ],
+    "edges": [
+      { "fromStationId": "hamanaka-station", "toStationId": "kamakura", "lineId": "umi-line", "minutes": 20 },
+      { "fromStationId": "kamakura", "toStationId": "hamanaka-station", "lineId": "umi-line", "minutes": 20 },
+      { "fromStationId": "kamakura", "toStationId": "enoshima", "lineId": "umi-line", "minutes": 25 },
+      { "fromStationId": "enoshima", "toStationId": "kamakura", "lineId": "umi-line", "minutes": 25 }
+    ]
+  }
+}

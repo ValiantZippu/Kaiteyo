@@ -73,7 +73,7 @@
     <div class="roadmap-phase">
       <h3>{{ phase.title }}</h3>
       <ul class="roadmap-list">
-        {% for item in phase.items[:4] %}
+        {% for item in phase["items"][:4] %}
         <li>
           <span class="roadmap-item-title">{{ item.title }}</span>
           {{ pm.status_badge(item.status) }}

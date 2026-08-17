@@ -1,0 +1,1104 @@
+{
+ "dialogues": [
+  {
+   "id": "welcome",
+   "lines": [
+    {
+     "id": "w1",
+     "speakerId": "ekicho",
+     "speakerName": "駅長さん",
+     "jp": "いらっしゃいませ！浜中駅へようこそ。",
+     "reading": "いらっしゃいませ！はまなかえきへようこそ。",
+     "translation": "Welcome! Welcome to Hamanaka Station.",
+     "kidJp": "ようこそ！ここは「えき」です。",
+     "kidReading": "ようこそ！ここは「えき」です。",
+     "kidTranslation": "Welcome! This is the station — eki.",
+     "learningTargets": [
+      "eki"
+     ],
+     "nextId": "w2"
+    },
+    {
+     "id": "w2",
+     "speakerId": "ekicho",
+     "speakerName": "駅長さん",
+     "jp": "ここは「えき」です。電車はここから乗ります。",
+     "reading": "ここは「えき」です。でんしゃはここからのります。",
+     "translation": "This is the station — eki. Trains leave from here.",
+     "kidJp": "ここは「えき」です。でんしゃは、ここからのります。",
+     "kidReading": "ここは「えき」です。でんしゃは、ここからのります。",
+     "kidTranslation": "This is the station. Trains leave from here.",
+     "learningTargets": [
+      "eki",
+      "densha"
+     ],
+     "nextId": "w3"
+    },
+    {
+     "id": "w3",
+     "speakerId": "ekicho",
+     "speakerName": "駅長さん",
+     "jp": "駅で何か手伝いましょうか？",
+     "reading": "えきでなにかてつだいましょうか？",
+     "translation": "Can I help you with anything at the station?",
+     "kidJp": "なにか、おてつだいできますか？",
+     "kidReading": "なにか、おてつだいできますか？",
+     "kidTranslation": "Can I help you with anything?",
+     "options": [
+      {
+       "text": "はい、ありがとうございます。",
+       "textJp": "はい、ありがとうございます。",
+       "nextId": "w4"
+      },
+      {
+       "text": "いいえ、またあとで。",
+       "textJp": "いいえ、またあとで。",
+       "nextId": "w5"
+      }
+     ]
+    },
+    {
+     "id": "w4",
+     "speakerId": "ekicho",
+     "speakerName": "駅長さん",
+     "jp": "では、町を散歩してみてください。看板を読んでみましょう。",
+     "reading": "では、まちをさんぽしてみてください。かんばんをよんでみましょう。",
+     "translation": "Then take a walk around town — try reading the signs.",
+     "kidJp": "おさんぽしましょう。かんばんを、よんでみましょう。",
+     "kidReading": "おさんぽしましょう。かんばんを、よんでみましょう。",
+     "kidTranslation": "Let's take a walk — try reading the signs.",
+     "learningTargets": [
+      "eki",
+      "densha",
+      "kanban"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "eki"
+      },
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "densha"
+      },
+      {
+       "kind": "GrantQuest",
+       "targetId": "buy-drink"
+      },
+      {
+       "kind": "GrantQuest",
+       "targetId": "beach-sign"
+      },
+      {
+       "kind": "GrantQuest",
+       "targetId": "station-travel"
+      }
+     ],
+     "nextId": "w5"
+    },
+    {
+     "id": "w5",
+     "speakerId": "ekicho",
+     "speakerName": "駅長さん",
+     "jp": "またね！",
+     "reading": "またね！",
+     "translation": "See you!",
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "buy-drink",
+   "lines": [
+    {
+     "id": "b1",
+     "speakerId": "misaki",
+     "speakerName": "店員さん",
+     "jp": "いらっしゃいませ！",
+     "reading": "いらっしゃいませ！",
+     "translation": "Welcome!",
+     "nextId": "b2"
+    },
+    {
+     "id": "b2",
+     "speakerId": "misaki",
+     "speakerName": "店員さん",
+     "jp": "何か飲みますか？自動販売機がありますよ。",
+     "reading": "なにかのみますか？じどうはんばいきがありますよ。",
+     "translation": "Would you like a drink? There's a vending machine over there.",
+     "learningTargets": [
+      "nomimono",
+      "konbini",
+      "tenin"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "konbini"
+      },
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "tenin"
+      },
+      {
+       "kind": "GrantQuest",
+       "targetId": "photo-walk"
+      }
+     ],
+     "nextId": "b3"
+    },
+    {
+     "id": "b3",
+     "speakerId": "misaki",
+     "speakerName": "店員さん",
+     "jp": "あの赤い自販機で買えますよ。",
+     "reading": "あのあかいじはんきでかえますよ。",
+     "translation": "You can buy one from that red machine.",
+     "nextId": "b4"
+    },
+    {
+     "id": "b4",
+     "speakerId": "misaki",
+     "speakerName": "店員さん",
+     "jp": "さようなら！",
+     "reading": "さようなら！",
+     "translation": "Goodbye!",
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "beach-sign",
+   "lines": [
+    {
+     "id": "t1",
+     "speakerId": "tanaka",
+     "speakerName": "田中さん",
+     "jp": "やあ、こんにちは。海を見に来たのかい？",
+     "reading": "やあ、こんにちは。うみをみにきたのかい？",
+     "translation": "Hey there. Did you come to see the sea?",
+     "learningTargets": [
+      "umi"
+     ],
+     "nextId": "t2"
+    },
+    {
+     "id": "t2",
+     "speakerId": "tanaka",
+     "speakerName": "田中さん",
+     "jp": "あの看板を読んでごらん。「うみ」と書いてあるよ。",
+     "reading": "あのかんばんをよんでごらん。「うみ」とかいてあるよ。",
+     "translation": "Try reading that sign — it says \"umi\".",
+     "learningTargets": [
+      "umi",
+      "kanban"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "umi"
+      },
+      {
+       "kind": "GrantQuest",
+       "targetId": "photo-walk"
+      }
+     ],
+     "nextId": "t3",
+     "kidJp": "あのかんばんを、よんでごらん。「うみ」とかいてあるよ。",
+     "kidReading": "あのかんばんを、よんでごらん。「うみ」とかいてあるよ。",
+     "kidTranslation": "Try reading that sign — it says 'umi'."
+    },
+    {
+     "id": "t3",
+     "speakerId": "tanaka",
+     "speakerName": "田中さん",
+     "jp": "いい旅を。",
+     "reading": "いいたびを。",
+     "translation": "Have a good trip.",
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "photo-walk",
+   "lines": [
+    {
+     "id": "p1",
+     "speakerId": "yui",
+     "speakerName": "ゆい",
+     "jp": "やっほー！写真を撮らない？",
+     "reading": "やっほー！しゃしんをとらない？",
+     "translation": "Hey! Want to take some photos?",
+     "learningTargets": [
+      "shashin",
+      "toru"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "shashin"
+      },
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "toru"
+      }
+     ],
+     "nextId": "p2"
+    },
+    {
+     "id": "p2",
+     "speakerId": "yui",
+     "speakerName": "ゆい",
+     "jp": "カメラで町を三枚撮ってみよう！",
+     "reading": "カメラでまちをさんまいとってみよう！",
+     "translation": "Try taking three photos of the town with your camera!",
+     "nextId": "p3"
+    },
+    {
+     "id": "p3",
+     "speakerId": "yui",
+     "speakerName": "ゆい",
+     "jp": "じゃあね！",
+     "reading": "じゃあね！",
+     "translation": "See ya!",
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "sit-bench",
+   "lines": [
+    {
+     "id": "s1",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "ベンチに座った。のどかな午後だ。",
+     "reading": "ベンチにすわった。のどかなごごだ。",
+     "translation": "You sit on the bench. A peaceful afternoon.",
+     "learningTargets": [
+      "suwaru"
+     ],
+     "nextId": "s2"
+    },
+    {
+     "id": "s2",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "しばらく休む。",
+     "reading": "しばらくやすむ。",
+     "translation": "You rest for a while.",
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "story-arrival",
+   "lines": [
+    {
+     "id": "sa1",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "夏休みの朝。電車は浜中に着いた。",
+     "reading": "なつやすみのあさ。でんしゃははまなかに ついた。",
+     "translation": "Summer morning. The train arrived in Hamanaka.",
+     "learningTargets": [
+      "densha"
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "kamakura-arrival",
+   "lines": [
+    {
+     "id": "ka1",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "電車は鎌倉に着いた。潮の匂いがする。",
+     "reading": "でんしゃはかまくらについた。しおのにおいがする。",
+     "translation": "The train arrived in Kamakura. You can smell the sea.",
+     "learningTargets": [
+      "kamakura"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "kamakura"
+      }
+     ],
+     "nextId": "ka2"
+    },
+    {
+     "id": "ka2",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "「かまくら」。古い町、寺、そして海。",
+     "reading": "「かまくら」。ふるいまち、てら、そしてうみ。",
+     "translation": "Kamakura — an old town of temples, and the sea.",
+     "learningTargets": [
+      "kamakura",
+      "tera",
+      "umi"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "komachi-walk"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "kamakura-shrine",
+   "lines": [
+    {
+     "id": "ks1",
+     "speakerId": "kanushi",
+     "speakerName": "神主さん",
+     "jp": "ようこそ、鶴岡八幡宮へ。",
+     "reading": "ようこそ、つるがおかはちまんぐうへ。",
+     "translation": "Welcome to Tsurugaoka Hachimangū.",
+     "learningTargets": [
+      "hachimangu",
+      "torii",
+      "sandou"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "hachimangu"
+      }
+     ],
+     "nextId": "ks2"
+    },
+    {
+     "id": "ks2",
+     "speakerId": "kanushi",
+     "speakerName": "神主さん",
+     "jp": "鳥居をくぐって、参道を歩いてください。",
+     "reading": "とりいをくぐって、さんどうをあるいてください。",
+     "translation": "Pass under the torii and walk the approach.",
+     "learningTargets": [
+      "torii",
+      "sandou"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "torii"
+      }
+     ],
+     "nextId": "ks3"
+    },
+    {
+     "id": "ks3",
+     "speakerId": "kanushi",
+     "speakerName": "神主さん",
+     "jp": "おみくじを引いてみますか？",
+     "reading": "おみくじをひいてみますか？",
+     "translation": "Would you like to draw a fortune?",
+     "learningTargets": [
+      "omikuji"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "omikuji"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "kamakura-shop",
+   "lines": [
+    {
+     "id": "ko1",
+     "speakerId": "komachi-shopkeeper",
+     "speakerName": "小町の店員さん",
+     "jp": "いらっしゃいませ！小町通りへようこそ。",
+     "reading": "いらっしゃいませ！こまちどおりへようこそ。",
+     "translation": "Welcome to Komachi-dōri!",
+     "learningTargets": [
+      "komachi"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "komachi"
+      }
+     ],
+     "nextId": "ko2"
+    },
+    {
+     "id": "ko2",
+     "speakerId": "komachi-shopkeeper",
+     "speakerName": "小町の店員さん",
+     "jp": "おみやげはいかがですか？",
+     "reading": "おみやげはいかがですか？",
+     "translation": "How about a souvenir?",
+     "learningTargets": [
+      "omiyage"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "omiyage"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "kamakura-temple",
+   "lines": [
+    {
+     "id": "kt1",
+     "speakerId": "monk",
+     "speakerName": "お坊さん",
+     "jp": "よくおいでくださいました。長谷寺です。",
+     "reading": "よくおいでくださいました。はせでらです。",
+     "translation": "Welcome to Hase-dera.",
+     "learningTargets": [
+      "hasedera",
+      "tera"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "tera"
+      }
+     ],
+     "nextId": "kt2"
+    },
+    {
+     "id": "kt2",
+     "speakerId": "monk",
+     "speakerName": "お坊さん",
+     "jp": "あちらに大仏さまがおられます。",
+     "reading": "あちらにだいぶつさまがおられます。",
+     "translation": "The Great Buddha is over there.",
+     "learningTargets": [
+      "daibutsu"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "daibutsu"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "kamakura-beach",
+   "lines": [
+    {
+     "id": "kb1",
+     "speakerId": "lifeguard",
+     "speakerName": "監視員さん",
+     "jp": "こんにちは！由比ヶ浜へようこそ。",
+     "reading": "こんにちは！ゆいがはまへようこそ。",
+     "translation": "Hi! Welcome to Yuigahama.",
+     "learningTargets": [
+      "yuigahama"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "yuigahama"
+      }
+     ],
+     "nextId": "kb2"
+    },
+    {
+     "id": "kb2",
+     "speakerId": "lifeguard",
+     "speakerName": "監視員さん",
+     "jp": "海はきれいですよ。泳ぎますか？",
+     "reading": "うみはきれいですよ。およぎますか？",
+     "translation": "The sea is beautiful. Will you swim?",
+     "learningTargets": [
+      "umi",
+      "suna",
+      "sora"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "suna"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "story-kamakura",
+   "lines": [
+    {
+     "id": "sk1",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "鎌倉の夏。駅を出ると、小町通りが賑わっている。",
+     "reading": "かまくらのなつ。えきをでると、こまちどおりがにぎわっている。",
+     "translation": "A Kamakura summer. Outside the station, Komachi-dōri is bustling.",
+     "learningTargets": [
+      "kamakura",
+      "komachi"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "komachi"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "festival-yukata",
+   "lines": [
+    {
+     "id": "fy1",
+     "speakerId": "aoi",
+     "speakerName": "あおい",
+     "jp": "わぁ、来てくれたの！今日はお祭りだよ。",
+     "reading": "わぁ、きてくれたの！きょうはおまつりだよ。",
+     "translation": "Wow, you came! Today is the festival.",
+     "learningTargets": [
+      "matsuri",
+      "yukata"
+     ],
+     "nextId": "fy2"
+    },
+    {
+     "id": "fy2",
+     "speakerId": "aoi",
+     "speakerName": "あおい",
+     "jp": "提灯がきれいでしょう？夜は花火もあるよ。",
+     "reading": "ちょうちんがきれいでしょう？よるははなびもあるよ。",
+     "translation": "The lanterns are pretty, right? There are fireworks at night too.",
+     "learningTargets": [
+      "chouchin",
+      "hanabi",
+      "yoru"
+     ],
+     "effects": [
+      {
+       "kind": "StartStory",
+       "targetId": "summer-festival"
+      },
+      {
+       "kind": "GrantQuest",
+       "targetId": "festival-1"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "festival-takoyaki",
+   "lines": [
+    {
+     "id": "tk1",
+     "speakerId": "takoyaki-ya",
+     "speakerName": "たこ焼き屋さん",
+     "jp": "いらっしゃい！熱々のたこ焼きはいかが？",
+     "reading": "いらっしゃい！あつあつのたこやきはいかが？",
+     "translation": "Welcome! How about some piping-hot takoyaki?",
+     "learningTargets": [
+      "takoyaki",
+      "yatai"
+     ],
+     "nextId": "tk2"
+    },
+    {
+     "id": "tk2",
+     "speakerId": "takoyaki-ya",
+     "speakerName": "たこ焼き屋さん",
+     "jp": "はい、どうぞ！あちあち。",
+     "reading": "はい、どうぞ！あちあち。",
+     "translation": "Here you go! Hot, hot.",
+     "learningTargets": [
+      "takoyaki"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "festival-2"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "story-festival-1",
+   "lines": [
+    {
+     "id": "sf1",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "夕方、祭り広場に灯りがともる。",
+     "reading": "ゆうがた、まつりひろばにあかりがともる。",
+     "translation": "At dusk, the festival grounds light up.",
+     "learningTargets": [
+      "matsuri",
+      "yoru"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "yoru"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "story-festival-2",
+   "lines": [
+    {
+     "id": "sf2",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "屋台の灯りと香り。たこ焼きが焼けている。",
+     "reading": "やたいのあかりとかおり。たこやきがやけている。",
+     "translation": "Stall lights and smells. Takoyaki is sizzling.",
+     "learningTargets": [
+      "yatai",
+      "takoyaki"
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "story-festival-3",
+   "lines": [
+    {
+     "id": "sf3",
+     "speakerId": "narrator",
+     "speakerName": "",
+     "jp": "花火が夜空に咲く。夏の夜が終わる。",
+     "reading": "はなびがよぞらにさく。なつのよるがおわる。",
+     "translation": "Fireworks bloom in the night sky. The summer night ends.",
+     "learningTargets": [
+      "hanabi",
+      "yoru"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "hanabi"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "kamakura-night",
+   "lines": [
+    {
+     "id": "kn1",
+     "speakerId": "sakura",
+     "speakerName": "提灯番",
+     "jp": "夜の鎌倉は静かですね。提灯の火がともります。",
+     "reading": "よるのかまくらはしずかですね。ちょうちんのひがともります。",
+     "translation": "Kamakura at night is quiet. The lanterns are being lit.",
+     "learningTargets": [
+      "yoru",
+      "chouchin"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "kamakura-night-lanterns"
+      }
+     ],
+     "nextId": "kn2"
+    },
+    {
+     "id": "kn2",
+     "speakerId": "sakura",
+     "speakerName": "提灯番",
+     "jp": "月が出ていますね。夜道は明るいです。",
+     "reading": "つきがでていますね。よみちはあかるいです。",
+     "translation": "The moon is out. The night path is bright.",
+     "learningTargets": [
+      "tsuki"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "tsuki"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "beach-patrol",
+   "lines": [
+    {
+     "id": "bp1",
+     "speakerId": "kenta",
+     "speakerName": "浜辺の少年",
+     "jp": "海の砂で貝を探しているんだ！",
+     "reading": "うみのすなでかいをさがしているんだ！",
+     "translation": "I'm hunting for shells in the beach sand!",
+     "learningTargets": [
+      "umi",
+      "suna",
+      "kai"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "kai"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "winter-candy",
+   "lines": [
+    {
+     "id": "wc1",
+     "speakerId": "amezaiku-ya",
+     "speakerName": "飴細工屋さん",
+     "jp": "冬は飴がよく固まるよ。雪の日にどうぞ。",
+     "reading": "ふゆはあめがよくかたまるよ。ゆきのひにどうぞ。",
+     "translation": "Candy sets well in winter. Come on a snowy day.",
+     "learningTargets": [
+      "fuyu",
+      "ame",
+      "yuki"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "ame"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "winter-market",
+   "lines": [
+    {
+     "id": "wm1",
+     "speakerId": "yuki-chan",
+     "speakerName": "ココア屋さん",
+     "jp": "いらっしゃい！冬は暖かいココアが一番だよ。",
+     "reading": "いらっしゃい！ふゆはあたたかいココアがいちばんだよ。",
+     "translation": "Welcome! Warm cocoa is the best thing in winter.",
+     "learningTargets": [
+      "atatakai",
+      "fuyu"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "winter-market"
+      }
+     ],
+     "nextId": "wm2"
+    },
+    {
+     "id": "wm2",
+     "speakerId": "yuki-chan",
+     "speakerName": "ココア屋さん",
+     "jp": "雪が降る日は屋台も賑わうんだ。また来てね。",
+     "reading": "ゆきがふるひはやたいもにぎわうんだ。またきてね。",
+     "translation": "On snowy days the market gets busy. Come again.",
+     "learningTargets": [
+      "yuki",
+      "yatai"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "atatakai"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "spring-blossoms",
+   "lines": [
+    {
+     "id": "sb1",
+     "speakerId": "hana",
+     "speakerName": "お花見の人",
+     "jp": "春の桜はきれいですね。一緒に花見をしませんか？",
+     "reading": "はるのさくらはきれいですね。いっしょにはなみをしませんか？",
+     "translation": "The spring blossoms are lovely. Won't you join the picnic?",
+     "learningTargets": [
+      "sakura",
+      "hanami"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "spring-blossoms"
+      }
+     ],
+     "nextId": "sb2"
+    },
+    {
+     "id": "sb2",
+     "speakerId": "hana",
+     "speakerName": "お花見の人",
+     "jp": "桜の下でお弁当を食べるのが春の楽しみです。",
+     "reading": "さくらのしたでおべんとうをたべるのがはるのたのしみです。",
+     "translation": "Eating lunch under the blossoms is the joy of spring.",
+     "learningTargets": [
+      "sakura",
+      "hanami"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "hanami"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "summer-festival",
+   "lines": [
+    {
+     "id": "sf1",
+     "speakerId": "bon-dancer",
+     "speakerName": "盆踊りの人",
+     "jp": "夏の夜は盆踊りだ！一緒に踊らない？",
+     "reading": "なつのよるはぼんおどりだ！いっしょにおどらない？",
+     "translation": "Summer nights are for the bon dance! Won't you dance with us?",
+     "learningTargets": [
+      "bonodori",
+      "natsu"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "summer-festival"
+      }
+     ],
+     "nextId": "sf2"
+    },
+    {
+     "id": "sf2",
+     "speakerId": "bon-dancer",
+     "speakerName": "盆踊りの人",
+     "jp": "お祭りの夜、太鼓の音に合わせて輪になって踊るんだ。",
+     "reading": "おまつりのよる、たいこのおとにあわせてわになっておどるんだ。",
+     "translation": "On festival nights we dance in a circle to the taiko drums.",
+     "learningTargets": [
+      "matsuri",
+      "bonodori"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "bonodori"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "autumn-leaves",
+   "lines": [
+    {
+     "id": "al1",
+     "speakerId": "momiji-sensei",
+     "speakerName": "紅葉を見る人",
+     "jp": "秋の紅葉は本当にきれいですね。この道を歩きましょう。",
+     "reading": "あきのもみじはほんとうにきれいですね。このみちをあるきましょう。",
+     "translation": "The autumn leaves are truly beautiful. Let's walk this path.",
+     "learningTargets": [
+      "momiji",
+      "aki"
+     ],
+     "effects": [
+      {
+       "kind": "GrantQuest",
+       "targetId": "autumn-leaves"
+      }
+     ],
+     "nextId": "al2"
+    },
+    {
+     "id": "al2",
+     "speakerId": "momiji-sensei",
+     "speakerName": "紅葉を見る人",
+     "jp": "秋の味覚と言えば柿ですね。木に実った柿が美味しそうです。",
+     "reading": "あきのみかくといえばかきですね。きにみのったかきがおいしそうです。",
+     "translation": "Speaking of autumn tastes — persimmons! Those on the tree look delicious.",
+     "learningTargets": [
+      "kaki",
+      "momiji"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "kaki"
+      }
+     ],
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "festival-lantern",
+   "lines": [
+    {
+     "id": "fl1",
+     "speakerId": "hina",
+     "speakerName": "ひな",
+     "jp": "こんばんは！お祭りは楽しいね。何を見たい？",
+     "reading": "こんばんは！おまつりはたのしいね。なにをみたい？",
+     "translation": "Good evening! Festivals are fun. What do you want to see?",
+     "kidJp": "こんばんは！おまつりは、たのしいね。なにを、みたい？",
+     "kidReading": "こんばんは！おまつりは、たのしいね。なにを、みたい？",
+     "kidTranslation": "Hi! Festivals are fun. What do you want to see?",
+     "options": [
+      {
+       "text": "提灯を見たい。",
+       "textJp": "ちょうちんをみたい。",
+       "nextId": "fl2"
+      },
+      {
+       "text": "花火はいつ？",
+       "textJp": "はなびはいつ？",
+       "nextId": "fl3"
+      },
+      {
+       "text": "花火、きれいだね！",
+       "textJp": "はなび、きれいだね！",
+       "nextId": "fl4",
+       "requiresKnowledge": "hanabi"
+      }
+     ],
+     "learningTargets": [
+      "matsuri"
+     ],
+     "nextId": null
+    },
+    {
+     "id": "fl2",
+     "speakerId": "hina",
+     "speakerName": "ひな",
+     "jp": "あの赤い提灯、きれいでしょう？夜風に揺れているんだ。",
+     "reading": "あのあかいちょうちん、きれいでしょう？よかぜにゆれているんだ。",
+     "translation": "That red lantern is pretty, right? It sways in the night breeze.",
+     "learningTargets": [
+      "chouchin"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "chouchin"
+      }
+     ],
+     "nextId": "fl5"
+    },
+    {
+     "id": "fl3",
+     "speakerId": "hina",
+     "speakerName": "ひな",
+     "jp": "花火は夜の八時からだよ。海の上に上がるんだ。",
+     "reading": "はなびはよるのはちじからだよ。うみのうえにあがるんだ。",
+     "translation": "The fireworks start at eight tonight — over the sea.",
+     "learningTargets": [
+      "hanabi"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "hanabi"
+      }
+     ],
+     "nextId": "fl5"
+    },
+    {
+     "id": "fl4",
+     "speakerId": "hina",
+     "speakerName": "ひな",
+     "jp": "そうだね！今年の花火は最高だよ。一緒に見よう！",
+     "reading": "そうだね！ことしのはなびはさいこうだよ。いっしょにみよう！",
+     "translation": "Right! This year's fireworks are the best. Let's watch together!",
+     "learningTargets": [
+      "hanabi"
+     ],
+     "effects": [
+      {
+       "kind": "DiscoverKnowledge",
+       "targetId": "hanabi"
+      },
+      {
+       "kind": "SetFlag",
+       "targetId": "hina-praised"
+      }
+     ],
+     "nextId": "fl5"
+    },
+    {
+     "id": "fl5",
+     "speakerId": "hina",
+     "speakerName": "ひな",
+     "jp": "また見つけてね！おやすみなさい。",
+     "reading": "またみつけてね！おやすみなさい。",
+     "translation": "Come find me again! Good night.",
+     "nextId": null
+    }
+   ]
+  },
+  {
+   "id": "festival-moon",
+   "lines": [
+    {
+     "id": "fm1",
+     "speakerId": "narrator",
+     "jp": "帰り道、月が空に浮かんでいる。",
+     "reading": "かえりみち、つきがそらにうかんでいる。",
+     "translation": "On the way home, the moon hangs in the sky.",
+     "learningTargets": [
+      "tsuki"
+     ],
+     "nextId": "fm2"
+    },
+    {
+     "id": "fm2",
+     "speakerId": "narrator",
+     "jp": "夏の夜が終わる。また明日。",
+     "reading": "なつのよるがおわる。またあした。",
+     "translation": "The summer night ends. See you tomorrow.",
+     "nextId": null
+    }
+   ]
+  }
+ ]
+}

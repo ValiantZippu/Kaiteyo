@@ -1,5 +1,14 @@
 package ua.syt0r.kanji.desktop.ui.media
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +22,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,21 +36,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Loop
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -49,8 +59,10 @@ import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -68,6 +80,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -102,12 +115,15 @@ import ua.syt0r.kanji.desktop.designsystem.newColor
 import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.designsystem.warningColor
+import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
+import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 import ua.syt0r.kanji.desktop.engine.dictionary.SegmentToken
 import ua.syt0r.kanji.desktop.engine.dictionary.WordStatus
 import ua.syt0r.kanji.desktop.engine.media.AnnotationMode
 import ua.syt0r.kanji.desktop.engine.media.AutoPauseMode
 import ua.syt0r.kanji.desktop.engine.media.LoopMode
 import ua.syt0r.kanji.desktop.engine.media.MediaEngine
+import ua.syt0r.kanji.desktop.engine.mining.MinedRecord
 import ua.syt0r.kanji.desktop.engine.playback.AudioBackend
 import ua.syt0r.kanji.desktop.engine.playback.BackendKind
 import ua.syt0r.kanji.desktop.engine.playback.MpvBackend
@@ -194,48 +210,118 @@ fun MediaPlayerWorkspace(state: AppState) {
         }
     }
 
-    Row(Modifier.fillMaxSize()) {
-        Column(Modifier.weight(1f).fillMaxHeight()) {
-            QueueStrip(state)
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(sc.background)
-                    .hoverable(videoInteraction)
-            ) {
-                VideoSurface(state)
-                media.playbackError?.let { err ->
-                    ErrorOverlay(err.userMessage, Modifier.align(Alignment.Center))
-                }
-                if (media.buffering) {
-                    BufferingBadge(Modifier.align(Alignment.Center))
-                }
-                if (media.subtitleVisible) {
-                    val subtitleAlign = if (state.settings.getString("media.subtitle-position", "bottom") == "top")
-                        Alignment.TopCenter else Alignment.BottomCenter
-                    SubtitleOverlay(state, Modifier.align(subtitleAlign))
-                }
-                if (media.controlsVisible) {
-                    ControlsOverlay(state, Modifier.align(Alignment.BottomCenter))
-                }
-            }
-            MediaDashboardStrip(state)
-            CurrentCueBar(state)
+    val panelAnimMs = tweenDuration(LocalAnimationConfig.current, 240)
+
+    // Inline mining confirmation — when a mine completes while the player is
+    // on screen, a small pill fades in over the video and drifts away on its
+    // own. Playback never pauses and nothing navigates away.
+    val minedCount = state.mining.minedRecords.size
+    val initialMinedCount = remember { minedCount }
+    var mineConfirm by remember { mutableStateOf<MinedRecord?>(null) }
+    var mineFading by remember { mutableStateOf(false) }
+    LaunchedEffect(minedCount) {
+        if (minedCount > initialMinedCount) {
+            mineConfirm = state.mining.minedRecords.firstOrNull()
+            mineFading = false
+            delay(2400)
+            mineFading = true
+            delay(320)
+            mineConfirm = null
+            mineFading = false
         }
-        if (media.transcriptOpen || media.dictionaryOpen) {
-            Column(
-                Modifier
-                    .width(380.dp)
-                    .fillMaxHeight()
-                    .background(sc.surface)
-                    .border(androidx.compose.ui.unit.Dp.Hairline, sc.border)
-            ) {
-                if (media.transcriptOpen) {
-                    TranscriptPanel(state, Modifier.weight(if (media.dictionaryOpen) 1f else 1f))
+    }
+    val minePillAlpha by animateFloatAsState(
+        targetValue = if (mineFading) 0f else 1f,
+        animationSpec = tween(tweenDuration(LocalAnimationConfig.current, 240)),
+        label = "minePillAlpha"
+    )
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val windowMaxWidth = maxWidth
+        // The study workspace adapts: narrower windows get a slimmer side panel
+        // so the video keeps most of the screen. The user can drag its left
+        // edge to resize within sane bounds.
+        var userPanelWidth by remember { mutableStateOf<Float?>(null) }
+        val sidePanelWidth = userPanelWidth ?: if (maxWidth < 1080.dp) 320f else 380f
+        Row(Modifier.fillMaxSize()) {
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                QueueStrip(state)
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(sc.background)
+                        .hoverable(videoInteraction)
+                ) {
+                    VideoSurface(state)
+                    media.playbackError?.let { err ->
+                        ErrorOverlay(err.userMessage, Modifier.align(Alignment.Center))
+                    }
+                    if (media.buffering) {
+                        BufferingBadge(Modifier.align(Alignment.Center))
+                    }
+                    mineConfirm?.let { record ->
+                        MineConfirmPill(
+                            record = record,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = DsSpacing.Md)
+                                .graphicsLayer { alpha = minePillAlpha }
+                        )
+                    }
+                    if (media.subtitleVisible) {
+                        val subtitleAlign = if (state.settings.getString("media.subtitle-position", "bottom") == "top")
+                            Alignment.TopCenter else Alignment.BottomCenter
+                        SubtitleOverlay(state, Modifier.align(subtitleAlign))
+                    }
+                    if (media.controlsVisible) {
+                        ControlsOverlay(state, Modifier.align(Alignment.BottomCenter))
+                    }
                 }
-                if (media.dictionaryOpen) {
-                    DictionaryPanel(state, Modifier.weight(1f))
+                MediaDashboardStrip(state)
+                CurrentCueBar(state)
+            }
+            // Transcript / dictionary slide in from the right instead of
+            // popping — context is preserved, nothing jumps.
+            AnimatedVisibility(
+                visible = media.transcriptOpen || media.dictionaryOpen,
+                enter = expandHorizontally(animationSpec = tween(panelAnimMs), expandFrom = Alignment.End) + fadeIn(tween(panelAnimMs)),
+                exit = shrinkHorizontally(animationSpec = tween(panelAnimMs), shrinkTowards = Alignment.End) + fadeOut(tween(panelAnimMs))
+            ) {
+                Box {
+                    Column(
+                        Modifier
+                            .width(sidePanelWidth.dp)
+                            .fillMaxHeight()
+                            .background(sc.surface)
+                            .border(androidx.compose.ui.unit.Dp.Hairline, sc.border)
+                    ) {
+                        if (media.transcriptOpen) {
+                            TranscriptPanel(state, Modifier.weight(1f))
+                        }
+                        if (media.dictionaryOpen) {
+                            DictionaryPanel(state, Modifier.weight(1f))
+                        }
+                    }
+                    // Drag handle on the panel's left edge — resize without
+                    // ever leaving the player.
+                    val handleInteraction = remember { MutableInteractionSource() }
+                    val handleHovered by handleInteraction.collectIsHoveredAsState()
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterStart)
+                            .width(8.dp)
+                            .fillMaxHeight()
+                            .background(if (handleHovered) sc.border.copy(alpha = 0.9f) else sc.border.copy(alpha = 0.25f))
+                            .hoverable(handleInteraction)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    userPanelWidth = (sidePanelWidth - dragAmount.x)
+                                        .coerceIn(240f, (windowMaxWidth.value * 0.55f).coerceAtLeast(240f))
+                                }
+                            }
+                    )
                 }
             }
         }
@@ -533,6 +619,42 @@ private fun ErrorOverlay(message: String, modifier: Modifier = Modifier) {
 @Composable
 private fun BufferingBadge(modifier: Modifier = Modifier) {
     DsBadge(text = "Buffering…", modifier = modifier)
+}
+
+/** Compact inline confirmation after a successful mine — drifts away on its
+ *  own, playback never pauses. */
+@Composable
+private fun MineConfirmPill(record: MinedRecord, modifier: Modifier = Modifier) {
+    val sc = surfaceColors()
+    val pillText = when {
+        record.destination == "anki" && record.ankiStatus == "success" -> "→ Anki ✓"
+        record.destination == "anki" -> "Anki unavailable — saved to Kaiteyo"
+        else -> "→ Kaiteyo deck"
+    }
+    val pillColor = when {
+        record.destination == "anki" && record.ankiStatus == "success" -> successColor()
+        record.destination == "anki" -> warningColor()
+        else -> successColor()
+    }
+    Row(
+        modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(Color.Black.copy(alpha = 0.75f))
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Icon(Icons.Default.Check, contentDescription = null, tint = pillColor, modifier = Modifier.size(14.dp))
+        Text(
+            record.headword.ifBlank { "Mined" },
+            color = Color.White,
+            fontSize = DsType.Body,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(pillText, color = pillColor, fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
+    }
 }
 
 // ============================================
@@ -908,37 +1030,46 @@ fun ControlsOverlay(state: AppState, modifier: Modifier = Modifier) {
     val ac = accent()
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    LaunchedEffect(hovered) { media.controlsVisible = true }
+    // Keep controls alive while the pointer is over them, but never re-show
+    // them once the auto-hide timer has fired (that caused show/hide flicker).
+    LaunchedEffect(hovered) { if (hovered) media.controlsVisible = true }
+    val animMs = tweenDuration(LocalAnimationConfig.current, 220)
+    var moreOpen by remember { mutableStateOf(false) }
 
-    Column(
-        modifier
-            .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.72f))
-            .hoverable(interaction)
-            .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Sm)
+    // The bar fades and slides up rather than popping into existence.
+    AnimatedVisibility(
+        visible = media.controlsVisible,
+        enter = fadeIn(animationSpec = tween(animMs)) +
+            slideInVertically(animationSpec = tween(animMs), initialOffsetY = { it / 2 }),
+        exit = fadeOut(animationSpec = tween(animMs)) +
+            slideOutVertically(animationSpec = tween(animMs), targetOffsetY = { it / 2 }),
+        modifier = modifier
     ) {
-        MediaSeekBar(state)
-        Spacer(Modifier.height(DsSpacing.Xs))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
-            DsIconButton(
-                icon = if (media.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                onClick = { media.togglePlay() },
-                contentDescription = "Play / Pause",
-                tint = Color.White,
-                size = 40.dp
-            )
-            DsIconButton(icon = Icons.Default.FastRewind, onClick = { media.seekBy(-media.seekAmountMs) }, contentDescription = "Back", tint = Color.White, size = 28.dp)
-            DsIconButton(icon = Icons.Default.FastForward, onClick = { media.seekBy(media.seekAmountMs) }, contentDescription = "Forward", tint = Color.White, size = 28.dp)
-            DsIconButton(icon = Icons.Default.Stop, onClick = { media.stop() }, contentDescription = "Stop", tint = Color.White, size = 28.dp)
-            DsIconButton(icon = Icons.Default.SkipPrevious, onClick = { media.replayPreviousCue() }, contentDescription = "Previous subtitle", tint = Color.White, size = 28.dp)
-            DsIconButton(icon = Icons.Default.SkipNext, onClick = { media.replayNextCue() }, contentDescription = "Next subtitle", tint = Color.White, size = 28.dp)
-            Spacer(Modifier.width(DsSpacing.Sm))
-            Row(
-                Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SpeedChips(state)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(Color.Black.copy(alpha = 0.72f))
+                .hoverable(interaction)
+                .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Sm)
+        ) {
+            MediaSeekBar(state)
+            Spacer(Modifier.height(DsSpacing.Xs))
+            // Primary transport row — only the essentials. Everything else
+            // lives in the More menu so the main bar never becomes a wall of
+            // icons.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
+                DsIconButton(
+                    icon = if (media.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    onClick = { media.togglePlay() },
+                    contentDescription = "Play / Pause",
+                    tint = Color.White,
+                    size = 40.dp
+                )
+                DsIconButton(icon = Icons.Default.FastRewind, onClick = { media.seekBy(-media.seekAmountMs) }, contentDescription = "Back", tint = Color.White, size = 28.dp)
+                DsIconButton(icon = Icons.Default.FastForward, onClick = { media.seekBy(media.seekAmountMs) }, contentDescription = "Forward", tint = Color.White, size = 28.dp)
+                DsIconButton(icon = Icons.Default.Stop, onClick = { media.stop() }, contentDescription = "Stop", tint = Color.White, size = 28.dp)
+                DsIconButton(icon = Icons.Default.SkipPrevious, onClick = { media.replayPreviousCue() }, contentDescription = "Previous subtitle", tint = Color.White, size = 28.dp)
+                DsIconButton(icon = Icons.Default.SkipNext, onClick = { media.replayNextCue() }, contentDescription = "Next subtitle", tint = Color.White, size = 28.dp)
                 Spacer(Modifier.width(DsSpacing.Sm))
                 Icon(
                     if (media.muted || media.volume == 0) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
@@ -952,183 +1083,177 @@ fun ControlsOverlay(state: AppState, modifier: Modifier = Modifier) {
                     valueRange = 0f..100f,
                     modifier = Modifier.width(110.dp)
                 )
-                Spacer(Modifier.width(DsSpacing.Sm))
-                AutoPauseSelect(state)
-                Spacer(Modifier.width(DsSpacing.Xs))
-                DsIconButton(
-                    icon = Icons.Default.Loop,
-                    onClick = { media.toggleLoopCue() },
-                    contentDescription = "Loop cue",
-                    tint = if (media.loopMode == LoopMode.CurrentCue) ac.primary else Color.White,
-                    size = 28.dp
-                )
-                ABLoopControls(state)
-                CondensedChip(state)
-                ChapterNavChips(state)
-                CinemaChip(state)
-                if (media.can(PlaybackCapability.CanFrameStep)) {
-                    DsIconButton(icon = Icons.Default.ChevronLeft, onClick = { media.frameStepBackward() }, contentDescription = "Previous frame", tint = Color.White, size = 28.dp)
-                    DsIconButton(icon = Icons.Default.ChevronRight, onClick = { media.frameStepForward() }, contentDescription = "Next frame", tint = Color.White, size = 28.dp)
-                }
-                Spacer(Modifier.width(DsSpacing.Xs))
-                SubtitleTrackSelect(state)
-                AudioTrackSelect(state)
-                DsIconButton(icon = Icons.Default.PhotoCamera, onClick = { media.captureScreenshot() }, contentDescription = "Screenshot", enabled = media.can(PlaybackCapability.CanScreenshot), tint = Color.White, size = 28.dp)
+                Spacer(Modifier.weight(1f))
+                // Study workspace — one tap turns the player into the study
+                // surface (transcript + dictionary) and back. Same workspace,
+                // one more layer — not a navigation jump.
                 DsIconButton(
                     icon = Icons.Default.AutoAwesome,
-                    onClick = { media.ocrFrame() },
-                    contentDescription = "OCR current frame",
-                    tint = Color.White,
-                    size = 28.dp
+                    onClick = { toggleStudyWorkspace(media) },
+                    contentDescription = "Study workspace (transcript + dictionary)",
+                    tint = if (media.transcriptOpen || media.dictionaryOpen) ac.primary else Color.White,
+                    size = 30.dp
                 )
                 DsIconButton(
-                    icon = Icons.Default.ContentPaste,
-                    onClick = { media.lookupClipboard() },
-                    contentDescription = "Look up clipboard text",
-                    tint = Color.White,
-                    size = 28.dp
+                    icon = Icons.Default.Subtitles,
+                    onClick = { media.subtitleVisible = !media.subtitleVisible },
+                    contentDescription = "Toggle subtitles",
+                    tint = if (media.subtitleVisible) Color.White else Color.White.copy(alpha = 0.45f),
+                    size = 30.dp
                 )
-                DsIconButton(icon = Icons.Default.Bookmark, onClick = { media.addBookmark() }, contentDescription = "Bookmark", tint = Color.White, size = 28.dp)
-                DsIconButton(icon = Icons.Default.Fullscreen, onClick = { media.toggleFullscreen() }, contentDescription = "Fullscreen", tint = Color.White, size = 28.dp)
+                Box {
+                    DsIconButton(
+                        icon = Icons.Default.MoreVert,
+                        onClick = { moreOpen = true },
+                        contentDescription = "More player options",
+                        tint = if (moreOpen) ac.primary else Color.White,
+                        size = 30.dp
+                    )
+                    PlayerMoreMenu(state, expanded = moreOpen, onDismiss = { moreOpen = false })
+                }
+                DsIconButton(icon = Icons.Default.Fullscreen, onClick = { media.toggleFullscreen() }, contentDescription = "Fullscreen", tint = Color.White, size = 30.dp)
             }
         }
     }
 }
 
-/** A/B range loop controls — set points from the current position. */
+/** Flip the player between pure viewing and the study workspace. */
+private fun toggleStudyWorkspace(media: MediaEngine) {
+    val opening = !(media.transcriptOpen || media.dictionaryOpen)
+    media.transcriptOpen = opening
+    media.dictionaryOpen = opening
+}
+
+/** Secondary player controls — everything that doesn't belong on the main
+ *  transport bar lives here: speed, loops, chapters, tracks, capture and
+ *  lookup. Compact chips keep the menu dense without turning into a form. */
 @Composable
-private fun ABLoopControls(state: AppState) {
+private fun PlayerMoreMenu(state: AppState, expanded: Boolean, onDismiss: () -> Unit) {
     val media = state.media
-    val ac = accent()
-    val active = media.loopMode == LoopMode.Range
-    Row(
-        Modifier.clip(RoundedCornerShape(999.dp)).background(if (active) ac.primary.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.1f)),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            if (media.loopStartMs > 0) "A ${MediaEngine.formatTime(media.loopStartMs)}" else "Set A",
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = DsType.Caption,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clickable {
-                if (media.loopMode == LoopMode.Range && media.loopStartMs > 0 && media.positionMs > media.loopStartMs) {
+    val sc = surfaceColors()
+
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .width(320.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+            verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+        ) {
+            if (media.can(PlaybackCapability.CanChangeSpeed)) {
+                MenuLabel("Playback speed")
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f).forEach { rate ->
+                        PlayerMenuChip("${rate}x", media.speed == rate) { media.updateSpeed(rate) }
+                    }
+                }
+            }
+            MenuLabel("Playback")
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                PlayerMenuChip("Loop cue", media.loopMode == LoopMode.CurrentCue) { media.toggleLoopCue() }
+                PlayerMenuChip("Condensed", media.condensedPlayback) { media.toggleCondensed() }
+                PlayerMenuChip(if (media.cinemaMode) "Exit cinema" else "Cinema", media.cinemaMode) { media.toggleCinemaMode() }
+            }
+            // A–B range loop — set both points from the current position.
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                PlayerMenuChip(
+                    if (media.loopStartMs > 0) "A ${MediaEngine.formatTime(media.loopStartMs)}" else "Set A",
+                    media.loopMode == LoopMode.Range && media.loopStartMs > 0
+                ) {
+                    if (media.loopMode == LoopMode.Range && media.loopStartMs > 0 && media.positionMs > media.loopStartMs) {
+                        media.loopEndMs = media.positionMs
+                    } else {
+                        media.loopStartMs = media.positionMs
+                        media.loopMode = LoopMode.Range
+                    }
+                }
+                PlayerMenuChip(
+                    if (media.loopEndMs > media.loopStartMs && media.loopMode == LoopMode.Range) "B ${MediaEngine.formatTime(media.loopEndMs)}" else "Set B",
+                    media.loopMode == LoopMode.Range && media.loopEndMs > media.loopStartMs
+                ) {
                     media.loopEndMs = media.positionMs
-                } else {
-                    media.loopStartMs = media.positionMs
                     media.loopMode = LoopMode.Range
                 }
-            }.padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-        )
-        Text(
-            if (media.loopEndMs > media.loopStartMs && active) "B ${MediaEngine.formatTime(media.loopEndMs)}" else "Set B",
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = DsType.Caption,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clickable {
-                media.loopEndMs = media.positionMs
-                media.loopMode = LoopMode.Range
-            }.padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-        )
-        if (active) {
-            Text(
-                "✕",
-                color = Color.White.copy(alpha = 0.85f),
-                fontSize = DsType.Caption,
-                modifier = Modifier.clickable {
-                    media.loopMode = LoopMode.Off
-                    media.loopStartMs = 0
-                    media.loopEndMs = 0
-                }.padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-            )
+                if (media.loopMode == LoopMode.Range) {
+                    PlayerMenuChip("Clear A–B", false) {
+                        media.loopMode = LoopMode.Off
+                        media.loopStartMs = 0
+                        media.loopEndMs = 0
+                    }
+                }
+            }
+            AutoPauseSelect(state)
+            if (media.chapters.isNotEmpty()) {
+                MenuLabel("Chapters")
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PlayerMenuChip("◀ Chapter", false, enabled = media.currentChapterIndex > 0) { media.previousChapter() }
+                    PlayerMenuChip("Chapter ▶", false, enabled = media.currentChapterIndex < media.chapters.lastIndex) { media.nextChapter() }
+                    media.chapters.getOrNull(media.currentChapterIndex)?.let { chapter ->
+                        Text(
+                            chapter.title.ifBlank { "Ch. ${media.currentChapterIndex + 1}" },
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            if (media.can(PlaybackCapability.CanFrameStep)) {
+                MenuLabel("Frame stepping")
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    PlayerMenuChip("Previous frame", false) { media.frameStepBackward() }
+                    PlayerMenuChip("Next frame", false) { media.frameStepForward() }
+                }
+            }
+            if (media.subtitleTracks.isNotEmpty() || media.audioTracks.isNotEmpty() || media.videoTracks.size >= 2) {
+                MenuLabel("Tracks")
+                SubtitleTrackSelect(state)
+                AudioTrackSelect(state)
+                VideoTrackSelect(state)
+            }
+            MenuLabel("Capture & lookup")
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                PlayerMenuChip("Screenshot", false, enabled = media.can(PlaybackCapability.CanScreenshot)) { media.captureScreenshot() }
+                PlayerMenuChip("OCR frame", false) { media.ocrFrame() }
+                PlayerMenuChip("Clipboard", false) { media.lookupClipboard() }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                PlayerMenuChip("Bookmark", false) { media.addBookmark() }
+                PlayerMenuChip("Secondary subs", media.subtitles.showSecondary) { media.subtitles.showSecondary = !media.subtitles.showSecondary }
+            }
         }
     }
 }
 
 @Composable
-private fun SpeedChips(state: AppState) {
-    val media = state.media
-    // Honest capabilities: the built-in audio backend cannot change rate,
-    // so the chips only appear when the active backend really supports it.
-    if (!media.can(PlaybackCapability.CanChangeSpeed)) return
-    val options = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
-    options.forEach { rate ->
-        val selected = media.speed == rate
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(if (selected) accent().primary.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.12f))
-                .clickable { media.updateSpeed(rate) }
-                .padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-        ) {
-            Text("${rate}x", color = if (selected) Color.White else Color.White.copy(alpha = 0.8f), fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
-        }
-    }
+private fun MenuLabel(text: String) {
+    Text(
+        text,
+        color = surfaceColors().textMuted,
+        fontSize = DsType.Caption,
+        fontWeight = FontWeight.SemiBold
+    )
 }
 
+/** Compact selectable chip used inside the player's More menu. */
 @Composable
-private fun CondensedChip(state: AppState) {
-    val media = state.media
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(if (media.condensedPlayback) accent().primary.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.12f))
-            .clickable { media.toggleCondensed() }
-            .padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-    ) {
-        Text("Condensed", color = if (media.condensedPlayback) Color.White else Color.White.copy(alpha = 0.8f), fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
-    }
-}
-
-/** Chapter navigation — only shown when the backend reports chapters. */
-@Composable
-private fun ChapterNavChips(state: AppState) {
-    val media = state.media
-    if (media.chapters.isEmpty()) return
-    val chapter = media.chapters.getOrNull(media.currentChapterIndex)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(Color.White.copy(alpha = 0.12f))
-                .clickable { media.previousChapter() }
-                .padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-        ) {
-            Text("◀ Chapter", color = Color.White.copy(alpha = 0.85f), fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
-        }
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(Color.White.copy(alpha = 0.12f))
-                .clickable { media.nextChapter() }
-                .padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
-        ) {
-            Text("Chapter ▶", color = Color.White.copy(alpha = 0.85f), fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
-        }
-        if (chapter != null) {
-            Text(
-                chapter.title.ifBlank { "Ch. ${media.currentChapterIndex + 1}" },
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = DsType.Caption,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-/** Cinema mode — distraction-free player chrome toggle. */
-@Composable
-private fun CinemaChip(state: AppState) {
-    val media = state.media
+private fun PlayerMenuChip(text: String, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
+    val sc = surfaceColors()
     val ac = accent()
     Box(
-        modifier = Modifier
+        Modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(if (media.cinemaMode) ac.primary.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.12f))
-            .clickable { media.toggleCinemaMode() }
+            .background(if (selected) ac.primary.copy(alpha = 0.18f) else sc.surfaceInteractive)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = DsSpacing.Sm, vertical = 4.dp)
     ) {
-        Text(if (media.cinemaMode) "Exit cinema" else "Cinema", color = Color.White, fontSize = DsType.Caption, fontWeight = FontWeight.SemiBold)
+        Text(
+            text,
+            color = if (selected) ac.primary else sc.textSecondary,
+            fontSize = DsType.Caption,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
@@ -1167,7 +1292,27 @@ private fun AudioTrackSelect(state: AppState) {
         selected = tracks.first(),
         options = tracks,
         onSelected = { media.selectAudioTrack(it.id) },
-        labelOf = { "Audio: ${it.title.ifBlank { it.language.ifBlank { it.id } }}" },
+        labelOf = { "Audio: ${it.title.ifBlank { it.language.ifBlank { it.id }}}" },
+        modifier = Modifier.width(130.dp)
+    )
+}
+
+/**
+ * Video track selection — only shown when the loaded media actually exposes
+ * multiple video tracks (rare, but real for multi-angle MKVs). Wired to the
+ * backend's TrackKind.Video handling, never faked.
+ */
+@Composable
+private fun VideoTrackSelect(state: AppState) {
+    val media = state.media
+    val tracks = media.videoTracks
+    // A single video track is just "the video" — nothing to choose from.
+    if (tracks.size < 2) return
+    DsSelect(
+        selected = tracks.first(),
+        options = tracks,
+        onSelected = { media.selectVideoTrack(it.id) },
+        labelOf = { "Video: ${it.title.ifBlank { it.language.ifBlank { it.id }}}" },
         modifier = Modifier.width(130.dp)
     )
 }

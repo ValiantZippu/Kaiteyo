@@ -1,0 +1,29 @@
+# WinGet locale manifest — Kaiteyo (en-US)
+# Status: defined in-repo; NOT yet submitted to winget-pkgs.
+PackageIdentifier: Kaiteyo.Kaiteyo
+PackageVersion: 2.2.1
+PackageLocale: en-US
+Publisher: syt0r
+PublisherUrl: https://github.com/ValiantZippu/Kaiteyo
+PublisherSupportUrl: https://github.com/ValiantZippu/Kaiteyo/issues
+Author: syt0r
+PackageName: Kaiteyo
+PackageUrl: https://github.com/ValiantZippu/Kaiteyo/releases
+License: GPL-3.0
+LicenseUrl: https://www.gnu.org/licenses/gpl-3.0.html
+ShortDescription: Japanese language learning app — writing, flashcards, dictionary
+Description: >-
+  Kaiteyo (書いてよ) is a premium cross-platform Japanese language learning app.
+  Learn kana and kanji with writing practice, review with FSRS spaced repetition,
+  and look up words in a built-in dictionary. Offline-first and free.
+Moniker: kaiteyo
+Tags:
+  - japanese
+  - kanji
+  - kana
+  - language-learning
+  - srs
+  - flashcards
+  - dictionary
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

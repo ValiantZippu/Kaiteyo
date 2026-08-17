@@ -60,4 +60,4 @@ Forget study plans, forget "optimum interval multipliers", forget comparing your
 
 The "everything is new" phase lasts longer than you expect, and that's normal. Trust the process — spaced repetition quietly converts what feels like noise into recognition. See [how spaced repetition works](/wiki/spaced-repetition/) for the mechanics, or the [FAQ](/faq/) when you have a specific question.
 
-Ready to start? [Try it in the browser](/try/), or [download Kaiteyo](/download/).
+Ready to start? [Download Kaiteyo](/download/) — free, open source, and offline-first.

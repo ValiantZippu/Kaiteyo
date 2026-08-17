@@ -7,15 +7,41 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/contributing/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/credits/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/data/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/ai/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/ai/ai_agent_guide/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/accessibility/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/account/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/assets/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/backup/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/browser/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/ci-cd/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/content/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/data_platform/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/database/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/dictionary/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/exams/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/file_structure/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/integrations/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/journey/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/language-model/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/localization/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/media/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/mining/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/navigation/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/node_architecture/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/overview/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/performance/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/pitch-frequency/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/readme/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/statistics/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/study-engine/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/sync/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/architecture/toolchain/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/contributing/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/contributing/contributing/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/contributing/development_setup/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/data/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/data/architecture/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/data/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/data/sources/</loc></url>
@@ -30,6 +56,16 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0009-github-sync-and-account/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0010-installer-decoupling/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0011-plugin-security-first/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0012-engineering-standards/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0013-node-architecture/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0014-journey-target-architecture/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0015-content-authoring/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0017-one-product-architecture/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0018-game-engine-evaluation/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/0019-website-command-center/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/decisions/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/animation_system/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/brand_guidelines/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/branding/</loc></url>
@@ -38,6 +74,7 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/theme_system/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/ui_system/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/assets/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/coding_standards/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/dependencyupdates/</loc></url>
@@ -50,6 +87,7 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/requiredsoftware/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/updatingdependencies/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/versionhistory/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/desktop/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/features/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/library/</loc></url>
@@ -57,32 +95,41 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/statistics/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/features/themes/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/guides/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/guides/beginner_guide/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/guides/git_guide/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/guides/setup_guide/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/anki/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/local_api/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/media_backends/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/plugins/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/integrations/yomitan_dictionaries/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/legal/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/legal/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/legal/third_party_notices/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/planning/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/planning/completed/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/planning/current_issues/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/planning/future_ideas/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/planning/roadmap/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/android/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/ios/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/linux/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/macos/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/platform/windows/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/security/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/security/privacy/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/security/readme/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/start-here/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/start-here/project_vision/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/start-here/readme/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/testing/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/testing/readme/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/android/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/builderrors/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/commonproblems/</loc></url>
@@ -95,11 +142,17 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/macos/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/vscode/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/troubleshooting/windows/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/user-guide/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/user-guide/customization/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/user-guide/desktop_suite/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/user-guide/getting_started/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/user-guide/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/user-guide/studying/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/website/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/website/api/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/website/architecture/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/website/data_model/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/website/readme/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/download/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/faq/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/features/</loc></url>
@@ -118,6 +171,14 @@
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/plugins/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/privacy/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/product/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/activity/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/contributing/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/decisions/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/kanban/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/roadmap/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/suggestions/</loc></url>
+  <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/project/whiteboard/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/roadmap/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/screenshots/</loc></url>
   <url><loc>https://valiantzippu.github.io/Kaiteyo/Kaiteyo/security/</loc></url>

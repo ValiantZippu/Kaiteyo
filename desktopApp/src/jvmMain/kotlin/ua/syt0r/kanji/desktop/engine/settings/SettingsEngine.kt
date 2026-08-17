@@ -369,7 +369,10 @@ fun defaultSettings(): List<SettingDef> = listOf(
     SettingDef("media.mine-screenshot", "Capture screenshot on mine", "Attach a frame to mined cards", SettingCategory.Media, SettingType.Boolean, true, group = "Mining"),
     SettingDef("media.mine-audio", "Capture audio on mine", "Attach an audio clip to mined cards", SettingCategory.Media, SettingType.Boolean, true, group = "Mining"),
     SettingDef("media.mine-video", "Capture video clip on mine", "Attach an MP4 clip of the cue range (needs ffmpeg)", SettingCategory.Media, SettingType.Boolean, false, group = "Mining"),
-    SettingDef("media.audio-padding-ms", "Audio clip padding (ms)", "Extra audio before/after a cue", SettingCategory.Media, SettingType.Int, 200, group = "Mining"),
+    SettingDef("media.audio-padding-ms", "Audio clip padding (ms)", "Legacy extra audio before/after a cue", SettingCategory.Media, SettingType.Int, 200, group = "Mining"),
+    SettingDef("media.audio-padding-before-ms", "Audio clip padding before (ms)", "Extra audio before the cue start", SettingCategory.Media, SettingType.Int, 200, group = "Mining"),
+    SettingDef("media.audio-padding-after-ms", "Audio clip padding after (ms)", "Extra audio after the cue end", SettingCategory.Media, SettingType.Int, 200, group = "Mining"),
+    SettingDef("media.audio-max-duration-ms", "Audio clip max duration (ms)", "Hard cap on extracted clip length (0 = no cap)", SettingCategory.Media, SettingType.Int, 10000, group = "Mining"),
     SettingDef("media.mine-deck", "Default mining deck", "Deck used for media cards", SettingCategory.Media, SettingType.String, "default", group = "Mining"),
     SettingDef("media.mine-duplicate-policy", "Duplicate policy", "What to do with a repeated sentence+word", SettingCategory.Media, SettingType.Enum, "create", options = listOf("create", "skip", "update"), group = "Mining"),
 

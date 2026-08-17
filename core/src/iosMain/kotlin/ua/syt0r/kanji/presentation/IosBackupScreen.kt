@@ -29,6 +29,8 @@ import ua.syt0r.kanji.core.getPrivateAppDataDirPath
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.toLocalDateTime
 import ua.syt0r.kanji.core.user_data.db.UserDataDatabase
+import ua.syt0r.kanji.core.user_data.database.CardDatabaseManager
+import kotlinx.io.files.SystemFileSystem
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupScreenContract.ScreenState
@@ -45,6 +47,7 @@ fun Module.backupScreenComponents() {
             viewModelScope = it.component1(),
             backupManager = get(),
             platformFileHandler = get(),
+            cardDatabaseManager = get(),
             analyticsManager = get()
         )
     }
@@ -98,6 +101,7 @@ class IosBackupScreenViewModel(
     private val viewModelScope: CoroutineScope,
     private val backupManager: BackupManager,
     private val platformFileHandler: PlatformFileHandler,
+    private val cardDatabaseManager: CardDatabaseManager,
     private val analyticsManager: AnalyticsManager
 ) {
 
@@ -123,6 +127,15 @@ class IosBackupScreenViewModel(
 
             runCatching {
                 backupManager.backupTo(tmpBackupFile)
+                // Record real metadata for the Backup Manager history list — the
+                // tmp file uses the default backup name; size comes from disk.
+                cardDatabaseManager.recordBackup(
+                    filename = getDefaultBackupFileName(),
+                    fileSize = SystemFileSystem.metadataOrNull(tmpBackupFile.path)?.size ?: 0L,
+                    checksum = "",
+                    isAutomatic = false,
+                    notes = "Manual backup"
+                )
                 _tmpBackupFilePathFlow.emitWhenWithSubscribers(tmpBackupFile.url)
                 analyticsManager.sendEvent("backup_created")
             }.getOrElse {

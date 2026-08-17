@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +61,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -79,6 +81,14 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchS
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.data.RadicalSearchState
 
+/** Which part of the dictionary results to show — filters the same live
+ *  search pipeline instead of running a separate query per tab. */
+private enum class SearchContentFilter(val label: String) {
+    All("All"),
+    Kanji("Kanji"),
+    Vocabulary("Vocabulary")
+}
+
 @Composable
 fun SearchScreenUI(
     state: State<ScreenState>,
@@ -94,6 +104,7 @@ fun SearchScreenUI(
 
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    var contentFilter by remember { mutableStateOf(SearchContentFilter.All) }
 
     val inputState = rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue())
@@ -169,9 +180,33 @@ fun SearchScreenUI(
                 }
             }
 
+            // Content-type filter chips — Browse tabs over one shared pipeline.
+            val hasResults = remember(state.value) {
+                derivedStateOf {
+                    state.value.characters.isNotEmpty() || state.value.words.value.items.isNotEmpty()
+                }
+            }
+            if (hasResults.value) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SearchContentFilter.entries.forEach { filter ->
+                        FilterChip(
+                            selected = contentFilter == filter,
+                            onClick = { contentFilter = filter },
+                            label = { Text(filter.label, fontSize = 12.sp) }
+                        )
+                    }
+                }
+            }
+
             ListContent(
                 screenState = state.value,
                 searchContainerState = searchContainerState,
+                contentFilter = contentFilter,
                 onCharacterClick = onCharacterClick,
                 onWordClick = onWordClick,
                 onScrolledToEnd = onScrolledToEnd
@@ -253,6 +288,7 @@ private fun InputSection(
 private fun ListContent(
     screenState: ScreenState,
     searchContainerState: CollapsibleContainerState,
+    contentFilter: SearchContentFilter,
     onCharacterClick: (String) -> Unit,
     onWordClick: (JapaneseWord) -> Unit,
     onScrolledToEnd: () -> Unit
@@ -296,51 +332,55 @@ private fun ListContent(
                 .nestedScroll(searchContainerState.nestedScrollConnection)
         ) {
 
-            item {
-                SearchHeader(
-                    text = resolveString { search.charactersTitle(screenState.characters.size) }
-                )
-            }
-
-            if (screenState.characters.isNotEmpty()) item {
-
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item { Spacer(modifier = Modifier.width(20.dp)) }
-                    items(screenState.characters) {
-                        HighlightedLetter(
-                            letter = it,
-                            onClick = onCharacterClick,
-                            aspectRatioConstraintOrientation = Orientation.Vertical
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.width(20.dp)) }
+            if (contentFilter != SearchContentFilter.Vocabulary) {
+                item {
+                    SearchHeader(
+                        text = resolveString { search.charactersTitle(screenState.characters.size) }
+                    )
                 }
 
+                if (screenState.characters.isNotEmpty()) item {
+
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.width(20.dp)) }
+                        items(screenState.characters) {
+                            HighlightedLetter(
+                                letter = it,
+                                onClick = onCharacterClick,
+                                aspectRatioConstraintOrientation = Orientation.Vertical
+                            )
+                        }
+                        item { Spacer(modifier = Modifier.width(20.dp)) }
+                    }
+
+                }
             }
 
             val currentWordsState = screenState.words.value
 
-            stickyHeader {
-                SearchHeader(
-                    text = resolveString { search.wordsTitle(currentWordsState.totalCount) }
-                )
-            }
+            if (contentFilter != SearchContentFilter.Kanji) {
+                stickyHeader {
+                    SearchHeader(
+                        text = resolveString { search.wordsTitle(currentWordsState.totalCount) }
+                    )
+                }
 
-            item { Spacer(Modifier.height(8.dp)) }
+                item { Spacer(Modifier.height(8.dp)) }
 
-            itemsIndexed(currentWordsState.items) { index, word ->
-                JapaneseWordUI(
-                    index = index,
-                    word = word,
-                    onClick = { onWordClick(word) },
-                    onFuriganaClick = onCharacterClick,
-                    addWordToVocabDeckClick = { wordToAddToVocabDeck = word }
-                )
+                itemsIndexed(currentWordsState.items) { index, word ->
+                    JapaneseWordUI(
+                        index = index,
+                        word = word,
+                        onClick = { onWordClick(word) },
+                        onFuriganaClick = onCharacterClick,
+                        addWordToVocabDeckClick = { wordToAddToVocabDeck = word }
+                    )
+                }
             }
 
             item { Spacer(modifier = Modifier.height(contentBottomPadding.value + 16.dp)) }

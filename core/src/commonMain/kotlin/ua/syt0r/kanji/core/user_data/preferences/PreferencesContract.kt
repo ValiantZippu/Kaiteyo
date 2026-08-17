@@ -81,6 +81,9 @@ interface PreferencesContract {
         val browserLastQuery: SuspendedProperty<String>
         val statisticsGoalsJson: SuspendedProperty<String>
         val statisticsGoalHistoryJson: SuspendedProperty<String>
+
+        // Kaiteyo World (game) progress
+        val gameProgressJson: SuspendedProperty<String>
     }
 
     interface PracticePreferences {

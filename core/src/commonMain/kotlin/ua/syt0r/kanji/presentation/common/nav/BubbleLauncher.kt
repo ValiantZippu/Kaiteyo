@@ -137,6 +137,10 @@ fun BubbleLauncher(
     var faded by remember { mutableStateOf(false) }
     var dragging by remember { mutableStateOf(false) }
     var bubbleCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    // The bubble starts at Offset.Zero (top-left corner) until the first
+    // layout pass places it at its snap anchor — keep it invisible until then
+    // so the launch never flashes a bubble in the corner.
+    var positioned by remember { mutableStateOf(false) }
 
     // While dragging, the position is tracked in plain state (no per-move
     // coroutine launches — that was a source of lag/jitter). The Animatable
@@ -190,8 +194,14 @@ fun BubbleLauncher(
     // window/device changed so the persisted spot would be off-screen or
     // inside the safe margin, fall back to the clean snap anchor instead of
     // rendering (or persisting) an invalid position.
+    //
+    // While the user is dragging (dragOffset != null) this effect must not
+    // run: snapTo() would fight the drag. The effect only re-triggers when a
+    // persisted snap point/offset actually changes (after a release), at
+    // which point the drag is already over.
     LaunchedEffect(containerSize, snapPoint, persistedOffsetX, persistedOffsetY, bubbleDiameterPx, safeMarginPx) {
         if (containerSize == IntSize.Zero) return@LaunchedEffect
+        if (dragOffset != null) return@LaunchedEffect
         val anchorPos = snapPositionFor(snapPoint)
         val drift = Offset(
             with(density) { persistedOffsetX.dp.roundToPx() }.toFloat(),
@@ -204,6 +214,7 @@ fun BubbleLauncher(
         val maxY = (containerSize.height - bubbleDiameterPx - bottomMarginPx).coerceAtLeast(0).toFloat()
         val inBounds = target.x >= minX && target.x <= maxX && target.y >= minY && target.y <= maxY
         bubbleOffset.snapTo(if (inBounds) target else anchorPos)
+        positioned = true
     }
 
     fun nearestSnap(bubbleTopLeft: Offset): BubbleSnapPoint =
@@ -213,18 +224,6 @@ fun BubbleLauncher(
             val dy = bubbleTopLeft.y - pos.y
             dx * dx + dy * dy
         } ?: snapPoint
-
-    /**
-     * True when the bubble is close enough to [anchor] to magnetize on
-     * release — honors the user's snap-distance preference.
-     */
-    fun withinSnapDistance(bubbleTopLeft: Offset, anchor: Offset): Boolean {
-        val dx = bubbleTopLeft.x - anchor.x
-        val dy = bubbleTopLeft.y - anchor.y
-        val distancePx = kotlin.math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
-        val maxDistancePx = with(density) { bubbleSettings.snapDistance.dp.roundToPx().toFloat() }
-        return distancePx <= maxDistancePx
-    }
 
     fun persistPosition(snap: BubbleSnapPoint, bubbleTopLeft: Offset) {
         val anchor = snapPositionFor(snap)
@@ -248,29 +247,38 @@ fun BubbleLauncher(
     fun snapAndPersist(bubbleTopLeft: Offset) {
         val nearest = nearestSnap(bubbleTopLeft)
         val anchorPos = snapPositionFor(nearest)
-        if (withinSnapDistance(bubbleTopLeft, anchorPos)) {
-            // Magnetize to the anchor and remember the snap point.
-            persistPosition(nearest, bubbleTopLeft)
-            if (animations) {
-                scope.launch {
-                    bubbleOffset.animateTo(anchorPos, spring(dampingRatio = 0.62f, stiffness = 340f * speed))
-                }
-            } else {
-                scope.launch { bubbleOffset.snapTo(anchorPos) }
+        // Always magnetize on release (WhatsApp-style): the bubble returns to
+        // the nearest edge anchor with a quick spring — it never stays floating
+        // mid-screen. The snap-distance preference now only sizes the drag
+        // target preview ring.
+        //
+        // Persisting AFTER the animation completes is critical: persistPosition
+        // writes the snap point/offset, which re-triggers the positioning
+        // effect above — and that effect's snapTo() cancels any in-flight
+        // animation. Persisting first made the bubble freeze wherever it was
+        // dropped instead of snapping to the edge.
+        if (animations) {
+            scope.launch {
+                bubbleOffset.animateTo(
+                    anchorPos,
+                    spring(dampingRatio = 0.68f, stiffness = 520f * speed)
+                )
+                persistPosition(nearest, anchorPos)
             }
         } else {
-            // Beyond snap distance: keep the free drop position (persisted as
-            // a micro-offset from the nearest anchor so it survives restarts).
-            persistPosition(nearest, bubbleTopLeft)
+            scope.launch {
+                bubbleOffset.snapTo(anchorPos)
+                persistPosition(nearest, anchorPos)
+            }
         }
     }
 
     // Auto-fade when idle (paused while any surface is open or hovered).
     // Hover reveal: hovering the (faded) bubble brings it back instantly.
     val idleTimeout = bubbleSettings.effectiveIdleTimeoutMs()
-    LaunchedEffect(isBubbleHovered, launchpadOpen, modePanelOpen, idleTimeout, bubbleSettings.hoverReveal) {
+    LaunchedEffect(isBubbleHovered, launchpadOpen, modePanelOpen, dragging, idleTimeout, bubbleSettings.hoverReveal) {
         val timeout = idleTimeout
-        if (timeout == null || isBubbleHovered || launchpadOpen || modePanelOpen) {
+        if (timeout == null || isBubbleHovered || launchpadOpen || modePanelOpen || dragging) {
             faded = false
         } else {
             delay(timeout)
@@ -284,6 +292,7 @@ fun BubbleLauncher(
     }
 
     val targetAlpha = when {
+        !positioned -> 0f
         launchpadOpen || modePanelOpen -> 0f
         faded -> bubbleSettings.fadeOpacity
         else -> 1f
@@ -297,12 +306,16 @@ fun BubbleLauncher(
     // Hover / press response on the bubble glyph itself.
     val bubbleInteraction = remember { MutableInteractionSource() }
     val bubbleHovered by bubbleInteraction.collectIsHoveredAsState()
+    val draggingNow = dragOffset != null
     val hoverScale by animateFloatAsState(
-        targetValue = if (launchpadOpen || modePanelOpen) 1f else if (bubbleHovered) 1.06f else 1f,
+        // While dragging, the pointer can cross the hitbox edge and flip the
+        // hover state — ignore hover entirely mid-drag so the bubble never
+        // flashes between sizes while being moved.
+        targetValue = if (draggingNow || launchpadOpen || modePanelOpen) 1f
+        else if (bubbleHovered) 1.06f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 420f),
         label = "bubbleHoverScale"
     )
-    val draggingNow = dragOffset != null
     val pressScale by animateFloatAsState(
         targetValue = if (draggingNow) 0.94f else 1f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
@@ -412,14 +425,24 @@ fun BubbleLauncher(
                                                 // Drag sensitivity: the snap-sensitivity slider scales
                                                 // how far the pointer must travel before the bubble
                                                 // starts following it (larger = sturdier / less twitchy).
-                                                val slop = viewConfiguration.touchSlop *
-                                                    (bubbleSettings.snapSensitivity / 80f)
+                                                // The 0.45 base keeps the default well under a full
+                                                // touch slop so the bubble answers the pointer almost
+                                                // immediately (WhatsApp-style), while still leaving
+                                                // enough travel to tell a click from a drag.
+                                                val slop = viewConfiguration.touchSlop * 0.45f *
+                                                    (bubbleSettings.snapSensitivity / 100f)
                                                 if ((change.position - down.position).getDistance() > slop) {
                                                     dragged = true
                                                     longPressJob.cancel()
                                                     dragging = true
                                                     scope.launch { bubbleOffset.stop() }
-                                                    dragOffset = bubbleOffset.value
+                                                    // Start the bubble exactly where the pointer is now, carrying the
+                                                    // movement accumulated before the slop threshold — otherwise the
+                                                    // bubble feels like it lags behind the cursor at drag start.
+                                                    dragOffset = bubbleOffset.value + Offset(
+                                                        change.position.x - down.position.x,
+                                                        change.position.y - down.position.y
+                                                    )
                                                     launchpadOpen = false
                                                     modePanelOpen = false
                                                 }
@@ -501,26 +524,27 @@ fun BubbleLauncher(
             }
         }
 
-        // Subtle snap preview while dragging: the nearest snap anchor responds
-        // softly so the release destination is telegraphed without snapping
-        // before the pointer lets go.
+        // Snap target preview while dragging: the nearest anchor is always
+        // shown so the release destination is telegraphed. Unconditional — the
+        // ring moves between anchors instead of appearing/disappearing, so it
+        // can never blink mid-drag. Its size follows the snap-distance setting.
         val previewAnchor = if (draggingNow) {
             val pos = dragOffset!!
-            val nearest = nearestSnap(pos)
-            val anchor = snapPositionFor(nearest)
-            if (withinSnapDistance(pos, anchor)) anchor else null
+            snapPositionFor(nearestSnap(pos))
         } else null
         if (previewAnchor != null) {
+            val ringSize = bubbleSettings.snapDistance.coerceIn(40, 120).dp
+            val ringPx = with(density) { ringSize.roundToPx() }
             val previewShape = bubbleShape(bubbleSize + hitboxPadding * 2)
             Box(
                 modifier = Modifier
                     .offset {
                         IntOffset(
-                            (previewAnchor.x - hitboxPaddingPx).roundToInt(),
-                            (previewAnchor.y - hitboxPaddingPx).roundToInt()
+                            (previewAnchor.x - ringPx / 2f).roundToInt(),
+                            (previewAnchor.y - ringPx / 2f).roundToInt()
                         )
                     }
-                    .size(bubbleSize + hitboxPadding * 2)
+                    .size(ringSize)
                     .border(2.dp, accent.primary.copy(alpha = 0.55f), previewShape)
             )
         }

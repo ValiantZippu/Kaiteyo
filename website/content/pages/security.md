@@ -19,10 +19,6 @@ We treat security reports seriously and respond as quickly as we can.
 - **Open source.** The [entire codebase](https://github.com/ValiantZippu/Kaiteyo) is public — security through visibility, auditable by anyone.
 - **Local integrations.** Optional integrations (such as AnkiConnect) talk only to software you run on your own machine over localhost.
 
-## What the web trial stores
-
-The web trial is a static, client-side page. Anything you do there — decks, reviews, writing practice — is stored in your browser's localStorage and cleared when you clear site data. Nothing is transmitted to any server.
-
 ## Privacy
 
 For the full picture of what data Kaiteyo stores and how it's handled, see the [privacy policy](/privacy/) and the in-repository [privacy documentation](/docs/security/privacy/).

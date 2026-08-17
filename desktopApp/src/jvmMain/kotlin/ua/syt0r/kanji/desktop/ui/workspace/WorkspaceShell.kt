@@ -99,6 +99,7 @@ import ua.syt0r.kanji.desktop.ui.api.IntegrationsView
 import ua.syt0r.kanji.desktop.ui.editor.CardEditorDialog
 import ua.syt0r.kanji.desktop.ui.grammar.GrammarPracticeView
 import ua.syt0r.kanji.desktop.ui.writing.WritingPracticeView
+import ua.syt0r.kanji.desktop.game.ui.GameView
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 
@@ -170,6 +171,7 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("open-browser2") { state.currentView = WorkspaceView.LearningBrowser }
         d.register("open-ocr") { state.currentView = WorkspaceView.Ocr }
         d.register("open-integrations") { state.currentView = WorkspaceView.Integrations }
+        d.register("open-game") { state.currentView = WorkspaceView.Game }
         d.register("mine-selection") { if (state.browserEngine.selectedText != null) state.mining.openMining() }
 
         // Media workspace transport keys are dispatched by MediaEngine through
@@ -562,6 +564,7 @@ private fun viewContent(state: AppState, view: WorkspaceView) {
             WorkspaceView.Settings -> SettingsView(state)
             WorkspaceView.Account -> AccountView(state)
             WorkspaceView.Contributions -> ContributionsView(state)
+            WorkspaceView.Game -> GameView(state)
     }
 }
 

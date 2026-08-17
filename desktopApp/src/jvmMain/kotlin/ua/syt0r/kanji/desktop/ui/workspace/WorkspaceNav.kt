@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.ViewSidebar
+import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -182,6 +183,10 @@ private val secondaryNavGroups: List<Pair<String, List<NavItem>>> = listOf(
         NavItem(WorkspaceView.Writing, Icons.Default.Create),
         NavItem(WorkspaceView.Grammar, Icons.Default.Lightbulb),
         NavItem(WorkspaceView.Collections, Icons.Default.Bookmarks)
+    ),
+    // The game world — an optional second space inside Kaiteyo.
+    "World" to listOf(
+        NavItem(WorkspaceView.Game, Icons.Default.VideogameAsset)
     ),
     "Materials" to listOf(
         NavItem(WorkspaceView.LearningBrowser, Icons.Default.TextSnippet),

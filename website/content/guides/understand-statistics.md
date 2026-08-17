@@ -58,4 +58,4 @@ Statistics exist to answer questions and correct course — not to be checked ho
 
 If a number makes you *stop* studying, that number is being used wrong. Log out, go watch an episode, and mine a sentence.
 
-Try the real thing: [explore statistics in the web trial](/try/#progress), or [download Kaiteyo](/download/).
+Try the real thing: [download Kaiteyo](/download/) and study a few cards — your statistics populate as you review.

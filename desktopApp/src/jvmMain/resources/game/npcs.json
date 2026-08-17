@@ -1,0 +1,976 @@
+{
+ "npcs": [
+  {
+   "id": "ekicho",
+   "name": "Station Master",
+   "nameJp": "駅長さん",
+   "role": "Runs the little station.",
+   "appearance": {
+    "hairColor": 11184810,
+    "shirtColor": 53379,
+    "pantsColor": 3223857,
+    "accessory": "cap"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 1080,
+    "y": 264
+   },
+   "schedule": [
+    {
+     "fromMinutes": 480,
+     "toMinutes": 780,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1080,
+      "y": 264
+     }
+    },
+    {
+     "fromMinutes": 780,
+     "toMinutes": 840,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 384,
+      "y": 528
+     }
+    },
+    {
+     "fromMinutes": 840,
+     "toMinutes": 1440,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1080,
+      "y": 264
+     }
+    }
+   ],
+   "dialogueId": "welcome",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "eki",
+    "densha",
+    "kippu",
+    "kaisatsu",
+    "homu"
+   ],
+   "questIds": [
+    "welcome",
+    "station-travel"
+   ],
+   "idleLine": "A gentle smile.",
+   "idleLineJp": "にこにこ",
+   "favoriteTopics": [
+    "eki",
+    "densha",
+    "kippu"
+   ]
+  },
+  {
+   "id": "misaki",
+   "name": "Misaki",
+   "nameJp": "店員さん",
+   "role": "Runs the town shop.",
+   "appearance": {
+    "hairColor": 6708544,
+    "shirtColor": 16777215,
+    "pantsColor": 5658198,
+    "accessory": "apron"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 1200,
+    "y": 1008
+   },
+   "schedule": [
+    {
+     "fromMinutes": 540,
+     "toMinutes": 1200,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1200,
+      "y": 1008
+     }
+    }
+   ],
+   "dialogueId": "buy-drink",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "konbini",
+    "tenin",
+    "nomimono",
+    "mizu",
+    "ocha",
+    "juice"
+   ],
+   "questIds": [
+    "buy-drink"
+   ],
+   "idleLine": "Welcomes you warmly.",
+   "idleLineJp": "いらっしゃいませ！",
+   "favoriteTopics": [
+    "nomimono",
+    "mizu",
+    "ocha"
+   ]
+  },
+  {
+   "id": "tanaka",
+   "name": "Old Tanaka",
+   "nameJp": "田中さん",
+   "role": "Retired fisherman who knows every story.",
+   "appearance": {
+    "hairColor": 9539985,
+    "shirtColor": 10263708,
+    "pantsColor": 5855577,
+    "accessory": "straw_hat"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 384,
+    "y": 528
+   },
+   "schedule": [
+    {
+     "fromMinutes": 420,
+     "toMinutes": 660,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 480,
+      "y": 528
+     }
+    },
+    {
+     "fromMinutes": 660,
+     "toMinutes": 840,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1440,
+      "y": 1008
+     }
+    },
+    {
+     "fromMinutes": 840,
+     "toMinutes": 1020,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 576,
+      "y": 1104
+     }
+    },
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1440,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 480,
+      "y": 528
+     }
+    }
+   ],
+   "dialogueId": "beach-sign",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "umi",
+    "suna",
+    "sora",
+    "toudai"
+   ],
+   "questIds": [
+    "beach-sign"
+   ],
+   "idleLine": "Gazes at the sea.",
+   "idleLineJp": "海を眺めている",
+   "favoriteTopics": [
+    "umi",
+    "suwaru"
+   ]
+  },
+  {
+   "id": "yui",
+   "name": "Yui",
+   "nameJp": "ゆい",
+   "role": "A girl with a camera, visiting for the summer.",
+   "appearance": {
+    "hairColor": 6708544,
+    "shirtColor": 16740006,
+    "pantsColor": 8947848,
+    "accessory": "camera"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 768,
+    "y": 1100
+   },
+   "schedule": [
+    {
+     "fromMinutes": 540,
+     "toMinutes": 1080,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 768,
+      "y": 1100
+     }
+    },
+    {
+     "fromMinutes": 1080,
+     "toMinutes": 1140,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1752,
+      "y": 1050
+     }
+    },
+    {
+     "fromMinutes": 1140,
+     "toMinutes": 1440,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 768,
+      "y": 1100
+     }
+    }
+   ],
+   "dialogueId": "photo-walk",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "shashin",
+    "toru"
+   ],
+   "questIds": [
+    "photo-walk"
+   ],
+   "idleLine": "Framing the perfect shot.",
+   "idleLineJp": "シャッターチャンスを狙っている",
+   "favoriteTopics": [
+    "shashin",
+    "toru"
+   ]
+  },
+  {
+   "id": "kanushi",
+   "name": "Priest",
+   "nameJp": "神主さん",
+   "role": "Cares for Tsurugaoka Hachimangū.",
+   "appearance": {
+    "hairColor": 9539985,
+    "shirtColor": 16777215,
+    "pantsColor": 2763306,
+    "accessory": "hakama"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 384,
+    "y": 600
+   },
+   "schedule": [
+    {
+     "fromMinutes": 480,
+     "toMinutes": 1020,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 384,
+      "y": 600
+     }
+    },
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1440,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 432,
+      "y": 480
+     }
+    }
+   ],
+   "dialogueId": "kamakura-shrine",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "hachimangu",
+    "torii",
+    "sandou",
+    "omikuji"
+   ],
+   "questIds": [
+    "hachimangu-visit"
+   ],
+   "idleLine": "Sweeps the gravel approach.",
+   "idleLineJp": "参道を掃いている",
+   "favoriteTopics": [
+    "torii",
+    "omikuji",
+    "sandou"
+   ]
+  },
+  {
+   "id": "komachi-shopkeeper",
+   "name": "Komachi Shopkeeper",
+   "nameJp": "小町の店員さん",
+   "role": "Runs a sweets and souvenir shop on Komachi-dōri.",
+   "appearance": {
+    "hairColor": 6708544,
+    "shirtColor": 16740006,
+    "pantsColor": 5658198,
+    "accessory": "apron"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 1008,
+    "y": 816
+   },
+   "schedule": [
+    {
+     "fromMinutes": 540,
+     "toMinutes": 1260,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 1008,
+      "y": 816
+     }
+    }
+   ],
+   "dialogueId": "kamakura-shop",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "komachi",
+    "omiyage",
+    "kanban"
+   ],
+   "questIds": [
+    "komachi-walk"
+   ],
+   "idleLine": "Calls out to passers-by.",
+   "idleLineJp": "いらっしゃいませ！"
+  },
+  {
+   "id": "lifeguard",
+   "name": "Lifeguard",
+   "nameJp": "監視員さん",
+   "role": "Watches over Yuigahama beach.",
+   "appearance": {
+    "hairColor": 3355443,
+    "shirtColor": 16753920,
+    "pantsColor": 2565927,
+    "accessory": "whistle"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 1056,
+    "y": 1180
+   },
+   "schedule": [
+    {
+     "fromMinutes": 600,
+     "toMinutes": 1080,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 1056,
+      "y": 1180
+     }
+    }
+   ],
+   "dialogueId": "kamakura-beach",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "yuigahama",
+    "umi",
+    "suna",
+    "sora"
+   ],
+   "questIds": [
+    "yuigahama-visit"
+   ],
+   "idleLine": "Watches the waves.",
+   "idleLineJp": "波を見ている"
+  },
+  {
+   "id": "monk",
+   "name": "Monk",
+   "nameJp": "お坊さん",
+   "role": "Looks after Hase-dera and the Great Buddha.",
+   "appearance": {
+    "hairColor": 2236962,
+    "shirtColor": 16510916,
+    "pantsColor": 6184542,
+    "accessory": "rosary"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 1776,
+    "y": 912
+   },
+   "schedule": [
+    {
+     "fromMinutes": 420,
+     "toMinutes": 1140,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 1776,
+      "y": 912
+     }
+    }
+   ],
+   "dialogueId": "kamakura-temple",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "tera",
+    "hasedera",
+    "daibutsu"
+   ],
+   "questIds": [
+    "hasedera-visit"
+   ],
+   "idleLine": "Tends the garden.",
+   "idleLineJp": "庭の手入れをしている"
+  },
+  {
+   "id": "aoi",
+   "name": "Aoi",
+   "nameJp": "あおい",
+   "role": "A girl in a yukata, excited about the festival.",
+   "appearance": {
+    "hairColor": 3289650,
+    "shirtColor": 16740006,
+    "pantsColor": 7368816,
+    "accessory": "yukata"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 1008,
+    "y": 648
+   },
+   "schedule": [
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1320,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1008,
+      "y": 648
+     }
+    }
+   ],
+   "dialogueId": "festival-yukata",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "matsuri",
+    "yukata",
+    "chouchin"
+   ],
+   "questIds": [
+    "festival-1"
+   ],
+   "idleLine": "Waves with a paper lantern.",
+   "idleLineJp": "提灯を振っている",
+   "favoriteTopics": [
+    "matsuri",
+    "yukata",
+    "chouchin"
+   ]
+  },
+  {
+   "id": "takoyaki-ya",
+   "name": "Takoyaki Vendor",
+   "nameJp": "たこ焼き屋さん",
+   "role": "Works the takoyaki stall with a song in his voice.",
+   "appearance": {
+    "hairColor": 3355443,
+    "shirtColor": 16733525,
+    "pantsColor": 2565927,
+    "accessory": "hachimaki"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 960,
+    "y": 792
+   },
+   "schedule": [
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1290,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 960,
+      "y": 792
+     }
+    }
+   ],
+   "dialogueId": "festival-takoyaki",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "takoyaki",
+    "yatai"
+   ],
+   "questIds": [
+    "festival-2"
+   ],
+   "idleLine": "Flipping batter with a practiced wrist.",
+   "idleLineJp": "たこ焼きをひっくり返している",
+   "favoriteTopics": [
+    "takoyaki",
+    "yatai"
+   ]
+  },
+  {
+   "id": "sakura",
+   "name": "Lantern Keeper",
+   "nameJp": "提灯番",
+   "role": "Lights the stone lanterns along the Hachimangū approach at dusk (Kamakura night).",
+   "appearance": {
+    "hairColor": 3289650,
+    "shirtColor": 4947912,
+    "pantsColor": 2565927,
+    "accessory": "lamp"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 672,
+    "y": 528
+   },
+   "schedule": [
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1380,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 672,
+      "y": 528
+     }
+    }
+   ],
+   "dialogueId": "kamakura-night",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "chouchin",
+    "yoru",
+    "tsuki"
+   ],
+   "questIds": [
+    "kamakura-night-lanterns"
+   ],
+   "idleLine": "Tends the lanterns.",
+   "idleLineJp": "提灯の火を守っている",
+   "favoriteTopics": [
+    "chouchin",
+    "tsuki",
+    "yoru"
+   ]
+  },
+  {
+   "id": "kenta",
+   "name": "Beachcomber",
+   "nameJp": "浜辺の少年",
+   "role": "Wanders the beach and pier all day, picking up shells.",
+   "appearance": {
+    "hairColor": 5592405,
+    "shirtColor": 65511,
+    "pantsColor": 8947848,
+    "accessory": "bucket"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 1440,
+    "y": 1008
+   },
+   "patrolPoints": [
+    {
+     "x": 1440,
+     "y": 1008
+    },
+    {
+     "x": 1680,
+     "y": 1152
+    },
+    {
+     "x": 1920,
+     "y": 1200
+    },
+    {
+     "x": 1152,
+     "y": 1104
+    }
+   ],
+   "patrolPauseSeconds": 3,
+   "dialogueId": "beach-patrol",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "umi",
+    "suna",
+    "kai"
+   ],
+   "idleLine": "Hunting for shells.",
+   "idleLineJp": "貝を探している",
+   "favoriteTopics": [
+    "kai",
+    "umi"
+   ]
+  },
+  {
+   "id": "amezaiku-ya",
+   "name": "Candy Vendor",
+   "nameJp": "飴細工屋さん",
+   "role": "A winter-only vendor who shapes warm sugar into animals (seasonal).",
+   "appearance": {
+    "hairColor": 3355443,
+    "shirtColor": 16711680,
+    "pantsColor": 6184542,
+    "accessory": "scarf"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 816,
+    "y": 816
+   },
+   "schedule": [
+    {
+     "fromMinutes": 540,
+     "toMinutes": 1260,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 816,
+      "y": 816
+     }
+    }
+   ],
+   "seasons": [
+    "Winter"
+   ],
+   "weatherPhases": [
+    "Snow",
+    "Rain"
+   ],
+   "dialogueId": "winter-candy",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "ame",
+    "fuyu",
+    "yuki"
+   ],
+   "questIds": [
+    "winter-candy"
+   ],
+   "idleLine": "Shapes sugar in the cold air.",
+   "idleLineJp": "冷たい空気の中で飴を細工している"
+  },
+  {
+   "id": "yuki-chan",
+   "name": "Cocoa Vendor",
+   "nameJp": "ココア屋さん",
+   "role": "Runs the winter market stall — warm cocoa in cold weather (winter event).",
+   "appearance": {
+    "hairColor": 11184810,
+    "shirtColor": 16119285,
+    "pantsColor": 6184542,
+    "accessory": "mittens"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 1056,
+    "y": 744
+   },
+   "schedule": [
+    {
+     "fromMinutes": 540,
+     "toMinutes": 1260,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1056,
+      "y": 744
+     }
+    }
+   ],
+   "seasons": [
+    "Winter"
+   ],
+   "dialogueId": "winter-market",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "atatakai",
+    "fuyu",
+    "yuki"
+   ],
+   "questIds": [
+    "winter-market"
+   ],
+   "idleLine": "Steam rises from the cocoa.",
+   "idleLineJp": "ココアから湯気が立っている"
+  },
+  {
+   "id": "hana",
+   "name": "Blossom Watcher",
+   "nameJp": "お花見の人",
+   "role": "Watches the cherry blossoms under the Kamakura trees in spring (spring event).",
+   "appearance": {
+    "hairColor": 3289650,
+    "shirtColor": 16761024,
+    "pantsColor": 7368816,
+    "accessory": "blanket"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 480,
+    "y": 240
+   },
+   "schedule": [
+    {
+     "fromMinutes": 480,
+     "toMinutes": 1200,
+     "cellId": "kamakura-town",
+     "position": {
+      "x": 480,
+      "y": 240
+     }
+    }
+   ],
+   "seasons": [
+    "Spring"
+   ],
+   "dialogueId": "spring-blossoms",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "sakura",
+    "hanami"
+   ],
+   "questIds": [
+    "spring-blossoms"
+   ],
+   "idleLine": "Spreads a picnic blanket under the blossoms.",
+   "idleLineJp": "桜の下でレジャーシートを敷いている"
+  },
+  {
+   "id": "bon-dancer",
+   "name": "Bon Dancer",
+   "nameJp": "盆踊りの人",
+   "role": "Leads the bon festival dance on the Hamanaka beach in summer evenings (summer event).",
+   "appearance": {
+    "hairColor": 2697513,
+    "shirtColor": 16753920,
+    "pantsColor": 6184542,
+    "accessory": "yukata"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 720,
+    "y": 504
+   },
+   "routes": [
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1260,
+     "points": [
+      {
+       "x": 720,
+       "y": 504
+      },
+      {
+       "x": 744,
+       "y": 528
+      },
+      {
+       "x": 768,
+       "y": 504
+      }
+     ],
+     "pauseSeconds": 3
+    }
+   ],
+   "seasons": [
+    "Summer"
+   ],
+   "dialogueId": "summer-festival",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "bonodori",
+    "natsu",
+    "matsuri"
+   ],
+   "questIds": [
+    "summer-festival"
+   ],
+   "idleLine": "Practices the festival dance steps.",
+   "idleLineJp": "盆踊りの練習をしている"
+  },
+  {
+   "id": "momiji-sensei",
+   "name": "Leaf Watcher",
+   "nameJp": "紅葉を見る人",
+   "role": "Walks the Kamakura temple path admiring the autumn leaves (autumn event).",
+   "appearance": {
+    "hairColor": 11184810,
+    "shirtColor": 13092807,
+    "pantsColor": 6184542,
+    "accessory": "hat"
+   },
+   "cellId": "kamakura-town",
+   "anchor": {
+    "x": 432,
+    "y": 312
+   },
+   "routes": [
+    {
+     "fromMinutes": 540,
+     "toMinutes": 1140,
+     "points": [
+      {
+       "x": 432,
+       "y": 312
+      },
+      {
+       "x": 456,
+       "y": 288
+      },
+      {
+       "x": 480,
+       "y": 312
+      },
+      {
+       "x": 456,
+       "y": 336
+      }
+     ],
+     "pauseSeconds": 4
+    }
+   ],
+   "seasons": [
+    "Autumn"
+   ],
+   "dialogueId": "autumn-leaves",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "momiji",
+    "aki",
+    "kaki"
+   ],
+   "questIds": [
+    "autumn-leaves"
+   ],
+   "idleLine": "Admires the red leaves.",
+   "idleLineJp": "赤い葉を眺めている"
+  },
+  {
+   "id": "hina",
+   "name": "Hina",
+   "nameJp": "ひな",
+   "role": "A festival girl with a paper lantern, watching the stalls.",
+   "appearance": {
+    "hairColor": 15654324,
+    "shirtColor": 16745087,
+    "pantsColor": 7368816,
+    "accessory": "lantern"
+   },
+   "cellId": "hamanaka-town",
+   "anchor": {
+    "x": 1200,
+    "y": 768
+   },
+   "schedule": [
+    {
+     "fromMinutes": 1020,
+     "toMinutes": 1320,
+     "cellId": "hamanaka-town",
+     "position": {
+      "x": 1200,
+      "y": 768
+     }
+    }
+   ],
+   "dialogueId": "festival-lantern",
+   "languageLevel": 1,
+   "knowledgeTargets": [
+    "matsuri",
+    "chouchin",
+    "hanabi"
+   ],
+   "questIds": [],
+   "idleLine": "Holds a paper lantern up to the light.",
+   "idleLineJp": "提灯をかざしている",
+   "favoriteTopics": [
+    "matsuri",
+    "hanabi",
+    "chouchin"
+   ]
+  },
+  {
+   "id": "yoshino",
+   "name": "Shrine Maiden",
+   "nameJp": "巫女さん",
+   "role": "Cares for Enoshima Shrine and its goddess Benzaiten.",
+   "appearance": {
+    "hairColor": 3289650,
+    "shirtColor": 16777215,
+    "pantsColor": 8947848,
+    "accessory": "hakama"
+   },
+   "cellId": "enoshima-island",
+   "anchor": {
+    "x": 456,
+    "y": 636
+   },
+   "schedule": [
+    {
+     "fromMinutes": 480,
+     "toMinutes": 1200,
+     "cellId": "enoshima-island",
+     "position": {
+      "x": 456,
+      "y": 636
+     }
+    }
+   ],
+   "dialogueId": "enoshima-shrine",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "enoshima",
+    "jinja",
+    "benzaitei",
+    "omikuji"
+   ],
+   "questIds": [
+    "enoshima-shrine-visit"
+   ],
+   "idleLine": "Ties paper fortunes to the shrine fence.",
+   "idleLineJp": "おみくじを結んでいる"
+  },
+  {
+   "id": "taro",
+   "name": "Fisherman Taro",
+   "nameJp": "漁師の太郎さん",
+   "role": "Knows the Iwaya caves and the way the tide moves.",
+   "appearance": {
+    "hairColor": 9539985,
+    "shirtColor": 33023,
+    "pantsColor": 5855577,
+    "accessory": "straw_hat"
+   },
+   "cellId": "enoshima-island",
+   "anchor": {
+    "x": 1152,
+    "y": 1152
+   },
+   "schedule": [
+    {
+     "fromMinutes": 420,
+     "toMinutes": 1380,
+     "cellId": "enoshima-island",
+     "position": {
+      "x": 1152,
+      "y": 1152
+     }
+    }
+   ],
+   "dialogueId": "enoshima-cave",
+   "languageLevel": 2,
+   "knowledgeTargets": [
+    "iwaya",
+    "umi",
+    "sakana",
+    "kaze"
+   ],
+   "questIds": [
+    "enoshima-cave"
+   ],
+   "idleLine": "Mends his nets by the cave path.",
+   "idleLineJp": "網を直している"
+  }
+ ]
+}

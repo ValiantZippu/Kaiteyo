@@ -17,8 +17,8 @@ talk to each other:
 
 | | Core app | Desktop suite |
 |---|---|---|
-| Entry point | `desktopApp/.../Main.kt` `main()` → `KaiteyoApp` (also Android `KaiteyoActivity`, iOS) | `desktopApp/.../SuiteMain.kt` `desktopSuiteMain()` → `KaiteyoDesktopSuite` |
-| Reachable from a shipped `main()`? | **Yes** — this is the product | **No** — `desktopSuiteMain()` is not a `main()` and nothing invokes it; no Gradle task points at it (verified: zero references to `KaiteyoDesktopSuite`/`WorkspaceView` from `core/`) |
+| Entry point | `desktopApp/.../Main.kt` `main()` → `KaiteyoApp` (also Android `KaiteyoActivity`, iOS) | **retired** — the standalone suite entry (`desktopSuiteMain()`/`SuiteMain.kt`) was removed; the suite is now a JVM-only feature library folded into shipped destinations (`DesktopMediaCentreContent`, `DesktopGameCentreContent`) |
+| Reachable from a shipped `main()`? | **Yes** — this is the product | Only through shipped destinations (Media, Kaiteyo World) — no parallel shell |
 | UI framework | Compose MPP, shared across desktop/Android/iOS | Compose Desktop, JVM-only |
 | Navigation | `NavShell` (Sidebar/Floating, 4 edges, snap, form factors, persistence) | `WorkspaceNav` (dock: Sidebar/Floating, 12 snap points, persistence) |
 | User data | SQLDelight `UserDataDatabase` (FSRS cards, decks, tags, flags, review history, study history, migrations) | JSON files under `~/.kaiteyo/` (`cards.json`, `settings.json`, statistics) |

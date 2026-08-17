@@ -518,6 +518,58 @@ class MediaLibrary(
     fun playlist(id: String): MediaPlaylist? = playlists.firstOrNull { it.id == id }
 
     // ------------------------------------------------------------
+    // Playlist import / export (M3U — paths + EXTINF titles)
+    // ------------------------------------------------------------
+
+    /**
+     * Write a playlist to an M3U file. Media is referenced by absolute path —
+     * the library never copies files, and neither does the export.
+     */
+    fun exportPlaylistM3u(playlist: MediaPlaylist, target: File): Boolean {
+        val items = playlistItems(playlist)
+        return runCatching {
+            val lines = buildList {
+                add("#EXTM3U")
+                items.forEach { item ->
+                    add("#EXTINF:${item.durationMs / 1000},${item.name}")
+                    add(item.path)
+                }
+            }
+            target.writeText(lines.joinToString("\n") + "\n")
+            true
+        }.getOrDefault(false)
+    }
+
+    /**
+     * Import an M3U playlist: media paths become library items (added when
+     * the file exists and is not indexed yet, with relative paths resolved
+     * against the playlist file) and are joined into a playlist named after
+     * the file. Returns the new playlist id, or "" when nothing was valid.
+     */
+    fun importPlaylistM3u(file: File, name: String = file.nameWithoutExtension): String {
+        if (!file.isFile) return ""
+        val id = createPlaylist(name)
+        if (id.isBlank()) return ""
+        val paths = runCatching { file.readLines() }
+            .getOrDefault(emptyList())
+            .map { it.trim() }
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+        paths.forEach { raw ->
+            val path = raw.substringBefore('#').trim()
+            if (path.isBlank()) return@forEach
+            val f = File(path)
+            val resolved = when {
+                f.exists() -> f
+                !f.isAbsolute && file.parentFile != null -> File(file.parentFile, path)
+                else -> f
+            }
+            val item = if (resolved.exists()) addFile(resolved) else itemByPath(resolved.absolutePath)
+            item?.let { addToPlaylist(id, it.id) }
+        }
+        return id
+    }
+
+    // ------------------------------------------------------------
     // Tags / favorites / collections
     // ------------------------------------------------------------
 

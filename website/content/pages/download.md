@@ -4,8 +4,8 @@ description: Get Kaiteyo for Windows, macOS, Linux, Android, or iOS — free and
 ---
 
 <div class="prose-note">
-  <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-  <strong>Not sure yet?</strong> Try the <a href="/try/">web trial</a> first — a working slice of Kaiteyo runs in your browser with sample data, no installation, and nothing leaves your device.
+  <svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>
+  <strong>Not sure yet?</strong> Take a look at the <a href="/features/">feature overview</a> and <a href="/screenshots/">screenshots</a> first — or install and start with the built-in sample decks.
 </div>
 
 ## Platforms
@@ -16,7 +16,7 @@ Every release ships as a direct download on GitHub — no app store, no account,
   <div class="card platform-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-windows"/></svg></div>
     <h3>Windows</h3>
-    <p>Custom Inno Setup installer (EXE), plus MSI and a portable ZIP. Windows 10 and 11, x64 and arm64.</p>
+    <p>Custom Inno Setup installer (EXE), plus MSI and a portable ZIP. Windows 10 and 11, x64.</p>
     <a class="btn btn-primary btn-sm" href="https://github.com/ValiantZippu/Kaiteyo/releases" target="_blank" rel="noopener">
       <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
       Get on GitHub
@@ -60,11 +60,11 @@ Every release ships as a direct download on GitHub — no app store, no account,
   </div>
   <div class="card platform-card">
     <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#icon-globe"/></svg></div>
-    <h3>Web trial</h3>
-    <p>No download at all — a working slice of Kaiteyo in your browser with sample data.</p>
-    <a class="btn btn-secondary btn-sm" href="/try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try in the browser
+    <h3>Any device</h3>
+    <p>Your study data, decks and progress live on your device — no account, no tracking, fully offline.</p>
+    <a class="btn btn-secondary btn-sm" href="/features/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+      See the features
     </a>
   </div>
 </div>
@@ -81,7 +81,7 @@ All channels are listed on the [releases page](https://github.com/ValiantZippu/K
 
 ## Architecture
 
-- **Windows** — x64 and arm64
+- **Windows** — x64
 - **macOS** — universal (Apple silicon + Intel)
 - **Linux** — x64 (AppImage/deb/rpm)
 - **Android** — arm64, armv7 and x86_64 APKs

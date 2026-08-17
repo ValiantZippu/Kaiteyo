@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kaiteyo (書いてよ) — UI System — Kaiteyo</title>
-  <meta name="description" content="Every component in Kaiteyo follows these principles:" />
+  <meta name="description" content="1. Purposeful — no decorative-only components (DsEmptyState, skeletons and" />
   <meta name="generator" content="Kaiteyo website builder" />
 
   
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Kaiteyo" />
   <meta property="og:title" content="Kaiteyo (書いてよ) — UI System — Kaiteyo" />
-  <meta property="og:description" content="Every component in Kaiteyo follows these principles:" />
+  <meta property="og:description" content="1. Purposeful — no decorative-only components (DsEmptyState, skeletons and" />
   <meta property="og:url" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/design/ui_system/" />
   <meta property="og:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
@@ -28,7 +28,7 @@
   <meta name="twitter:site" content="@KaiteyoApp" />
   
   <meta name="twitter:title" content="Kaiteyo (書いてよ) — UI System — Kaiteyo" />
-  <meta name="twitter:description" content="Every component in Kaiteyo follows these principles:" />
+  <meta name="twitter:description" content="1. Purposeful — no decorative-only components (DsEmptyState, skeletons and" />
   <meta name="twitter:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
   <!-- Icons -->
@@ -54,14 +54,14 @@
   </script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css?v=1786940608" />
 
   <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
   <script>
@@ -357,15 +357,6 @@
         <ul class="nav-list">
           
           <li>
-            <a class="nav-item" href="/Kaiteyo/try/"
-               data-badge="Web">
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-              <span class="nav-label">Try Kaiteyo</span>
-              <span class="badge badge-muted nav-badge">Web</span>
-            </a>
-          </li>
-          
-          <li>
             <a class="nav-item" href="/Kaiteyo/download/"
                data-badge="v2.2.1">
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
@@ -474,8 +465,8 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/roadmap/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
-              <span class="nav-label">Roadmap</span>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Product Roadmap</span>
               
             </a>
           </li>
@@ -493,7 +484,86 @@
       </div>
       
       <div class="nav-group">
-        <div class="nav-group-title">Project</div>
+        <div class="nav-group-title">Command Center</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Project Status</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/kanban/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Kanban</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/whiteboard/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Whiteboard</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/suggestions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Suggestions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/decisions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">Architecture Decisions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/activity/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Activity</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/contributing/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+              <span class="nav-label">Contributing</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Community</div>
         <ul class="nav-list">
           
           <li>
@@ -537,15 +607,6 @@
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
               <span class="nav-label">Data &amp; Attribution</span>
-              
-            </a>
-          </li>
-          
-          <li>
-            <a class="nav-item" href="/Kaiteyo/contributing/"
-               >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
-              <span class="nav-label">Contributing</span>
               
             </a>
           </li>
@@ -603,13 +664,9 @@
     <div class="nav-divider"></div>
 
     <div class="nav-footer">
-      <a class="btn btn-primary nav-cta" href="/Kaiteyo/try/">
-        <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-        <span class="nav-cta-label">Try Kaiteyo</span>
-      </a>
-      <a class="btn btn-ghost btn-sm nav-cta" href="/Kaiteyo/download/">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
         <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
-        <span class="nav-cta-label">Download</span>
+        <span class="nav-cta-label">Download Kaiteyo</span>
       </a>
       <div class="flex gap-2 items-center">
         <button class="btn-icon" type="button" data-nav-collapse-toggle
@@ -649,9 +706,9 @@
       Search
       <kbd>Ctrl K</kbd>
     </button>
-    <a class="btn btn-primary btn-sm" href="/Kaiteyo/try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download
     </a>
     <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
       <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
@@ -775,7 +832,7 @@
         
         <li>
           <a class="docs-link"
-             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System Specification</a>
+             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System &amp; Theme Studio</a>
         </li>
         
         <li>
@@ -789,7 +846,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">7</span>
+        <span class="docs-count">28</span>
       </summary>
       <ul class="docs-list">
         
@@ -801,6 +858,61 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/architecture/data_platform/">Japanese Language Data Platform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/node_architecture/">Kaiteyo Node Architecture — Master Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/database/">Kaiteyo Architecture — Database Specification &amp; Migration Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/dictionary/">Kaiteyo Architecture — Dictionary Engine Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/language-model/">Kaiteyo Architecture — Language Data Model &amp; Knowledge Graph</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/study-engine/">Kaiteyo Architecture — Study Engine &amp; Card Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/statistics/">Kaiteyo Architecture — Statistics &amp; Event Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/exams/">Kaiteyo Architecture — Exam System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/media/">Kaiteyo Architecture — Media, Playback &amp; Subtitle Engine</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/mining/">Kaiteyo Architecture — Mining Workflow Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/localization/">Kaiteyo Architecture — Localization Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/browser/">Kaiteyo Architecture — Embedded Browser (Planned)</a>
         </li>
         
         <li>
@@ -825,6 +937,56 @@
         
         <li>
           <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/performance/">Kaiteyo Architecture — Performance Strategy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/toolchain/">Kaiteyo Architecture — Toolchain &amp; Development Environment</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/content/">Kaiteyo Architecture — Content System &amp; Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/backup/">Kaiteyo Architecture — Backup, Import &amp; Export</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/accessibility/">Kaiteyo Architecture — Accessibility Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/ci-cd/">Kaiteyo Architecture — CI/CD &amp; Release Pipeline</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/assets/">Kaiteyo Architecture — Asset System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/integrations/">Kaiteyo Architecture — Integrations Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/journey/">Kaiteyo Architecture — Journey, World &amp; Game Runtime Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/pitch-frequency/">Pitch Accent &amp; Frequency Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
              href="/Kaiteyo/docs/architecture/readme/">🔌 api — Kaiteyo API Documentation</a>
         </li>
         
@@ -834,7 +996,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">11</span>
+        <span class="docs-count">19</span>
       </summary>
       <ul class="docs-list">
         
@@ -891,6 +1053,46 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/decisions/0011-plugin-security-first/">ADR-0011: Plugin Runtime Loading Deferred (Security First)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0012-engineering-standards/">ADR-0012: Professional Engineering Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0013-node-architecture/">ADR-0013: Node-Based Architecture (Target)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0014-journey-target-architecture/">ADR-0014: Journey as Target Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0015-content-authoring/">ADR-0015: Data-Driven Content Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/">ADR-0016: Event-Driven User Knowledge (Dimensioned, FSRS-Owned Scheduling)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0017-one-product-architecture/">ADR-0017: One Product — Resolve the Two Parallel Applications</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0018-game-engine-evaluation/">ADR-0018: Game Engine Evaluation (Decision Pending)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0019-website-command-center/">ADR-0019: Website as Project Command Center</a>
         </li>
         
       </ul>
@@ -1259,6 +1461,36 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/readme/">Kaiteyo Website</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/architecture/">Website Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/data_model/">Website — Unified Project Data Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/api/">Website — API Contracts (interactive layer)</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
         <span class="docs-count">2</span>
       </summary>
       <ul class="docs-list">
@@ -1271,6 +1503,21 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/contributing/development_setup/">Kaiteyo — Development Setup</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/ai/ai_agent_guide/">AI Agent Guide</a>
         </li>
         
       </ul>
@@ -1347,7 +1594,7 @@
 
     <header style="margin-bottom: var(--space-8)">
       <h1>Kaiteyo (書いてよ) — UI System</h1>
-      <p style="font-size: var(--text-lg); color: var(--text-secondary)">Every component in Kaiteyo follows these principles:</p>
+      <p style="font-size: var(--text-lg); color: var(--text-secondary)">1. Purposeful — no decorative-only components (DsEmptyState, skeletons and</p>
       
       <a class="prose-edit-link" href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/design/UI_SYSTEM.md" target="_blank" rel="noopener">
         <svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>
@@ -1357,238 +1604,222 @@
     </header>
 
     <h1 id="kaiteyo-ui-system">Kaiteyo (書いてよ) — UI System</h1>
-<h2 id="component-philosophy">Component Philosophy</h2>
-<p>Every component in Kaiteyo follows these principles:
-1. <strong>Purposeful</strong> — No decorative-only components
-2. <strong>Consistent</strong> — Same component behaves the same everywhere
-3. <strong>Responsive</strong> — Adapts to context and window size
-4. <strong>Accessible</strong> — Keyboard navigable, screen-reader friendly
-5. <strong>Animated</strong> — Smooth transitions for state changes</p>
-<hr />
-<h2 id="buttons">Buttons</h2>
-<h3 id="primary-button">Primary Button</h3>
+<blockquote>
+<p>This is the <strong>component catalog as implemented</strong>. Every component listed here exists
+in code — <code>core/.../presentation/common/</code> for shared (multi-platform) components and
+<code>desktopApp/.../desktop/designsystem/</code> for the desktop <code>Ds*</code> system. Signatures are
+the real public APIs; where a spec below differs from the code, the code wins.</p>
+</blockquote>
+<h2 id="component-philosophy">Component philosophy</h2>
+<ol>
+<li><strong>Purposeful</strong> — no decorative-only components (<code>DsEmptyState</code>, skeletons and
+   tooltips exist because states need them).</li>
+<li><strong>Consistent</strong> — one <code>Ds*</code> component set across the whole desktop suite; shared
+   Material3 components across all platforms.</li>
+<li><strong>Responsive</strong> — surfaces adapt to the window via <code>DsResponsive</code> width tiers and
+   <code>adaptiveDialogWidth</code> (never fixed-size boxes floating mid-screen).</li>
+<li><strong>Accessible</strong> — keyboard navigable (<code>DsMenuPanel</code> grabs focus, ↑/↓ wrap, Esc
+   dismisses), hover + focus states on every interactive element, reduced-motion
+   honored (see <code>ANIMATION_SYSTEM.md</code>).</li>
+<li><strong>Token-driven</strong> — no hardcoded colors/spacing/radii in views; everything reads
+   <code>DsSpacing</code>, <code>DsRadius</code>, <code>DsType</code>, <code>DsMotion</code>, <code>DsElevation</code>, <code>DsSemantic</code>
+   (all scaled by the active theme config).</li>
+</ol>
+<h2 id="buttons-dsbuttonskt">Buttons (<code>DsButtons.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsButton</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">onClick</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Primary</span><span class="p">,</span><span class="w"> </span><span class="n">icon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">compact</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>kind: DsButtonKind</code> — <code>Primary</code> (accent fill, onPrimary text), <code>Secondary</code>
+(surfaceElevated fill), <code>Ghost</code> (transparent → surfaceInteractive on hover), <code>Danger</code>
+(error fill), <code>AccentTint</code> (accent at 16% → 26% on hover).</p>
+<p>Behavior: background <code>animateColorAsState</code> (160ms tween), scale spring
+(pressed 0.97 / hovered 1.02, <code>spring(0.6, 500)</code>), disabled → muted text, <code>compact</code>
+shrinks padding. Radius <code>DsRadius.Md</code>, padding <code>DsSpacing.Md</code> ×
+<code>DsSpacing.Xs/Sm</code>.</p>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsIconButton</span><span class="p">(</span><span class="n">icon</span><span class="p">,</span><span class="w"> </span><span class="n">onClick</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">contentDescription</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">tint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">34.</span><span class="n">dp</span><span class="p">,</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+
+<p>36→34dp square icon button; hover background <code>surfaceInteractive</code>, hover tint = accent.
+<code>DsTextButton(text, onClick, ...)</code> — text-only, accent-colored, 10% accent hover fill.
+<code>DsButtonRow</code> — evenly spaced row (used by review grading).</p>
+<h2 id="cards-lists-dscardskt">Cards &amp; lists (<code>DsCards.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsCard</span><span class="p">(</span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">elevated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">onClick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Surface or surfaceElevated fill, <code>DsRadius.Lg</code>, optional hover lift
+(<code>DsElevation.Raised</code> shadow, 200ms tween) + 2dp accent top line when interactive
+and hovered. <code>onClick != null</code> makes it interactive (hoverable, no ripple).</p>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsListItem</span><span class="p">(</span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">leading</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">trailing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="n">onClick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span>
+</code></pre></div>
+
+<p>40dp row (<code>padding(Lg, Md)</code>), hover → <code>surfaceInteractive</code>, title <code>DsType.Body</code> Medium
+(1 line, ellipsis), subtitle <code>DsType.Caption</code> muted.</p>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsVirtualList</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">contentPadding</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span><span class="w">  </span><span class="c1">// LazyColumn — 100k+ safe</span>
+<span class="n">DsFavoriteToggle</span><span class="p">(</span><span class="n">favorite</span><span class="p">,</span><span class="w"> </span><span class="n">onToggle</span><span class="p">)</span><span class="w">                          </span><span class="c1">// ★ star, yellow when set</span>
+<span class="n">DsChevron</span><span class="p">()</span><span class="w">                                                   </span><span class="c1">// trailing chevron affordance</span>
+</code></pre></div>
+
+<p><strong>Loading states</strong> — <code>DsSkeleton(modifier, width, height, rounded)</code> pulses
+0.45→1.0 alpha (900ms reverse tween, static under reduced motion); <code>DsSkeletonCard</code>
+composes a card-shaped placeholder.</p>
+<p><strong>Empty state</strong> — <code>DsEmptyState(title, message, icon = null, action = {})</code>: accent
+icon at 60%, title <code>DsType.BodyLarge</code>, message muted, optional action composable.</p>
+<h2 id="dialogs-dsdialogkt">Dialogs (<code>DsDialog.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsDialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">onDismiss</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">compact</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Shared entrance: scale 0.94→1 spring + fade 180ms (<code>dialogEntranceLayer</code>). Width via
+<code>adaptiveDialogWidth</code> — compact: 0.5 × window, 400–560dp; rich: 0.6 × window,
+480–860dp. Panel <code>surfaceElevated</code>, <code>DsRadius.Xl</code>, padding <code>DsSpacing.Xl</code>, title
+<code>DsType.Title</code> SemiBold. <code>usePlatformDefaultWidth = false</code> so width follows the window.</p>
+<p>Specializations:
+- <code>DsConfirmDialog(title, message, confirmText, onConfirm, onDismiss, danger = false)</code>
+  — message + Cancel (text) + Confirm (primary or danger).
+- <code>DsPromptDialog(title, placeholder, initialValue, onConfirm, onDismiss)</code> — single
+  <code>DsTextField</code>, Save disabled while blank.
+- <code>DsProgressDialog(title, message, progress, modifier)</code> — 6dp track + accent fill +
+  percent label; used by transfers/imports.</p>
+<h2 id="inputs-dsinputskt">Inputs (<code>DsInputs.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsTextField</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">onValueChange</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">placeholder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">leadingIcon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">singleLine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Row on <code>surfaceElevated</code> (<code>DsRadius.Sm</code>), <code>BasicTextField</code> with accent cursor, 2dp
+bottom hairline — accent when focused, border at 25% otherwise. <code>DsSearchField(...)</code> —
+search icon + clear button (canonical search input, optional <code>autoFocus</code> via
+<code>FocusRequester</code>). <code>DsNumericField(value, onValueChange, label = null)</code> — digit-only,
+max 6 chars.</p>
+<h2 id="selects-tabs-chips-dsselectkt">Selects, tabs &amp; chips (<code>DsSelect.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsSelect</span><span class="p">(</span><span class="n">selected</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">onSelected</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">labelOf</span><span class="p">,</span><span class="w"> </span><span class="n">icon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Combo box: <code>surfaceElevated</code> row, chevron rotates 180° on open (spring 0.6/500),
+border accent at 60% when expanded, <code>DropdownMenu</code> listing options (selected in
+accent). <code>DsTabRow(tabs, selectedIndex, onSelect)</code> — segmented control, selected
+segment accent 16% fill. <code>DsChip(text, selected, onClick, trailing = null)</code> — filter
+pill, <code>DsRadius.Full</code>, selected accent 20% fill. <code>DsCategoryBadge(category)</code> — settings
+category pill.</p>
+<h2 id="context-menus-dsmenukt">Context menus (<code>DsMenu.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsContextMenuHost</span><span class="p">(</span><span class="n">enabled</span><span class="p">,</span><span class="w"> </span><span class="n">menuItems</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span><span class="w">   </span><span class="c1">// right-click (or press) anchor</span>
+<span class="n">DsMenuItem</span><span class="p">(</span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="n">icon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">shortcutLabel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">checked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">danger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">onAction</span><span class="p">)</span>
+<span class="n">DsMenuPanel</span><span class="p">(</span><span class="n">menuItems</span><span class="p">,</span><span class="w"> </span><span class="n">onDismiss</span><span class="p">)</span><span class="w">                </span><span class="c1">// the panel itself</span>
+<span class="n">DsMenuItemRow</span><span class="p">(</span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">onClick</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">)</span><span class="w">           </span><span class="c1">// one row</span>
+<span class="n">DsMenuDivider</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Panel: 240dp, <code>surfaceInteractive</code>, keyboard access (grabs focus, ↑/↓ wrap skipping
+disabled, Enter/Space activate, Esc dismiss), selected row highlighted accent 14%.
+Danger rows tint #FF6B6B. <code>checked</code> shows an accent ✓; <code>shortcutLabel</code> right-aligned.</p>
+<h2 id="tags-flags-dstagkt">Tags &amp; flags (<code>DsTag.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsTagChip</span><span class="p">(</span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="n">colorHex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;#808080&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">onClick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">removable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">onRemove</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Colored pill: dot + label; background = color at 16% (25% hover, 35% selected);
+text color auto-picks dark/light by <code>luminance()</code>. <code>DsFlagBadge(label, colorHex)</code> —
+dot + label. <code>DsPriorityFlag(priority, colorHex)</code> — colored diamond + "P1". Hex parsing
+via <code>parseHexColor</code> (accepts <code>#RRGGBB</code> / <code>#RRGGBBAA</code>).</p>
+<h2 id="toasts-dstoastkt">Toasts (<code>DsToast.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsToastHost</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Info</span><span class="p">,</span><span class="w"> </span><span class="n">durationMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3500</span><span class="p">);</span><span class="w"> </span><span class="n">dismiss</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<span class="n">DsToastHostView</span><span class="p">(</span><span class="n">host</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span><span class="w">   </span><span class="c1">// wraps content; host via LocalToastHost</span>
+</code></pre></div>
+
+<p>Bottom-center stack; slide-up/fade entrance (240ms, speed-aware); kind colors:
+Success (dark green bg, lime icon), Warning (dark amber), Error (dark red),
+Info (surfaceInteractive). Icon does a small spring pop on appear (skipped under
+reduced motion/instant speed).</p>
+<h2 id="toolbars-panels-dstoolbarkt">Toolbars &amp; panels (<code>DsToolbar.kt</code>)</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="n">DsToolbar</span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">actions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="n">backIcon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">onBack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span>
+<span class="n">DsToolbarDivider</span><span class="p">()</span><span class="w">   </span><span class="c1">// 1dp border@40%</span>
+<span class="n">DsSplitPane</span><span class="p">(</span><span class="n">modifier</span><span class="p">,</span><span class="w"> </span><span class="n">vertical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">initialFraction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">dividerWidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6.</span><span class="n">dp</span><span class="p">,</span><span class="w"> </span><span class="n">onFractionChanged</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">second</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>DsSplitPane</code> is a resizable split with a draggable divider (accent on hover),
+fraction clamped 0.1–0.9.</p>
+<h2 id="misc-primitives-dsmisckt">Misc primitives (<code>DsMisc.kt</code>)</h2>
 <ul>
-<li>Solid background using accent primary color</li>
-<li>White text</li>
-<li>8dp corner radius</li>
-<li>Hover: slight scale-up (1.02x) with glow</li>
-<li>Press: scale-down (0.98x)</li>
-<li>Min height: 40dp, horizontal padding: 16dp</li>
+<li><code>DsBadge(text, tint = accent)</code> — pill, accent 16% fill, <code>DsRadius.Full</code>.</li>
+<li><code>DsStatTile(label, value, delta = null, deltaPositive = true)</code> — label
+  (uppercase caption) + value (<code>DsType.Heading</code> Bold) + optional colored delta.</li>
+<li><code>DsProgressBar(fraction, height = 6.dp, color = accent)</code> — rounded track/fill.</li>
+<li><code>DsToggle(checked, onCheckedChange, label = null)</code> — Material Switch + optional
+  label.</li>
+<li><code>DsLink(text, onClick)</code> — accent text + arrow icon.</li>
+<li><code>DsSectionHeader(title, subtitle = null, action = {})</code> — the standard view header.</li>
+<li><code>DsNumberLabel(value)</code> — bold numeric label for grid density controls.</li>
 </ul>
-<h3 id="secondary-button">Secondary Button</h3>
+<h2 id="navigation-navshellkt-workspaceshellkt">Navigation (<code>NavShell.kt</code>, <code>WorkspaceShell.kt</code>)</h2>
 <ul>
-<li>Outline style with accent color border</li>
-<li>Transparent background (filled on hover)</li>
-<li>Same dimensions as primary</li>
+<li><strong>Shared <code>NavShell</code></strong> — docked sidebar (any edge) or floating bubble; expanded/
+  compact; auto-hide; item heights 40dp (desktop) / 48dp (phone); selected item =
+  accent 14% fill + accent text; focus shows 2dp accent border; compact mode shows
+  hover tooltips positioned per edge.</li>
+<li><strong>Desktop workspace</strong> — <code>DsNavRail</code>/<code>DsNavBar</code> inside <code>DsDockIsland</code>; <code>DsTopBar</code>
+  (title + subtitle + palette button "Search or jump to…" with Ctrl+K hint + settings</li>
+<li>panel menu); <code>DsWorkspaceTabBar</code> for browser-style tabs; <code>DsDockColumn</code> for
+  workspace panels; <code>DsFloatingLauncher</code>/launchpad (bubble mode).</li>
+<li>Below 720dp (<code>Breakpoints.CompactWindowWidth</code>): <code>CompactLayout</code> with <code>DsCompactNavBar</code>
+  (bottom or top), hysteresis exit at 760dp.</li>
 </ul>
-<h3 id="ghost-button">Ghost Button</h3>
-<ul>
-<li>No border until hover</li>
-<li>Subtle background on hover</li>
-<li>Used for toolbar actions</li>
-</ul>
-<h3 id="icon-button">Icon Button</h3>
-<ul>
-<li>36dp x 36dp size</li>
-<li>8dp corner radius</li>
-<li>No text, only icon</li>
-<li>Hover: background fill at 10% accent</li>
-<li>Used for window controls, toolbars</li>
-</ul>
-<hr />
-<h2 id="cards">Cards</h2>
-<h3 id="standard-card">Standard Card</h3>
-<ul>
-<li>Background: surface color</li>
-<li>Corner radius: 12dp</li>
-<li>Inner padding: 16dp</li>
-<li>Subtle border: <code>accent.copy(alpha = 0.05f)</code></li>
-<li>Hover: elevation increase + subtle glow</li>
-<li>May contain: title, description, metadata, actions</li>
-</ul>
-<h3 id="interactive-card">Interactive Card</h3>
-<ul>
-<li>Same as standard card</li>
-<li>Clickable with ripple/hover effect</li>
-<li>Cursor changes to pointer</li>
-<li>Used for: study items, selection grids</li>
-</ul>
-<h3 id="preview-card">Preview Card</h3>
-<ul>
-<li>Used in Appearance Studio live preview</li>
-<li>Slightly elevated shadow</li>
-<li>Shows a miniature representation of UI</li>
-<li>120dp x 80dp minimum size</li>
-</ul>
-<hr />
-<h2 id="lists">Lists</h2>
-<h3 id="standard-list">Standard List</h3>
-<ul>
-<li>48dp minimum row height</li>
-<li>16dp horizontal padding</li>
-<li>4dp vertical gap between items</li>
-<li>Optional leading icon/image</li>
-<li>Optional trailing action</li>
-</ul>
-<h3 id="compact-list">Compact List</h3>
-<ul>
-<li>36dp row height</li>
-<li>Dense layout for settings</li>
-<li>Used in: settings panels</li>
-</ul>
-<hr />
-<h2 id="dialogs-modals">Dialogs &amp; Modals</h2>
-<h3 id="dialog">Dialog</h3>
-<ul>
-<li>Corner radius: 16dp</li>
-<li>Background: surface elevated color</li>
-<li>Shadow: elevation level 4 (16dp)</li>
-<li>Width: 480dp maximum</li>
-<li>Padding: 24dp</li>
-<li>Closes on: Escape key, clicking backdrop, explicit close button</li>
-</ul>
-<h3 id="modal">Modal</h3>
-<ul>
-<li>Full-screen overlay for focused tasks</li>
-<li>Backdrop: 60% opacity black</li>
-<li>Content centered vertically and horizontally</li>
-<li>Used for: Theme Studio, detailed editing</li>
-</ul>
-<hr />
-<h2 id="sidebar">Sidebar</h2>
-<h3 id="floating-island">Floating Island</h3>
-<ul>
-<li>Not attached to window edge</li>
-<li>8dp gap from edge</li>
-<li>Corner radius: 16dp</li>
-<li>Shadow: elevation level 3 (8dp)</li>
-<li>Width: 280dp expanded, 56dp collapsed</li>
-<li>Can dock to: left, right, top, bottom</li>
-<li>Collapse/expand with spring animation</li>
-</ul>
-<h3 id="navigation-sidebar">Navigation Sidebar</h3>
-<ul>
-<li>Contains: app logo, navigation items, user menu</li>
-<li>Each item: 44dp height, icon + label</li>
-<li>Active item: accent primary background</li>
-<li>Collapsed: only icons visible</li>
-</ul>
-<hr />
-<h2 id="inputs">Inputs</h2>
-<h3 id="text-field">Text Field</h3>
-<ul>
-<li>44dp height</li>
-<li>12dp corner radius</li>
-<li>Border: 1dp, <code>textSecondary.copy(alpha = 0.3f)</code></li>
-<li>Focus: accent primary border + glow</li>
-<li>Label above field, helper text below</li>
-</ul>
-<h3 id="slider">Slider</h3>
-<ul>
-<li>Track height: 4dp</li>
-<li>Thumb size: 16dp</li>
-<li>Accent primary color</li>
-<li>Smooth animation on value change</li>
-</ul>
-<h3 id="toggleswitch">Toggle/Switch</h3>
-<ul>
-<li>Width: 44dp, height: 24dp</li>
-<li>Thumb: 20dp circle</li>
-<li>Active: accent primary</li>
-<li>Inactive: <code>textSecondary.copy(alpha = 0.3f)</code></li>
-</ul>
-<hr />
-<h2 id="navigation">Navigation</h2>
-<h3 id="tab-bar">Tab Bar</h3>
-<ul>
-<li>48dp height</li>
-<li>Active indicator: 2dp underline with accent primary</li>
-<li>Hover: subtle background change</li>
-<li>Optional icon + label layout</li>
-</ul>
-<h3 id="breadcrumbs">Breadcrumbs</h3>
-<ul>
-<li>20dp height</li>
-<li>Separator: "&gt;" in textSecondary</li>
-<li>Current page: textPrimary, not clickable</li>
-</ul>
-<hr />
-<h2 id="progress-indicators">Progress Indicators</h2>
-<h3 id="linear-progress">Linear Progress</h3>
-<ul>
-<li>4dp height</li>
-<li>Accent primary color</li>
-<li>Indeterminate: animated gradient sweep</li>
-<li>Determinate: smooth fill animation</li>
-</ul>
-<h3 id="circular-progress">Circular Progress</h3>
-<ul>
-<li>36dp diameter</li>
-<li>3dp stroke width</li>
-<li>Used for: loading states, sync indicators</li>
-</ul>
-<hr />
-<h2 id="tooltips">Tooltips</h2>
-<ul>
-<li>Appear on hover after 300ms delay</li>
-<li>Position: above the element</li>
-<li>Background: surface elevated at 95% opacity</li>
-<li>Text: 12sp, primary text color</li>
-<li>Corner radius: 6dp</li>
-<li>Padding: 8dp horizontal, 4dp vertical</li>
-</ul>
-<hr />
-<h2 id="interaction-rules">Interaction Rules</h2>
+<h2 id="interaction-rules">Interaction rules</h2>
 <table>
 <thead>
 <tr>
 <th>State</th>
-<th>Visual Change</th>
+<th>Visual change</th>
 <th>Duration</th>
-<th>Easing</th>
+<th>Type</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Hover</td>
-<td>Scale 1.02x, background glow</td>
-<td>150ms</td>
-<td>ease-out</td>
+<td>bg fill (surfaceInteractive / accent tint), scale 1.02 (buttons/cards), icon tint → accent</td>
+<td>160ms</td>
+<td>tween / spring</td>
 </tr>
 <tr>
 <td>Press</td>
-<td>Scale 0.98x</td>
-<td>80ms</td>
-<td>ease-in</td>
+<td>scale 0.97 (buttons), 0.97–0.96 (wizard cards)</td>
+<td>—</td>
+<td>spring</td>
 </tr>
 <tr>
 <td>Focus</td>
-<td>Outer glow ring</td>
-<td>200ms</td>
-<td>ease-out</td>
+<td>2dp accent border</td>
+<td>—</td>
+<td>—</td>
 </tr>
 <tr>
 <td>Disabled</td>
-<td>40% opacity</td>
-<td>200ms</td>
-<td>linear</td>
+<td>muted text, no interactions</td>
+<td>—</td>
+<td>—</td>
 </tr>
 <tr>
 <td>Loading</td>
-<td>Skeleton shimmer</td>
-<td>1.5s loop</td>
-<td>linear</td>
+<td>skeleton pulse 0.45↔1.0</td>
+<td>900ms loop</td>
+<td>tween reverse</td>
 </tr>
 </tbody>
 </table>
-<h2 id="keyboard-navigation">Keyboard Navigation</h2>
+<p>All durations honor <code>DsMotion</code> (Fast 120 / Normal 240 / Slow 380) × speed multiplier,
+and reduced motion zeroes them.</p>
+<h2 id="keyboard-navigation">Keyboard navigation</h2>
 <ul>
-<li>Tab: Move focus forward</li>
-<li>Shift+Tab: Move focus backward</li>
-<li>Enter/Space: Activate focused element</li>
-<li>Escape: Close dialog/modal</li>
-<li>Arrow keys: Navigate within lists, sliders</li>
-<li>Ctrl+K: Command palette (future)</li>
+<li><code>Tab</code> / <code>Shift+Tab</code> move focus; Enter/Space activate; Esc closes menus/dialogs;
+  ↑/↓ navigate menus and lists (wrapping).</li>
+<li>Review: <code>1–4</code> grade, <code>Space</code> reveal, <code>B</code> bury, <code>S</code> suspend, <code>R</code> retry,
+  <code>Ctrl+Enter</code> skip, <code>Ctrl+Z</code> undo (see <code>ShortcutRegistry.kt</code> defaults).</li>
+<li>Palette: <code>Ctrl+K</code> open, <code>Esc</code> close, arrows + Enter to run.</li>
+<li><code>Ctrl+B</code> toggles nav sidebar/floating; <code>Ctrl+Shift+N</code> cycles dock layouts
+  (desktop).</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><code>docs/design/DESIGN_LANGUAGE.md</code> — the tokens behind these components</li>
+<li><code>docs/design/THEME_SYSTEM.md</code> — where the tokens come from</li>
+<li><code>docs/design/ANIMATION_SYSTEM.md</code> — the motion rules</li>
+<li><code>docs/features/DESKTOP.md</code> — the desktop window shell</li>
 </ul>
 
     
@@ -1630,12 +1861,6 @@
     <div class="footer-column">
       <h4>Learn</h4>
       <ul>
-        
-        <li>
-          
-          <a href="/Kaiteyo/try/">Try Kaiteyo</a>
-          
-        </li>
         
         <li>
           
@@ -1712,7 +1937,7 @@
         
         <li>
           
-          <a href="/Kaiteyo/roadmap/">Roadmap</a>
+          <a href="/Kaiteyo/roadmap/">Product Roadmap</a>
           
         </li>
         
@@ -1726,7 +1951,62 @@
     </div>
     
     <div class="footer-column">
-      <h4>Project</h4>
+      <h4>Command Center</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/">Project Status</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/kanban/">Kanban</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/roadmap/">Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/whiteboard/">Whiteboard</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/suggestions/">Suggestions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/decisions/">Architecture Decisions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/activity/">Activity</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/contributing/">Contributing</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
       <ul>
         
         <li>
@@ -1756,12 +2036,6 @@
         <li>
           
           <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
-          
-        </li>
-        
-        <li>
-          
-          <a href="/Kaiteyo/contributing/">Contributing</a>
           
         </li>
         
@@ -1977,49 +2251,59 @@
   </div>
 
   <div class="dialog-section-title">Position</div>
-  <div class="grid-3" style="grid-template-columns: repeat(5, 1fr)">
-    <button class="theme-swatch" type="button" data-nav-pos="left" aria-label="Left">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Left</span>
+  <div class="nav-pos-grid">
+    <button class="nav-pos-card" type="button" data-nav-pos="left" aria-label="Left">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="21" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="21" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Left</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="right" aria-label="Right">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Right</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="right" aria-label="Right">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="45.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="2.5" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="2.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Right</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="top" aria-label="Top">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Top</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="top" aria-label="Top">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="17" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="28" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Top</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="bottom" aria-label="Bottom">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Bottom</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="30.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Bottom</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="floating" aria-label="Floating">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; gap: 4px; position: relative">
-        <span style="width: 36%; height: 70%; background: var(--preview-surface); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4)"></span>
-        <span style="flex: 1; height: 100%; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Floating</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="floating" aria-label="Floating">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+        <circle class="np-bubble" cx="50" cy="32" r="7"/>
+      </svg>
+      <span class="nav-pos-name">Floating</span>
     </button>
   </div>
 
   <div class="dialog-section-title">Width</div>
-  <div class="tabs" role="tablist" aria-label="Navigation width">
-    <button class="tab" type="button" data-nav-width="compact">Compact</button>
-    <button class="tab" type="button" data-nav-width="default">Default</button>
-    <button class="tab" type="button" data-nav-width="wide">Wide</button>
+  <div class="segmented" role="group" aria-label="Navigation width">
+    <button class="segmented-btn" type="button" data-nav-width="compact">Compact</button>
+    <button class="segmented-btn" type="button" data-nav-width="default">Default</button>
+    <button class="segmented-btn" type="button" data-nav-width="wide">Wide</button>
   </div>
 
   <div class="dialog-section-title">Behavior</div>
@@ -2058,12 +2342,12 @@
   </div>
 </dialog>
 
-  <script type="module" src="/Kaiteyo/assets/scripts/main.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/theme.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/components.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/search.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/utils.js"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/main.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/theme.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/components.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/search.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/utils.js?v=1786940608"></script>
 </body>
 </html>

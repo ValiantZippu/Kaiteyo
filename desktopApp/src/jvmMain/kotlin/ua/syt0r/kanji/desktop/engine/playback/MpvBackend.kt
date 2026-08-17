@@ -486,6 +486,7 @@ class MpvBackend(
         }
         val track = tracks.firstOrNull { it.id == trackId } ?: return
         when (track.kind) {
+            TrackKind.Video -> client?.setProperty("vid", trackId)
             TrackKind.Subtitle -> client?.setProperty("sid", trackId)
             TrackKind.Audio -> client?.setProperty("aid", trackId)
             else -> Unit

@@ -537,7 +537,11 @@ fun DeckBrowserRoute(
 }
 
 @Composable
-fun BackupRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
+fun BackupRoute(
+    controller: DeckFeaturesController,
+    onOpenBackup: () -> Unit,
+    onClose: () -> Unit = {}
+) {
     LaunchedEffect(Unit) { controller.ensureLoaded() }
     val scope = rememberCoroutineScope()
     if (controller.isLoading) {
@@ -552,23 +556,11 @@ fun BackupRoute(controller: DeckFeaturesController, onClose: () -> Unit = {}) {
         backups = controller.backups,
         config = controller.backupConfig,
         onDismiss = onClose,
-        onCreateBackup = { automatic ->
-            scope.launch {
-                val name = "kaiteyo-backup-" +
-                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString() +
-                    (if (automatic) "-auto" else "") + ".zip"
-                controller.recordBackup(
-                    filename = name,
-                    size = 0L,
-                    checksum = "",
-                    isAutomatic = automatic,
-                    notes = if (automatic) "Automatic backup" else "Manual backup"
-                )
-            }
-        },
-        onRestoreBackup = { backup -> scope.launch { controller.recordRestore(backup) } },
+        // Creating and restoring both go through the real backup flow (platform
+        // file picker + BackupManager) — the manager screen never fabricates
+        // metadata-only backup records.
+        onOpenBackup = onOpenBackup,
         onDeleteBackup = { backup -> scope.launch { controller.deleteBackup(backup.id) } },
-        onVerifyBackup = { backup -> scope.launch { controller.recordVerify(backup) } },
         onUpdateConfig = { config -> scope.launch { controller.saveBackupConfig(config) } }
     )
 }

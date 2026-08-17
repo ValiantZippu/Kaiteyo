@@ -197,6 +197,28 @@ fun ReviewSettingsFullScreen(
                                 )
                             }
                         }
+                        item { Spacer(Modifier.height(8.dp)) }
+                        item { SettingsHeader("Study Time", "Keep study time honest by ignoring idle gaps", surfaceColors) }
+                        item {
+                            SettingsSwitch(
+                                "Smart Activity Detection",
+                                settings.smartActivityDetection,
+                                { settings = settings.copy(smartActivityDetection = it); hasChanges = true },
+                                surfaceColors
+                            )
+                        }
+                        if (settings.smartActivityDetection) {
+                            item {
+                                SettingsSlider(
+                                    label = "Idle Threshold",
+                                    value = settings.inactivityThresholdMinutes.toFloat(),
+                                    onValueChange = { settings = settings.copy(inactivityThresholdMinutes = it.toInt()); hasChanges = true },
+                                    valueRange = 1f..60f,
+                                    suffix = "m",
+                                    surfaceColors = surfaceColors
+                                )
+                            }
+                        }
                     }
                     "advanced" -> {
                         item { SettingsHeader("Advanced Settings", "Additional review configuration", surfaceColors) }

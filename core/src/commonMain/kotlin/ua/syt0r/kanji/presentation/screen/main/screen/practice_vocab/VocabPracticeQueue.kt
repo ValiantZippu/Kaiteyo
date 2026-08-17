@@ -12,6 +12,7 @@ import ua.syt0r.kanji.core.srs.SrsScheduler
 import ua.syt0r.kanji.core.statistics.StatisticsRecorder
 import ua.syt0r.kanji.core.time.TimeUtils
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
+import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.BasePracticeQueue
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswers
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeQueue
@@ -40,7 +41,8 @@ class DefaultVocabPracticeQueue(
     private val getSummaryItemUseCase: GetVocabPracticeSummaryItemUseCase,
     reviewHistoryRepository: ReviewHistoryRepository,
     statisticsRecorder: StatisticsRecorder,
-    analyticsManager: AnalyticsManager
+    analyticsManager: AnalyticsManager,
+    appPreferences: PreferencesContract.AppPreferences
 ) : BaseVocabPracticeQueue(
     practiceScope = coroutineScope,
     timeUtils = timeUtils,
@@ -48,7 +50,8 @@ class DefaultVocabPracticeQueue(
     reviewHistoryRepository = reviewHistoryRepository,
     statisticsRecorder = statisticsRecorder,
     srsScheduler = srsScheduler,
-    analyticsManager = analyticsManager
+    analyticsManager = analyticsManager,
+    appPreferences = appPreferences
 ), VocabPracticeQueue {
 
     override suspend fun VocabPracticeQueueItemDescriptor.toQueueItem(): VocabPracticeQueueItem {

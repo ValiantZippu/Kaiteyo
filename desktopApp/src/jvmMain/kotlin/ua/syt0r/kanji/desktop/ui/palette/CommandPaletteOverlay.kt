@@ -541,5 +541,12 @@ private fun buildCommands(state: AppState): List<PaletteCommand> = buildList {
     add(PaletteCommand("Load stress dataset (10k)", "Developer", Icons.Default.Settings, "",
         action = { state.loadStressDataset(10_000) }))
     add(PaletteCommand("Export active theme JSON", "Theme", Icons.Default.Palette, "",
-        action = { state.toastHost.show("Theme JSON copied to clipboard", kind = ua.syt0r.kanji.desktop.model.ToastKind.Success) }))
+        action = {
+            val json = state.themeManager.exportJson(state.themeManager.activeTheme.id)
+            java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(
+                java.awt.datatransfer.StringSelection(json),
+                null
+            )
+            state.toastHost.show("Theme JSON copied to clipboard", kind = ua.syt0r.kanji.desktop.model.ToastKind.Success)
+        }))
 }

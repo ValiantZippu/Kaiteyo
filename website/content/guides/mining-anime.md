@@ -50,6 +50,6 @@ The same loop works for:
 
 ## The honest limits
 
-The desktop Media Centre is a desktop feature — the web trial offers the study loop but not media playback. OCR needs a local Tesseract install. None of this is hidden: the [media documentation](/docs/features/media/) and [media workspace wiki](/wiki/media-workspace/) describe exactly what works and what needs what.
+The desktop Media Centre is a desktop feature. OCR needs a local Tesseract install. None of this is hidden: the [media documentation](/docs/features/media/) and [media workspace wiki](/wiki/media-workspace/) describe exactly what works and what needs what.
 
 See [how mining works](/wiki/mining/) for the mechanics behind the cards.

@@ -53,14 +53,14 @@
   </script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/tokens.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/themes.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/base.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/layout.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/components.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/prose.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/animations.css" />
-  <link rel="stylesheet" href="{{ basePath }}assets/styles/utilities.css" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/tokens.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/themes.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/base.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/layout.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/components.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/prose.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/animations.css?v={{ assetQuery }}" />
+  <link rel="stylesheet" href="{{ basePath }}assets/styles/utilities.css?v={{ assetQuery }}" />
 
   <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
   <script>
@@ -120,12 +120,12 @@
 
   {% include "partials/dialogs.html" %}
 
-  <script type="module" src="{{ basePath }}assets/scripts/main.js"></script>
-  <script type="module" src="{{ basePath }}assets/scripts/theme.js"></script>
-  <script type="module" src="{{ basePath }}assets/scripts/navigation.js"></script>
-  <script type="module" src="{{ basePath }}assets/scripts/components.js"></script>
-  <script type="module" src="{{ basePath }}assets/scripts/search.js"></script>
-  <script type="module" src="{{ basePath }}assets/scripts/persistence.js"></script>
-  <script type="module" src="{{ basePath }}assets/scripts/utils.js"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/main.js?v={{ assetQuery }}"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/theme.js?v={{ assetQuery }}"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/navigation.js?v={{ assetQuery }}"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/components.js?v={{ assetQuery }}"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/search.js?v={{ assetQuery }}"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/persistence.js?v={{ assetQuery }}"></script>
+  <script type="module" src="{{ basePath }}assets/scripts/utils.js?v={{ assetQuery }}"></script>
 </body>
 </html>

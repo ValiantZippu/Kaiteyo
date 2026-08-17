@@ -35,6 +35,7 @@ scheduled) · `BLOCKED` (waiting on platform access or a decision) · `DONE` (fi
 | 9 | Auto-update not yet enabled for end users | KNOWN ISSUE | architecture complete; rollout staged |
 | 10 | iOS is secondary; several platform paths verified only by build | KNOWN ISSUE | see BLOCKED below |
 | 11 | **Two parallel applications** — the shipped core app (`KaiteyoApp`) and the desktop suite (`KaiteyoDesktopSuite`) maintain duplicate SRS/settings/statistics/nav/decks | KNOWN ISSUE | **media resolved** — the Media Centre is now a first-class core destination (`MainDestination.Media` → `DesktopMediaCentreContent` mounts the suite's `MediaView` in the shipped app, incl. dictionary popup + mining inside the workspace; see DONE below). Remaining: standalone suite views (Dictionary manager, OCR, Browser, Reading) are still not core destinations; SRS/settings/statistics/nav/decks duplication still needs the consolidation decision — see `PRODUCT_AUDIT.md` §1 |
+| 12 | **Game slice renders 2.5D top-down** (Compose Canvas backend); 3D engine is PLANNED | KNOWN ISSUE | The engine core is renderer-agnostic (`RenderBackend` boundary) — 3D swaps in without touching content/quests/learning/saves. Controller support is real (JNA XInput/evdev, hot-plug, rebind UI), touch controls implemented (dynamic-origin joystick + look drag, Settings toggle — awaiting a touch-device runtime sweep), dialogue TTS via Kaiteyo's kana-clip voice, menu focus navigation (keyboard + gamepad), in-world kana writing, procedural audio (SFX + ambient pads), time-gated content (evening festival), NPC patrols + weather/season presence gates, a season cycle (palette + weather bias) and a Kamakura night quest chain. Honest per-system status + backlog: `docs/game/VERTICAL_SLICE.md`, `docs/game/TODO.md` |
 
 ---
 
@@ -45,6 +46,7 @@ They are not `DONE` until runtime-verified.
 
 | Item | What's needed |
 |---|---|
+| Core MPP changes (backup unification rewire, 12-file dead-code deletion, `DeckFeaturesHub` import removal, `DeckManager.kt` trim, mock-history fallback removal) | JVM compile (`:core`) + Android build; source-only per user instruction |
 | iOS `.apkg` import/export (`AnkiPackage.ios.kt`, pure-Kotlin ZIP/inflate) | macOS build + simulator/device |
 | iOS file picker/save (`UIDocumentPickerViewController`) | macOS build + device |
 | Android SAF picker + persistable re-import grant | Android build + device |
@@ -649,6 +651,79 @@ no new fake data anywhere; every number traces to persisted events.
   stage/due badges; clicking opens the card
 - **Unified deck stats section** — per-deck new/learning/review/due/suspended counts
   straight from the learning store's card state
+
+### Ghost UI pass — fake "Export active theme JSON" command fixed
+
+- **Command palette "Export active theme JSON" was a fake action** — it showed a
+  success toast ("Theme JSON copied to clipboard") without ever touching the system
+  clipboard. The command now serializes the active theme via
+  `ThemeManager.exportJson(activeTheme.id)` and writes the pretty-printed JSON to the
+  system clipboard before showing the toast. No other ghost controls found in the
+  sweep: the only inert buttons in the codebase are the Theme Studio's live preview
+  gallery (a design-system showcase, intentionally non-interactive) and providers
+  honestly labeled "Coming soon" in Account settings.
+
+### Mobile/core MPP ghost-UI pass — Backup Manager "Start Restore" fixed
+
+- **`BackupManagerScreen` Restore tab was a fully fake screen (reachable from
+  Library → Manage → Backup)** — "Start Restore" had an empty `onClick`, the
+  Restore-Options checkboxes did nothing, and the copy claimed "your current data
+  will be backed up automatically" (false). The tab now lists the real backups with
+  radio selection, "Start Restore" is enabled only when one is selected and calls the
+  same `onRestoreBackup` path as the per-item Restore menu, the dead checkboxes are
+  gone, and the copy + empty state are honest.
+- **Backup systems unified — the deck-features Backup Manager now drives the real
+  engine** (replaces the earlier metadata-only gap):
+  - **Create + Restore** in `BackupManagerScreen` (header action, Backups tab,
+    per-item menu, Restore tab) now launch the real file-based backup flow
+    (`MainDestination.Backup` → platform file picker + `BackupManager`, which zips
+    the real database + preferences and version-checks restores).
+  - **Real metadata**: the JVM/Android/iOS backup ViewModels record actual
+    filename + size (from `javaFile`, the picked URI via `ContentResolver`, or the
+    tmp file via `SystemFileSystem`) into `CardDatabaseManager` after a successful
+    `backupTo`, so the manager's history list shows real backups.
+  - **Fake paths removed**: `DeckFeaturesController.recordBackup` (size-0,
+    checksum-"" records), `recordRestore` and `recordVerify` (log-only) are gone;
+    the fake "Verify" menu item is removed (a metadata row has no file to verify);
+    the Settings/Schedule tabs are honestly labeled as stored-but-not-active
+    (automatic scheduling ships later).
+  - Remaining: verify per-platform behavior at runtime (JVM + Android sweeps;
+    iOS build).
+- **Dead-code cleanup backlog — RESOLVED.** Every decks-folder screen was verified
+  against the live routes (`features/DeckFeatureScreens.kt` + `MainNavigation.kt`):
+  `CardBrowserFull`, `DeckBrowserFull`, `BulkActionsScreen`, `HistoryTrackerScreen`,
+  `NoteEditorScreen`, `AnkiOpsFull`, `AnkiCardOperations`, `CardManager`, `TagManager`,
+  `TagManagerScreen`, `FlagManagerScreen`, `SearchEngineImpl`, `ImportExportSystem`,
+  `KeyboardShortcutsPage`, `ReviewShortcutsSettings`, `PluginSystem`, `TagDialogs`,
+  `TagFlagDialogs`, `CardEnhancements` are all **live** (the earlier guess that
+  CardBrowserFull/DeckBrowserFull/BulkActions/History/NoteEditor/Anki* were dead was
+  wrong — CardBrowserRoute/DeckBrowserRoute/BulkActionsRoute/HistoryRoute/
+  NoteEditorRoute/AnkiOperationsRoute compose them). The genuinely unreferenced files
+  were deleted — see the Dead-code deletion entry below. Remaining known dead-but-
+  harmless code: `generateMockCards/Decks/Tags/HeatmapData` in
+  `LearningPowerDataModels.kt` (unreachable; the file itself is live via
+  `HistoryEntryType`).
+
+### Dead-code deletion + mock-history fix (core MPP, source-only)
+
+- **Deleted 12 unreferenced files** from `screen/decks/`: the entire achievement
+  subsystem (`AchievementSystem.kt`, `AchievementManager.kt`, `AchievementChecks.kt`,
+  `AchievementDefs_*.kt` ×5 — no reachable UI, no wiring anywhere), plus
+  `DeckBrowserEnhanced.kt`, `DeckManagerEnhanced.kt`, `NoteEditorEnhanced.kt` and
+  `UndoSystem.kt` (`UndoManager`/`UndoableAction`/`UndoSnackbar` — nothing references
+  them; `DeckFeaturesController` has its own undo stack). All public symbols were
+  verified unreferenced repo-wide (including tests) before deletion.
+- **Removed the dangling `DeckFeaturesHub` import** from `MainNavigation.kt` — the
+  only external reference to the deleted `DeckManagerEnhanced.kt` (an unused import
+  that would have broken the build).
+- **Trimmed `DeckManager.kt`** to the live model surface only (`KaiteyoDeck` +
+  `DeckFilters`, both consumed by the deck routes): removed the unreferenced
+  mock-data `DeckManager()` composable (fake decks, one empty `.clickable {}`) and
+  the dead `BulkOperation`/`BulkAction`/`SmartDeckRule`/`SmartDeckDefinition` models.
+- **Fixed a live mock-data leak in `HistoryFullScreen`** (reachable via Library →
+  Manage → History): when the real history was empty it fabricated **50 fake entries**
+  with random timestamps/descriptions (`generateMockHistory()` fallback). The
+  fallback is gone; an empty history now renders the real empty state.
 
 ### BLOCKED — unified learning ecosystem (needs runtime verification)
 

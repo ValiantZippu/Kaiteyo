@@ -1,0 +1,32 @@
+{
+    "version": "2.2.1",
+    "description": "Kaiteyo (書いてよ) — Japanese language learning app with writing exercises, flashcards and a built-in dictionary. Offline-first and free.",
+    "homepage": "https://github.com/ValiantZippu/Kaiteyo",
+    "license": "GPL-3.0",
+    "notes": "Installed via the official silent installer. User data lives in %LOCALAPPDATA%\\Kaiteyo and survives uninstall by default.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ValiantZippu/Kaiteyo/releases/download/v2.2.1/Kaiteyo-2.2.1-windows-setup.exe",
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+    },
+    "installer": {
+        "args": ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"]
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\*\" -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": [
+        [ "Kaiteyo.exe", "kaiteyo" ]
+    ],
+    "checkver": {
+        "github": "https://github.com/ValiantZippu/Kaiteyo"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ValiantZippu/Kaiteyo/releases/download/v$version/Kaiteyo-$version-windows-setup.exe"
+            }
+        }
+    }
+}

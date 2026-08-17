@@ -1,5 +1,7 @@
 package ua.syt0r.kanji.desktop.ui.mining
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,14 +12,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,10 +32,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import ua.syt0r.kanji.desktop.engine.media.AudioPlayer
+import java.io.File
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
@@ -290,13 +303,17 @@ fun MiningDialog(state: AppState) {
                 )
             }
 
-            // Captured media assets attach to the card note automatically.
+            // Captured media assets — visible previews before the card exists:
+            // the frame renders in the dialog and the audio clip can be
+            // auditioned, so nothing is mined blind.
+            ScreenshotPreview(draft.screenshotPath)
+            AudioClipPreview(draft.audioPath)
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
                 if (draft.screenshotPath != null) {
-                    DsBadge(text = "📷 screenshot", tint = sc.textSecondary)
+                    DsBadge(text = "📷 frame attached", tint = sc.textSecondary)
                 }
                 if (draft.audioPath != null) {
-                    DsBadge(text = "🔊 audio clip", tint = sc.textSecondary)
+                    DsBadge(text = "🔊 audio attached", tint = sc.textSecondary)
                 }
                 if (draft.timestamp != null) {
                     DsBadge(text = "⏱ ${ua.syt0r.kanji.desktop.engine.media.MediaEngine.formatTime((draft.timestamp * 1000).toLong())}", tint = sc.textMuted)
@@ -367,5 +384,108 @@ fun MiningDialog(state: AppState) {
                 )
             }
         }
+    }
+}
+
+// ============================================
+// MINING DIALOG ASSET PREVIEWS
+// Real previews of the captured frame and audio
+// clip before a card is created — the dialog never
+// claims an asset exists unless the file does.
+// ============================================
+
+/** Renders the captured screenshot inside the dialog (decoded off the UI thread). */
+@Composable
+private fun ScreenshotPreview(path: String?) {
+    if (path == null) return
+    val file = remember(path) { File(path) }
+    var bitmap by remember(path) { mutableStateOf<ImageBitmap?>(null) }
+
+    // Decode off the UI thread; a missing/unreadable file simply shows the
+    // fallback label instead of an empty box.
+    LaunchedEffect(path) {
+        bitmap = withContext(Dispatchers.IO) {
+            runCatching { javax.imageio.ImageIO.read(file).toComposeImageBitmap() }.getOrNull()
+        }
+    }
+
+    val sc = surfaceColors()
+    val current = bitmap
+    if (current != null) {
+        Image(
+            bitmap = current,
+            contentDescription = "Captured screenshot",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(sc.surfaceElevated)
+        )
+    } else {
+        DsBadge(text = if (file.exists()) "Decoding frame…" else "Screenshot file missing", tint = sc.textMuted)
+    }
+}
+
+/**
+ * Auditions the extracted audio clip before mining. Uses the engine's own
+ * AudioPlayer so the same code path as media playback is exercised; the clip
+ * stops when the dialog closes or the path changes.
+ */
+@Composable
+private fun AudioClipPreview(path: String?) {
+    if (path == null) return
+    val file = remember(path) { File(path) }
+    val player = remember { AudioPlayer() }
+    var playing by remember { mutableStateOf(false) }
+
+    // Never leave a clip looping in the background when the dialog closes.
+    DisposableEffect(Unit) {
+        onDispose { player.stop() }
+    }
+
+    val sc = surfaceColors()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(sc.surfaceElevated.copy(alpha = 0.5f))
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Audio clip", color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+            Text(
+                if (file.exists()) {
+                    "${file.name} · ${ua.syt0r.kanji.desktop.engine.media.MediaEngine.formatTime(player.lengthMs)}"
+                } else {
+                    "Clip file missing — the note will reference a path that no longer exists"
+                },
+                color = sc.textMuted,
+                fontSize = DsType.Caption,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+        }
+        DsButton(
+            text = if (playing) "Stop" else "Play",
+            icon = if (playing) Icons.Default.Stop else Icons.Default.PlayArrow,
+            kind = if (playing) DsButtonKind.Secondary else DsButtonKind.Primary,
+            compact = true,
+            enabled = file.exists(),
+            onClick = {
+                if (playing) {
+                    player.stop()
+                    playing = false
+                } else {
+                    val loaded = player.load(file).isSuccess
+                    if (loaded) {
+                        player.play()
+                        playing = true
+                    }
+                }
+            }
+        )
     }
 }

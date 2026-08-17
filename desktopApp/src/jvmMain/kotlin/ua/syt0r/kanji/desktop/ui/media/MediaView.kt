@@ -11,17 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -219,7 +216,7 @@ fun MediaView(state: AppState, onBack: (() -> Unit)? = null) {
                 when (panel) {
                     MediaPanel.Home -> MediaHomePanel(state, onOpenDetail = { detailItemId = it })
                     MediaPanel.Player -> MediaPlayerWorkspace(state)
-                    MediaPanel.Library -> MediaLibraryPanel(state)
+                    MediaPanel.Library -> MediaLibraryPanel(state, onOpenDetail = { detailItemId = it })
                     MediaPanel.Stats -> MediaStatsPanel(state)
                     MediaPanel.Bookmarks -> MediaBookmarksPanel(state)
                     MediaPanel.Tuning -> MediaTuningPanel(state)
@@ -269,6 +266,17 @@ private fun MediaToolbar(
                     fontSize = DsType.Caption
                 )
             }
+            // In-player library search — types land in the Media Centre home
+            // (which switches to its Browse view when a query is present).
+            DsSearchField(
+                value = media.librarySearchQuery,
+                onValueChange = {
+                    media.librarySearchQuery = it
+                    onSelectPanel(MediaPanel.Home)
+                },
+                placeholder = "Search library…",
+                modifier = Modifier.width(190.dp).onFocusChanged { state.media.textInputFocused = it.isFocused }
+            )
             // Quick actions — always available.
             DsButton(
                 text = "Open file",
@@ -282,24 +290,6 @@ private fun MediaToolbar(
                 kind = DsButtonKind.Secondary,
                 compact = true,
                 onClick = { chooseMediaFolder(state) }
-            )
-            DsButton(
-                text = "Open URL",
-                icon = Icons.Default.Language,
-                kind = DsButtonKind.Secondary,
-                compact = true,
-                onClick = { urlPromptOpen = true }
-            )
-            // In-player library search — types land in the Media Centre home
-            // (which switches to its Browse view when a query is present).
-            DsSearchField(
-                value = media.librarySearchQuery,
-                onValueChange = {
-                    media.librarySearchQuery = it
-                    onSelectPanel(MediaPanel.Home)
-                },
-                placeholder = "Search library…",
-                modifier = Modifier.width(190.dp).onFocusChanged { state.media.textInputFocused = it.isFocused }
             )
             DsButton(
                 text = if (media.cinemaMode) "Exit cinema" else "Cinema",
@@ -323,39 +313,34 @@ private fun MediaToolbar(
                 contentDescription = "Load subtitles",
                 size = 34.dp
             )
-            DsIconButton(
-                icon = Icons.Default.Add,
-                onClick = {
-                    val subFile = chooseSubtitleFile()
-                    if (subFile != null) media.openSecondarySubtitleFile(subFile)
-                },
-                contentDescription = "Load secondary subtitles (dual-language)",
-                size = 34.dp
-            )
-            DsIconButton(
-                icon = Icons.Default.BarChart,
-                onClick = { onSelectPanel(MediaPanel.Stats) },
-                contentDescription = "Media study stats",
-                size = 34.dp
-            )
-            DsIconButton(
-                icon = Icons.Default.Bookmarks,
-                onClick = { onSelectPanel(MediaPanel.Bookmarks) },
-                contentDescription = "Media bookmarks",
-                size = 34.dp
-            )
-            DsIconButton(
-                icon = Icons.Default.LibraryMusic,
-                onClick = { onSelectPanel(MediaPanel.Tuning) },
-                contentDescription = "Video & audio tuning",
-                size = 34.dp
-            )
-            DsIconButton(
-                icon = Icons.Default.Settings,
-                onClick = { onSelectPanel(MediaPanel.Settings) },
-                contentDescription = "Media settings",
-                size = 34.dp
-            )
+            // Less frequent actions live in an overflow so the toolbar stays
+            // calm — the tabs already cover Stats / Bookmarks / Tuning / Settings.
+            var moreOpen by remember { mutableStateOf(false) }
+            Box {
+                DsIconButton(
+                    icon = Icons.Default.MoreVert,
+                    onClick = { moreOpen = true },
+                    contentDescription = "More media actions",
+                    size = 34.dp
+                )
+                DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Open URL…") },
+                        onClick = {
+                            moreOpen = false
+                            urlPromptOpen = true
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Load secondary subtitles (dual-language)…") },
+                        onClick = {
+                            moreOpen = false
+                            val subFile = chooseSubtitleFile()
+                            if (subFile != null) media.openSecondarySubtitleFile(subFile)
+                        }
+                    )
+                }
+            }
         }
         DsTabRow(
             tabs = MediaPanel.entries.map { it.label },

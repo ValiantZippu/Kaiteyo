@@ -1,6 +1,8 @@
 package ua.syt0r.kanji.presentation
 
+import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,6 +20,7 @@ import ua.syt0r.kanji.core.backup.BackupManager
 import ua.syt0r.kanji.core.file.PlatformFile
 import ua.syt0r.kanji.core.toLocalDateTime
 import ua.syt0r.kanji.core.user_data.db.UserDataDatabase
+import ua.syt0r.kanji.core.user_data.database.CardDatabaseManager
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupMimeType
 import ua.syt0r.kanji.presentation.screen.main.screen.backup.BackupScreenContract
@@ -34,6 +37,8 @@ fun Module.backupScreenComponents() {
         AndroidBackupScreenViewModel(
             viewModelScope = it.component1(),
             backupManager = get(),
+            context = get(),
+            cardDatabaseManager = get(),
             analyticsManager = get()
         )
     }
@@ -91,6 +96,8 @@ object AndroidBackupScreenContent : BackupScreenContract.Content {
 class AndroidBackupScreenViewModel(
     private val viewModelScope: CoroutineScope,
     private val backupManager: BackupManager,
+    private val context: Context,
+    private val cardDatabaseManager: CardDatabaseManager,
     private val analyticsManager: AnalyticsManager
 ) {
 
@@ -108,6 +115,27 @@ class AndroidBackupScreenViewModel(
 
             screenStateFlow.value = runCatching {
                 backupManager.backupTo(file)
+                // Record real metadata (display name + size) for the Backup
+                // Manager history list, resolved from the picked document.
+                var fileName = ""
+                var fileSize = 0L
+                runCatching {
+                    context.contentResolver.query(file.uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                            if (nameIndex >= 0) fileName = cursor.getString(nameIndex) ?: ""
+                            if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) fileSize = cursor.getLong(sizeIndex)
+                        }
+                    }
+                }
+                cardDatabaseManager.recordBackup(
+                    filename = fileName.ifBlank { "kaiteyo-backup.zip" },
+                    fileSize = fileSize,
+                    checksum = "",
+                    isAutomatic = false,
+                    notes = "Manual backup"
+                )
                 analyticsManager.sendEvent("backup_created")
                 ScreenState.ActionCompleted
             }.getOrElse {

@@ -25,6 +25,7 @@ import pathlib
 import re
 import shutil
 import sys
+import time
 from datetime import date
 
 import markdown
@@ -59,6 +60,10 @@ if not BASE_PATH.endswith("/"):
     BASE_PATH += "/"
 
 YEAR = date.today().year
+
+# Cache-busting query for asset URLs: changes on every build so a rebuilt
+# site never serves stale CSS/JS from a visitor's browser cache.
+ASSET_QUERY = str(int(time.time()))
 
 # Captions for the desktop gallery (docs/screenshots). Files without an
 # entry fall back to a prettified filename.
@@ -451,6 +456,40 @@ def build_documentation():
                 }
             )
 
+    # Section index pages — every docs breadcrumb points at
+    # docs/{section_id}/, so each section gets a real landing page that
+    # lists its documents (with descriptions and prev/next through the
+    # section). Without this, section roots 404 on the deployed site.
+    descriptions = {item["page"]["url"]: item["description"] for item in flat}
+    for entry in sections:
+        section = entry["section"]
+        pages = entry["pages"]
+        if not pages:
+            continue
+        section_url = f"docs/{section['id']}/"
+        cards = "\n".join(
+            f"<a class='card card-hover link-card' href='{url(page['url'])}' "
+            f"style='display:block; padding: var(--space-5); margin-bottom: var(--space-4); text-decoration:none'>"
+            f"<div class='card-title' style='margin-bottom: var(--space-2)'>{html.escape(page['title'])}</div>"
+            f"<p class='card-description'>{html.escape(descriptions.get(page['url'], ''))}</p></a>"
+            for page in pages
+        )
+        render_page(
+            section_url,
+            title=section["title"],
+            description=section.get("description", ""),
+            layout="docs.html",
+            content_html=cards,
+            breadcrumbs=[
+                {"title": "Documentation", "url": "docs/"},
+                {"title": section["title"], "url": None},
+            ],
+            search=False,
+            docs_tree=sections,
+            current_section=section["id"],
+            current_url=section_url,
+        )
+
     return sections
 
 
@@ -735,7 +774,7 @@ KANBAN_COLUMNS = [
 
 # Primary documentation for a work package (epic) — used for card links.
 PACKAGE_DOCS = {
-    "P0": "/docs/architecture/decisions/0017-one-product-architecture/",
+    "P0": "/docs/decisions/0017-one-product-architecture/",
     "P2": "/docs/architecture/database/",
     "P3": "/docs/architecture/dictionary/",
     "P4": "/docs/architecture/language-model/",
@@ -751,7 +790,7 @@ PACKAGE_DOCS = {
     "P16": "/docs/website/readme/",
     "P17": "/docs/platform/android/",
     "P18": "/docs/platform/windows/",
-    "P19": "/docs/architecture/decisions/0018-game-engine-evaluation/",
+    "P19": "/docs/decisions/0018-game-engine-evaluation/",
     "P20": "/docs/architecture/node_architecture/",
     "P21": "/docs/architecture/node_architecture/",
     "P22": "/docs/architecture/node_architecture/",
@@ -1109,6 +1148,7 @@ def make_env() -> Environment:
         navigation=NAVIGATION,
         themes=THEMES,
         year=YEAR,
+        assetQuery=ASSET_QUERY,
         footer_columns=[
             {
                 "title": group["title"],
@@ -1247,23 +1287,6 @@ def build():
     )
     (DIST_DIR / "docs" / "index.html").parent.mkdir(parents=True, exist_ok=True)
     (DIST_DIR / "docs" / "index.html").write_text(docs_index, encoding="utf-8")
-
-    # --- Web Trial (standalone fullscreen page) ---
-    trial_template = env.get_template("layouts/trial.html")
-    trial_html = trial_template.render(site=SITE, basePath=BASE_PATH)
-    (DIST_DIR / "try" / "index.html").parent.mkdir(parents=True, exist_ok=True)
-    (DIST_DIR / "try" / "index.html").write_text(trial_html, encoding="utf-8")
-    SEARCH_INDEX.append(
-        {
-            "type": "page",
-            "title": "Try Kaiteyo — Web Trial",
-            "url": url("try/"),
-            "section": "Learn",
-            "excerpt": "A working slice of Kaiteyo in your browser — flashcards, kanji, vocabulary, writing practice, and progress. Sample data, nothing leaves your device.",
-            "icon": "sparkles",
-        }
-    )
-    print("  web trial: /try/")
 
     # --- Search index (after every page has registered) ---
     search_path = DIST_DIR / "assets" / "search"

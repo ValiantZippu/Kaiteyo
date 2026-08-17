@@ -371,4 +371,11 @@ class AppPreferences(
         enableBackup = false
     )
 
+    override val gameProgressJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_game_progress_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
 }

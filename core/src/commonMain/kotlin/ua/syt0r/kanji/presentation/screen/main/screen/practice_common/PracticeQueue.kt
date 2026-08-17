@@ -22,9 +22,13 @@ import ua.syt0r.kanji.core.statistics.StatisticsRecorder
 import ua.syt0r.kanji.core.time.TimeUtils
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryItem
 import ua.syt0r.kanji.core.user_data.database.ReviewHistoryRepository
+import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 
 interface PracticeQueue<State, Descriptor> {
@@ -61,6 +65,19 @@ interface PracticeSummaryItem {
     val nextInterval: Duration
 }
 
+/**
+ * The two review-settings fields the queue reads to keep study time honest.
+ * Decoded straight from [PreferencesContract.AppPreferences.reviewSettingsJson]
+ * with defaults, so old saved JSON (without these keys) behaves as "on".
+ */
+@Serializable
+private data class StudyTimingData(
+    val smartActivityDetection: Boolean = true,
+    val inactivityThresholdMinutes: Int = 10
+)
+
+private val studyTimingJson = Json { ignoreUnknownKeys = true }
+
 abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
     private val practiceScope: CoroutineScope,
     protected val timeUtils: TimeUtils,
@@ -68,7 +85,8 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
     protected val srsCardRepository: SrsCardRepository,
     private val reviewHistoryRepository: ReviewHistoryRepository,
     private val statisticsRecorder: StatisticsRecorder,
-    analyticsManager: AnalyticsManager
+    analyticsManager: AnalyticsManager,
+    private val appPreferences: PreferencesContract.AppPreferences
 ) : PracticeQueue<State, Descriptor>
         where QueueItem : PracticeQueueItem<QueueItem>,
               SummaryItem : PracticeSummaryItem {
@@ -150,6 +168,23 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
         )
     }
 
+    /**
+     * Cap a review duration at the configured inactivity threshold when smart
+     * activity detection is on. A review that took far longer than a normal
+     * card (user stepped away mid-card, app left open) is almost all idle
+     * time — counting it inflates "time studied" with time nobody studied.
+     */
+    private suspend fun activeReviewDuration(raw: Duration): Duration {
+        val json = appPreferences.reviewSettingsJson.get()
+        if (json.isBlank()) return raw
+        val timing = runCatching {
+            studyTimingJson.decodeFromString<StudyTimingData>(json)
+        }.getOrNull() ?: return raw
+        if (!timing.smartActivityDetection) return raw
+        val threshold = timing.inactivityThresholdMinutes.coerceIn(1, 120).minutes
+        return if (raw > threshold) threshold else raw
+    }
+
     private suspend fun handleAnswer(answer: PracticeAnswer) {
         val item = queue.removeFirstOrNull() ?: return
         val updatedItem = item.copyForRepeat(answer)
@@ -157,7 +192,7 @@ abstract class BasePracticeQueue<State, Descriptor, QueueItem, SummaryItem>(
         saveSummaryData(updatedItem)
 
         val instant = timeUtils.now()
-        val reviewDuration = instant - currentReviewStartInstant
+        val reviewDuration = activeReviewDuration(instant - currentReviewStartInstant)
 
         if (answer.srsAnswer.card.interval < 1.days) {
             placeItemBackToQueue(updatedItem)

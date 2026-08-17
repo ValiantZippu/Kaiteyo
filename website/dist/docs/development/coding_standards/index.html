@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kaiteyo (書いてよ) — Coding Standards — Kaiteyo</title>
-  <meta name="description" content="1. Readability over cleverness — Write code that is easy to understand" />
+  <meta name="description" content="1. Readability over cleverness — code is read more than written" />
   <meta name="generator" content="Kaiteyo website builder" />
 
   
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Kaiteyo" />
   <meta property="og:title" content="Kaiteyo (書いてよ) — Coding Standards — Kaiteyo" />
-  <meta property="og:description" content="1. Readability over cleverness — Write code that is easy to understand" />
+  <meta property="og:description" content="1. Readability over cleverness — code is read more than written" />
   <meta property="og:url" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/coding_standards/" />
   <meta property="og:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
@@ -28,7 +28,7 @@
   <meta name="twitter:site" content="@KaiteyoApp" />
   
   <meta name="twitter:title" content="Kaiteyo (書いてよ) — Coding Standards — Kaiteyo" />
-  <meta name="twitter:description" content="1. Readability over cleverness — Write code that is easy to understand" />
+  <meta name="twitter:description" content="1. Readability over cleverness — code is read more than written" />
   <meta name="twitter:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
   <!-- Icons -->
@@ -54,14 +54,14 @@
   </script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css?v=1786940608" />
 
   <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
   <script>
@@ -357,15 +357,6 @@
         <ul class="nav-list">
           
           <li>
-            <a class="nav-item" href="/Kaiteyo/try/"
-               data-badge="Web">
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-              <span class="nav-label">Try Kaiteyo</span>
-              <span class="badge badge-muted nav-badge">Web</span>
-            </a>
-          </li>
-          
-          <li>
             <a class="nav-item" href="/Kaiteyo/download/"
                data-badge="v2.2.1">
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
@@ -474,8 +465,8 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/roadmap/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
-              <span class="nav-label">Roadmap</span>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Product Roadmap</span>
               
             </a>
           </li>
@@ -493,7 +484,86 @@
       </div>
       
       <div class="nav-group">
-        <div class="nav-group-title">Project</div>
+        <div class="nav-group-title">Command Center</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Project Status</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/kanban/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Kanban</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/whiteboard/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Whiteboard</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/suggestions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Suggestions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/decisions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">Architecture Decisions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/activity/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Activity</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/contributing/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+              <span class="nav-label">Contributing</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Community</div>
         <ul class="nav-list">
           
           <li>
@@ -537,15 +607,6 @@
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
               <span class="nav-label">Data &amp; Attribution</span>
-              
-            </a>
-          </li>
-          
-          <li>
-            <a class="nav-item" href="/Kaiteyo/contributing/"
-               >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
-              <span class="nav-label">Contributing</span>
               
             </a>
           </li>
@@ -603,13 +664,9 @@
     <div class="nav-divider"></div>
 
     <div class="nav-footer">
-      <a class="btn btn-primary nav-cta" href="/Kaiteyo/try/">
-        <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-        <span class="nav-cta-label">Try Kaiteyo</span>
-      </a>
-      <a class="btn btn-ghost btn-sm nav-cta" href="/Kaiteyo/download/">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
         <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
-        <span class="nav-cta-label">Download</span>
+        <span class="nav-cta-label">Download Kaiteyo</span>
       </a>
       <div class="flex gap-2 items-center">
         <button class="btn-icon" type="button" data-nav-collapse-toggle
@@ -649,9 +706,9 @@
       Search
       <kbd>Ctrl K</kbd>
     </button>
-    <a class="btn btn-primary btn-sm" href="/Kaiteyo/try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download
     </a>
     <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
       <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
@@ -775,7 +832,7 @@
         
         <li>
           <a class="docs-link"
-             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System Specification</a>
+             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System &amp; Theme Studio</a>
         </li>
         
         <li>
@@ -789,7 +846,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">7</span>
+        <span class="docs-count">28</span>
       </summary>
       <ul class="docs-list">
         
@@ -801,6 +858,61 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/architecture/data_platform/">Japanese Language Data Platform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/node_architecture/">Kaiteyo Node Architecture — Master Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/database/">Kaiteyo Architecture — Database Specification &amp; Migration Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/dictionary/">Kaiteyo Architecture — Dictionary Engine Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/language-model/">Kaiteyo Architecture — Language Data Model &amp; Knowledge Graph</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/study-engine/">Kaiteyo Architecture — Study Engine &amp; Card Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/statistics/">Kaiteyo Architecture — Statistics &amp; Event Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/exams/">Kaiteyo Architecture — Exam System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/media/">Kaiteyo Architecture — Media, Playback &amp; Subtitle Engine</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/mining/">Kaiteyo Architecture — Mining Workflow Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/localization/">Kaiteyo Architecture — Localization Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/browser/">Kaiteyo Architecture — Embedded Browser (Planned)</a>
         </li>
         
         <li>
@@ -825,6 +937,56 @@
         
         <li>
           <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/performance/">Kaiteyo Architecture — Performance Strategy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/toolchain/">Kaiteyo Architecture — Toolchain &amp; Development Environment</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/content/">Kaiteyo Architecture — Content System &amp; Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/backup/">Kaiteyo Architecture — Backup, Import &amp; Export</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/accessibility/">Kaiteyo Architecture — Accessibility Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/ci-cd/">Kaiteyo Architecture — CI/CD &amp; Release Pipeline</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/assets/">Kaiteyo Architecture — Asset System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/integrations/">Kaiteyo Architecture — Integrations Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/journey/">Kaiteyo Architecture — Journey, World &amp; Game Runtime Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/pitch-frequency/">Pitch Accent &amp; Frequency Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
              href="/Kaiteyo/docs/architecture/readme/">🔌 api — Kaiteyo API Documentation</a>
         </li>
         
@@ -834,7 +996,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">11</span>
+        <span class="docs-count">19</span>
       </summary>
       <ul class="docs-list">
         
@@ -891,6 +1053,46 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/decisions/0011-plugin-security-first/">ADR-0011: Plugin Runtime Loading Deferred (Security First)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0012-engineering-standards/">ADR-0012: Professional Engineering Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0013-node-architecture/">ADR-0013: Node-Based Architecture (Target)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0014-journey-target-architecture/">ADR-0014: Journey as Target Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0015-content-authoring/">ADR-0015: Data-Driven Content Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/">ADR-0016: Event-Driven User Knowledge (Dimensioned, FSRS-Owned Scheduling)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0017-one-product-architecture/">ADR-0017: One Product — Resolve the Two Parallel Applications</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0018-game-engine-evaluation/">ADR-0018: Game Engine Evaluation (Decision Pending)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0019-website-command-center/">ADR-0019: Website as Project Command Center</a>
         </li>
         
       </ul>
@@ -1259,6 +1461,36 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/readme/">Kaiteyo Website</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/architecture/">Website Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/data_model/">Website — Unified Project Data Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/api/">Website — API Contracts (interactive layer)</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
         <span class="docs-count">2</span>
       </summary>
       <ul class="docs-list">
@@ -1271,6 +1503,21 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/contributing/development_setup/">Kaiteyo — Development Setup</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/ai/ai_agent_guide/">AI Agent Guide</a>
         </li>
         
       </ul>
@@ -1347,7 +1594,7 @@
 
     <header style="margin-bottom: var(--space-8)">
       <h1>Kaiteyo (書いてよ) — Coding Standards</h1>
-      <p style="font-size: var(--text-lg); color: var(--text-secondary)">1. Readability over cleverness — Write code that is easy to understand</p>
+      <p style="font-size: var(--text-lg); color: var(--text-secondary)">1. Readability over cleverness — code is read more than written</p>
       
       <a class="prose-edit-link" href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/development/CODING_STANDARDS.md" target="_blank" rel="noopener">
         <svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>
@@ -1357,15 +1604,22 @@
     </header>
 
     <h1 id="kaiteyo-coding-standards">Kaiteyo (書いてよ) — Coding Standards</h1>
-<h2 id="general-principles">General Principles</h2>
+<blockquote>
+<p>These standards are <strong>observed in the codebase</strong>, not aspirational. Where a generic
+rule below conflicts with an existing pattern, follow the existing pattern and note
+the discrepancy.</p>
+</blockquote>
+<h2 id="general-principles">General principles</h2>
 <ol>
-<li><strong>Readability over cleverness</strong> — Write code that is easy to understand</li>
-<li><strong>Consistency</strong> — Follow existing patterns in the codebase</li>
-<li><strong>Minimalism</strong> — Less code is better code</li>
-<li><strong>Type safety</strong> — Use Kotlin's type system to prevent errors</li>
-<li><strong>Testability</strong> — Write code that can be tested</li>
+<li><strong>Readability over cleverness</strong> — code is read more than written</li>
+<li><strong>Consistency</strong> — match the surrounding file/module's patterns</li>
+<li><strong>Minimalism</strong> — the smallest correct change; prefer established libraries over
+   custom code (<code>ENGINEERING_STANDARDS.md</code> §164)</li>
+<li><strong>Type safety</strong> — use Kotlin's type system to make illegal states unrepresentable</li>
+<li><strong>Testability</strong> — pure domain logic separated from UI so it can be unit-tested</li>
+<li><strong>Token-driven UI</strong> — never hardcode colors/spacing/radii; read <code>Ds*</code>/<code>Dimens</code> tokens</li>
 </ol>
-<h2 id="naming-conventions">Naming Conventions</h2>
+<h2 id="naming-conventions">Naming conventions</h2>
 <h3 id="kotlin">Kotlin</h3>
 <table>
 <thead>
@@ -1384,7 +1638,7 @@
 <tr>
 <td>Functions</td>
 <td>camelCase</td>
-<td><code>animateColorAsState</code>, <code>resolveString</code></td>
+<td><code>resolveString</code>, <code>rememberMainNavigationState</code></td>
 </tr>
 <tr>
 <td>Properties</td>
@@ -1394,12 +1648,12 @@
 <tr>
 <td>Constants</td>
 <td>UPPER_SNAKE_CASE</td>
-<td><code>MAX_WIDTH</code>, <code>DEFAULT_RADIUS</code></td>
+<td><code>ThemeTransitionMillis</code>, <code>SidebarElevation</code></td>
 </tr>
 <tr>
 <td>Composables</td>
 <td>PascalCase</td>
-<td><code>KaiteyoTitleBar</code>, <code>FloatingControlButton</code></td>
+<td><code>KaiteyoTitleBar</code>, <code>DictionaryPopup</code></td>
 </tr>
 <tr>
 <td>State holders</td>
@@ -1407,212 +1661,189 @@
 <td><code>KaiteyoThemeState</code>, <code>GlowConfig</code></td>
 </tr>
 <tr>
-<td>Type aliases</td>
-<td>PascalCase</td>
-<td><code>ColorToken</code>, <code>DpValue</code></td>
+<td>ViewModels</td>
+<td><code>{Feature}ScreenViewModel</code></td>
+<td><code>DeckDetailsScreenViewModel</code></td>
+</tr>
+<tr>
+<td>Contracts</td>
+<td><code>{Feature}ScreenContract</code></td>
+<td><code>DeckDetailsScreenContract</code></td>
 </tr>
 </tbody>
 </table>
 <h3 id="files">Files</h3>
 <ul>
-<li>One class/interface per file (except for small related types)</li>
-<li>File name matches the primary class name</li>
-<li>Use <code>.kt</code> extension</li>
+<li>One primary class/interface per file; file name matches the primary name</li>
+<li>Compose screens follow the 4-file pattern (Contract / ViewModel / Module / Screen)</li>
+<li>Desktop <code>Ds*</code> components: one file per component family (<code>DsButtons.kt</code>, <code>DsCards.kt</code>)</li>
 </ul>
 <h2 id="formatting">Formatting</h2>
-<h3 id="indentation">Indentation</h3>
 <ul>
-<li>4 spaces (no tabs)</li>
-<li>Continuation indent: 8 spaces</li>
+<li><strong>Indentation</strong>: 4 spaces (continuation: 8)</li>
+<li><strong>Braces</strong>: <code>fun example() {</code>; <code>else</code>/<code>catch</code>/<code>finally</code> on the closing brace line</li>
+<li><strong>Spacing</strong>: single space after keywords; no space before colon; space after colon;
+  space after commas</li>
+<li><strong>Max line length</strong>: 120 chars; wrap before operators</li>
+<li><strong>Imports</strong>: no wildcards; grouped stdlib → Android/Compose → third-party → project,
+  blank line between groups</li>
 </ul>
-<h3 id="braces">Braces</h3>
+<h2 id="the-screen-pattern-core-all-platforms">The screen pattern (core, all platforms)</h2>
+<p>Every feature screen in <code>core/.../screen/main/screen/&lt;feature&gt;/</code> uses 4 files:</p>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>{Feature}ScreenContract.kt    # interface {Feature}ScreenContract { interface ViewModel ... }
+{Feature}ScreenViewModel.kt   # class ... : Contract.ViewModel  (StateFlow-based)
+{Feature}ScreenModule.kt      # Koin: multiplatformViewModel&lt;Contract.ViewModel&gt; { ... }
+{Feature}Screen.kt|UI.kt      # @Composable, VM via getMultiplatformViewModel&lt;Contract.ViewModel&gt;()
+</code></pre></div>
+
 <ul>
-<li>Opening brace on same line: <code>fun example() {</code></li>
-<li>Closing brace on its own line</li>
-<li><code>else</code>, <code>catch</code>, <code>finally</code> on same line as closing brace</li>
+<li><strong>Contract</strong> — declares the <code>ViewModel</code> interface and any screen-level state types
+  (<code>data class</code> state, <code>sealed interface</code> events/effects).</li>
+<li><strong>ViewModel</strong> — exposes <code>StateFlow&lt;State&gt;</code>; receives a <code>viewModelScope</code>-style scope;
+  never touches Compose.</li>
+<li><strong>Module</strong> — <code>multiplatformViewModel&lt;XContract.ViewModel&gt; { XViewModel(...) }</code>;
+  register the module in <code>di/AppModule.kt</code> <code>screenModules</code>.</li>
+<li><strong>Screen</strong> — composable; collects state with <code>collectAsState()</code>; calls VM methods
+  from callbacks.</li>
 </ul>
-<h3 id="spacing">Spacing</h3>
-<ul>
-<li>Single space after keywords: <code>if (condition)</code>, <code>for (item in list)</code></li>
-<li>No space before colon: <code>val x: Int</code></li>
-<li>Space after colon: <code>val x: Int</code></li>
-<li>No space before comma: <code>fun example(a: Int, b: Int)</code></li>
-<li>Space after comma: <code>fun example(a: Int, b: Int)</code></li>
-</ul>
-<h3 id="maximum-line-length">Maximum Line Length</h3>
-<ul>
-<li>120 characters</li>
-<li>Break before operators when wrapping</li>
-</ul>
-<h3 id="imports">Imports</h3>
-<ul>
-<li>No wildcard imports (use explicit imports)</li>
-<li>Group imports by:
-  1. Kotlin stdlib
-  2. Android/Compose
-  3. Third-party libraries
-  4. Project imports</li>
-<li>Blank line between groups</li>
-</ul>
-<h2 id="compose-practices">Compose Practices</h2>
-<h3 id="composable-functions">Composable Functions</h3>
+<p>New destinations: add a <code>MainDestination</code> to <code>MainNavigation.kt</code> and register it in
+<code>defaultMainDestinations</code> (with its kotlinx.serialization configuration).</p>
+<h2 id="compose-practices">Compose practices</h2>
+<h3 id="composable-signature">Composable signature</h3>
 <div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="nd">@Composable</span>
 <span class="kd">fun</span><span class="w"> </span><span class="nf">MyComponent</span><span class="p">(</span>
 <span class="w">    </span><span class="n">param1</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span>
 <span class="w">    </span><span class="n">param2</span><span class="p">:</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span>
-<span class="w">    </span><span class="n">modifier</span><span class="p">:</span><span class="w"> </span><span class="n">Modifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Modifier</span>
-<span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// Implementation</span>
-<span class="p">}</span>
+<span class="w">    </span><span class="n">modifier</span><span class="p">:</span><span class="w"> </span><span class="n">Modifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Modifier</span><span class="w">   </span><span class="c1">// last, with default</span>
+<span class="p">)</span>
 </code></pre></div>
 
-<h3 id="modifier-order">Modifier Order</h3>
+<h3 id="modifier-order">Modifier order</h3>
 <ol>
-<li><code>size</code>, <code>width</code>, <code>height</code>, <code>fillMaxSize</code>, etc.</li>
-<li><code>padding</code>, <code>margin</code></li>
+<li><code>size</code>, <code>width</code>, <code>height</code>, <code>fillMaxSize</code>…</li>
+<li><code>padding</code></li>
 <li><code>background</code>, <code>border</code>, <code>clip</code></li>
-<li><code>clickable</code>, <code>hoverable</code>, <code>scrollable</code></li>
+<li><code>clickable</code>, <code>hoverable</code>, <code>scrollable</code> (interactive)</li>
 <li><code>align</code>, <code>weight</code></li>
 <li><code>graphicsLayer</code>, <code>alpha</code>, <code>scale</code></li>
 <li><code>testTag</code>, <code>semantics</code></li>
 </ol>
-<h3 id="state-management">State Management</h3>
+<h3 id="state-management">State management</h3>
 <div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1">// Local UI state</span>
 <span class="kd">var</span><span class="w"> </span><span class="nv">isExpanded</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">remember</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">mutableStateOf</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
 
 <span class="c1">// Derived state</span>
 <span class="kd">val</span><span class="w"> </span><span class="nv">isValid</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">remember</span><span class="p">(</span><span class="n">input</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">derivedStateOf</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="na">isNotEmpty</span><span class="p">()</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 
-<span class="c1">// Animation state</span>
+<span class="c1">// Animation state — always through config-aware helpers</span>
 <span class="kd">val</span><span class="w"> </span><span class="nv">scale</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">animateFloatAsState</span><span class="p">(</span>
-<span class="w">    </span><span class="n">targetValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isHovered</span><span class="p">)</span><span class="w"> </span><span class="m">1.1f</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="m">1f</span><span class="p">,</span>
-<span class="w">    </span><span class="n">animationSpec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">spring</span><span class="p">(</span><span class="n">dampingRatio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5f</span><span class="p">),</span>
+<span class="w">    </span><span class="n">targetValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isHovered</span><span class="p">)</span><span class="w"> </span><span class="m">1.05f</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="m">1f</span><span class="p">,</span>
+<span class="w">    </span><span class="n">animationSpec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">springAnim</span><span class="p">(),</span><span class="w">          </span><span class="c1">// honors AnimationConfig</span>
 <span class="w">    </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;elementScale&quot;</span>
 <span class="p">)</span>
 </code></pre></div>
 
 <h3 id="performance">Performance</h3>
 <ul>
-<li>Use <code>remember</code> to cache expensive computations</li>
-<li>Use <code>derivedStateOf</code> to derive state without recomposition</li>
-<li>Use <code>key()</code> in <code>LazyColumn</code> for stable item identity</li>
-<li>Avoid creating new objects in composition (use <code>remember</code>)</li>
-<li>Use <code>@Stable</code> annotation on state holders</li>
-<li>Keep composable functions small and focused</li>
+<li><code>remember</code> expensive computations; <code>derivedStateOf</code> derived values</li>
+<li><code>key()</code>/stable keys in <code>LazyColumn</code>/<code>DsVirtualList</code></li>
+<li><code>@Stable</code> on state holders</li>
+<li>Animate <code>graphicsLayer</code>, not layout properties</li>
+<li>Respect <code>reducedMotion</code> and <code>AnimationSpeed</code> (see <code>docs/design/ANIMATION_SYSTEM.md</code>)</li>
+</ul>
+<h3 id="desktop-suite">Desktop suite</h3>
+<ul>
+<li>Views: <code>@Composable fun XView(state: AppState)</code>; get state via
+  <code>LocalAppState.current</code>/<code>rememberAppState()</code></li>
+<li>Components: <code>Ds*</code> only (<code>DsButton</code>, <code>DsCard</code>, <code>DsDialog</code>, <code>DsTextField</code>…), tokens
+  via <code>DsSpacing</code>, <code>DsRadius</code>, <code>DsType</code>, <code>DsMotion</code>, <code>DsElevation</code>, <code>DsSemantic</code></li>
+<li>Panels/openers follow the existing view patterns (<code>DictionaryManagerView</code>,
+  <code>ThemeStudioView</code>, <code>SettingsView</code> are canonical examples)</li>
 </ul>
 <h2 id="architecture">Architecture</h2>
-<h3 id="package-structure">Package Structure</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>feature/
-├── FeatureScreen.kt        # Screen composable
-├── FeatureContract.kt      # State/Event contracts
-├── FeatureViewModel.kt     # ViewModel
-└── components/             # Feature-specific components
+<h3 id="package-structure-core-screen">Package structure (core screen)</h3>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>screen/main/screen/&lt;feature&gt;/
+├── {Feature}ScreenContract.kt
+├── {Feature}ScreenViewModel.kt
+├── {Feature}ScreenModule.kt
+├── {Feature}Screen.kt / {Feature}ScreenUI.kt
+├── data/          # configuration/screen data types
+├── ui/            # feature-specific components
+└── use_case/      # single-responsibility use cases (DeckDetails*UseCase)
 </code></pre></div>
 
-<h3 id="state-flow">State Flow</h3>
+<h3 id="state-flow-viewmodel">State flow (ViewModel)</h3>
 <div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1">// Contract</span>
-<span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">FeatureState</span><span class="p">(</span>
-<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">isLoading</span><span class="p">:</span><span class="w"> </span><span class="kt">Boolean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">data</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Item</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">emptyList</span><span class="p">(),</span>
-<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">error</span><span class="p">:</span><span class="w"> </span><span class="kt">String?</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span>
-<span class="p">)</span>
-
-<span class="kd">sealed</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">FeatureEvent</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">data</span><span class="w"> </span><span class="kd">object</span><span class="w"> </span><span class="nc">Load</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">FeatureEvent</span><span class="p">()</span>
-<span class="w">    </span><span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">SelectItem</span><span class="p">(</span><span class="kd">val</span><span class="w"> </span><span class="nv">id</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">FeatureEvent</span><span class="p">()</span>
+<span class="kd">interface</span><span class="w"> </span><span class="nc">DeckDetailsScreenContract</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">interface</span><span class="w"> </span><span class="nc">ViewModel</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">val</span><span class="w"> </span><span class="nv">state</span><span class="p">:</span><span class="w"> </span><span class="n">StateFlow</span><span class="o">&lt;</span><span class="n">ScreenState</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="kd">fun</span><span class="w"> </span><span class="nf">onEvent</span><span class="p">(</span><span class="n">event</span><span class="p">:</span><span class="w"> </span><span class="n">ScreenEvent</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">ScreenState</span><span class="p">(...)</span>
+<span class="w">    </span><span class="kd">sealed</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nc">ScreenEvent</span>
 <span class="p">}</span>
 
 <span class="c1">// ViewModel</span>
-<span class="kd">class</span><span class="w"> </span><span class="nc">FeatureViewModel</span><span class="p">(</span>
-<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">repository</span><span class="p">:</span><span class="w"> </span><span class="n">Repository</span>
-<span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ViewModel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MutableStateFlow</span><span class="p">(</span><span class="n">FeatureState</span><span class="p">())</span>
-<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">state</span><span class="p">:</span><span class="w"> </span><span class="n">StateFlow</span><span class="o">&lt;</span><span class="n">FeatureState</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_state</span><span class="p">.</span><span class="na">asStateFlow</span><span class="p">()</span>
+<span class="kd">class</span><span class="w"> </span><span class="nc">DeckDetailsScreenViewModel</span><span class="p">(...)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">DeckDetailsScreenContract</span><span class="p">.</span><span class="na">ViewModel</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MutableStateFlow</span><span class="p">(</span><span class="n">DeckDetailsScreenContract</span><span class="p">.</span><span class="na">ScreenState</span><span class="p">())</span>
+<span class="w">    </span><span class="kd">override</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">state</span><span class="p">:</span><span class="w"> </span><span class="n">StateFlow</span><span class="o">&lt;</span><span class="n">DeckDetailsScreenContract</span><span class="p">.</span><span class="na">ScreenState</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_state</span><span class="p">.</span><span class="na">asStateFlow</span><span class="p">()</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div>
 
-<span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">onEvent</span><span class="p">(</span><span class="n">event</span><span class="p">:</span><span class="w"> </span><span class="n">FeatureEvent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">when</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">is</span><span class="w"> </span><span class="n">FeatureEvent</span><span class="p">.</span><span class="na">Load</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">loadData</span><span class="p">()</span>
-<span class="w">            </span><span class="k">is</span><span class="w"> </span><span class="n">FeatureEvent</span><span class="p">.</span><span class="na">SelectItem</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">selectItem</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">id</span><span class="p">)</span>
-<span class="w">        </span><span class="p">}</span>
+<h3 id="dependency-injection">Dependency injection</h3>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1">// Module</span>
+<span class="kd">val</span><span class="w"> </span><span class="nv">featureScreenModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">multiplatformViewModel</span><span class="o">&lt;</span><span class="n">FeatureScreenContract</span><span class="p">.</span><span class="na">ViewModel</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">FeatureScreenViewModel</span><span class="p">(</span>
+<span class="w">            </span><span class="n">repository</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">get</span><span class="p">(),</span>
+<span class="w">            </span><span class="n">useCase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">get</span><span class="p">()</span>
+<span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
+
+<span class="c1">// Composable</span>
+<span class="kd">val</span><span class="w"> </span><span class="nv">viewModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getMultiplatformViewModel</span><span class="o">&lt;</span><span class="n">FeatureScreenContract</span><span class="p">.</span><span class="na">ViewModel</span><span class="o">&gt;</span><span class="p">()</span>
 </code></pre></div>
 
-<h3 id="dependency-injection">Dependency Injection</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1">// Module definition</span>
-<span class="kd">val</span><span class="w"> </span><span class="nv">featureModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">factory</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">FeatureViewModel</span><span class="p">(</span><span class="k">get</span><span class="p">())</span><span class="w"> </span><span class="p">}</span>
-<span class="w">    </span><span class="n">factory</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">FeatureRepository</span><span class="p">(</span><span class="k">get</span><span class="p">())</span><span class="w"> </span><span class="p">}</span>
-<span class="p">}</span>
-
-<span class="c1">// Injection in composable</span>
-<span class="nd">@Composable</span>
-<span class="kd">fun</span><span class="w"> </span><span class="nf">FeatureScreen</span><span class="p">(</span>
-<span class="w">    </span><span class="n">viewModel</span><span class="p">:</span><span class="w"> </span><span class="n">FeatureViewModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">koinInject</span><span class="p">()</span>
-<span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">state</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">viewModel</span><span class="p">.</span><span class="na">state</span><span class="p">.</span><span class="na">collectAsState</span><span class="p">()</span>
-<span class="w">    </span><span class="c1">// UI</span>
-<span class="p">}</span>
-</code></pre></div>
-
-<h2 id="documentation">Documentation</h2>
-<h3 id="kdoc-comments">KDoc Comments</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="cm">/**</span>
-<span class="cm"> * A floating window control button with hover animations.</span>
-<span class="cm"> *</span>
-<span class="cm"> * @param icon The text character to display (e.g., &quot;×&quot;, &quot;─&quot;, &quot;□&quot;)</span>
-<span class="cm"> * @param onClick Callback when button is clicked</span>
-<span class="cm"> * @param glowColor Color for hover glow effect</span>
-<span class="cm"> * @param size Button size in dp</span>
-<span class="cm"> */</span>
-<span class="nd">@Composable</span>
-<span class="kd">private</span><span class="w"> </span><span class="kd">fun</span><span class="w"> </span><span class="nf">FloatingControlButton</span><span class="p">(</span>
-<span class="w">    </span><span class="n">icon</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span>
-<span class="w">    </span><span class="n">onClick</span><span class="p">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kt">Unit</span><span class="p">,</span>
-<span class="w">    </span><span class="n">glowColor</span><span class="p">:</span><span class="w"> </span><span class="n">Color</span><span class="p">,</span>
-<span class="w">    </span><span class="n">size</span><span class="p">:</span><span class="w"> </span><span class="n">Dp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">32.</span><span class="n">dp</span>
-<span class="p">)</span>
-</code></pre></div>
-
-<h3 id="inline-comments">Inline Comments</h3>
+<h3 id="expectactual">expect/actual</h3>
+<p>Platform-specific behavior (backup archive, file pickers, sync transport, <code>main</code>
+entry) uses <code>expect</code> declarations in <code>commonMain</code> with <code>actual</code>s in <code>jvmMain</code> /
+<code>androidMain</code> / <code>iosMain</code>.</p>
+<h2 id="strings-i18n">Strings (i18n)</h2>
 <ul>
-<li>Explain WHY, not WHAT</li>
-<li>Use <code>//</code> for single-line comments</li>
-<li>Use <code>/* */</code> for multi-line comments</li>
-<li>Avoid obvious comments (<code>// increment counter</code>)</li>
+<li>Interface-based: <code>Strings</code> interface + <code>EnglishStrings</code> + <code>JapaneseStrings</code></li>
+<li>Adding a string edits all three (interface + both impls) — compile enforces it</li>
+<li>Lookup: <code>resolveString { someString }</code></li>
+</ul>
+<h2 id="documentation">Documentation</h2>
+<ul>
+<li>KDoc on public types/functions with <code>@param</code>/<code>@return</code> where non-obvious</li>
+<li>Inline comments explain <strong>why</strong>, not what</li>
+<li>Docs live in <code>docs/</code>; follow <code>DocumentationRules.md</code> (update map, no dead links,
+  no placeholders)</li>
 </ul>
 <h2 id="testing">Testing</h2>
-<h3 id="unit-tests">Unit Tests</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="kd">class</span><span class="w"> </span><span class="nc">FeatureViewModelTest</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nd">@Test</span>
-<span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">`load data should update state`</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runTest</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="kd">val</span><span class="w"> </span><span class="nv">viewModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FeatureViewModel</span><span class="p">(</span><span class="n">mockRepository</span><span class="p">)</span>
-<span class="w">        </span><span class="n">viewModel</span><span class="p">.</span><span class="na">onEvent</span><span class="p">(</span><span class="n">FeatureEvent</span><span class="p">.</span><span class="na">Load</span><span class="p">)</span>
-<span class="w">        </span><span class="n">assertTrue</span><span class="p">(</span><span class="n">viewModel</span><span class="p">.</span><span class="na">state</span><span class="p">.</span><span class="na">value</span><span class="p">.</span><span class="na">isLoading</span><span class="p">)</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-
-<h3 id="test-naming">Test Naming</h3>
 <ul>
-<li>Use backtick names: <code>fun `description of test`()</code></li>
-<li>Follow pattern: <code>subject_action_expectedResult</code></li>
+<li>Location: <code>core/src/commonTest/</code> (shared), <code>desktopApp/src/jvmTest/</code> (suite),
+  <code>kjd/src/test/</code></li>
+<li>Framework: kotlin.test (JUnit Platform)</li>
+<li>Naming: backtick sentences — <code>fun `deinflect handles consecutive kana runs`()</code></li>
+<li>Pure logic (scheduling, statistics, deinflection, search ranking, parsers) is
+  tested; UI is not (yet)</li>
 </ul>
 <h2 id="git">Git</h2>
-<h3 id="commit-messages">Commit Messages</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>type(scope): description
-
-[optional body]
-
-[optional footer]
-</code></pre></div>
-
-<p>Types: <code>feat</code>, <code>fix</code>, <code>docs</code>, <code>refactor</code>, <code>perf</code>, <code>test</code>, <code>style</code>, <code>chore</code></p>
-<h3 id="branch-names">Branch Names</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>type/description
-</code></pre></div>
-
-<p>Examples: <code>feature/floating-sidebar</code>, <code>fix/window-drag</code>, <code>docs/architecture</code></p>
+<ul>
+<li>Commits: <code>type(scope): description</code> — one coherent change per commit</li>
+<li>Branches: <code>feature/…</code>, <code>fix/…</code>, <code>docs/…</code>, <code>refactor/…</code> off <code>develop</code></li>
+<li>PRs to <code>develop</code>, squash-merged (see <code>GITHUB_WORKFLOW.md</code>)</li>
+</ul>
+<h2 id="related">Related</h2>
+<ul>
+<li><code>AI_CONTEXT.md</code> — project facts, screen pattern registration, import rules</li>
+<li><code>docs/design/UI_SYSTEM.md</code> — the component catalog</li>
+<li><code>docs/engineering/ENGINEERING_STANDARDS.md</code> — the engineering contract</li>
+</ul>
 
     
     <nav class="pagination" aria-label="Pagination">
@@ -1653,12 +1884,6 @@
     <div class="footer-column">
       <h4>Learn</h4>
       <ul>
-        
-        <li>
-          
-          <a href="/Kaiteyo/try/">Try Kaiteyo</a>
-          
-        </li>
         
         <li>
           
@@ -1735,7 +1960,7 @@
         
         <li>
           
-          <a href="/Kaiteyo/roadmap/">Roadmap</a>
+          <a href="/Kaiteyo/roadmap/">Product Roadmap</a>
           
         </li>
         
@@ -1749,7 +1974,62 @@
     </div>
     
     <div class="footer-column">
-      <h4>Project</h4>
+      <h4>Command Center</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/">Project Status</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/kanban/">Kanban</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/roadmap/">Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/whiteboard/">Whiteboard</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/suggestions/">Suggestions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/decisions/">Architecture Decisions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/activity/">Activity</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/contributing/">Contributing</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
       <ul>
         
         <li>
@@ -1779,12 +2059,6 @@
         <li>
           
           <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
-          
-        </li>
-        
-        <li>
-          
-          <a href="/Kaiteyo/contributing/">Contributing</a>
           
         </li>
         
@@ -2000,49 +2274,59 @@
   </div>
 
   <div class="dialog-section-title">Position</div>
-  <div class="grid-3" style="grid-template-columns: repeat(5, 1fr)">
-    <button class="theme-swatch" type="button" data-nav-pos="left" aria-label="Left">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Left</span>
+  <div class="nav-pos-grid">
+    <button class="nav-pos-card" type="button" data-nav-pos="left" aria-label="Left">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="21" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="21" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Left</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="right" aria-label="Right">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Right</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="right" aria-label="Right">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="45.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="2.5" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="2.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Right</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="top" aria-label="Top">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Top</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="top" aria-label="Top">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="17" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="28" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Top</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="bottom" aria-label="Bottom">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Bottom</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="30.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Bottom</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="floating" aria-label="Floating">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; gap: 4px; position: relative">
-        <span style="width: 36%; height: 70%; background: var(--preview-surface); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4)"></span>
-        <span style="flex: 1; height: 100%; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Floating</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="floating" aria-label="Floating">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+        <circle class="np-bubble" cx="50" cy="32" r="7"/>
+      </svg>
+      <span class="nav-pos-name">Floating</span>
     </button>
   </div>
 
   <div class="dialog-section-title">Width</div>
-  <div class="tabs" role="tablist" aria-label="Navigation width">
-    <button class="tab" type="button" data-nav-width="compact">Compact</button>
-    <button class="tab" type="button" data-nav-width="default">Default</button>
-    <button class="tab" type="button" data-nav-width="wide">Wide</button>
+  <div class="segmented" role="group" aria-label="Navigation width">
+    <button class="segmented-btn" type="button" data-nav-width="compact">Compact</button>
+    <button class="segmented-btn" type="button" data-nav-width="default">Default</button>
+    <button class="segmented-btn" type="button" data-nav-width="wide">Wide</button>
   </div>
 
   <div class="dialog-section-title">Behavior</div>
@@ -2081,12 +2365,12 @@
   </div>
 </dialog>
 
-  <script type="module" src="/Kaiteyo/assets/scripts/main.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/theme.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/components.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/search.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/utils.js"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/main.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/theme.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/components.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/search.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/utils.js?v=1786940608"></script>
 </body>
 </html>

@@ -20,7 +20,14 @@ id                     "npc:shopkeeper-14/welcome"
 npcRef                 "npc:shopkeeper-14"
 condition              { questState, friendship >= 1, season == summer, hour in 9..18 }
 lines                  [ { speaker, text (ja), gloss, audioRef?, knowledgeLinks [] } ]
-choices                [ { label, next }, { label, condition, next } ]
+choices                [ { label, next }, { label, next, requiresKnowledge: "hanabi" } ]
+                       # requiresKnowledge = a knowledge-node id the player
+                       # must have discovered for the choice to appear
+                       # (knowledge-dependent responses, spec §13). At least
+                       # one ungated choice per branch — the runner skips an
+                       # all-gated line instead of soft-locking.
+# Kid-mode variants (spec §68): per-line simpler text for kids mode.
+kidJp / kidReading / kidTranslation   (blank = fall back to main fields)
 effects                [ { event: "quest:errand-01/objective/advance", payload } ]
 ```
 

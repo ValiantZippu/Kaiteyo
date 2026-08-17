@@ -171,7 +171,7 @@ and `docs/architecture/OVERVIEW.md`. The canonical, short map (verified this ses
 | Path | Purpose | Ownership | Generated? |
 |---|---|---|---|
 | `core/` | Shared Kotlin Multiplatform code: UI (Compose MPP), business logic, data layer, `commonMain`/`jvmMain`/`androidMain`/`iosMain` | `ua.syt0r.kanji.presentation.*`, `core.*`, `di.*` | no |
-| `desktopApp/` | Thin JVM wrapper (`Main.kt` → `KaiteyoApp`) + the standalone desktop suite (`desktopApp/.../desktop.*`, `desktopSuiteMain()`) | `ua.syt0r.kanji.desktopApp`, `ua.syt0r.kanji.desktop` | no |
+| `desktopApp/` | Thin JVM wrapper (`Main.kt` → `KaiteyoApp`) + the JVM-only feature library `desktopApp/.../desktop.*` (media, game, dictionary, engines) folded into shipped destinations via the Media/Game Koin hosts | `ua.syt0r.kanji.desktopApp`, `ua.syt0r.kanji.desktop` | no |
 | `app/` | Android entry point; flavors `googlePlay` (Firebase/billing/review) and `fdroid` (Google-free) | `ua.syt0r.kanji` (app source sets) | no |
 | `iosApp/` | iOS entry point (Swift host + Compose UI) | — | no |
 | `kjd/` | **KJD** data platform: ingest → normalize → validate → SQLite export + Kotlin SDK + CLI | `ua.syt0r.kanji.kjd` | yes (output DB) |

@@ -104,6 +104,7 @@ object SearchEngine {
         }
 
         return when (field.field) {
+            SearchField.Id -> card.id.equals(value, ignoreCase = true)
             SearchField.Character -> stringCompare(card.character)
             SearchField.Meaning -> stringCompare(card.meaning)
             SearchField.Reading -> card.readings.any { stringCompare(it) }
@@ -287,6 +288,7 @@ object SearchEngine {
     }
 
     private val FIELD_PATTERNS: List<Pair<String, SearchField>> = listOf(
+        "id" to SearchField.Id,
         "onreading" to SearchField.OnReading,
         "kunreading" to SearchField.KunReading,
         "character" to SearchField.Character,

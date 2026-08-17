@@ -11,6 +11,236 @@ All notable changes to Kaiteyo are documented here. Format follows
 
 ## Unreleased
 
+### Added
+- **Home — interactive activity heatmap**: the Dashboard now embeds the full
+  heatmap panel (rolling 52 weeks + per-year calendars) with smooth
+  push/slide year transitions, hover tooltips (date, cards, reviews, study
+  time, decks) and click-through day details — previously only available on
+  the Statistics screen.
+- **Home — welcome hero for new users**: a brand-new library (no cards,
+  no decks) shows a real welcome card with working actions (Create a deck,
+  Import content, Explore dictionary, Try Browse) instead of a dead dashboard.
+- **Home — smarter continue hero**: the hero now ranks real continue targets
+  instead of only the busiest deck — deck with due/new work, recently studied
+  deck, saved search, collection, review or dictionary exploration — and
+  shows up to two compact alternatives under the primary action.
+- **Library — list/grid toggle**: the deck catalog now switches between the
+  dense grid and a compact list view (persisted per user). List rows carry
+  the same live stats and full deck-actions menu.
+- **Library — one-click study everywhere**: smart scopes (Due today / New /
+  Favorites / Recently studied) get a "Study these N" button that reviews
+  exactly the shown cards, and collection cards in the strip get a Study
+  button (collection-scoped review).
+- **Browse — full keyboard navigation**: ↑/↓ move through results (with row
+  highlight and scroll-into-view in both list and grid), Enter opens the
+  focused card, Esc clears the query / selection / filters in one step.
+  Arrows are ignored while the search field is focused so caret editing
+  still works. The results line shows the key hints.
+- **Browse — live search suggestions**: typing in the search field shows an
+  in-memory suggestion dropdown (recent searches, real tags from your card
+  pool, flag colors, and query operators like `meaning:` / `tag:` /
+  `interval:`). Arrow keys move, Enter applies, Esc dismisses, and applying
+  a suggestion just sets the query — no ghost UI.
+- **Browse — dictionary link from the card detail panel**: "Look up in
+  dictionary" opens the Dictionary scoped to the card's headword.
+
+### Added
+- **Kaiteyo Game — second region, stories, save slots & controller support**:
+  - **Kamakura (鎌倉) is now playable** — the Sea Line train actually travels
+    between Hamanaka and Kamakura (region switch rebuilds tiles, camera
+    bounds, region-scoped NPCs and interactables — a new region is pure
+    content). Arrival auto-starts the "A Kamakura Summer" story. New NPCs
+    (priest, Komachi shopkeeper, lifeguard, monk), 5 new quests, dialogue,
+    18 knowledge nodes, collectibles — all in `resources/game/*.json`.
+  - **Story UI** — the Story menu lists stories/chapters/scenes with
+    Start/Continue; scene effects (dialogue, quest triggers, knowledge
+    grants) are handled by the session. `docs/game/VERTICAL_SLICE.md`
+    updated.
+  - **Save slots** — multiple named journeys under `~/.kaiteyo/game/saves/`
+    with a Saves menu (load / save here / delete / new journey); autosave
+    writes into the active slot.
+  - **Gamepad support (real hardware)** — `JnaGamepadProvider` polls XInput
+    on Windows and the evdev joystick API on Linux through JNA (already a
+    desktop dependency), with Xbox / PlayStation / generic layouts, stick
+    dead zones from `InputCalibration`, and shared `ControlScheme`
+    rebinding. Touch provider interface remains for mobile wiring.
+  - Map menu now shows time-of-day + weather (the world is alive on the
+    map, not just in the scene).
+  - New tests: `StoryAndSlotsTest` (story scenes, slot isolation,
+    cross-region travel), `GamepadMappingTest` (layout maps, dead zones,
+    provider→input translation).
+  - **Spoken dialogue (TTS)** — NPC lines are spoken through Kaiteyo's
+    kana-clip voice engine (`GameBridge.speakJp` → `KanaTtsManager`):
+    auto-play per line, a ♪ replay button, a Voice settings toggle, and
+    listening counts as real activity (`DialogueListened`). No voice
+    asset? The game stays silent and keeps working.
+  - **Touch controls (PUBG/Genshin-style)** — `VirtualTouchProvider` +
+    `TouchControlsOverlay`: a dynamic-origin joystick that appears where
+    the thumb lands (rim = run), right-side drag-to-look with tap-to-
+    interact, and contextual buttons (Interact appears near things, photo
+    mode swaps in Capture/Close). Toggle in Game Settings → Touch.
+  - **Gamepad hot-plug** — the Linux joystick provider re-probes
+    `/dev/input/js*` every second and Windows XInput polls continuously,
+    so a controller plugged in mid-session is picked up automatically.
+  - **Control rebind UI** — Game Settings → Controls lists every action
+    with its bound keys; click a row and press a keyboard key or gamepad
+    button to rebind (Esc cancels). Bindings persist with the journey.
+  - New tests: `DialogueTtsTest` (kana extraction, listening signal,
+    silent-voice honesty), `TouchControlsTest` (joystick/look/buttons →
+    InputState), `RebindAndHotplugTest` (scheme changes, reset, press
+    queue).
+  - **Game audio system** — procedural SFX synth (discovery, quest
+    complete, photo shutter, interact, purchase, closed) + per-area
+    ambient pads (town, beach, station, festival); master/music/sfx
+    volume sliders in Settings → Audio, applied live.
+  - **Menu focus navigation** — `FocusNav` keyboard/gamepad focus model:
+    menus are fully playable with arrows + Enter (or gamepad), no mouse
+    needed.
+  - **In-world writing activity** — kana tracing panel at the writing desk
+    object with a lenient stroke-order evaluator; new `WriteKana` quest
+    objective kind; discoveries from writing feed Kaiteyo stats.
+  - **Time-gated world + evening festival** — `availablePhases` on objects
+    (school in the morning, stalls in the evening) with closed prompts;
+    Hamanaka's festival appears at dusk: festival NPCs (stall owner,
+    taiko drummer, lantern keeper), stalls, new quests, dialogue,
+    knowledge (祭り/屋台/金魚すくい…), collectibles and a festival story.
+    NPC presence is now schedule-window driven.
+  - **Richer knowledge content** — sentence + grammar nodes in the graph
+    (festival phrases, どこ/です/か grammar), discovery cards show JLPT
+    and kind badges.
+  - New tests: `GameAudioTest` (synth math, volume gating, ambient pad),
+    `WritingAndGatingTest` (evaluator, phase gating, writing discoveries),
+    `QuestObjectiveKindsTest` (write/listen/learn-word objectives).
+  - **NPCs walk their schedules** — waypoint movement replaces teleporting:
+    NPCs stroll between scheduled positions at a walk speed, face their
+    direction, arrive and idle; talk hitboxes follow live positions.
+  - **Ordering minigame (spec §56)** — festival stalls now have Japanese
+    menus: interact with a stall, pick たこ焼き / ラムネ / たい焼き / 焼きそば
+    by their Japanese names (reading + meaning as support), order, and the
+    words are discovered. New `OrderFood` quest objective kind; the
+    takoyaki quest now uses it. A second taiyaki stall joined the square.
+  - **Photo review panel** — click any album photo to open it: vocabulary
+    tags, category, region/time, **Save to disk** (JSON sidecar under
+    `~/.kaiteyo/game/photos/` via the bridge) and Delete.
+  - **Quest log polish** — filter chips (All / Active / Completed) and
+    per-quest progress bars; the HUD objective strip now shows objective
+    progress (2/3) and a first-run hint when no quest is active.
+  - New tests: `NpcOrderPhotoTest` (waypoint walking, ordering flow,
+    photo save/delete, `OrderFood` matching).
+  - **NPC patrols** — NPCs can loop a route of `patrolPoints` with pauses
+    (the beachcomber wanders the shore); schedules already handled waypoint
+    walking. Weather/season **presence gates**: an NPC can be rain-only or
+    winter-only and the director spawns/despawns them accordingly.
+  - **Season cycle (spec §42)** — the world now has spring/summer/autumn/
+    winter: a `SeasonSystem` derives the season from the day counter (3-day
+    seasons), the renderer applies a per-season palette tint, and the weather
+    leans on the season (winter snows, spring rains) so seasonal quests are
+    reachable, not a lottery. Season/weather **quest objective kinds**
+    (`Season`, `Weather`) complete when the world enters that condition;
+    season/weather-gated world objects show "closed" prompts.
+  - **Kamakura night** — a new night quest chain: the Lantern Keeper
+    (提灯番) appears at dusk on the Hachimangū approach, you inspect the
+    stone lantern (石灯籠) and photograph the moon (月). Winter candy vendor
+    (飴細工屋さん) appears only in winter snow/rain. New knowledge (月/貝/
+    飴/冬/雪), stamps, dialogue.
+  - New tests: `PatrolWeatherSeasonTest` (patrol loops, weather/season
+    gating, season rollover, seasonal weather, `Season`/`Weather` objectives,
+    Kamakura night quest grant).
+  - **Seasonal events (spec §42)** — the winter market: a cocoa vendor
+    (ココア屋さん) and winter stall appear in Hamanaka when the world turns
+    winter (quest: 冬市で暖まる), and spring blossom-viewing (お花見) under
+    the Kamakura 桜 with a picnic NPC and quest. All gated by the season
+    system — the same world, a different season.
+  - **Season/weather debug tools (spec §121-122)** — the F3 debug overlay
+    now has one-click season (Spring/Summer/Autumn/Winter), weather
+    (Sun/Cloud/Rain/Snow) and time (Morning/Day/Evening/Night) chips, so
+    testers reach any seasonal content instantly.
+  - **Clock pacing (spec §40)** — a new Time setting with presets: Fast (a
+    day in 12 min), Standard (a day in 2 h), Real time (60 s / min); applied
+    live, persisted with the journey.
+  - New tests: `DebugToolsSeasonalTest` (season forcing spawns the winter
+    market, weather forcing, time jumps, pacing applied live, seasonal
+    content gates).
+  - **All four seasons now have events** — summer bon dance (盆踊り) on the
+    Hamanaka beach at dusk (dancer walks a chained route), and autumn leaves
+    (紅葉) path in Kamakura with a persimmon (柿) lesson. New knowledge
+    (夏/秋/紅葉/柿/涼しい/きれい/好き + grammar 〜が/〜は/〜を), dialogue,
+    quests, stamps.
+  - **Seasonal audio (spec §42, §91-92)** — the ambient pad is coloured per
+    season: spring birdsong, summer cicadas, autumn dry-leaf crackles,
+    winter wind (`GameAudio.setSeason`, wired live from the season cycle).
+  - **Chained NPC routes (spec §39, §52)** — `NpcRoute`: time-windowed
+    patrol legs; the director walks the active leg by the world clock (the
+    bon dancer circles the beach circle at dusk, the leaf watcher loops the
+    temple path in autumn). Content validator now checks route points stay
+    in-cell and windows don't overlap.
+  - **Snow particles (spec §41)** — soft drifting flakes replace the rain
+    streaks when the weather is snow.
+  - **Quest-log category filters (spec §21)** — chips for All types plus
+    every category that has quests (Exploration, Social, …).
+  - **Debug teleport (spec §121)** — the F3 overlay can teleport the player
+    to any discovered location instantly.
+  - New tests: `RoutesSeasonalAudioTest` (chained-route walking and
+    despawn, autumn gating, season→audio mapping, summer/autumn quest data,
+    teleport, category coverage).
+
+### Fixed
+- **`id:` search filter was silently broken** — the Browse "Review this card"
+  action built a query with `id:<cardId>` but the search engine had no `id`
+  field, so the query fell back to a plain-text token that never matched.
+  Added `SearchField.Id` (+ `id` field pattern and evaluation); Browse review,
+  the new Library "Study these N" action and the `id:` search suggestion now
+  all work.
+- **Kaiteyo Game — vertical slice** (`desktop/game/`, reachable as the **Game**
+  workspace destination): a real, data-driven Japanese-learning world — a dense
+  seaside town (Hamanaka) with a station, shopping street, beach and aquarium,
+  all carrying Japanese in the environment. Engine core with fixed-timestep
+  loop, scenes, entities and spatial hash; `InputAction` abstraction with
+  rebinding (gamepad/touch interfaces architected); TPP/FPP camera rig with
+  settings; tile-grid world with regions→districts→cells→objects/locations/
+  stations; interaction prompts; NPCs with schedules and relationships;
+  dialogue with JP/reading/translation + learning targets and effects;
+  quest dependency graph with typed objectives and rewards; knowledge graph
+  connected to Kaiteyo via `GameBridge`/`KaiteyoBridge` (discover → mine to
+  the real card pool → stats); photography with subject tagging + album;
+  collections; time/weather; versioned save system with autosave;
+  content validator + debug tools; tests for quest graph, core logic and a
+  full session. Content is 100% JSON (`resources/game/`) — new regions,
+  quests and vocabulary need no engine changes. Docs under `docs/game/`
+  (ARCHITECTURE, ENGINE_DECISION, WORLD, VERTICAL_SLICE, ROADMAP, TODO).
+  Honest status: engine/world/learning/quest/save IMPLEMENTED for the slice;
+  3D rendering, controller/touch wiring and story UI PLANNED — see
+  `docs/game/VERTICAL_SLICE.md`.
+
+### Fixed
+- **History screen no longer fabricates fake activity.** When the real history was
+  empty, `HistoryFullScreen` fell back to 50 generated entries with random
+  timestamps/descriptions; it now shows the real empty state (Library → Manage →
+  History).
+- **Removed 12 dead screens/models from the core deck-features folder** (the
+  achievement subsystem — `AchievementSystem`/`AchievementManager`/
+  `AchievementChecks`/`AchievementDefs_*` — plus `DeckBrowserEnhanced`,
+  `DeckManagerEnhanced`, `NoteEditorEnhanced`, `UndoSystem`), trimmed
+  `DeckManager.kt` to its live `KaiteyoDeck`/`DeckFilters` models (dropping the
+  unreferenced mock-data `DeckManager()` screen and dead Bulk/Smart models), and
+  removed the dangling `DeckFeaturesHub` import from `MainNavigation.kt`. Every
+  deleted symbol was verified unreferenced repo-wide; all screens the routes
+  actually compose (Card browser, Deck browser, Bulk actions, History, Note
+  editor, Anki operations, Tag/Flag managers, Search, Import/Export, Keyboard
+  shortcuts) are confirmed live and untouched.
+- **Backup systems unified — the Backup & Restore manager now uses the real
+  backup engine.** Creating and restoring launch the real file-based flow
+  (platform file picker + `BackupManager` with DB-version-checked restore); the
+  JVM/Android/iOS backup screens record real filename + size into the backup
+  history; the fake metadata-only `recordBackup`/`recordRestore`/`recordVerify`
+  paths and the fake Verify menu item were removed; the Restore, Settings and
+  Schedule tabs are now honest (no dead buttons, no "auto-backup before restore"
+  claims, automatic scheduling clearly marked as not yet active).
+- **Command palette "Export active theme JSON" actually exports** — the command
+  previously showed a success toast without copying anything; it now serializes the
+  active theme via `ThemeManager.exportJson` and writes the JSON to the system
+  clipboard before confirming (ghost-control fix from the UI/UX pass).
+
 ### Changed
 - **Documentation restructured** — the repository documentation was reorganized into a
   professional, navigable structure (`docs/` with topic areas: architecture, data,

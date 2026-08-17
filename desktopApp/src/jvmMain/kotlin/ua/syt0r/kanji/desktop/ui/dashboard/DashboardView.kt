@@ -3,6 +3,7 @@ package ua.syt0r.kanji.desktop.ui.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -24,10 +25,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -72,10 +76,11 @@ import ua.syt0r.kanji.desktop.engine.stats.GoalsEngine
 import ua.syt0r.kanji.desktop.engine.stats.HeatmapEngine
 import ua.syt0r.kanji.desktop.engine.stats.KnowledgeProfileEngine
 import ua.syt0r.kanji.desktop.engine.stats.LearningCurveEngine
-import ua.syt0r.kanji.desktop.engine.stats.HeatmapCell
 import ua.syt0r.kanji.desktop.engine.stats.WeakSpotEngine
+import ua.syt0r.kanji.desktop.ui.stats.HeatmapPanel
 import ua.syt0r.kanji.desktop.model.CollectionDef
 import ua.syt0r.kanji.desktop.model.CollectionKind
+import ua.syt0r.kanji.desktop.model.DeckDef
 import ua.syt0r.kanji.desktop.model.SrsStatus
 import ua.syt0r.kanji.desktop.model.StudyMode
 import kotlinx.datetime.Clock
@@ -102,57 +107,24 @@ fun DashboardView(state: AppState) {
             .padding(DsSpacing.Xl),
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
     ) {
-        // Hero: continue studying (deck with the most due/new work) or start review
-        val continueDeck = remember(state.library.revision, state.cards.size) {
-            state.library.allDecks()
-                .map { deck -> deck to state.library.deckStats(deck, state.cards.toList()) }
-                .filter { it.second.anyDue + it.second.anyNew > 0 }
-                .maxByOrNull { it.second.anyDue + it.second.anyNew }
-                ?.first
-        }
-        DsCard(elevated = true) {
-            Row(
-                modifier = Modifier.padding(DsSpacing.Xl),
-                verticalAlignment = Alignment.CenterVertically
+        // Hero: continue the single most likely next action — the deck with the
+        // most due/new work, or a recently studied deck, a saved search, a
+        // collection, or plain review. A brand-new library (no cards, no decks)
+        // gets a welcome hero instead of a dead dashboard — every action is real.
+        val isFreshStart = cards.isEmpty() && state.library.allDecks().isEmpty()
+        if (isFreshStart) {
+            WelcomeHero(state)
+        } else {
+            val continueOptions = remember(
+                state.library.revision,
+                state.cards.size,
+                state.summaries.size,
+                state.collections.collections,
+                state.filterStore.all().size
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = if (continueDeck != null) "Continue \"${continueDeck.name}\"" else "Ready to study?",
-                        color = sc.textPrimary,
-                        fontSize = DsType.Heading,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.height(DsSpacing.Xs))
-                    Text(
-                        text = if (continueDeck != null) {
-                            val s = state.library.deckStats(continueDeck, state.cards.toList())
-                            "${s.anyDue} due · ${s.anyNew} new in this deck · ${state.dueCount()} cards due across your library"
-                        } else {
-                            "${state.dueCount()} cards due now · ${state.newCount()} new cards available"
-                        },
-                        color = sc.textMuted,
-                        fontSize = DsType.Body
-                    )
-                }
-                if (continueDeck != null) {
-                    DsButton(
-                        text = "Continue",
-                        icon = Icons.Default.PlayArrow,
-                        onClick = {
-                            val mode = StudyMode.forKind(continueDeck.kind).firstOrNull()
-                            if (mode == StudyMode.Writing) state.startLibraryWriting(continueDeck.id)
-                            else if (mode != null) state.startLibraryStudy(continueDeck.id, mode)
-                            else state.startReview()
-                        }
-                    )
-                } else {
-                    DsButton(
-                        text = "Start Review",
-                        icon = Icons.Default.PlayArrow,
-                        onClick = { state.startReview() }
-                    )
-                }
+                buildContinueOptions(state)
             }
+            ContinueHero(state, continueOptions)
         }
 
         // Study target — the user's configured daily review goal, live.
@@ -482,13 +454,13 @@ private fun HeatmapCard(state: AppState, modifier: Modifier = Modifier) {
         Column(Modifier.padding(DsSpacing.Lg)) {
             DsSectionHeader(
                 title = "Activity Heatmap",
-                subtitle = "${HeatmapEngine.currentStreak(state.summaries)} day streak",
-                action = {
-                    DsBadge(text = "last 52 weeks")
-                }
+                subtitle = "${HeatmapEngine.currentStreak(state.summaries)} day streak"
             )
-            Spacer(Modifier.height(DsSpacing.Lg))
-            HeatmapChart(state.summaries)
+            Spacer(Modifier.height(DsSpacing.Md))
+            // The full interactive heatmap: rolling 52 weeks plus per-year
+            // calendars with a smooth push transition, hover tooltips and
+            // click-through day details (shared with the Statistics view).
+            HeatmapPanel(state, state.summaries)
         }
     }
 }
@@ -1512,36 +1484,211 @@ private fun ImmersionStat(
 }
 
 // ============================================
-// HEATMAP CHART
+// CONTINUE HERO
+// The single most-likely next action plus up to two
+// alternatives, derived from real state: decks with
+// work, recently studied decks, saved searches,
+// collections, and review. Never a random pick.
 // ============================================
 
-@Composable
-private fun HeatmapChart(summaries: List<ua.syt0r.kanji.desktop.model.StudyDaySummary>) {
-    val sc = surfaceColors()
-    val ac = accent()
-    val months = HeatmapEngine.build(summaries)
+private sealed interface ContinueOption {
+    val title: String
+    val chipLabel: String
+    val detail: String
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val buttonLabel: String
+    fun open(state: AppState)
+}
 
-    Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-        months.forEach { month ->
-            Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = month.label,
-                    color = sc.textMuted,
-                    fontSize = DsType.Caption
+private class ContinueDeck(
+    val deck: DeckDef,
+    val due: Int,
+    val newCount: Int
+) : ContinueOption {
+    override val title = "Continue \"${deck.name}\""
+    override val chipLabel = deck.name
+    override val detail = "$due due · $newCount new in this deck"
+    override val icon = Icons.Default.PlayArrow
+    override val buttonLabel = "Continue"
+    override fun open(state: AppState) {
+        val mode = StudyMode.forKind(deck.kind).firstOrNull()
+        if (mode == StudyMode.Writing) state.startLibraryWriting(deck.id)
+        else if (mode != null) state.startLibraryStudy(deck.id, mode)
+        else state.startReview()
+    }
+}
+
+private class ContinueReview(val due: Int, val newCount: Int) : ContinueOption {
+    override val title = "Ready to study?"
+    override val chipLabel = "Review"
+    override val detail = "$due cards due now · $newCount new cards available"
+    override val icon = Icons.Default.PlayArrow
+    override val buttonLabel = "Start Review"
+    override fun open(state: AppState) = state.startReview()
+}
+
+private class ContinueSearch(val name: String, val query: String) : ContinueOption {
+    override val title = "Continue search \"${name.trim().take(40)}\""
+    override val chipLabel = "Search: ${name.trim().take(16)}"
+    override val detail = "Saved search · ${query.trim().take(48)}"
+    override val icon = Icons.Default.Search
+    override val buttonLabel = "Open"
+    override fun open(state: AppState) {
+        state.browserQuery = query
+        state.currentView = WorkspaceView.Browser
+    }
+}
+
+private class ContinueCollection(
+    val def: CollectionDef,
+    val cardCount: Int
+) : ContinueOption {
+    override val title = "Continue \"${def.name}\""
+    override val chipLabel = def.name
+    override val detail = "$cardCount cards in this collection"
+    override val icon = Icons.Default.Folder
+    override val buttonLabel = "Open"
+    override fun open(state: AppState) {
+        state.pendingCollectionId = def.id
+        state.currentView = WorkspaceView.Library
+    }
+}
+
+private data object ContinueDictionary : ContinueOption {
+    override val title = "Explore the dictionary"
+    override val chipLabel = "Dictionary"
+    override val detail = "Look up new words and mine them into your library"
+    override val icon = Icons.Default.MenuBook
+    override val buttonLabel = "Open"
+    override fun open(state: AppState) {
+        state.currentView = WorkspaceView.Dictionary
+    }
+}
+
+/**
+ * Rank continue candidates from real state. The first entry is the primary
+ * hero action; the rest become compact alternatives. Priority: deck with
+ * due/new work → recently studied deck → saved search → collection → review
+ * → dictionary exploration.
+ */
+private fun buildContinueOptions(state: AppState): List<ContinueOption> {
+    val cards = state.cards.toList()
+    val decks = state.library.allDecks().filter { !it.archived }
+    val options = mutableListOf<ContinueOption>()
+
+    fun addIfAbsent(option: ContinueOption) {
+        if (options.none { it.title == option.title }) options.add(option)
+    }
+
+    // 1. Deck with the most due/new work.
+    decks
+        .map { deck -> deck to state.library.deckStats(deck, cards) }
+        .filter { it.second.anyDue + it.second.anyNew > 0 }
+        .maxByOrNull { it.second.anyDue + it.second.anyNew }
+        ?.let { (deck, s) ->
+            addIfAbsent(
+                ContinueDeck(
+                    deck = deck,
+                    due = s.anyDue,
+                    newCount = s.anyNew
                 )
-                month.weeks.forEach { week ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        week.forEach { cell ->
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(heatColor(cell, sc, ac))
-                            )
-                        }
+            )
+        }
+
+    // 2. Recently studied deck (the deck of the most recently reviewed card).
+    if (options.size < 3) {
+        val studiedDeck = state.library.recentlyStudied
+            .firstNotNullOfOrNull { cardId -> cards.firstOrNull { it.id == cardId }?.deckId }
+            ?.let { id -> decks.firstOrNull { it.id == id } }
+        if (studiedDeck != null) {
+            val s = state.library.deckStats(studiedDeck, cards)
+            addIfAbsent(ContinueDeck(studiedDeck, s.anyDue, s.anyNew))
+        }
+    }
+
+    // 3. Saved search (pinned/top-use first).
+    if (options.size < 3) {
+        state.filterStore.all().firstOrNull { it.query.isNotBlank() }?.let {
+            addIfAbsent(ContinueSearch(it.name, it.query))
+        }
+    }
+
+    // 4. Collection with cards.
+    if (options.size < 3) {
+        state.collections.collections
+            .filter { !it.archived }
+            .map { def -> def to state.collections.resolveCards(def, cards, state.library) }
+            .firstOrNull { it.second.isNotEmpty() }
+            ?.let { (def, resolved) -> addIfAbsent(ContinueCollection(def, resolved.size)) }
+    }
+
+    // 5. Review / dictionary fallbacks.
+    if (options.isEmpty()) {
+        if (cards.isNotEmpty()) addIfAbsent(ContinueReview(state.dueCount(), state.newCount()))
+        else addIfAbsent(ContinueDictionary)
+    }
+
+    return options.take(3)
+}
+
+@Composable
+private fun ContinueHero(state: AppState, options: List<ContinueOption>) {
+    val sc = surfaceColors()
+    val primary = options.first()
+
+    DsCard(elevated = true) {
+        Column(
+            modifier = Modifier.padding(DsSpacing.Xl),
+            verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = primary.title,
+                        color = sc.textPrimary,
+                        fontSize = DsType.Heading,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = primary.detail,
+                        color = sc.textMuted,
+                        fontSize = DsType.Body
+                    )
+                }
+                DsButton(
+                    text = primary.buttonLabel,
+                    icon = primary.icon,
+                    onClick = { primary.open(state) }
+                )
+            }
+            if (options.size > 1) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(sc.border.copy(alpha = 0.3f))
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                ) {
+                    Text(
+                        text = "Also continue",
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption,
+                        fontWeight = FontWeight.Medium
+                    )
+                    options.drop(1).forEach { option ->
+                        DsButton(
+                            text = option.chipLabel,
+                            icon = option.icon,
+                            kind = DsButtonKind.Secondary,
+                            compact = true,
+                            onClick = { option.open(state) }
+                        )
                     }
                 }
             }
@@ -1549,15 +1696,69 @@ private fun HeatmapChart(summaries: List<ua.syt0r.kanji.desktop.model.StudyDaySu
     }
 }
 
+// ============================================
+// WELCOME HERO — shown only for a brand-new library
+// (no cards and no decks). Every action is real:
+// Library, Import/Export, Dictionary and Browse all
+// open directly. Once the user has any content the
+// standard continue-studying hero takes over.
+// ============================================
+
 @Composable
-private fun heatColor(cell: HeatmapCell?, sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme): Color {
-    if (cell == null) return sc.surfaceInteractive.copy(alpha = 0.35f)
-    return when (cell.level) {
-        0 -> sc.surfaceInteractive
-        1 -> ac.primary.copy(alpha = 0.25f)
-        2 -> ac.primary.copy(alpha = 0.45f)
-        3 -> ac.primary.copy(alpha = 0.7f)
-        else -> ac.primary
+private fun WelcomeHero(state: AppState) {
+    val sc = surfaceColors()
+    DsCard(elevated = true) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(DsSpacing.Xl),
+            verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+        ) {
+            Text(
+                text = "Welcome to Kaiteyo",
+                color = sc.textPrimary,
+                fontSize = DsType.Heading,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Your Japanese study workspace is ready. Create or import a deck to begin — then explore the dictionary and mine your first cards.",
+                color = sc.textMuted,
+                fontSize = DsType.Body
+            )
+            Spacer(Modifier.height(DsSpacing.Sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+            ) {
+                DsButton(
+                    text = "Create a deck",
+                    icon = Icons.Default.Add,
+                    modifier = Modifier.weight(1f),
+                    onClick = { state.currentView = WorkspaceView.Library }
+                )
+                DsButton(
+                    text = "Import content",
+                    icon = Icons.Default.FileDownload,
+                    kind = DsButtonKind.Secondary,
+                    modifier = Modifier.weight(1f),
+                    onClick = { state.currentView = WorkspaceView.Transfer }
+                )
+                DsButton(
+                    text = "Explore dictionary",
+                    icon = Icons.Default.MenuBook,
+                    kind = DsButtonKind.Secondary,
+                    modifier = Modifier.weight(1f),
+                    onClick = { state.currentView = WorkspaceView.Dictionary }
+                )
+                DsButton(
+                    text = "Try Browse",
+                    icon = Icons.Default.GridView,
+                    kind = DsButtonKind.Secondary,
+                    modifier = Modifier.weight(1f),
+                    onClick = { state.currentView = WorkspaceView.Browser }
+                )
+            }
+        }
     }
 }
 

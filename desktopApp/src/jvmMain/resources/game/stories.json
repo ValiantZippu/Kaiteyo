@@ -1,0 +1,177 @@
+{
+ "stories": [
+  {
+   "id": "summer-postcard",
+   "title": "A Summer Postcard",
+   "titleJp": "夏の絵葉書",
+   "description": "A short summer story about arriving in Hamanaka and sending a postcard home.",
+   "chapters": [
+    {
+     "id": "ch-arrival",
+     "title": "Arrival",
+     "titleJp": "到着",
+     "scenes": [
+      {
+       "id": "sc-arrival",
+       "dialogueId": "story-arrival",
+       "locationId": "station",
+       "questTrigger": null,
+       "grants": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kamakura-summer",
+   "title": "A Kamakura Summer",
+   "titleJp": "鎌倉の夏",
+   "description": "The train carries you on to Kamakura — an old town of temples, shopping streets and a wide beach.",
+   "chapters": [
+    {
+     "id": "ch-kamakura-arrival",
+     "title": "Arrival",
+     "titleJp": "到着",
+     "scenes": [
+      {
+       "id": "sc-kamakura-arrival",
+       "dialogueId": "story-kamakura",
+       "locationId": "kamakura-station",
+       "questTrigger": "kamakura-arrival",
+       "grants": [
+        "kamakura"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ch-komachi",
+     "title": "Komachi-dōri",
+     "titleJp": "小町通り",
+     "scenes": [
+      {
+       "id": "sc-komachi",
+       "dialogueId": "kamakura-shop",
+       "locationId": "komachi",
+       "questTrigger": "komachi-walk",
+       "grants": [
+        "komachi"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ch-shrine",
+     "title": "The Great Shrine",
+     "titleJp": "八幡宮",
+     "scenes": [
+      {
+       "id": "sc-shrine",
+       "dialogueId": "kamakura-shrine",
+       "locationId": "hachimangu",
+       "questTrigger": "hachimangu-visit",
+       "grants": [
+        "torii",
+        "omikuji"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ch-beach",
+     "title": "Yuigahama",
+     "titleJp": "由比ヶ浜",
+     "scenes": [
+      {
+       "id": "sc-beach",
+       "dialogueId": "kamakura-beach",
+       "locationId": "yuigahama",
+       "questTrigger": "yuigahama-visit",
+       "grants": [
+        "yuigahama"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "summer-festival",
+   "title": "The Summer Festival",
+   "titleJp": "夏祭り",
+   "description": "Dusk falls on Hamanaka and the festival grounds light up — lanterns, stalls, and fireworks over the bay.",
+   "chapters": [
+    {
+     "id": "ch-festival-evening",
+     "title": "Evening",
+     "titleJp": "夕方",
+     "scenes": [
+      {
+       "id": "sc-festival-evening",
+       "dialogueId": "story-festival-1",
+       "locationId": "festival-grounds",
+       "questTrigger": "festival-1",
+       "grants": [
+        "yoru"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ch-festival-stalls",
+     "title": "The Stalls",
+     "titleJp": "屋台",
+     "scenes": [
+      {
+       "id": "sc-festival-stalls",
+       "dialogueId": "story-festival-2",
+       "locationId": "festival-grounds",
+       "questTrigger": "festival-2",
+       "grants": [
+        "yatai"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ch-festival-fireworks",
+     "title": "Fireworks",
+     "titleJp": "花火",
+     "scenes": [
+      {
+       "id": "sc-festival-fireworks",
+       "dialogueId": "story-festival-3",
+       "locationId": "festival-grounds",
+       "questTrigger": "festival-3",
+       "grants": [
+        "hanabi"
+       ],
+       "options": [
+        {
+         "text": "Watch to the end",
+         "textJp": "さいごまではなびをみる",
+         "nextSceneId": "sc-festival-home",
+         "grants": [
+          "tsuki"
+         ],
+         "setFlag": "festival-finale"
+        },
+        {
+         "text": "Head home early",
+         "textJp": "そろそろかえる",
+         "setFlag": "festival-early"
+        }
+       ]
+      },
+      {
+       "id": "sc-festival-home",
+       "dialogueId": "festival-moon",
+       "locationId": "festival-grounds",
+       "grants": []
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

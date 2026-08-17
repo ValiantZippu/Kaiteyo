@@ -155,7 +155,9 @@ private data class ReviewSettingsData(
     val showAllFlags: Boolean = true,
     val fontSizeScale: Float = 1.0f,
     val cardPadding: Int = 16,
-    val backgroundColor: String = "#00000000"
+    val backgroundColor: String = "#00000000",
+    val smartActivityDetection: Boolean = true,
+    val inactivityThresholdMinutes: Int = 10
 )
 
 @Serializable
@@ -1272,15 +1274,10 @@ class DeckFeaturesController(
     }
 
     // ── Backups ──
-
-    suspend fun recordBackup(filename: String, size: Long, checksum: String, isAutomatic: Boolean, notes: String = "") {
-        cardDatabaseManager.recordBackup(filename, size, checksum, isAutomatic, notes)
-        loadBackups()
-        recordHistory(
-            KaiteyoHistoryAction.BACKUP,
-            if (isAutomatic) "Automatic backup created: $filename" else "Backup created: $filename"
-        )
-    }
+    // Backup creation/restoration goes through the real BackupManager flow
+    // (see the platform backup screens); this manager only lists, deletes and
+    // verifies metadata. Recorded metadata now comes from real backups, so
+    // there is no metadata-only fabrication here.
 
     suspend fun deleteBackup(id: Long) {
         val backup = backups.firstOrNull { it.id == id }
@@ -1534,16 +1531,6 @@ class DeckFeaturesController(
         }
     }
 
-    // ── Backup helpers ──
-
-    suspend fun recordRestore(backup: BackupMetadata) {
-        recordHistory(KaiteyoHistoryAction.RESTORE, "Restored backup '${backup.filename}'")
-    }
-
-    suspend fun recordVerify(backup: BackupMetadata) {
-        recordHistory(KaiteyoHistoryAction.BACKUP, "Verified backup '${backup.filename}'")
-    }
-
     // ── Helpers ──
 
     private fun newFsrsCard(): FsrsCard = FsrsCard(
@@ -1600,7 +1587,9 @@ class DeckFeaturesController(
             showAllFlags = settings.showAllFlags,
             fontSizeScale = settings.fontSizeScale,
             cardPadding = settings.cardPadding,
-            backgroundColor = settings.backgroundColor
+            backgroundColor = settings.backgroundColor,
+            smartActivityDetection = settings.smartActivityDetection,
+            inactivityThresholdMinutes = settings.inactivityThresholdMinutes
         )
         return historyJson.encodeToString(data)
     }
@@ -1638,7 +1627,9 @@ class DeckFeaturesController(
                 showAllFlags = data.showAllFlags,
                 fontSizeScale = data.fontSizeScale,
                 cardPadding = data.cardPadding,
-                backgroundColor = data.backgroundColor
+                backgroundColor = data.backgroundColor,
+                smartActivityDetection = data.smartActivityDetection,
+                inactivityThresholdMinutes = data.inactivityThresholdMinutes
             )
         }.getOrDefault(ReviewSettingsV2())
     }

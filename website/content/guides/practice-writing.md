@@ -40,8 +40,8 @@ Real handwriting doesn't match the reference pixel-perfectly — neither should 
 
 Writing attempts and writing accuracy appear in your statistics. If you're practicing regularly, you'll see writing accuracy improve deck by deck — and it's honest feedback on the skill you're building, separate from reading recognition.
 
-## Inside the web trial
+## The full stroke set
 
-The [web trial](/try/) includes a working writing board with a taste of the stroke data — trace a few characters and feel the grading loop before you install. The full app carries the complete KanjiVG-derived stroke set.
+The full app carries the complete KanjiVG-derived stroke set — every character with ordered stroke paths, per-stroke grading, and the same writing practice loop described here.
 
 See the [reading vs writing kanji](/wiki/reading-vs-writing/) article for the deeper why.

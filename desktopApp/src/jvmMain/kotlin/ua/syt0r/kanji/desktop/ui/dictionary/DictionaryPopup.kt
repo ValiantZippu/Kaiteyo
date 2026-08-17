@@ -3,6 +3,7 @@ package ua.syt0r.kanji.desktop.ui.dictionary
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import ua.syt0r.kanji.desktop.engine.dictionary.PitchAccent
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
@@ -197,14 +200,23 @@ fun DictionaryMatchRow(
             Spacer(Modifier.height(DsSpacing.Sm))
             val pitch = entry.readings.flatMap { it.pitchAccents }
             if (pitch.isNotEmpty()) {
-                Text(
-                    "Pitch: " + pitch.joinToString(", ") { p ->
-                        val down = p.downstep?.let { " (downstep $it)" } ?: ""
-                        "pos${p.position}$down"
-                    },
-                    color = sc.textMuted,
-                    fontSize = DsType.Caption
-                )
+                // Visual notation: color each mora by its high/low pitch using
+                // the standard downstep convention, when the reading exposes a
+                // mora breakdown. Falls back to the plain text form otherwise.
+                val reading = entry.readings.firstOrNull { it.pitchAccents.isNotEmpty() }
+                val moras = reading?.elements?.takeIf { it.isNotEmpty() }
+                if (moras != null && pitch.isNotEmpty()) {
+                    PitchAccentGraph(moras, pitch)
+                } else {
+                    Text(
+                        "Pitch: " + pitch.joinToString(", ") { p ->
+                            val down = p.downstep?.let { " (downstep $it)" } ?: ""
+                            "pos${p.position}$down"
+                        },
+                        color = sc.textMuted,
+                        fontSize = DsType.Caption
+                    )
+                }
             }
             entry.kanjiSpellings.firstOrNull()?.let { k ->
                 Text(
@@ -239,6 +251,68 @@ fun DictionaryMatchRow(
                 },
                 contentDescription = if (bookmarked) "Remove favorite" else "Add favorite",
                 size = 22.dp
+            )
+        }
+    }
+}
+
+/**
+ * Visual pitch notation: each mora of the reading colored by its high/low
+ * pitch under the standard downstep convention.
+ *
+ * Convention (position N = the pitch drops after mora N, 0 = flat/heiban):
+ *   - N = 0:      first mora low, rest high        (平板)
+ *   - N = 1:      first mora high, rest low        (頭高)
+ *   - 1 < N < len: first low, high until N, low    (中高)
+ *   - N = len:    first low, rest high, drop off   (尾高)
+ *
+ * Only rendered when the dictionary actually provides a mora breakdown and
+ * accent position — never fabricated for readings without data.
+ */
+@Composable
+private fun PitchAccentGraph(moras: List<String>, accents: List<PitchAccent>) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val accent = accents.first()
+    val n = moras.size
+
+    fun isHigh(i: Int): Boolean = when {
+        accent.position <= 0 -> i > 0                          // heiban
+        accent.position == 1 -> i == 0                         // atamadaka
+        accent.position >= n -> i > 0                          // odaka
+        else -> i in 1 until accent.position                  // nakadaka
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(1.dp)
+    ) {
+        moras.forEachIndexed { i, mora ->
+            Text(
+                mora,
+                color = if (isHigh(i)) ac.primary else sc.textSecondary,
+                fontSize = 14.sp,
+                fontWeight = if (isHigh(i)) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+        Spacer(Modifier.width(DsSpacing.Sm))
+        // The accent type label, derived from the position against the mora
+        // count — same rules as the coloring above.
+        Text(
+            when {
+                accent.position <= 0 -> "平板"
+                accent.position == 1 -> "頭高"
+                accent.position >= n -> "尾高"
+                else -> "中高"
+            },
+            color = sc.textMuted,
+            fontSize = DsType.Caption
+        )
+        accent.downstep?.let { ds ->
+            Text(
+                "· downstep $ds",
+                color = sc.textMuted,
+                fontSize = DsType.Caption
             )
         }
     }

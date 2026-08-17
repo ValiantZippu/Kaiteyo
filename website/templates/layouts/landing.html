@@ -1,5 +1,5 @@
 {# Landing page — storytelling product page. Hero with product mockup,
-   Try Kaiteyo CTA, ecosystem diagram, then narrative sections from index.md. #}
+   Download CTA, ecosystem diagram, then narrative sections from index.md. #}
 {% extends "base.html" %}
 
 {% block title %}{{ site.name }} — A complete Japanese learning environment{% endblock %}
@@ -33,13 +33,13 @@
   </p>
 
   <div class="hero-actions">
-    <a class="btn btn-primary btn-lg" href="{{ basePath }}try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo in your browser
-    </a>
-    <a class="btn btn-ghost btn-lg" href="{{ basePath }}download/">
+    <a class="btn btn-primary btn-lg" href="{{ basePath }}download/">
       <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
       Download for free
+    </a>
+    <a class="btn btn-ghost btn-lg" href="{{ basePath }}features/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+      See what it does
     </a>
   </div>
 
@@ -59,18 +59,19 @@
       <span class="app-frame-dot" aria-hidden="true"></span>
       <span class="app-frame-dot" aria-hidden="true"></span>
       <span class="app-frame-dot" aria-hidden="true"></span>
-      <span class="app-frame-path">{{ site.url | replace("https://", "") }}/try/</span>
+      <span class="app-frame-path">{{ site.url | replace("https://", "") }}/download/</span>
     </div>
     <div class="app-frame-body">
       <div class="app-frame-sidebar">
         <div class="app-frame-brand">書<span class="app-frame-brand-sub">KAITEYO</span></div>
         <div class="app-frame-nav-item is-active">Home</div>
+        <div class="app-frame-nav-item">Library</div>
         <div class="app-frame-nav-item">Browse</div>
-        <div class="app-frame-nav-item">Study <span class="app-frame-badge">12</span></div>
-        <div class="app-frame-nav-item">Writing</div>
-        <div class="app-frame-nav-item">Progress</div>
+        <div class="app-frame-nav-item">Stats</div>
+        <div class="app-frame-nav-item">Media</div>
+        <div class="app-frame-nav-item">World</div>
         <div class="app-frame-nav-spacer"></div>
-        <div class="app-frame-nav-item is-muted">Theme</div>
+        <div class="app-frame-nav-item is-muted">Settings</div>
       </div>
       <div class="app-frame-main">
         <div class="app-frame-kicker">TODAY</div>
@@ -151,13 +152,13 @@
     and see progress — all with sample data that never leaves your browser.
   </p>
   <div class="hero-actions">
-    <a class="btn btn-primary btn-lg" href="{{ basePath }}try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo
-    </a>
-    <a class="btn btn-ghost btn-lg" href="{{ basePath }}download/">
+    <a class="btn btn-primary btn-lg" href="{{ basePath }}download/">
       <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
-      Get the full app
+      Download Kaiteyo
+    </a>
+    <a class="btn btn-ghost btn-lg" href="{{ basePath }}docs/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg>
+      Read the docs
     </a>
   </div>
 </section>

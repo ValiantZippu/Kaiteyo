@@ -15,13 +15,17 @@ installer/
 │   ├── update-manifest.schema.json
 │   └── artifact-manifest.schema.json
 ├── assets/                  ← brand artwork + generators (SVG sources, no binaries)
-├── windows/                 ← Inno Setup 6 premium installer + portable build
+├── windows/                 ← Inno Setup 6 premium installer + portable build + package-manager manifests
 ├── macos/                   ← styled DMG builder + notarization pipeline
-├── linux/                   ← AppImage, deb, rpm, Flatpak, Snap
+├── linux/                   ← AppImage, deb, rpm, Flatpak, Snap, Arch (PKGBUILD)
 ├── scripts/                 ← cross-platform helper scripts (staging, versions, updates)
 ├── templates/               ← release notes + update feed templates
 └── docs/                    ← ARCHITECTURE, BUILD, SIGNING, RELEASE, UPDATES, FIRST_RUN
 ```
+
+> Distribution-level docs (what each format is for, install/update/uninstall
+> behavior, package managers, Arch) live in `docs/distribution/`; the source
+> tree map is `docs/packaging/README.md`.
 
 ## Design principles
 

@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kaiteyo (書いてよ) — Development Guide — Kaiteyo</title>
-  <meta name="description" content="bash" />
+  <meta name="description" content="a different major version will fail)" />
   <meta name="generator" content="Kaiteyo website builder" />
 
   
@@ -18,7 +18,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Kaiteyo" />
   <meta property="og:title" content="Kaiteyo (書いてよ) — Development Guide — Kaiteyo" />
-  <meta property="og:description" content="bash" />
+  <meta property="og:description" content="a different major version will fail)" />
   <meta property="og:url" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/docs/development/developer_guide/" />
   <meta property="og:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
@@ -28,7 +28,7 @@
   <meta name="twitter:site" content="@KaiteyoApp" />
   
   <meta name="twitter:title" content="Kaiteyo (書いてよ) — Development Guide — Kaiteyo" />
-  <meta name="twitter:description" content="bash" />
+  <meta name="twitter:description" content="a different major version will fail)" />
   <meta name="twitter:image" content="https://valiantzippu.github.io/Kaiteyo/Kaiteyo/assets/images/og-cover.svg" />
 
   <!-- Icons -->
@@ -54,14 +54,14 @@
   </script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css" />
-  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/tokens.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/themes.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/base.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/layout.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/components.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/prose.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/animations.css?v=1786940608" />
+  <link rel="stylesheet" href="/Kaiteyo/assets/styles/utilities.css?v=1786940608" />
 
   <!-- Apply persisted theme before first paint (no flash of the wrong theme) -->
   <script>
@@ -357,15 +357,6 @@
         <ul class="nav-list">
           
           <li>
-            <a class="nav-item" href="/Kaiteyo/try/"
-               data-badge="Web">
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-              <span class="nav-label">Try Kaiteyo</span>
-              <span class="badge badge-muted nav-badge">Web</span>
-            </a>
-          </li>
-          
-          <li>
             <a class="nav-item" href="/Kaiteyo/download/"
                data-badge="v2.2.1">
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-download"/></svg>
@@ -474,8 +465,8 @@
           <li>
             <a class="nav-item" href="/Kaiteyo/roadmap/"
                >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
-              <span class="nav-label">Roadmap</span>
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Product Roadmap</span>
               
             </a>
           </li>
@@ -493,7 +484,86 @@
       </div>
       
       <div class="nav-group">
-        <div class="nav-group-title">Project</div>
+        <div class="nav-group-title">Command Center</div>
+        <ul class="nav-list">
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-layers"/></svg>
+              <span class="nav-label">Project Status</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/kanban/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-grid"/></svg>
+              <span class="nav-label">Kanban</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/roadmap/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-milestone"/></svg>
+              <span class="nav-label">Roadmap</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/whiteboard/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-compass"/></svg>
+              <span class="nav-label">Whiteboard</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/suggestions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+              <span class="nav-label">Suggestions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/decisions/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-scale"/></svg>
+              <span class="nav-label">Architecture Decisions</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/activity/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-history"/></svg>
+              <span class="nav-label">Activity</span>
+              
+            </a>
+          </li>
+          
+          <li>
+            <a class="nav-item" href="/Kaiteyo/project/contributing/"
+               >
+              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
+              <span class="nav-label">Contributing</span>
+              
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+      
+      <div class="nav-group">
+        <div class="nav-group-title">Community</div>
         <ul class="nav-list">
           
           <li>
@@ -537,15 +607,6 @@
                >
               <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-folder"/></svg>
               <span class="nav-label">Data &amp; Attribution</span>
-              
-            </a>
-          </li>
-          
-          <li>
-            <a class="nav-item" href="/Kaiteyo/contributing/"
-               >
-              <svg class="icon nav-icon" aria-hidden="true"><use href="#icon-contribute"/></svg>
-              <span class="nav-label">Contributing</span>
               
             </a>
           </li>
@@ -603,13 +664,9 @@
     <div class="nav-divider"></div>
 
     <div class="nav-footer">
-      <a class="btn btn-primary nav-cta" href="/Kaiteyo/try/">
-        <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-        <span class="nav-cta-label">Try Kaiteyo</span>
-      </a>
-      <a class="btn btn-ghost btn-sm nav-cta" href="/Kaiteyo/download/">
+      <a class="btn btn-primary nav-cta" href="/Kaiteyo/download/">
         <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
-        <span class="nav-cta-label">Download</span>
+        <span class="nav-cta-label">Download Kaiteyo</span>
       </a>
       <div class="flex gap-2 items-center">
         <button class="btn-icon" type="button" data-nav-collapse-toggle
@@ -649,9 +706,9 @@
       Search
       <kbd>Ctrl K</kbd>
     </button>
-    <a class="btn btn-primary btn-sm" href="/Kaiteyo/try/">
-      <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-      Try Kaiteyo
+    <a class="btn btn-primary btn-sm" href="/Kaiteyo/download/">
+      <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+      Download
     </a>
     <button class="btn-icon" type="button" data-open-theme data-tooltip="Theme" aria-label="Open theme settings">
       <svg class="icon" aria-hidden="true"><use href="#icon-sun"/></svg>
@@ -775,7 +832,7 @@
         
         <li>
           <a class="docs-link"
-             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System Specification</a>
+             href="/Kaiteyo/docs/features/themes/">Kaiteyo — Theme System &amp; Theme Studio</a>
         </li>
         
         <li>
@@ -789,7 +846,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">7</span>
+        <span class="docs-count">28</span>
       </summary>
       <ul class="docs-list">
         
@@ -801,6 +858,61 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/architecture/data_platform/">Japanese Language Data Platform</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/node_architecture/">Kaiteyo Node Architecture — Master Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/database/">Kaiteyo Architecture — Database Specification &amp; Migration Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/dictionary/">Kaiteyo Architecture — Dictionary Engine Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/language-model/">Kaiteyo Architecture — Language Data Model &amp; Knowledge Graph</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/study-engine/">Kaiteyo Architecture — Study Engine &amp; Card Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/statistics/">Kaiteyo Architecture — Statistics &amp; Event Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/exams/">Kaiteyo Architecture — Exam System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/media/">Kaiteyo Architecture — Media, Playback &amp; Subtitle Engine</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/mining/">Kaiteyo Architecture — Mining Workflow Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/localization/">Kaiteyo Architecture — Localization Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/browser/">Kaiteyo Architecture — Embedded Browser (Planned)</a>
         </li>
         
         <li>
@@ -825,6 +937,56 @@
         
         <li>
           <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/performance/">Kaiteyo Architecture — Performance Strategy</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/toolchain/">Kaiteyo Architecture — Toolchain &amp; Development Environment</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/content/">Kaiteyo Architecture — Content System &amp; Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/backup/">Kaiteyo Architecture — Backup, Import &amp; Export</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/accessibility/">Kaiteyo Architecture — Accessibility Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/ci-cd/">Kaiteyo Architecture — CI/CD &amp; Release Pipeline</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/assets/">Kaiteyo Architecture — Asset System Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/integrations/">Kaiteyo Architecture — Integrations Specification</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/journey/">Kaiteyo Architecture — Journey, World &amp; Game Runtime Plan</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/architecture/pitch-frequency/">Pitch Accent &amp; Frequency Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
              href="/Kaiteyo/docs/architecture/readme/">🔌 api — Kaiteyo API Documentation</a>
         </li>
         
@@ -834,7 +996,7 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
-        <span class="docs-count">11</span>
+        <span class="docs-count">19</span>
       </summary>
       <ul class="docs-list">
         
@@ -891,6 +1053,46 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/decisions/0011-plugin-security-first/">ADR-0011: Plugin Runtime Loading Deferred (Security First)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0012-engineering-standards/">ADR-0012: Professional Engineering Standards</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0013-node-architecture/">ADR-0013: Node-Based Architecture (Target)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0014-journey-target-architecture/">ADR-0014: Journey as Target Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0015-content-authoring/">ADR-0015: Data-Driven Content Authoring</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0016-event-driven-user-knowledge/">ADR-0016: Event-Driven User Knowledge (Dimensioned, FSRS-Owned Scheduling)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0017-one-product-architecture/">ADR-0017: One Product — Resolve the Two Parallel Applications</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0018-game-engine-evaluation/">ADR-0018: Game Engine Evaluation (Decision Pending)</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/decisions/0019-website-command-center/">ADR-0019: Website as Project Command Center</a>
         </li>
         
       </ul>
@@ -1259,6 +1461,36 @@
     <details class="docs-section" >
       <summary class="docs-section-title">
         <span></span>
+        <span class="docs-count">4</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/readme/">Kaiteyo Website</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/architecture/">Website Architecture</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/data_model/">Website — Unified Project Data Model</a>
+        </li>
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/website/api/">Website — API Contracts (interactive layer)</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
         <span class="docs-count">2</span>
       </summary>
       <ul class="docs-list">
@@ -1271,6 +1503,21 @@
         <li>
           <a class="docs-link"
              href="/Kaiteyo/docs/contributing/development_setup/">Kaiteyo — Development Setup</a>
+        </li>
+        
+      </ul>
+    </details>
+    
+    <details class="docs-section" >
+      <summary class="docs-section-title">
+        <span></span>
+        <span class="docs-count">1</span>
+      </summary>
+      <ul class="docs-list">
+        
+        <li>
+          <a class="docs-link"
+             href="/Kaiteyo/docs/ai/ai_agent_guide/">AI Agent Guide</a>
         </li>
         
       </ul>
@@ -1347,7 +1594,7 @@
 
     <header style="margin-bottom: var(--space-8)">
       <h1>Kaiteyo (書いてよ) — Development Guide</h1>
-      <p style="font-size: var(--text-lg); color: var(--text-secondary)">bash</p>
+      <p style="font-size: var(--text-lg); color: var(--text-secondary)">a different major version will fail)</p>
       
       <a class="prose-edit-link" href="https://github.com/ValiantZippu/Kaiteyo/blob/develop/development/DEVELOPER_GUIDE.md" target="_blank" rel="noopener">
         <svg class="icon" aria-hidden="true"><use href="#icon-edit"/></svg>
@@ -1357,158 +1604,198 @@
     </header>
 
     <h1 id="kaiteyo-development-guide">Kaiteyo (書いてよ) — Development Guide</h1>
+<blockquote>
+<p>Grounded in the current build setup. The canonical command library is
+<code>COMMANDS.md</code>; the pinned versions and module list come from <code>settings.gradle.kts</code>,
+<code>gradle/libs.versions.toml</code>, <code>buildSrc/AppVersion.kt</code> and the module build files.</p>
+</blockquote>
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li><strong>Java 17+</strong> (JDK 17 recommended)</li>
+<li><strong>JDK 17</strong> (Temurin recommended; the build uses <code>jvmToolchain(17)</code> everywhere —
+  a different major version will fail)</li>
 <li><strong>Git</strong></li>
-<li><strong>Gradle</strong> (wrapper included, no manual install needed)</li>
-<li><strong>IntelliJ IDEA</strong> (recommended) or VS Code with Kotlin plugin</li>
-<li><strong>Android Studio</strong> (for Android builds)</li>
+<li><strong>Gradle wrapper</strong> (no manual install; <code>./gradlew</code> on macOS/Linux,
+  <code>.\gradlew.bat</code> on Windows)</li>
+<li><strong>IntelliJ IDEA</strong> (recommended) or <strong>Android Studio</strong> for Android work; VS Code
+  works for docs/web/scripts but Kotlin tooling is weaker</li>
+<li><strong>Android SDK</strong> only if building <code>:app</code> (see <code>DEVELOPMENT_SETUP.md</code>)</li>
 </ul>
-<h2 id="quick-start">Quick Start</h2>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1"># Clone the repository</span>
-git<span class="w"> </span>clone<span class="w"> </span>https://github.com/your-org/kaiteyo.git
-<span class="nb">cd</span><span class="w"> </span>kaiteyo
-
-<span class="c1"># Run the desktop application</span>
+<h2 id="modules">Modules</h2>
+<p>From <code>settings.gradle.kts</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:core</code></td>
+<td>All shared code (UI, domain, data) — the only module with iOS targets</td>
+</tr>
+<tr>
+<td><code>:desktopApp</code></td>
+<td>JVM desktop entry point + the desktop suite</td>
+</tr>
+<tr>
+<td><code>:app</code></td>
+<td>Android entry point (<code>googlePlay</code> / <code>fdroid</code> flavors)</td>
+</tr>
+<tr>
+<td><code>:iosApp</code></td>
+<td>iOS entry point (Swift project)</td>
+</tr>
+<tr>
+<td><code>:kjd</code></td>
+<td>Data platform (generates the bundled language DB, patch updates)</td>
+</tr>
+<tr>
+<td><code>:mediaGenerator</code></td>
+<td>JVM utility for media assets</td>
+</tr>
+</tbody>
+</table>
+<p>There is no <code>:website</code> Gradle module — the website has a Python build (<code>build.py</code>).</p>
+<h2 id="quick-start">Quick start</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1"># Run the desktop application (the daily loop)</span>
 ./gradlew<span class="w"> </span>:desktopApp:run
 
-<span class="c1"># Run Android application</span>
-./gradlew<span class="w"> </span>:app:installDebug
+<span class="c1"># Compile only (faster)</span>
+./gradlew<span class="w"> </span>:desktopApp:compileKotlinJvm
 
-<span class="c1"># Run tests</span>
-./gradlew<span class="w"> </span>:core:test
+<span class="c1"># Tests</span>
+./gradlew<span class="w"> </span>:core:allTests<span class="w">        </span><span class="c1"># shared engine (commonTest)</span>
+./gradlew<span class="w"> </span>:desktopApp:test<span class="w">      </span><span class="c1"># desktop suite (jvmTest)</span>
+./gradlew<span class="w"> </span>:kjd:test<span class="w">             </span><span class="c1"># data platform</span>
 </code></pre></div>
 
-<h2 id="project-setup">Project Setup</h2>
+<p>Add <code>-Duser.language=ja -Duser.country=JP</code> to <code>:desktopApp:run</code> for the Japanese UI
+locale.</p>
+<h2 id="project-setup">Project setup</h2>
 <h3 id="intellij-idea">IntelliJ IDEA</h3>
 <ol>
-<li>Open the project root directory</li>
-<li>IntelliJ will automatically detect the Gradle project</li>
-<li>Wait for indexing and dependency resolution to complete</li>
-<li>Create a run configuration for <code>:desktopApp:run</code></li>
+<li>Open the repository root; IntelliJ detects the Gradle project.</li>
+<li>Wait for indexing + dependency resolution (first import is slow).</li>
+<li>Use the Gradle tool window or terminal to run <code>:desktopApp:run</code>. No run
+   configurations ship in the repo (the stale <code>.run/</code> configs were removed).</li>
 </ol>
 <h3 id="vs-code">VS Code</h3>
 <ol>
-<li>Install the Kotlin extension</li>
-<li>Install the Gradle extension</li>
-<li>Open the project root directory</li>
-<li>Use the Gradle panel to run tasks</li>
+<li>Install the Kotlin + Gradle for Java extensions.</li>
+<li>Open the root; use the Gradle panel to run tasks.</li>
+<li>IntelliJ is preferred for Kotlin; VS Code is fine for docs, markdown, scripts.</li>
 </ol>
 <h2 id="building">Building</h2>
 <h3 id="desktop-jvm">Desktop (JVM)</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1"># Compile only</span>
-./gradlew<span class="w"> </span>:desktopApp:compileKotlinJvm
-
-<span class="c1"># Run</span>
-./gradlew<span class="w"> </span>:desktopApp:run
-
-<span class="c1"># Build distribution</span>
-./gradlew<span class="w"> </span>:desktopApp:packageDistributionForCurrentOS
-
-<span class="c1"># Build specific format</span>
-./gradlew<span class="w"> </span>:desktopApp:packageMsi
-./gradlew<span class="w"> </span>:desktopApp:packageDmg
-./gradlew<span class="w"> </span>:desktopApp:packageDeb
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>./gradlew<span class="w"> </span>:desktopApp:compileKotlinJvm<span class="w">     </span><span class="c1"># compile check</span>
+./gradlew<span class="w"> </span>:desktopApp:run<span class="w">                  </span><span class="c1"># run</span>
+./gradlew<span class="w"> </span>:desktopApp:packageDistributionForCurrentOS<span class="w">   </span><span class="c1"># CI packaging</span>
+./gradlew<span class="w"> </span>:desktopApp:packageMsi<span class="w">           </span><span class="c1"># Windows (run on Windows)</span>
+./gradlew<span class="w"> </span>:desktopApp:packageDmg<span class="w">           </span><span class="c1"># macOS (run on macOS)</span>
+./gradlew<span class="w"> </span>:desktopApp:packageDeb<span class="w">           </span><span class="c1"># Linux (run on Linux)</span>
 </code></pre></div>
 
 <h3 id="android">Android</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1"># Debug build</span>
-./gradlew<span class="w"> </span>:app:assembleDebug
-
-<span class="c1"># Release build</span>
-./gradlew<span class="w"> </span>:app:assembleRelease
-
-<span class="c1"># Install on connected device</span>
-./gradlew<span class="w"> </span>:app:installDebug
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>./gradlew<span class="w"> </span>:app:assembleDebug<span class="w">               </span><span class="c1"># debug APK (ua.syt0r.kanji.dev)</span>
+./gradlew<span class="w"> </span>:app:assembleFdroidRelease<span class="w">       </span><span class="c1"># what CI builds (F-Droid flavor)</span>
+./gradlew<span class="w"> </span>:app:assembleGooglePlayRelease<span class="w">   </span><span class="c1"># Play flavor (needs secrets for signing)</span>
 </code></pre></div>
 
+<p>Android builds require <code>ANDROID_HOME</code>/<code>ANDROID_SDK_ROOT</code> and a machine-specific
+<code>local.properties</code> with <code>sdk.dir=...</code> (never commit it).</p>
 <h3 id="ios">iOS</h3>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1"># Build framework</span>
-./gradlew<span class="w"> </span>:core:linkDebugFrameworkIosArm64
-
-<span class="c1"># Open Xcode project</span>
-open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>./gradlew<span class="w"> </span>:core:linkDebugFrameworkIosArm64<span class="w">   </span><span class="c1"># build the shared framework</span>
+open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj<span class="w">             </span><span class="c1"># then build/run from Xcode</span>
 </code></pre></div>
 
-<h2 id="common-commands">Common Commands</h2>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code><span class="c1"># Clean all builds</span>
-./gradlew<span class="w"> </span>clean
-
-<span class="c1"># Run tests (shared core + desktop suite + data platform)</span>
+<p>iOS targets cannot build on Windows (expected).</p>
+<h2 id="common-commands">Common commands</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>./gradlew<span class="w"> </span>clean
 ./gradlew<span class="w"> </span>:core:allTests
 ./gradlew<span class="w"> </span>:desktopApp:test
 ./gradlew<span class="w"> </span>:kjd:test
-
-<span class="c1"># Dependency report</span>
+./gradlew<span class="w"> </span>:core:generateCommonMainAppDataDatabaseInterface<span class="w">    </span><span class="c1"># after changing .sq</span>
+./gradlew<span class="w"> </span>:core:generateCommonMainUserDataDatabaseInterface<span class="w">   </span><span class="c1"># after changing .sq</span>
+./gradlew<span class="w"> </span>:core:compileKotlinJvm
 ./gradlew<span class="w"> </span>:core:dependencies
+./gradlew<span class="w"> </span>tasks<span class="w"> </span>--all
 </code></pre></div>
 
-<blockquote>
-<p>The canonical command library is <code>COMMANDS.md</code>; module list is in
-<code>settings.gradle.kts</code> (<code>:app :iosApp :desktopApp :core :mediaGenerator :kjd</code>).</p>
-</blockquote>
+<p>SQLDelight interfaces are generated from <code>.sq</code> schemas — regenerate after any schema
+change, then compile.</p>
 <h2 id="debugging">Debugging</h2>
 <h3 id="desktop">Desktop</h3>
 <ul>
-<li>Use <code>println</code> or <code>logger</code> statements</li>
-<li>Attach IntelliJ debugger to the JVM process</li>
-<li>Enable Compose debug layout bounds: <code>-Dcompose.debug.layout=true</code></li>
+<li>Attach the IntelliJ debugger to the JVM process.</li>
+<li>Compose debug helpers: <code>-Dcompose.debug.layout=true</code> (layout bounds), <code>-Dcompose.ui.graphics.forceSoftwareRendering=true</code> on quirky GPUs.</li>
+<li>Window shell diagnostics live in <code>desktopApp/.../KaiteyoWindow.kt</code>; media backend
+  probing is exposed in Media → Settings.</li>
+<li>The <code>--capture-state=</code> dev flag pre-opens window states for screenshot capture
+  (<code>scripts/capture-window-shell.sh</code>).</li>
 </ul>
 <h3 id="android_1">Android</h3>
 <ul>
-<li>Use Android Studio's built-in debugger</li>
-<li>Enable Compose layout inspector</li>
-<li>Use <code>Log.d</code> for logging</li>
+<li>Android Studio debugger + Compose layout inspector; <code>adb logcat</code> for logs.</li>
 </ul>
-<h2 id="branch-strategy">Branch Strategy</h2>
-<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>main           — Production-ready code
-├── develop    — Integration branch
-├── feature/*  — New features (feature/sidebar-floating)
-├── fix/*      — Bug fixes (fix/window-drag-region)
-└── docs/*     — Documentation (docs/architecture-guide)
+<h2 id="branch-strategy">Branch strategy</h2>
+<div class="code-block"><div class="code-block-header"><span class="code-block-lang">text</span><button class="copy-button" type="button" aria-label="Copy code"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> Copy</button></div><pre><span></span><code>main          — production-ready, tagged releases
+└── develop   — integration branch (default)
+    ├── feature/*   — new features (feature/floating-sidebar)
+    ├── fix/*       — bug fixes (fix/window-drag-region)
+    ├── docs/*      — documentation (docs/architecture-guide)
+    └── release/*   — release preparation
 </code></pre></div>
 
-<h2 id="code-style">Code Style</h2>
+<p>See <code>GITHUB_WORKFLOW.md</code> for the full flow (squash merges, tags trigger CI release
+builds).</p>
+<h2 id="code-style">Code style</h2>
 <ul>
-<li>Follow Kotlin coding conventions</li>
-<li>Use 4-space indentation</li>
-<li>Maximum line length: 120 characters</li>
-<li>Use explicit imports (no wildcard imports)</li>
-<li>Use <code>val</code> over <code>var</code> where possible</li>
-<li>Use <code>data class</code> for state holders</li>
-<li>Use <code>sealed class</code> for sealed hierarchies</li>
+<li>Kotlin conventions: 4-space indent, 120-char max line, explicit imports</li>
+<li><code>val</code> over <code>var</code>; <code>data class</code> for state; <code>sealed class</code> for hierarchies</li>
+<li>Screen pattern: 4-file (Contract / ViewModel / Module / Screen) — see
+  <code>AI_CONTEXT.md</code></li>
+<li>Compose: small composables, <code>remember</code>/<code>derivedStateOf</code>, <code>@Stable</code> state holders,
+  modifier order per <code>CODING_STANDARDS.md</code></li>
+<li>Desktop suite: <code>Ds*</code> components + tokens only; view composables read <code>AppState</code></li>
 </ul>
-<h2 id="compose-best-practices">Compose Best Practices</h2>
+<h2 id="compose-best-practices">Compose best practices</h2>
 <ol>
-<li><strong>Keep composables small</strong> — One component per file where possible</li>
-<li><strong>Use <code>@Composable</code> annotations</strong> — Every composable function must be annotated</li>
-<li><strong>Avoid side effects in composition</strong> — Use <code>LaunchedEffect</code>, <code>DisposableEffect</code></li>
-<li><strong>Use <code>remember</code></strong> — Cache expensive computations</li>
-<li><strong>Use <code>derivedStateOf</code></strong> — Derive state from other state</li>
-<li><strong>Use <code>Modifier</code></strong> — Chain modifiers for layout, styling, interaction</li>
-<li><strong>Use <code>@Stable</code></strong> — Mark stable state holders for performance</li>
-<li><strong>Avoid recomposition</strong> — Use <code>key()</code> and <code>remember</code> strategically</li>
+<li>Keep composables small — one responsibility per function</li>
+<li>No side effects in composition — use <code>LaunchedEffect</code>/<code>DisposableEffect</code></li>
+<li><code>remember</code> expensive computations; <code>derivedStateOf</code> derived values</li>
+<li><code>key()</code>/stable keys in lazy lists</li>
+<li><code>graphicsLayer</code> for transform animations (never animate layout properties)</li>
+<li>Honor <code>reducedMotion</code> and the animation config (see <code>docs/design/ANIMATION_SYSTEM.md</code>)</li>
 </ol>
 <h2 id="testing">Testing</h2>
-<h3 id="unit-tests">Unit Tests</h3>
 <ul>
-<li>Location: <code>core/src/commonTest/</code> (shared), <code>desktopApp/src/jvmTest/</code> (desktop suite), <code>kjd/src/test/</code> (data platform)</li>
-<li>Framework: Kotlin Test (JUnit Platform)</li>
-<li>Run: <code>./gradlew :core:allTests</code> (or <code>:desktopApp:test</code> / <code>:kjd:test</code>)</li>
+<li><strong>Locations</strong>: <code>core/src/commonTest/</code> (shared), <code>desktopApp/src/jvmTest/</code> (suite),
+  <code>kjd/src/test/</code> (data platform)</li>
+<li><strong>Framework</strong>: kotlin.test on JUnit Platform</li>
+<li><strong>Commands</strong>: <code>:core:allTests</code>, <code>:desktopApp:test</code>, <code>:kjd:test</code></li>
+<li>Pure domain logic is unit-tested (FSRS scheduler, statistics calculators, deinflect,
+  media selection helpers, media-key mapping). No UI tests yet — see
+  <code>docs/testing/README.md</code> for strategy and gaps.</li>
 </ul>
-<h3 id="ui-tests">UI Tests</h3>
+<h2 id="performance-checklist">Performance checklist</h2>
+<p>Before submitting:</p>
 <ul>
-<li>Not yet established (see <code>../testing/README.md</code> for the strategy and gaps).</li>
+<li>[ ] No unnecessary recomposition (verify with Compose inspector)</li>
+<li>[ ] Animations at 60 FPS; use <code>graphicsLayer</code>, respect reduced motion</li>
+<li>[ ] No leaks (retained references in <code>remember</code>d state)</li>
+<li>[ ] Lazy lists for unbounded content (<code>DsVirtualList</code>/<code>LazyColumn</code>)</li>
+<li>[ ] No main-thread blocking (DB/network on dispatchers)</li>
+<li>[ ] No full-history loads into Compose (use the controllers/aggregates)</li>
 </ul>
-<h2 id="performance-checklist">Performance Checklist</h2>
-<p>Before submitting code:
-- [ ] No unnecessary recompositions
-- [ ] Animations run at 60 FPS
-- [ ] No memory leaks (check for retained references)
-- [ ] Lazy loading for lists
-- [ ] Image caching where applicable
-- [ ] No main thread blocking operations</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><code>COMMANDS.md</code> — full command library</li>
+<li><code>DEVELOPMENT_SETUP.md</code> — from zero to running</li>
+<li><code>VIBE_CODING_GUIDE.md</code> — AI-assisted workflow</li>
+<li><code>docs/architecture/OVERVIEW.md</code> — architecture map</li>
+<li><code>docs/planning/ENGINEERING_AUDIT.md</code> — audit, risks, first milestone</li>
+</ul>
 
     
     <nav class="pagination" aria-label="Pagination">
@@ -1549,12 +1836,6 @@ open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
     <div class="footer-column">
       <h4>Learn</h4>
       <ul>
-        
-        <li>
-          
-          <a href="/Kaiteyo/try/">Try Kaiteyo</a>
-          
-        </li>
         
         <li>
           
@@ -1631,7 +1912,7 @@ open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
         
         <li>
           
-          <a href="/Kaiteyo/roadmap/">Roadmap</a>
+          <a href="/Kaiteyo/roadmap/">Product Roadmap</a>
           
         </li>
         
@@ -1645,7 +1926,62 @@ open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
     </div>
     
     <div class="footer-column">
-      <h4>Project</h4>
+      <h4>Command Center</h4>
+      <ul>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/">Project Status</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/kanban/">Kanban</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/roadmap/">Roadmap</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/whiteboard/">Whiteboard</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/suggestions/">Suggestions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/decisions/">Architecture Decisions</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/activity/">Activity</a>
+          
+        </li>
+        
+        <li>
+          
+          <a href="/Kaiteyo/project/contributing/">Contributing</a>
+          
+        </li>
+        
+      </ul>
+    </div>
+    
+    <div class="footer-column">
+      <h4>Community</h4>
       <ul>
         
         <li>
@@ -1675,12 +2011,6 @@ open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
         <li>
           
           <a href="/Kaiteyo/data/">Data &amp; Attribution</a>
-          
-        </li>
-        
-        <li>
-          
-          <a href="/Kaiteyo/contributing/">Contributing</a>
           
         </li>
         
@@ -1896,49 +2226,59 @@ open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
   </div>
 
   <div class="dialog-section-title">Position</div>
-  <div class="grid-3" style="grid-template-columns: repeat(5, 1fr)">
-    <button class="theme-swatch" type="button" data-nav-pos="left" aria-label="Left">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Left</span>
+  <div class="nav-pos-grid">
+    <button class="nav-pos-card" type="button" data-nav-pos="left" aria-label="Left">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="21" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="21" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Left</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="right" aria-label="Right">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: row; gap: 4px; align-items: stretch">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="width: 30%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Right</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="right" aria-label="Right">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="45.5" y="3.5" width="15" height="37" rx="3"/>
+        <rect class="np-content" x="2.5" y="8" width="40.5" height="8" rx="2"/>
+        <rect class="np-content" x="2.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Right</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="top" aria-label="Top">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Top</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="top" aria-label="Top">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="3.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="17" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="28" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Top</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="bottom" aria-label="Bottom">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; flex-direction: column; gap: 4px">
-        <span style="flex: 1; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-        <span style="height: 26%; background: var(--preview-surface); border-radius: 4px"></span>
-      </span>
-      <span class="theme-swatch-name">Bottom</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="bottom" aria-label="Bottom">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-rail" x="3.5" y="30.5" width="57" height="10" rx="3"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+      </svg>
+      <span class="nav-pos-name">Bottom</span>
     </button>
-    <button class="theme-swatch" type="button" data-nav-pos="floating" aria-label="Floating">
-      <span class="theme-swatch-preview" style="height: 44px; display: flex; gap: 4px; position: relative">
-        <span style="width: 36%; height: 70%; background: var(--preview-surface); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.4)"></span>
-        <span style="flex: 1; height: 100%; background: var(--preview-surface); border-radius: 4px; opacity: 0.6"></span>
-      </span>
-      <span class="theme-swatch-name">Floating</span>
+    <button class="nav-pos-card" type="button" data-nav-pos="floating" aria-label="Floating">
+      <svg class="nav-pos-preview" viewBox="0 0 64 44" aria-hidden="true">
+        <rect class="np-bg" x="1" y="1" width="62" height="42" rx="5"/>
+        <rect class="np-content" x="3.5" y="8" width="40" height="8" rx="2"/>
+        <rect class="np-content" x="3.5" y="19" width="30" height="8" rx="2"/>
+        <circle class="np-bubble" cx="50" cy="32" r="7"/>
+      </svg>
+      <span class="nav-pos-name">Floating</span>
     </button>
   </div>
 
   <div class="dialog-section-title">Width</div>
-  <div class="tabs" role="tablist" aria-label="Navigation width">
-    <button class="tab" type="button" data-nav-width="compact">Compact</button>
-    <button class="tab" type="button" data-nav-width="default">Default</button>
-    <button class="tab" type="button" data-nav-width="wide">Wide</button>
+  <div class="segmented" role="group" aria-label="Navigation width">
+    <button class="segmented-btn" type="button" data-nav-width="compact">Compact</button>
+    <button class="segmented-btn" type="button" data-nav-width="default">Default</button>
+    <button class="segmented-btn" type="button" data-nav-width="wide">Wide</button>
   </div>
 
   <div class="dialog-section-title">Behavior</div>
@@ -1977,12 +2317,12 @@ open<span class="w"> </span>iosApp/KaiteyoApp.xcodeproj
   </div>
 </dialog>
 
-  <script type="module" src="/Kaiteyo/assets/scripts/main.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/theme.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/components.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/search.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js"></script>
-  <script type="module" src="/Kaiteyo/assets/scripts/utils.js"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/main.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/theme.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/navigation.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/components.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/search.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/persistence.js?v=1786940608"></script>
+  <script type="module" src="/Kaiteyo/assets/scripts/utils.js?v=1786940608"></script>
 </body>
 </html>

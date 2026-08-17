@@ -58,7 +58,8 @@ val letterPracticeScreenModule = module {
             getQueueItemDataUseCase = get(),
             reviewHistoryRepository = get(),
             statisticsRecorder = get(),
-            analyticsManager = get()
+            analyticsManager = get(),
+            appPreferences = get()
         )
     }
 

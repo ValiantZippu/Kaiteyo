@@ -81,7 +81,12 @@ data class ReviewSettingsV2(
     val showAllFlags: Boolean = true,
     val fontSizeScale: Float = 1.0f,
     val cardPadding: Int = 16,
-    val backgroundColor: String = "#00000000"
+    val backgroundColor: String = "#00000000",
+    // Smart study-time: don't count idle gaps inside a review as study time.
+    // When enabled, any single review longer than inactivityThresholdMinutes
+    // is capped at that threshold before it reaches the statistics.
+    val smartActivityDetection: Boolean = true,
+    val inactivityThresholdMinutes: Int = 10
 )
 
 enum class ReviewLayout(val displayName: String) {

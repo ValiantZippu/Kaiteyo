@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +16,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,14 +31,11 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -110,7 +112,7 @@ import kotlinx.datetime.todayIn
 // ============================================
 
 @Composable
-fun MediaLibraryPanel(state: AppState) {
+fun MediaLibraryPanel(state: AppState, onOpenDetail: (String) -> Unit) {
     val media = state.media
     val library = media.library
     val sc = surfaceColors()
@@ -123,273 +125,290 @@ fun MediaLibraryPanel(state: AppState) {
     var newPlaylistName by remember { mutableStateOf("") }
     var renameTarget by remember { mutableStateOf<ua.syt0r.kanji.desktop.engine.media.MediaPlaylist?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
-        DsSectionHeader(
-            title = "Media library",
-            subtitle = "${library.items.size} items · ${library.watchedMediaCount()} watched · ${MediaEngine.formatTime(library.totalWatchTimeMs())} total watch time",
-            action = {
-                Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    DsButton(text = "Open file", icon = Icons.Default.PlayArrow, compact = true, onClick = { chooseMediaFile(state) })
-                    DsButton(text = "Scan folder", icon = Icons.Default.FolderOpen, kind = DsButtonKind.Secondary, compact = true, onClick = { chooseMediaFolder(state) })
+    val items = remember(query, collection, library.items.size) {
+        var list = library.search(query)
+        if (collection.isNotBlank()) list = list.filter { it.collection == collection }
+        list
+    }
+    val continueWatching = remember(library.items.size) { library.continueWatching(8) }
+    val searching = query.isNotBlank() || collection.isNotBlank()
+
+    if (library.items.isEmpty()) {
+        Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
+            DsSectionHeader(title = "Media library", subtitle = "Add media to get started")
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    Icon(
+                        Icons.Default.VideoLibrary,
+                        contentDescription = null,
+                        tint = accent().primary.copy(alpha = 0.45f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text("Your library is empty", color = sc.textPrimary, fontSize = DsType.Title, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Open a file, scan a folder or drop media anywhere in the Media workspace.",
+                        color = sc.textMuted,
+                        fontSize = DsType.Body
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        DsButton(text = "Open file", icon = Icons.Default.PlayArrow, onClick = { chooseMediaFile(state) })
+                        DsButton(text = "Scan folder", icon = Icons.Default.FolderOpen, kind = DsButtonKind.Secondary, onClick = { chooseMediaFolder(state) })
+                    }
                 }
             }
-        )
+        }
+        return
+    }
+
+    // The whole library is one adaptive grid: full-span sections (header,
+    // week strip, search, filters, rails) with the media cards as the actual
+    // cells — the window width decides the column count, nothing is fixed.
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(200.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = DsSpacing.Lg, end = DsSpacing.Lg, top = DsSpacing.Lg, bottom = DsSpacing.Xxl),
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            DsSectionHeader(
+                title = "Media library",
+                subtitle = "${library.items.size} items · ${library.watchedMediaCount()} watched · ${MediaEngine.formatTime(library.totalWatchTimeMs())} total watch time",
+                action = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        DsButton(text = "Open file", icon = Icons.Default.PlayArrow, compact = true, onClick = { chooseMediaFile(state) })
+                        DsButton(text = "Scan folder", icon = Icons.Default.FolderOpen, kind = DsButtonKind.Secondary, compact = true, onClick = { chooseMediaFolder(state) })
+                    }
+                }
+            )
+        }
 
         // This week — the mini 7-day immersion strip (watch bars + mined/lookups).
-        MediaWeekStrip(state)
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            MediaWeekStrip(state)
+        }
 
         // Scanning progress
         if (media.scanner.scanning) {
-            DsCard {
-                Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    Text(media.scanner.scanMessage, color = sc.textSecondary, fontSize = DsType.Body)
-                    DsProgressBar(fraction = media.scanner.progress)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${media.scanner.scannedFiles} files", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(1f))
-                        DsButton(text = "Cancel", kind = DsButtonKind.Ghost, compact = true, onClick = { media.scanner.cancel() })
-                    }
-                }
-            }
-        }
-
-        DsSearchField(
-            value = query,
-            onValueChange = { media.librarySearchQuery = it },
-            placeholder = "Search library…",
-            modifier = Modifier.onFocusChanged { state.media.textInputFocused = it.isFocused }
-        )
-
-        // Collection filter chips
-        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
-            DsChip(text = "All", selected = collection.isEmpty(), onClick = { collection = "" })
-            library.allCollections.take(8).forEach { c ->
-                DsChip(text = c, selected = collection == c, onClick = { collection = if (collection == c) "" else c })
-            }
-        }
-
-        val items = remember(query, collection, library.items.size) {
-            var list = library.search(query)
-            if (collection.isNotBlank()) list = list.filter { it.collection == collection }
-            list
-        }
-
-        val continueWatching = remember(library.items.size) { library.continueWatching(8) }
-        if (query.isBlank() && collection.isBlank() && continueWatching.isNotEmpty()) {
-            DsCard {
-                Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    Text("Continue watching", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                    continueWatching.forEach { item -> MediaItemRow(state, item, prominent = true) }
-                }
-            }
-        }
-
-        DsCard {
-            Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                Text("All media", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                if (items.isEmpty()) {
-                    Text(
-                        "Nothing here yet — open a file or scan a folder. Kaiteyo remembers position, subtitles and history for every item.",
-                        color = sc.textMuted,
-                        fontSize = DsType.Caption
-                    )
-                } else {
-                    LazyColumn(Modifier.fillMaxWidth().height(420.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        items(items, key = { it.id }) { item -> MediaItemRow(state, item) }
-                    }
-                }
-            }
-        }
-
-        if (media.playQueue.isNotEmpty()) {
-            DsCard {
-                Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Play queue", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        DsButton(text = "Clear", kind = DsButtonKind.Ghost, compact = true, onClick = { media.clearQueue() })
-                    }
-                    Text(
-                        "When an item ends, Kaiteyo continues with the next queued item — or the next episode of the same series.",
-                        color = sc.textMuted,
-                        fontSize = DsType.Caption
-                    )
-                    media.playQueue.forEachIndexed { i, qItem ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                            Text(
-                                if (i == media.queueIndex) "▶" else "${i + 1}",
-                                color = if (i == media.queueIndex) accent().primary else sc.textMuted,
-                                fontSize = DsType.Caption,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.width(22.dp)
-                            )
-                            Text(qItem.name, color = sc.textSecondary, fontSize = DsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            DsIconButton(
-                                icon = Icons.Default.SkipNext,
-                                onClick = {
-                                    // Position the cursor at the clicked item and
-                                    // play exactly that item (playNext would skip it).
-                                    media.queueIndex = i
-                                    media.openItem(qItem)
-                                },
-                                contentDescription = "Play from here",
-                                size = 22.dp
-                            )
-                            DsIconButton(icon = Icons.Default.Delete, onClick = { media.removeFromQueue(i) }, contentDescription = "Remove from queue", size = 22.dp)
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DsCard {
+                    Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Text(media.scanner.scanMessage, color = sc.textSecondary, fontSize = DsType.Body)
+                        DsProgressBar(fraction = media.scanner.progress)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${media.scanner.scannedFiles} files", color = sc.textMuted, fontSize = DsType.Caption, modifier = Modifier.weight(1f))
+                            DsButton(text = "Cancel", kind = DsButtonKind.Ghost, compact = true, onClick = { media.scanner.cancel() })
                         }
                     }
                 }
             }
         }
 
-        DsCard {
-            Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Playlists", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            DsSearchField(
+                value = query,
+                onValueChange = { media.librarySearchQuery = it },
+                placeholder = "Search library…",
+                modifier = Modifier.onFocusChanged { state.media.textInputFocused = it.isFocused }
+            )
+        }
+
+        // Collection filter chips — scrolls horizontally so many collections
+        // never crowd the grid.
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)) {
+                DsChip(text = "All", selected = collection.isEmpty(), onClick = { collection = "" })
+                library.allCollections.forEach { c ->
+                    DsChip(text = c, selected = collection == c, onClick = { collection = if (collection == c) "" else c })
+                }
+            }
+        }
+
+        // Continue watching — a wide horizontal rail, not a list of rows.
+        if (!searching && continueWatching.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SectionTitle("Continue watching", "${continueWatching.size} in progress — tap a card to resume")
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(Modifier.fillMaxWidth().height(196.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
+                        items(continueWatching, key = { it.id }) { item ->
+                            Box(Modifier.width(220.dp)) {
+                                MediaItemCard(state, item, showProgress = true, onOpenDetail = onOpenDetail)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionTitle(if (searching) "Search results" else "All media", "${items.size} item${if (items.size == 1) "" else "s"}")
+        }
+        if (items.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(Modifier.fillMaxWidth().padding(DsSpacing.Xxl), contentAlignment = Alignment.Center) {
+                    Text("No media matches — adjust the search or filters", color = sc.textMuted, fontSize = DsType.Body)
+                }
+            }
+        } else {
+            gridItems(items, key = { it.id }) { item ->
+                MediaItemCard(state, item, showProgress = true, onOpenDetail = onOpenDetail)
+            }
+        }
+
+        if (media.playQueue.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DsCard {
+                    Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Play queue", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            DsButton(text = "Clear", kind = DsButtonKind.Ghost, compact = true, onClick = { media.clearQueue() })
+                        }
                         Text(
-                            "Named, reorderable playlists that persist in the library — create one, add items, then play it as a queue.",
+                            "When an item ends, Kaiteyo continues with the next queued item — or the next episode of the same series.",
                             color = sc.textMuted,
                             fontSize = DsType.Caption
                         )
-                    }
-                    if (library.playlists.isNotEmpty()) {
-                        DsButton(text = "New", icon = Icons.Default.Add, kind = DsButtonKind.Secondary, compact = true, onClick = { newPlaylistName = "" ; createPlaylistOpen = true })
+                        media.playQueue.forEachIndexed { i, qItem ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                                Text(
+                                    if (i == media.queueIndex) "▶" else "${i + 1}",
+                                    color = if (i == media.queueIndex) accent().primary else sc.textMuted,
+                                    fontSize = DsType.Caption,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.width(22.dp)
+                                )
+                                Text(qItem.name, color = sc.textSecondary, fontSize = DsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                DsIconButton(
+                                    icon = Icons.Default.SkipNext,
+                                    onClick = {
+                                        // Position the cursor at the clicked item and
+                                        // play exactly that item (playNext would skip it).
+                                        media.queueIndex = i
+                                        media.openItem(qItem)
+                                    },
+                                    contentDescription = "Play from here",
+                                    size = 22.dp
+                                )
+                                DsIconButton(icon = Icons.Default.Delete, onClick = { media.removeFromQueue(i) }, contentDescription = "Remove from queue", size = 22.dp)
+                            }
+                        }
                     }
                 }
-                if (library.playlists.isEmpty()) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                        Text(
-                            "No playlists yet.",
-                            color = sc.textMuted,
-                            fontSize = DsType.Caption,
-                            modifier = Modifier.weight(1f)
-                        )
-                        DsButton(text = "Create playlist", icon = Icons.Default.Add, compact = true, onClick = { newPlaylistName = "" ; createPlaylistOpen = true })
+            }
+        }
+
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            DsCard {
+                Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Playlists", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Named, reorderable playlists that persist in the library — create one, add items, then play it as a queue.",
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption
+                            )
+                        }
+                        if (library.playlists.isNotEmpty()) {
+                            DsButton(text = "New", icon = Icons.Default.Add, kind = DsButtonKind.Secondary, compact = true, onClick = { newPlaylistName = "" ; createPlaylistOpen = true })
+                        }
                     }
-                } else {
-                    library.playlists.forEach { playlist ->
-                        PlaylistCard(state, playlist, onRename = { renameTarget = it })
+                    if (library.playlists.isEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                            Text(
+                                "No playlists yet.",
+                                color = sc.textMuted,
+                                fontSize = DsType.Caption,
+                                modifier = Modifier.weight(1f)
+                            )
+                            DsButton(text = "Create playlist", icon = Icons.Default.Add, compact = true, onClick = { newPlaylistName = "" ; createPlaylistOpen = true })
+                        }
+                    } else {
+                        library.playlists.forEach { playlist ->
+                            PlaylistCard(state, playlist, onRename = { renameTarget = it })
+                        }
                     }
                 }
             }
         }
 
         if (library.folders.isNotEmpty()) {
-            DsCard {
-                Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    Text("Watched folders", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                    library.folders.forEach { folder ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Folder, contentDescription = null, tint = sc.textSecondary, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(DsSpacing.Sm))
-                            Text(folder.path, color = sc.textSecondary, fontSize = DsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            DsButton(text = "Rescan", kind = DsButtonKind.Ghost, compact = true, onClick = {
-                                val dir = File(folder.path)
-                                if (dir.exists()) media.scanner.scan(dir, folder.includeSubdirs) else state.toastHost.show("Folder missing", kind = ToastKind.Warning)
-                            })
-                            DsIconButton(
-                                icon = Icons.Default.Delete,
-                                onClick = { library.folders.remove(folder) },
-                                contentDescription = "Remove folder",
-                                size = 26.dp
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DsCard {
+                    Column(Modifier.fillMaxWidth().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                        Text("Watched folders", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                        library.folders.forEach { folder ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Folder, contentDescription = null, tint = sc.textSecondary, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(DsSpacing.Sm))
+                                Text(folder.path, color = sc.textSecondary, fontSize = DsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                DsButton(text = "Rescan", kind = DsButtonKind.Ghost, compact = true, onClick = {
+                                    val dir = File(folder.path)
+                                    if (dir.exists()) media.scanner.scan(dir, folder.includeSubdirs) else state.toastHost.show("Folder missing", kind = ToastKind.Warning)
+                                })
+                                DsIconButton(
+                                    icon = Icons.Default.Delete,
+                                    onClick = { library.folders.remove(folder) },
+                                    contentDescription = "Remove folder",
+                                    size = 26.dp
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        var watchFolders by remember { mutableStateOf(state.settings.getBool("media.watch-folders")) }
+                        DsToggle(
+                            checked = watchFolders,
+                            onCheckedChange = {
+                                watchFolders = it
+                                state.settings.set("media.watch-folders", it)
+                                if (it) media.startFolderWatcher() else media.stopFolderWatcher()
+                            },
+                            label = "Watch these folders — auto-add new media"
+                        )
+                        if (media.scanner.watcherActive) {
+                            Text(
+                                if (media.scanner.lastWatchFound > 0) "Watcher active · ${media.scanner.lastWatchFound} new file(s) auto-added"
+                                else "Watcher active · scanning every ~45 s",
+                                color = successColor(),
+                                fontSize = DsType.Caption
                             )
                         }
                     }
-                    Spacer(Modifier.height(2.dp))
-                    var watchFolders by remember { mutableStateOf(state.settings.getBool("media.watch-folders")) }
-                    DsToggle(
-                        checked = watchFolders,
-                        onCheckedChange = {
-                            watchFolders = it
-                            state.settings.set("media.watch-folders", it)
-                            if (it) media.startFolderWatcher() else media.stopFolderWatcher()
-                        },
-                        label = "Watch these folders — auto-add new media"
-                    )
-                    if (media.scanner.watcherActive) {
-                        Text(
-                            if (media.scanner.lastWatchFound > 0) "Watcher active · ${media.scanner.lastWatchFound} new file(s) auto-added"
-                            else "Watcher active · scanning every ~45 s",
-                            color = successColor(),
-                            fontSize = DsType.Caption
-                        )
-                    }
                 }
             }
-        }
-
-        if (createPlaylistOpen) {
-            DsPromptDialog(
-                title = "Create playlist",
-                placeholder = "Playlist name",
-                initialValue = newPlaylistName,
-                onConfirm = { name ->
-                    val id = library.createPlaylist(name)
-                    if (id.isNotBlank()) state.toastHost.show("Playlist \"${name.trim()}\" created", kind = ToastKind.Success)
-                    createPlaylistOpen = false
-                },
-                onDismiss = { createPlaylistOpen = false }
-            )
-        }
-        renameTarget?.let { playlist ->
-            DsPromptDialog(
-                title = "Rename playlist",
-                placeholder = "Playlist name",
-                initialValue = playlist.name,
-                onConfirm = { name ->
-                    if (library.renamePlaylist(playlist.id, name)) {
-                        state.toastHost.show("Playlist renamed", kind = ToastKind.Success)
-                    } else {
-                        state.toastHost.show("Name invalid or already in use", kind = ToastKind.Warning)
-                    }
-                    renameTarget = null
-                },
-                onDismiss = { renameTarget = null }
-            )
         }
     }
-}
 
-/** Dropdown listing every playlist — one click adds the item to it. */
-@Composable
-private fun AddToPlaylistMenu(state: AppState, item: MediaItem) {
-    val media = state.media
-    val library = media.library
-    val sc = surfaceColors()
-    var open by remember { mutableStateOf(false) }
-    Box {
-        DsIconButton(
-            icon = Icons.Default.VideoLibrary,
-            onClick = { open = true },
-            contentDescription = "Add to playlist",
-            size = 26.dp
+    if (createPlaylistOpen) {
+        DsPromptDialog(
+            title = "Create playlist",
+            placeholder = "Playlist name",
+            initialValue = newPlaylistName,
+            onConfirm = { name ->
+                val id = library.createPlaylist(name)
+                if (id.isNotBlank()) state.toastHost.show("Playlist \"${name.trim()}\" created", kind = ToastKind.Success)
+                createPlaylistOpen = false
+            },
+            onDismiss = { createPlaylistOpen = false }
         )
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            modifier = Modifier.background(sc.surfaceElevated)
-        ) {
-            if (library.playlists.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text("No playlists — create one in the Playlists section", color = sc.textMuted, fontSize = DsType.Caption) },
-                    onClick = { open = false }
-                )
-            } else {
-                library.playlists.forEach { playlist ->
-                    val alreadyIn = playlist.itemIds.contains(item.id)
-                    DropdownMenuItem(
-                        text = { Text((if (alreadyIn) "✓ " else "") + playlist.name, color = sc.textPrimary, fontSize = DsType.Body) },
-                        onClick = {
-                            if (alreadyIn) library.removeFromPlaylist(playlist.id, item.id)
-                            else {
-                                library.addToPlaylist(playlist.id, item.id)
-                                state.toastHost.show("Added to \"${playlist.name}\"", kind = ToastKind.Success)
-                            }
-                            open = false
-                        }
-                    )
+    }
+    renameTarget?.let { playlist ->
+        DsPromptDialog(
+            title = "Rename playlist",
+            placeholder = "Playlist name",
+            initialValue = playlist.name,
+            onConfirm = { name ->
+                if (library.renamePlaylist(playlist.id, name)) {
+                    state.toastHost.show("Playlist renamed", kind = ToastKind.Success)
+                } else {
+                    state.toastHost.show("Name invalid or already in use", kind = ToastKind.Warning)
                 }
-            }
-        }
+                renameTarget = null
+            },
+            onDismiss = { renameTarget = null }
+        )
     }
 }
 
@@ -455,107 +474,6 @@ private fun PlaylistCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MediaItemRow(state: AppState, item: MediaItem, prominent: Boolean = false) {
-    val media = state.media
-    val sc = surfaceColors()
-    val ac = accent()
-
-    // Poster frame (async ffmpeg) once available; in-flight reads null.
-    val thumbPath = media.scanner.thumbnailState[item.id]
-    LaunchedEffect(item.id) { media.scanner.requestThumbnail(item) }
-    // One stat per item per path change — never a per-recomposition probe.
-    val missing = remember(item.id, item.path) { !media.library.fileExists(item) }
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (item == media.currentItem) ac.primary.copy(alpha = 0.1f) else sc.surfaceElevated.copy(alpha = 0.5f))
-            .clickable { if (missing) relinkItemDialog(state, item) else media.openItem(item) }
-            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(if (prominent) 44.dp else 34.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(ac.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (thumbPath != null) {
-                ThumbnailImage(thumbPath, Modifier.matchParentSize().clip(RoundedCornerShape(8.dp)))
-            } else {
-                Icon(
-                    if (item.kind == ua.syt0r.kanji.desktop.engine.media.MediaKind.Video) Icons.Default.Movie
-                    else if (item.kind == ua.syt0r.kanji.desktop.engine.media.MediaKind.Audio) Icons.Default.AudioFile
-                    else Icons.Default.VideoLibrary,
-                    contentDescription = null,
-                    tint = if (missing) errorColor() else ac.primary,
-                    modifier = Modifier.size(if (prominent) 22.dp else 16.dp)
-                )
-            }
-        }
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    item.name,
-                    color = sc.textPrimary,
-                    fontSize = if (prominent) DsType.BodyLarge else DsType.Body,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                if (item.episode.isNotBlank()) {
-                    DsBadge(text = item.episode, tint = accent().primary)
-                }
-                if (item.collection.isNotBlank()) {
-                    DsBadge(text = item.collection, tint = sc.textSecondary)
-                }
-            }
-            if (missing) {
-                Text(
-                    "File moved or renamed — click to relink",
-                    color = errorColor(),
-                    fontSize = DsType.Caption,
-                    fontWeight = FontWeight.Medium
-                )
-            } else if (item.durationMs > 0) {
-                Text(
-                    "${MediaEngine.formatTime(item.durationMs)} · ${item.watchCount} watch${if (item.watchCount == 1) "" else "es"}${if (item.completed) " · completed" else ""}",
-                    color = sc.textMuted,
-                    fontSize = DsType.Caption
-                )
-            }
-            if (item.lastWatchedAt.isNotBlank() && item.progressFraction > 0f && item.progressFraction < 1f) {
-                Spacer(Modifier.height(3.dp))
-                DsProgressBar(fraction = item.progressFraction, height = 3.dp, color = if (prominent) ac.primary else sc.textSecondary)
-            }
-        }
-        if (missing) {
-            DsButton(text = "Relink", kind = DsButtonKind.Ghost, compact = true, onClick = { relinkItemDialog(state, item) })
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                DsIconButton(
-                    icon = Icons.Default.SkipNext,
-                    onClick = { media.addToQueue(item) },
-                    contentDescription = "Add to queue",
-                    size = 26.dp
-                )
-                AddToPlaylistMenu(state, item)
-            }
-        }
-        Icon(
-            if (item.favorite) Icons.Default.Star else Icons.Default.StarBorder,
-            contentDescription = "Favorite",
-            tint = if (item.favorite) favoriteColor() else sc.textMuted,
-            modifier = Modifier.size(18.dp).clickable { media.library.toggleFavorite(item.id) }
-        )
     }
 }
 
@@ -935,6 +853,49 @@ fun MediaSettingsPanel(state: AppState) {
                         state.settings.set("media.mini-player", it)
                     },
                     label = "Persistent mini player — keep playing while browsing other workspaces"
+                )
+            }
+        }
+
+        DsCard {
+            Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                Text("Audio clip capture", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "When mining audio from a subtitle, pad the clip slightly before/after the cue and cap its length so a long line never produces a huge file.",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
+                )
+                var padBefore by remember { mutableStateOf(state.settings.getInt("media.audio-padding-before-ms", 200).toString()) }
+                var padAfter by remember { mutableStateOf(state.settings.getInt("media.audio-padding-after-ms", 200).toString()) }
+                var maxDuration by remember { mutableStateOf(state.settings.getInt("media.audio-max-duration-ms", 10000).toString()) }
+                AudioClipSettingField(
+                    label = "Padding before (ms)",
+                    value = padBefore,
+                    onValueChange = {
+                        padBefore = it.filter { c -> c.isDigit() }.take(5)
+                        padBefore.toLongOrNull()?.let { v -> state.settings.set("media.audio-padding-before-ms", v.coerceIn(0L, 5000L)) }
+                    }
+                )
+                AudioClipSettingField(
+                    label = "Padding after (ms)",
+                    value = padAfter,
+                    onValueChange = {
+                        padAfter = it.filter { c -> c.isDigit() }.take(5)
+                        padAfter.toLongOrNull()?.let { v -> state.settings.set("media.audio-padding-after-ms", v.coerceIn(0L, 5000L)) }
+                    }
+                )
+                AudioClipSettingField(
+                    label = "Max clip duration (ms, 0 = no cap)",
+                    value = maxDuration,
+                    onValueChange = {
+                        maxDuration = it.filter { c -> c.isDigit() }.take(6)
+                        maxDuration.toLongOrNull()?.let { v -> state.settings.set("media.audio-max-duration-ms", v.coerceIn(0L, 120000L)) }
+                    }
+                )
+                Text(
+                    "Applied the next time an audio clip is captured (subtitle menu → Capture audio clip, or mining with audio enabled).",
+                    color = sc.textMuted,
+                    fontSize = DsType.Caption
                 )
             }
         }
@@ -1642,5 +1603,19 @@ private fun WeekStatPill(label: String, value: String) {
     Column {
         Text(value, color = accent().primary, fontSize = DsType.Title, fontWeight = FontWeight.Bold)
         Text(label, color = sc.textMuted, fontSize = DsType.Caption)
+    }
+}
+
+/** Label + numeric field row for the audio-clip capture settings. */
+@Composable
+private fun AudioClipSettingField(label: String, value: String, onValueChange: (String) -> Unit) {
+    val sc = surfaceColors()
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+        Text(label, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.weight(1f))
+        DsTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.width(120.dp)
+        )
     }
 }

@@ -84,7 +84,9 @@ enum class WorkspaceView(val label: String, val icon: String) {
     Exams("Exams", "E"),
     LearningBrowser("Web Browser", "W"),
     Ocr("OCR", "O"),
-    Integrations("Integrations", "A")
+    Integrations("Integrations", "A"),
+    // The game world — an optional second space inside Kaiteyo.
+    Game("Game", "G")
 }
 
 /** Type of browser display. */

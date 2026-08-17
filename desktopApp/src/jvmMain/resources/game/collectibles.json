@@ -1,0 +1,30 @@
+{
+  "collectibles": [
+    { "id": "stamp-station", "kind": "Stamp", "title": "Hamanaka Station stamp", "titleJp": "浜中駅スタンプ", "description": "Stamp from the station office.", "locationId": "station", "icon": "stamp" },
+    { "id": "stamp-shop", "kind": "Stamp", "title": "Hamanaka Mart stamp", "titleJp": "浜中マートスタンプ", "description": "The shop's little ink stamp.", "locationId": "shop", "icon": "stamp" },
+    { "id": "stamp-beach", "kind": "Stamp", "title": "Beach stamp", "titleJp": "浜のスタンプ", "description": "A stamp of the waves.", "locationId": "beach", "icon": "stamp" },
+    { "id": "stamp-lighthouse", "kind": "Stamp", "title": "Lighthouse stamp", "titleJp": "潮風灯台スタンプ", "description": "White tower on a blue sea.", "locationId": "lighthouse", "icon": "stamp" },
+    { "id": "stamp-park", "kind": "Stamp", "title": "Park stamp", "titleJp": "ひまわり公園スタンプ", "description": "A sunflower stamp.", "locationId": "park", "icon": "stamp" },
+    { "id": "postcard-summer", "kind": "Postcard", "title": "Summer postcard", "titleJp": "夏の絵葉書", "description": "A postcard of Hamanaka's beach.", "locationId": "beach", "knowledgeId": "umi", "icon": "postcard" },
+    { "id": "phrase-hajimemashite", "kind": "Phrase", "title": "はじめまして", "description": "Nice to meet you.", "knowledgeId": null, "icon": "phrase" },
+    { "id": "phrase-arigatou", "kind": "Phrase", "title": "ありがとう", "description": "Thank you.", "knowledgeId": null, "icon": "phrase" },
+    { "id": "souvenir-noren", "kind": "Souvenir", "title": "Noren", "titleJp": "のれん", "description": "A shop curtain with a wave pattern.", "locationId": "shop", "icon": "souvenir" },
+    { "id": "stamp-kamakura", "kind": "Stamp", "title": "Kamakura Station stamp", "titleJp": "鎌倉駅スタンプ", "description": "Stamp from Kamakura Station.", "locationId": "kamakura-station", "icon": "stamp" },
+    { "id": "stamp-komachi", "kind": "Stamp", "title": "Komachi-dōri stamp", "titleJp": "小町通りスタンプ", "description": "A stamp of sweets and souvenirs.", "locationId": "komachi", "icon": "stamp" },
+    { "id": "stamp-hachimangu", "kind": "Stamp", "title": "Hachimangū stamp", "titleJp": "八幡宮スタンプ", "description": "The shrine's red torii stamp.", "locationId": "hachimangu", "icon": "stamp" },
+    { "id": "stamp-hasedera", "kind": "Stamp", "title": "Hase-dera stamp", "titleJp": "長谷寺スタンプ", "description": "A stamp of the Great Buddha.", "locationId": "hasedera", "icon": "stamp" },
+    { "id": "stamp-yuigahama", "kind": "Stamp", "title": "Yuigahama stamp", "titleJp": "由比ヶ浜スタンプ", "description": "Waves and sand.", "locationId": "yuigahama", "icon": "stamp" },
+    { "id": "souvenir-omamori", "kind": "Souvenir", "title": "Omamori charm", "titleJp": "お守り", "description": "A cloth charm from Hachimangū.", "locationId": "hachimangu", "knowledgeId": "omikuji", "icon": "souvenir" },
+    { "id": "postcard-kamakura", "kind": "Postcard", "title": "Kamakura postcard", "titleJp": "鎌倉の絵葉書", "description": "A postcard of the Great Buddha.", "locationId": "hasedera", "knowledgeId": "daibutsu", "icon": "postcard" },
+    { "id": "stamp-writing", "kind": "Stamp", "title": "Writing desk stamp", "titleJp": "書くスタンプ", "description": "A stamp of a chalkboard and chalk.", "locationId": "park", "knowledgeId": "kana-a", "icon": "stamp" },
+    { "id": "stamp-festival", "kind": "Stamp", "title": "Festival stamp", "titleJp": "お祭りスタンプ", "description": "A stamp of a red paper lantern.", "locationId": "festival-grounds", "knowledgeId": "matsuri", "icon": "stamp" },
+    { "id": "stamp-takoyaki", "kind": "Stamp", "title": "Takoyaki stamp", "titleJp": "たこ焼きスタンプ", "description": "A stamp of a sizzling dumpling.", "locationId": "festival-grounds", "knowledgeId": "takoyaki", "icon": "stamp" },
+    { "id": "stamp-hanabi", "kind": "Stamp", "title": "Fireworks stamp", "titleJp": "花火スタンプ", "description": "A stamp of fireworks over the bay.", "locationId": "festival-grounds", "knowledgeId": "hanabi", "icon": "stamp" },
+    { "id": "stamp-kamakura-night", "kind": "Stamp", "title": "Night lantern stamp", "titleJp": "夜の石灯籠スタンプ", "description": "A stamp of a lit stone lantern under the moon.", "locationId": "komachi", "knowledgeId": "tsuki", "icon": "stamp" },
+    { "id": "stamp-amezaiku", "kind": "Stamp", "title": "Candy stamp", "titleJp": "飴細工スタンプ", "description": "A stamp of a sugar rabbit.", "locationId": "park", "knowledgeId": "ame", "icon": "stamp" },
+    { "id": "stamp-winter-market", "kind": "Stamp", "title": "Winter market stamp", "titleJp": "冬市スタンプ", "description": "A stamp of a steaming cocoa cup.", "locationId": "festival-grounds", "knowledgeId": "atatakai", "icon": "stamp" },
+    { "id": "stamp-hanami", "kind": "Stamp", "title": "Blossom-viewing stamp", "titleJp": "お花見スタンプ", "description": "A stamp of cherry blossoms on a blue sky.", "locationId": "hachimangu", "knowledgeId": "sakura", "icon": "stamp" },
+    { "id": "stamp-summer-festival", "kind": "Stamp", "title": "Bon dance stamp", "titleJp": "盆踊りスタンプ", "description": "A stamp of dancers in a circle under paper lanterns.", "locationId": "festival-grounds", "knowledgeId": "bonodori", "icon": "stamp" },
+    { "id": "stamp-autumn-leaves", "kind": "Stamp", "title": "Autumn leaves stamp", "titleJp": "紅葉スタンプ", "description": "A stamp of red maple leaves.", "locationId": "hachimangu", "knowledgeId": "momiji", "icon": "stamp" }
+  ]
+}

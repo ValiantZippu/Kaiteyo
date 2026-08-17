@@ -56,6 +56,6 @@ OLED black, dark, light and sepia base modes, seven signature accents, configura
 Kotlin Multiplatform and Compose — one codebase for Windows, macOS, Linux, Android and iOS. Offline-first: all data lives on your device.
 
 <div class="prose-note">
-  <svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>
-  Want to try before installing? <a href="/try/">The web trial</a> runs a working slice of Kaiteyo in your browser with sample data.
+  <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+  Ready to try it? <a href="/download/">Download Kaiteyo</a> for your platform — free, open source, and offline-first.
 </div>
