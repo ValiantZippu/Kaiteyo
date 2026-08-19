@@ -1,115 +1,183 @@
-# Kaiteyo (書いてよ) — Navigation System
+# Kaiteyo Navigation Architecture
 
 ## Overview
 
-The navigation system is a unified, highly customizable desktop-OS-style shell
-(`NavShell`) that replaces the legacy fixed sidebar/topbar/bottombar chrome.
-It is implemented in common code and shared across platforms.
-
-- **Entry point:** `NavShell` in
-  `core/src/commonMain/kotlin/ua/syt0r/kanji/presentation/common/nav/NavShell.kt`
-- **Wiring:** `MainScreen` wraps `MainNavigation` inside `NavShell`
-  (`MainScreen.kt`). On portrait/phone layouts NavShell is a pass-through and
-  the legacy `HomeScreenUI` chrome remains active.
-- **State sharing:** NavShell creates the `HomeNavigationState` and provides it
-  through `LocalHomeNavigationState`; `HomeScreen` consumes the provided state
-  instead of creating its own, so shell tab buttons and page content stay in
-  sync.
-
-## Layout Model
-
-`LayoutConfig` (in `Theme.kt`) is the single source of truth for layout. It is
-exposed to the whole app via `LocalLayoutConfig` / `LocalKaiteyoThemeState`.
-
-| Field | Type | Purpose |
-|---|---|---|
-| `sidebarMode` | `SidebarMode` | `Expanded`, `Compact`, `IconsOnly`, `FloatingIsland`, `Docked`, `AutoHide` |
-| `sidebarPosition` | `SidebarPosition` | `Left`, `Right`, `Top`, `Bottom` |
-| `autoHide` | `NavAutoHide` | `Never`, `Always`, `FullscreenOnly`, `Smart` |
-| `collapsed` | `Boolean` | Collapse expanded mode to icon-only strip |
-| `panelWidth` | `Dp` | Width of vertical panels / floating island (default 260dp) |
-| `panelHeight` | `Dp` | Height of horizontal strips / floating island (default 56dp) |
-| `floatingOffset` | `DpOffset` | Floating island position (clamped to window) |
-| `accentIndex` | `Int` | Reserved for accent-tinted chrome |
+Kaiteyo has exactly two navigation modes — **Sidebar** and **Floating** — both using the same `NavigationController`. Switching modes never recreates the application.
 
 ## Modes
 
-- **Expanded** — full-width/height strip docked to the edge with section
-  headers and labels; resizable via a 5dp drag strip on the inner edge.
-- **Compact** — icon-only strip (60dp) with hover tooltips.
-- **IconsOnly** — same as Compact.
-- **FloatingIsland** — detached panel, draggable anywhere in the window,
-  resizable via the bottom-end handle; accent-tinted shadow; honors
-  `transparencyEnabled` / `glassOpacity`.
-- **Docked** — macOS-style centered dock with spring scale-on-hover (1.25x).
-- **AutoHide** — strip slides in from the edge; a 8dp reveal strip is shown at
-  the edge while hidden.
+### Sidebar
 
-## Auto-Hide
+A structured dock on one of four screen edges (Left/Right/Top/Bottom). Two layouts:
+- **Expanded**: icons + labels (220–340dp width, adaptive to window)
+- **Compact**: icons only (64dp width)
 
-- `Ctrl+B` toggles the strip anywhere.
-- Hovering the strip keeps it revealed; leaving the panel hides it again.
-- `FullscreenOnly` uses `LocalWindowPlacement` (provided by `KaiteyeWindow`
-  from the real `WindowPlacement` state: `Floating` vs `Maximized`).
+### Floating
 
-## Persistence
+A movable launcher bubble with a full launchpad. The bubble:
+- Drags freely with pointer delta
+- Snaps to 12 anchor points on release
+- Has hysteresis to prevent snap oscillation
+- Supports left click, right click, touch, keyboard
 
-`NavLayoutManager` (`nav/NavLayoutManager.kt`) loads and saves the layout via
-DataStore:
+## Architecture
 
-- Keys: `nav_sidebar_mode`, `nav_sidebar_position`, `nav_auto_hide`,
-  `nav_collapsed`, `nav_width`, `nav_height`, `nav_floating_offset_x`,
-  `nav_floating_offset_y`, `nav_accent_index`.
-- NavShell loads the persisted layout into `themeState.layoutConfig` on start
-  and mirrors every layout change back (`syncFrom`), so Appearance Studio,
-  drags and resizes persist automatically.
-- Settings added to `PreferencesContract.AppPreferences` /
-  `AppPreferences.kt` (`enableBackup = false`).
+```
+NavShell
+├── CompositionLocalProvider
+│   ├── LocalNavigationSettings
+│   ├── LocalDebugSettings
+│   └── LocalHomeNavigationState
+├── AdaptiveNavigation
+│   ├── Row/Column layout (depends on edge)
+│   │   ├── DockedSidebar (animated width/height)
+│   │   └── Content (weighted sibling)
+│   └── AnimatedVisibility
+│       └── BubbleLauncher (floating mode)
+├── PageNameIndicator (debug overlay)
+└── DebugPanel (debug overlay)
+```
 
-## Navigation Model
+## Layout Safety
 
-- `NavEntry` — id, label (composable lambda), icon or `iconContent`, selected,
-  enabled, onClick.
-- `NavSection` — optional header + entries.
-- `buildNavSections` builds three sections:
-  - **Home** — all `HomeScreenTab.VisibleTabs` (icon + label from
-    `titleResolver`), navigates to Home first, then switches tab.
-  - **Features** — DeckBrowser, TextAnalysis, StatisticsDashboard.
-  - **System** — AppearanceStudio, Backup, Sync, Sponsor (only when
-    `PlatformFeature.supported`), About.
+The dock occupies REAL layout space — never a padding hack:
+- Content is a weighted sibling that always gets remaining space
+- Sidebar physically cannot swallow the window
+- No negative padding possible
+- Mode transitions animate between valid geometries
 
-## Design Tokens
+### NavGeometry
 
-`NavTokens` centralizes all navigation sizing:
+All measurements derive from one model:
+- `adaptiveSidebarWidth()`: 16–22% of window, clamped 208–384dp
+- `dockedBarSize()`: width (vertical) or height (horizontal)
+- `contentReserve()`: docked region + system inset, always non-negative
 
-- Elevations: strip 6dp, dock 16dp, floating 24dp.
-- Radii: from `Dimens` scale, multiplied by `RadiusConfig.globalMultiplier`
-  at runtime (`scaledRadius`).
-- Item heights, icon sizes, strip widths, edge margins.
+Hard safety: docked region can never exceed 50% of window.
 
-## Known Limitations (next iterations)
+## Snap Points (Floating)
 
-- `Smart` auto-hide currently behaves like `Always`.
-- Sync indicator / sponsor button from the legacy home sidebar are not yet
-  surfaced in the shell chrome.
-- Top/Bottom positions still overlap the 44dp custom titlebar drag region.
+12 anchor points (3 per edge):
+- Top: TopLeft, TopCenter, TopRight
+- Bottom: BottomLeft, BottomCenter, BottomRight
+- Left: LeftTop, LeftCenter, LeftBottom
+- Right: RightTop, RightCenter, RightBottom
 
-## Node-layer integration (TARGET — NODE §126, §133–§135)
+Corners are deduplicated across adjacent edges.
 
-Navigation targets the Launchpad model over the current NavShell:
+## Settings
 
-- **Launchpad** (§126, §135): central spring-opened overlay with the fixed destination
-  set — Home · Browse · Library · Media · Stats · Journey · Settings (+ search).
-  Opened from the floating bubble; keyboard/mouse/touch/gamepad parity; no FPS drop;
-  consistent spacing/icons (acceptance criteria in UX_FLOWS §1).
-- **Floating bubble** (§133): draggable, 3 magnetic snap points per side, elastic
-  settle (spring, never teleport), position persisted; click = Launchpad, hold/
-  right-click = alternate menu; touch-hold supported; no redundant Quick Access.
-- **Sidebar** (§134): ≈20% nav / 80% content on desktop, resizable within bounds,
-  collapsible; on mobile becomes top/bottom nav — never a full-screen takeover.
-- Every destination is a node-view: Browse = node exploration (§129), Library = node
-  queries (§128), Media = MEDIA-family nodes (§130), Stats = event-derived (§131).
-- Journey is a destination (§141), entered via Launchpad with a deliberate transition.
+### NavigationSettings
 
-Known-limitations items above (Smart auto-hide, shell chrome gaps, titlebar overlap)
-remain tracked in `CURRENT_ISSUES.md`; the Launchpad work extends the same tokens.
+```kotlin
+data class NavigationSettings(
+    val mode: NavigationMode,           // Sidebar | Floating
+    val rememberPreviousMode: Boolean,
+    val defaultMode: NavigationMode,
+    val lastMode: NavigationMode?,
+    val animationsEnabled: Boolean,
+    val animationDurationMs: Int,       // 260ms default
+    val desktopEdge: SidebarPosition,   // Left | Right | Top | Bottom
+    val sidebarExpansion: SidebarExpansion, // Expanded | Compact
+    val snapPoint: BubbleSnapPoint,
+    val snapOffsetX: Int,
+    val snapOffsetY: Int,
+    val bubble: BubbleSettings,
+    val launchpad: LaunchpadSettings,
+    val phone: PhoneNavigationSettings,
+    val sidebar: SidebarSettings,
+    val accessibility: AccessibilitySettings,
+    val showPageName: Boolean
+)
+```
+
+### BubbleSettings
+
+- Size (56dp default)
+- Icon size (26dp)
+- Snap sensitivity (80)
+- Safe margin (12dp)
+- Hold duration (480ms)
+- Auto-hide (20s default)
+- Hover reveal (true)
+
+### SidebarSettings
+
+- Expanded width index (260dp default)
+- Icon size (22dp)
+- Compact spacing (8dp)
+- Label visibility (Always | Hover | Never)
+
+## Keyboard Shortcuts
+
+- **Ctrl+B**: Toggle Sidebar ↔ Floating
+- **Ctrl+Shift+F**: Open universal search
+- **Escape**: Close overlays, go back
+- **/**: Focus search
+- **↑/↓**: Navigate lists
+- **Enter**: Open selected item
+
+## Transitions
+
+- Sidebar width animates with spring physics
+- Mode switching fades in/out
+- Resize uses snap (no animation during drag)
+- Page transitions: Crossfade, Slide, FadeThrough, Scale (configurable)
+
+## Phone Adaptation
+
+Phone only supports Top/Bottom bar placement:
+- Bar height: 52dp (touch-friendly)
+- Compact item size: 48dp (Material minimum)
+- Mode/compact controls in settings, not in bar
+
+## Debug Overlay
+
+When `showPageName` is enabled:
+- Top-right pill: Page name + analytics code
+- Bottom-left panel: Page, Route, Panel, Theme, Navigation mode
+- Copy debug info action
+- Optional: FPS, viewport, window state
+
+## State Persistence
+
+Navigation settings are persisted as JSON in `PreferencesContract.AppPreferences.navSettingsJson`. Legacy mode names are migrated to the two-mode model.
+
+## Screen Registry
+
+Every major screen declares a `PageIdentity`:
+- `id`: stable identifier
+- `name`: human-readable name
+- `route`: URL-like path
+- `panel`: optional sub-surface
+
+`PageRegistry` maps analytics codes to human-readable names for the debug overlay.
+
+## Home Navigation
+
+Home has 5 tabs:
+1. GeneralDashboard (default)
+2. Library
+3. Stats
+4. Search
+5. Settings
+
+Tab state is persisted via `PreferencesDefaultHomeTab`.
+
+## Back Navigation
+
+Back behavior preserves the navigation stack:
+- Home → Search → 食べる → 食
+- Back: 食 → 食べる → Search → Home
+
+Main destinations maintain a stack; `navigateBack()` pops the top.
+
+## Deep Links (Future)
+
+Planned URL scheme:
+- `kaiteyo://kanji/食`
+- `kaiteyo://word/食べる`
+- `kaiteyo://sentence/...`
+- `kaiteyo://lesson/...`
+
+Enables Anki integration, browser links, external apps.

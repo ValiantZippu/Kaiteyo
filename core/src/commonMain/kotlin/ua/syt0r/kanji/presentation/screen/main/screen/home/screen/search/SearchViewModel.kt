@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
 import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.presentation.common.PaginatableJapaneseWordList
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.KaiteyoHomeState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.data.RadicalSearchState
 
@@ -30,11 +31,13 @@ class SearchViewModel(
     private val loadRadicalsUseCase: SearchScreenContract.LoadRadicalsUseCase,
     private val searchByRadicalsUseCase: SearchScreenContract.SearchByRadicalsUseCase,
     private val updateEnabledRadicalsUseCase: SearchScreenContract.UpdateEnabledRadicalsUseCase,
+    private val loadKaiteyoHomeUseCase: SearchScreenContract.LoadKaiteyoHomeUseCase,
     private val analyticsManager: AnalyticsManager
 ) : SearchScreenContract.ViewModel {
 
     private val searchQueriesChannel = Channel<String>(Channel.BUFFERED)
     private val loadMoreWordsChannel = Channel<Int>(Channel.RENDEZVOUS, BufferOverflow.DROP_LATEST)
+    private val kaiteyoHomeLoadChannel = Channel<Unit>(Channel.BUFFERED)
 
     private val radicalsDataInitialLoadChannel = Channel<Unit>(Channel.BUFFERED)
     private val radicalsLoadedCompletable = CompletableDeferred<Unit>()
@@ -57,12 +60,15 @@ class SearchViewModel(
         )
     )
 
+    override val kaiteyoHomeState = mutableStateOf(KaiteyoHomeState(isLoading = true))
+
 
     init {
         handleSearchQueries()
         handleRadicalsLoading(radicalsLoadedCompletable)
         handleRadicalSearchQueries(radicalsLoadedCompletable)
         handleLoadMoreWordsRequests()
+        handleKaiteyoHomeLoading()
     }
 
     override fun search(input: String) {
@@ -82,6 +88,20 @@ class SearchViewModel(
 
     override fun radicalsSearch(radicals: Set<String>) {
         radicalsSearchQueriesChannel.trySend(radicals)
+    }
+
+    override fun loadKaiteyoHome() {
+        kaiteyoHomeLoadChannel.trySend(Unit)
+    }
+
+    private fun handleKaiteyoHomeLoading() = viewModelScope.launch {
+        kaiteyoHomeLoadChannel.consumeAsFlow()
+            .collectLatest {
+                kaiteyoHomeState.value = kaiteyoHomeState.value.copy(isLoading = true)
+                kaiteyoHomeState.value = withContext(Dispatchers.IO) {
+                    loadKaiteyoHomeUseCase.load()
+                }
+            }
     }
 
     private fun handleSearchQueries() = viewModelScope.launch {

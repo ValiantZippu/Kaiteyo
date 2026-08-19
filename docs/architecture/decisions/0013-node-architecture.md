@@ -1,6 +1,9 @@
-# ADR-0013: Node-Based Architecture (Target)
+# ADR-0013: Node-Based Architecture (Accepted)
 
-**Status**: Proposed — agreed as target architecture, not yet implemented
+**Status**: Accepted — storage decision recorded (KT-DB-002); the language
+node/edge layer is implemented as a typed read-model; remaining families
+(World/Gameplay, user-knowledge tables) stay TARGET per this ADR's scope
+discipline.
 **Date**: 2026-08
 
 ## Context
@@ -50,6 +53,37 @@ Scope discipline:
 - **Status is TARGET** (NODE §158): nothing here is implemented yet; docs and registries
   are the contract.
 
+## Storage decision (KT-DB-002)
+
+**Chosen: a typed read-model over the existing databases — no new SQLDelight
+tables, no schema changes.** This resolves the open question in the original
+Context ("new SQLDelight tables vs. read-model") and satisfies the AGENTS.md
+"never change SQLDelight schemas unless explicitly requested" constraint.
+
+Concretely (all in `core`'s knowledge package):
+
+- **Node types** — `KnowledgeNodeKind` + `NodeTypeRegistry` (code mirror of
+  `NODE_TYPE_REGISTRY.md`): every node the product builds maps to a registered
+  nodeType value with family/status.
+- **Edges** — `KnowledgeEdgeType` + `RelationshipRegistry` (code mirror of
+  `RELATIONSHIP_REGISTRY.md`): every emitted edge maps to a documented
+  relationship value with a declared inverse.
+- **Resolution** — `KnowledgeRepository` queries + in-memory indexes materialize
+  nodes/edges on demand. `KnowledgeGraphRepository` expands graphs one hop at a
+  time (never materializing the dictionary); `NodeTraversal` (KT-DICT-003) walks
+  node ids for traversal chips (`食べる → 食 → 食事`). This is the
+  `NODE_DATA_MODEL.md` §3 **view option**: language nodes are views/joins over
+  app-data rows, so dictionary data is never duplicated.
+- **User knowledge / event log** (NODE_DATA_MODEL §4–§5) remain TARGET: they
+  need mutable tables and are gated behind an explicit schema-change request
+  (ADR-0016).
+- **No existing table is modified** — NODE_DATA_MODEL §10 acceptance #5 holds.
+
+Trade-offs accepted: cross-domain queries ("where have I seen this?") stay
+ad hoc per surface until the event log lands; the read-model re-derives edges
+instead of indexing them. Both are the documented cost of the no-schema-change
+constraint and are revisited when ADR-0016 tables are requested.
+
 ## Alternatives
 
 - **No shared layer (status quo)** — rejected: cross-domain queries (NODE §83 "where have
@@ -80,5 +114,9 @@ Scope discipline:
   authoring pipeline
 - `docs/planning/TODO.md` → Node & Journey — the build order (model → graph → dictionary/
   kanji/vocab node views → user knowledge → …)
-- First milestone (per §157): node contract + registries as storage, then the knowledge
-  graph bridge for media and Journey exposure.
+- **Delivered (KT-DB-002/KT-DICT-003)**: `NodeTypeRegistry` + `RelationshipRegistry`
+  as code, `NodeTraversal` (one-hop chips + multi-hop walk), `KnowledgeGraph`
+  (progressive expansion, collapse, pathfinding, trail) — all over the existing
+  databases. Unit-tested in `NodeRegistryTest.kt` / `KnowledgeGraphTest.kt`.
+- **Remaining under this ADR**: World/Gameplay node families (ADR-0014/0015 gate),
+  user-knowledge tables (ADR-0016, schema change), cross-domain edge persistence.

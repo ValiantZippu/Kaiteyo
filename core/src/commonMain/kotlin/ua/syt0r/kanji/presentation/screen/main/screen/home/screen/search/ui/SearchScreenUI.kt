@@ -7,6 +7,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,12 +27,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -59,6 +63,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,6 +83,7 @@ import ua.syt0r.kanji.presentation.common.trackItemPosition
 import ua.syt0r.kanji.presentation.common.ui.kanji.HighlightedLetter
 import ua.syt0r.kanji.presentation.dialog.SaveWordDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.KaiteyoHomeState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.data.RadicalSearchState
 
@@ -93,13 +99,15 @@ private enum class SearchContentFilter(val label: String) {
 fun SearchScreenUI(
     state: State<ScreenState>,
     radicalsState: State<RadicalSearchState>,
+    kaiteyoHomeState: State<KaiteyoHomeState>,
     onSubmitInput: (String) -> Unit,
     onRadicalsSectionExpanded: () -> Unit,
     onRadicalsSelected: (Set<String>) -> Unit,
     onCharacterClick: (String) -> Unit,
     onWordClick: (JapaneseWord) -> Unit,
     onScrolledToEnd: () -> Unit,
-    onWordFeedback: (JapaneseWord) -> Unit
+    onWordFeedback: (JapaneseWord) -> Unit,
+    onLoadKaiteyoHome: () -> Unit
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -120,6 +128,7 @@ fun SearchScreenUI(
         snapshotFlow { selectedRadicalsState.value }
             .onEach { onRadicalsSelected(it) }
             .launchIn(this)
+        onLoadKaiteyoHome()
     }
 
     ModalBottomSheetLayout(
@@ -145,6 +154,28 @@ fun SearchScreenUI(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+
+            // ---- Header: title + subtitle (Library-style) ---------------
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = resolveString { nav.browseLabel },
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    Text(
+                        text = "Kanji, vocabulary and expressions — one search",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
 
             val searchContainerState = rememberCollapsibleContainerState()
 
@@ -186,6 +217,7 @@ fun SearchScreenUI(
                     state.value.characters.isNotEmpty() || state.value.words.value.items.isNotEmpty()
                 }
             }
+            val isQueryEmpty = inputState.value.text.isEmpty()
             if (hasResults.value) {
                 Row(
                     modifier = Modifier
@@ -203,14 +235,24 @@ fun SearchScreenUI(
                 }
             }
 
-            ListContent(
-                screenState = state.value,
-                searchContainerState = searchContainerState,
-                contentFilter = contentFilter,
-                onCharacterClick = onCharacterClick,
-                onWordClick = onWordClick,
-                onScrolledToEnd = onScrolledToEnd
-            )
+            if (isQueryEmpty) {
+                // Kaiteyo-style dictionary home while nothing is typed.
+                SearchKaiteyoHome(
+                    state = kaiteyoHomeState.value,
+                    onRefresh = onLoadKaiteyoHome,
+                    onCharacterClick = onCharacterClick,
+                    onWordClick = onWordClick
+                )
+            } else {
+                ListContent(
+                    screenState = state.value,
+                    searchContainerState = searchContainerState,
+                    contentFilter = contentFilter,
+                    onCharacterClick = onCharacterClick,
+                    onWordClick = onWordClick,
+                    onScrolledToEnd = onScrolledToEnd
+                )
+            }
 
         }
 
@@ -233,19 +275,34 @@ private fun InputSection(
         derivedStateOf { !isInputFocused.value && enteredText.text.isEmpty() }
     }
     val color = MaterialTheme.colorScheme.onSurfaceVariant
+    val accent = MaterialTheme.colorScheme.primary
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp, horizontal = 20.dp)
-            .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .then(
+                if (isInputFocused.value) {
+                    Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                } else Modifier
+            )
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(19.dp)
+        )
+        Spacer(Modifier.width(6.dp))
         IconButton(
-            onClick = onOpenRadicalSearch
+            onClick = onOpenRadicalSearch,
+            modifier = Modifier.size(34.dp)
         ) {
-            Text(text = "部")
+            Text(text = "部", color = accent)
         }
         Box(modifier = Modifier.weight(1f)) {
             BasicTextField(
@@ -257,7 +314,7 @@ private fun InputSection(
                 maxLines = 1,
                 singleLine = true,
                 interactionSource = interactionSource,
-                cursorBrush = SolidColor(color),
+                cursorBrush = SolidColor(accent),
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color)
             )
 
@@ -274,9 +331,10 @@ private fun InputSection(
             }
         }
         IconButton(
-            onClick = { enteredText = TextFieldValue() }
+            onClick = { enteredText = TextFieldValue() },
+            modifier = Modifier.size(34.dp)
         ) {
-            Icon(Icons.Default.Close, null)
+            Icon(Icons.Default.Close, null, tint = color)
         }
 
     }
@@ -413,11 +471,14 @@ private fun ListContent(
 @Composable
 private fun SearchHeader(text: String) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        letterSpacing = 0.8.sp,
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .wrapContentSize(Alignment.CenterStart)
     )

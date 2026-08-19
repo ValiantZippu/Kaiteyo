@@ -2,9 +2,16 @@ package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.cate
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.vector.ImageVector
+import ua.syt0r.kanji.core.knowledge.LearnerProfile
+import ua.syt0r.kanji.core.knowledge.LearnerProfileStore
+import ua.syt0r.kanji.core.knowledge.level.DisplayOverridesStore
 import ua.syt0r.kanji.core.theme_manager.ThemeManager
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme
 import ua.syt0r.kanji.presentation.common.resources.string.getStrings
@@ -28,7 +35,9 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.compo
 
 class AppearanceSettingsCategory(
     private val themeManager: ThemeManager,
-    private val themeSettingsState: ThemeSettingsState
+    private val themeSettingsState: ThemeSettingsState,
+    private val learnerProfileStore: LearnerProfileStore,
+    private val displayOverridesStore: DisplayOverridesStore
 ) : SettingsScreenContract.Category {
 
     private val strings = getStrings()
@@ -50,6 +59,10 @@ class AppearanceSettingsCategory(
         PreferencesTheme.Light -> strings.settings.themeLight
         PreferencesTheme.Dark -> strings.settings.themeDark
         PreferencesTheme.Amoled -> strings.settings.themeAmoled
+        PreferencesTheme.Sepia -> strings.settings.themeSepia
+        PreferencesTheme.Cream -> strings.settings.themeCream
+        PreferencesTheme.Paper -> strings.settings.themePaper
+        PreferencesTheme.Midnight -> strings.settings.themeMidnight
     }
 
     private fun radiusLabel(style: CornerRadiusStyle): String = when (style) {
@@ -76,6 +89,27 @@ class AppearanceSettingsCategory(
         AllAccentSchemes.map { scheme -> scheme.name to scheme.previewColors.first() }
 
     override val descriptors: List<SettingDescriptor> = listOf(
+        SettingDescriptor(
+            id = "learner_profile",
+            title = "Learner profile",
+            description = "Level-adaptive presentation: what dictionary pages show, sentence difficulty, graph depth and card presets.",
+            keywords = listOf("level", "profile", "beginner", "intermediate", "advanced", "adaptive", "native", "research", "custom"),
+            render = { LearnerProfileSetting() }
+        ),
+        SettingDescriptor(
+            id = "card_settings",
+            title = "Card layouts",
+            description = "Show, hide and reorder the cards on kanji, word, sentence, grammar and collection pages. Presets per learner profile.",
+            keywords = listOf("cards", "layout", "customize", "preset", "kanji page", "word page", "reorder", "visibility"),
+            render = { CardSettingsLink() }
+        ),
+        SettingDescriptor(
+            id = "romaji_override",
+            title = "Show romaji on dictionary pages",
+            description = "Romanized readings under the kana on kanji and word pages. Off = follow the learner profile. This never changes the stored data — just what is displayed (spec §24).",
+            keywords = listOf("romaji", "romanization", "reading", "kana", "dictionary", "display", "override"),
+            render = { RomajiOverrideSetting() }
+        ),
         SettingDescriptor(
             id = "theme_mode",
             title = s.themeMode,
@@ -202,6 +236,8 @@ class AppearanceSettingsCategory(
         SettingGroup(
             title = s.groupTheme,
             children = listOf(
+                { LearnerProfileSetting() },
+                { RomajiOverrideSetting() },
                 { ThemeModeSetting() },
                 { AccentColorSetting() },
                 { CornerRadiusSetting() },
@@ -251,6 +287,49 @@ class AppearanceSettingsCategory(
     // ============================================
     // SETTINGS
     // ============================================
+
+    @Composable
+    private fun LearnerProfileSetting() {
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var selected by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(LearnerProfile.Intermediate) }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            selected = learnerProfileStore.load().profile
+        }
+        SegmentedSetting(
+            title = "Learner profile",
+            description = "Adapts dictionary pages, example difficulty and graph depth to your level. Switch any time — nothing is hidden permanently.",
+            options = LearnerProfile.entries,
+            labelOf = { it.displayName },
+            selected = selected,
+            onSelected = { profile ->
+                selected = profile
+                scope.launch { learnerProfileStore.saveProfile(profile) }
+            }
+        )
+    }
+
+    @Composable
+    private fun RomajiOverrideSetting() {
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var romaji by androidx.compose.runtime.remember {
+            androidx.compose.runtime.mutableStateOf(false)
+        }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            romaji = displayOverridesStore.load().override == true
+        }
+        ToggleSetting(
+            title = "Show romaji on dictionary pages",
+            description = "Romanized readings under the kana on kanji and word pages. Off = follow the learner profile; the underlying data is never changed.",
+            checked = romaji,
+            onChanged = { enabled ->
+                romaji = enabled
+                scope.launch {
+                    if (enabled) displayOverridesStore.setRomaji(true)
+                    else displayOverridesStore.clearRomajiOverride()
+                }
+            }
+        )
+    }
 
     @Composable
     private fun ThemeModeSetting() {
@@ -452,6 +531,17 @@ class AppearanceSettingsCategory(
             onChanged = { scale ->
                 themeSettingsState.update { it.copy(iconScale = scale) }
             }
+        )
+    }
+
+    @Composable
+    private fun CardSettingsLink() {
+        val navigationState = LocalSettingsNavigation.current ?: return
+        LinkSetting(
+            title = "Customize card layouts",
+            description = "Show/hide/reorder cards for each dictionary page type, with presets.",
+            icon = androidx.compose.material.icons.Icons.Default.ViewModule,
+            onClick = { navigationState.navigate(MainDestination.CardSettings()) }
         )
     }
 

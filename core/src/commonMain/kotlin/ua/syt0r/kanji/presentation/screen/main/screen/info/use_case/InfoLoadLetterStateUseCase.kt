@@ -83,10 +83,31 @@ class InfoLoadLetterStateUseCase(
                 .thenByDescending { it.strokesCount }
         )
 
+        val meanings = appDataRepository.getMeanings(character)
+        val phonetics = radicals.filter { rad ->
+            val radMeanings = appDataRepository.getMeanings(rad.radical)
+            rad.radical != character
+        }.map { it.radical }.distinct()
+
+        val radicalMeanings = radicals.associateWith { rad ->
+            appDataRepository.getMeanings(rad.radical).firstOrNull() ?: "radical"
+        }
+
+        val mnemonics = listOf(
+            ua.syt0r.kanji.core.knowledge.KanjiMnemonic(
+                text = "Combines " + radicals.joinToString(" and ") { rad ->
+                    val meaning = radicalMeanings[rad] ?: "radical"
+                    "${rad.radical} ($meaning)"
+                } + " to represent ${meanings.firstOrNull() ?: character}.",
+                source = ua.syt0r.kanji.core.knowledge.ContentSourceType.Authoritative,
+                components = radicals.map { it.radical }.distinct()
+            )
+        )
+
         return LetterInfoData.Kanji(
             character = character,
             strokes = strokes,
-            meanings = appDataRepository.getMeanings(character),
+            meanings = meanings,
             on = onReadings,
             kun = kunReadings,
             grade = classifications.find { it is CharacterClassification.Grade }
@@ -107,6 +128,8 @@ class InfoLoadLetterStateUseCase(
                 }
             ),
             displayRadicals = radicals.map { it.radical }.distinct(),
+            phonetics = phonetics,
+            mnemonics = mnemonics,
             vocab = getPaginateableVocab(character, coroutineScope),
             sentences = getPaginateableSentences(character, coroutineScope)
         )

@@ -20,6 +20,7 @@ import ua.syt0r.kanji.core.user_data.preferences.PreferencesTheme
 import ua.syt0r.kanji.presentation.common.theme.AppTheme
 import ua.syt0r.kanji.presentation.common.theme.BaseMode
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
+import ua.syt0r.kanji.presentation.common.theme.isDarkMode
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoThemeState
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
 import ua.syt0r.kanji.presentation.common.theme.LocalThemeSettingsState
@@ -121,9 +122,13 @@ fun KaiteyoThemeRoot(
         PreferencesTheme.Light -> BaseMode.Light
         PreferencesTheme.Dark -> BaseMode.Dark
         PreferencesTheme.Amoled -> BaseMode.Oled
+        PreferencesTheme.Sepia -> BaseMode.Sepia
+        PreferencesTheme.Cream -> BaseMode.Cream
+        PreferencesTheme.Paper -> BaseMode.Paper
+        PreferencesTheme.Midnight -> BaseMode.Midnight
     }
 
-    val useDarkTheme = baseMode != BaseMode.Light
+    val useDarkTheme = baseMode.isDarkMode
 
     // Update theme state when preference changes
     LaunchedEffect(baseMode) {

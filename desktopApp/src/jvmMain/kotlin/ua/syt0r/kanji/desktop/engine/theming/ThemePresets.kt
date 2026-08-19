@@ -60,6 +60,55 @@ object ThemePresets {
         tags = listOf("light", "reading")
     )
 
+    val Cream = KaiteyoTheme(
+        id = "cream", name = "Cream", description = "Warm cream paper",
+        baseMode = "cream",
+        colors = ThemeColors(
+            background = "#F7F3E8", surface = "#EDE6D4",
+            surfaceElevated = "#E5DCC0", surfaceInteractive = "#FAF7F0", border = "#DED1BC",
+            textPrimary = "#3A2F22", textSecondary = "#6B5B47", textMuted = "#988A75", textInverse = "#F7F3E8",
+            primary = "#C2A25A", secondary = "#A67C39", onPrimary = "#F7F3E8",
+            hover = "#EDE6D4", selection = "#E5DCC0",
+            sidebar = "#EDE6D4", navigation = "#EDE6D4", window = "#F7F3E8",
+            dialog = "#FAF7F0", popup = "#FAF7F0", launchpad = "#EDE6D4", bubble = "#FAF7F0",
+            shadow = "#338A6E4A"
+        ),
+        tags = listOf("light", "warm", "reading")
+    )
+
+    val Paper = KaiteyoTheme(
+        id = "paper", name = "Paper", description = "Clean off-white",
+        baseMode = "paper",
+        colors = ThemeColors(
+            background = "#FCFAF5", surface = "#F5F2E8",
+            surfaceElevated = "#EDE9DE", surfaceInteractive = "#FFFFFF", border = "#E6E0D4",
+            textPrimary = "#2A2A2A", textSecondary = "#575757", textMuted = "#888888", textInverse = "#FCFAF5",
+            primary = "#7BC8FF", secondary = "#FEAB57", onPrimary = "#0A0A0A",
+            hover = "#EDE9DE", selection = "#DCE2EC",
+            sidebar = "#F5F2E8", navigation = "#F5F2E8", window = "#FCFAF5",
+            dialog = "#FFFFFF", popup = "#FFFFFF", launchpad = "#F5F2E8", bubble = "#FFFFFF",
+            shadow = "#33606060"
+        ),
+        tags = listOf("light", "clean")
+    )
+
+    val Midnight = KaiteyoTheme(
+        id = "midnight", name = "Midnight", description = "Deep blue dark",
+        baseMode = "midnight",
+        colors = ThemeColors(
+            background = "#0A0D1A", surface = "#121622",
+            surfaceElevated = "#1A1F30", surfaceInteractive = "#232940", border = "#2A324A",
+            textPrimary = "#EAEAFF", textSecondary = "#B8B8D0", textMuted = "#808098", textInverse = "#0A0D1A",
+            primary = "#7BC8FF", secondary = "#A78BFA", onPrimary = "#0A0D1A",
+            hover = "#1C2131", selection = "#323B5C",
+            sidebar = "#0A0D1A", navigation = "#0A0D1A", window = "#0A0D1A",
+            dialog = "#1A1F30", popup = "#1A1F30", launchpad = "#0A0D1A", bubble = "#232940",
+            shadow = "#33000000"
+        ),
+        tags = listOf("dark", "blue", "night")
+    )
+
+
     val Solarized = KaiteyoTheme(
         id = "solarized", name = "Solarized", description = "Ethan Schoonover's palette",
         baseMode = "dark",
@@ -235,6 +284,7 @@ object ThemePresets {
 
     val all: List<KaiteyoTheme> = listOf(
         Signature, Oled, DarkGray, Light, Reading,
+        Cream, Paper, Midnight,
         Solarized, Nord, Catppuccin, Gruvbox, TokyoNight, Dracula,
         NothingOS, Material, Glass,
         CottonCandy, Ocean, Forest

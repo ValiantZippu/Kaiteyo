@@ -219,6 +219,12 @@ class AppPreferences(
         initialValue = { false }
     )
 
+    override val vocabNoteTypeId: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "vocab_note_type_id",
+        initialValue = { "kaiteyo-default" }
+    )
+
     override val dailyResetTime: SuspendedProperty<LocalTime> = createProperty(
         type = LocalTimeSuspendedPropertyType,
         key = "daily_reset_time",
@@ -303,6 +309,27 @@ class AppPreferences(
         enableBackup = false
     )
 
+    override val debugSettingsJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_debug_settings_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val learnerProfileJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_learner_profile_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val romajiOverrideJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_romaji_override_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
     override val reviewSettingsJson: SuspendedProperty<String> = createProperty(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_review_settings_json",
@@ -319,6 +346,20 @@ class AppPreferences(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_saved_searches_json",
         initialValue = { "" }
+    )
+
+    override val homeCommandCenterJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_home_command_center_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val mediaReferencesJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_media_references_json",
+        initialValue = { "" },
+        enableBackup = false
     )
 
     override val deckFavoritesJson: SuspendedProperty<String> = createProperty(
@@ -367,6 +408,41 @@ class AppPreferences(
     override val statisticsGoalHistoryJson: SuspendedProperty<String> = createProperty(
         type = StringSuspendedPropertyType,
         key = "kaiteyo_statistics_goal_history_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val kanjiCardLayoutJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_kanji_card_layout_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val wordCardLayoutJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_word_card_layout_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val sentenceCardLayoutJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_sentence_card_layout_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val grammarCardLayoutJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_grammar_card_layout_json",
+        initialValue = { "" },
+        enableBackup = false
+    )
+
+    override val collectionCardLayoutJson: SuspendedProperty<String> = createProperty(
+        type = StringSuspendedPropertyType,
+        key = "kaiteyo_collection_card_layout_json",
         initialValue = { "" },
         enableBackup = false
     )

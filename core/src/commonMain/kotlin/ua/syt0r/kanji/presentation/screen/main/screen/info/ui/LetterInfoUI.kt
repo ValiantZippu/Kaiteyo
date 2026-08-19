@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,11 +21,9 @@ import ua.syt0r.kanji.presentation.common.collectAsState
 import ua.syt0r.kanji.presentation.common.trackList
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
-import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiRadicalUI
 import ua.syt0r.kanji.presentation.dialog.SaveWordDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
-import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableSection
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableSentenceSection
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenExpandableVocabSection
 import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningAction
@@ -41,9 +38,11 @@ fun LetterInfoUI(
     learningState: ItemLearningState?,
     learningActions: List<LearningAction>,
     onFuriganaClick: (String) -> Unit,
-    onWordClick: (JapaneseWord) -> Unit
+    onWordClick: (JapaneseWord) -> Unit,
+    onPlayReading: ((String) -> Unit)? = null,
+    isPlayingReading: String? = null,
+    onSaveUserNote: ((String) -> Unit)? = null
 ) {
-
     var wordToAddToDeck by remember { mutableStateOf<JapaneseWord?>(null) }
     wordToAddToDeck?.let {
         SaveWordDialog(
@@ -80,42 +79,28 @@ fun LetterInfoUI(
             }
         }
 
-
         is LetterInfoData.Kanji -> {
-            val radicalsExpanded = rememberSaveable { mutableStateOf(true) }
             letterHeading = {
                 item {
                     LetterInfoKanjiHeading(
-                        data = letterData
+                        data = letterData,
+                        onRadicalClick = onFuriganaClick,
+                        onPlayReading = onPlayReading,
+                        isPlayingReading = isPlayingReading,
+                        userNote = learningState?.note,
+                        onSaveUserNote = onSaveUserNote,
+                        onWordClick = onWordClick
                     )
                 }
-                val radicalsData = letterData.radicalsSectionData
-                infoScreenExpandableSection(
-                    headerText = "Radicals",
-                    headerCount = radicalsData.radicals.size,
-                    expanded = radicalsExpanded,
-                    expandedContent = {
-                        items(radicalsData.radicals) {
-                            KanjiRadicalUI(
-                                strokes = radicalsData.strokes,
-                                radicalDetails = it,
-                                onRadicalClick = onFuriganaClick
-                            )
-                        }
-
-                    }
-                )
             }
         }
     }
 
     if (LocalOrientation.current == Orientation.Portrait) {
-
         LazyColumn(
             state = listState,
             modifier = Modifier.trackList(listSpacerState)
         ) {
-
             letterHeading(letterData)
 
             if (learningState != null) {
@@ -142,19 +127,16 @@ fun LetterInfoUI(
             )
 
             listSpacerState.ExtraSpacer(this)
-
         }
     } else {
-
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .trackList(listSpacerState)
         ) {
-
             LazyColumn(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1.15f)
                     .fillMaxHeight()
             ) {
                 letterHeading(letterData)
@@ -164,10 +146,9 @@ fun LetterInfoUI(
             LazyColumn(
                 state = listState,
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.85f)
                     .fillMaxHeight()
             ) {
-
                 if (learningState != null) {
                     item(key = "learning-status") {
                         LearningStatusSection(
@@ -192,10 +173,7 @@ fun LetterInfoUI(
                 )
 
                 listSpacerState.ExtraSpacer(this)
-
             }
         }
-
     }
-
 }

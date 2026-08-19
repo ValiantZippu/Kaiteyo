@@ -44,7 +44,8 @@ class StudySettingsCategory(
     override val subtitle: String = s.categoryStudySubtitle
     override val keywords: List<String> = listOf(
         "session", "shuffle", "order", "practice", "dashboard", "limit", "review",
-        "new", "radicals", "audio", "autoplay"
+        "new", "radicals", "audio", "autoplay", "profile", "level", "beginner",
+        "advanced", "adaptation", "furigana", "romaji"
     )
     override val icon: ImageVector? = Icons.Default.School
 
@@ -134,6 +135,13 @@ class StudySettingsCategory(
             render = { VocabPracticeTypeSetting() }
         ),
         SettingDescriptor(
+            id = "study_learner_profile",
+            title = s.learnerProfile,
+            description = s.learnerProfileDescription,
+            keywords = listOf("profile", "level", "beginner", "advanced", "adaptation", "furigana", "romaji"),
+            render = { LearnerProfileLink() }
+        ),
+        SettingDescriptor(
             id = "study_daily_limit",
             title = s.dailyLimit,
             description = s.dailyLimitDescription,
@@ -165,8 +173,19 @@ class StudySettingsCategory(
         SettingGroup(
             title = s.groupRelated,
             children = listOf(
+                { LearnerProfileLink() },
                 { DailyLimitLink() }
             )
+        )
+    }
+
+    @Composable
+    private fun LearnerProfileLink() {
+        val navigationState = LocalSettingsNavigation.current ?: return
+        LinkSetting(
+            title = s.learnerProfile,
+            description = s.learnerProfileDescription,
+            onClick = { navigationState.navigate(MainDestination.LearnerProfile) }
         )
     }
 

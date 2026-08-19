@@ -79,19 +79,20 @@ fun TutorialDialog(
                     SrsAnswerButton(
                         label = resolveString { commonPractice.hardButton },
                         interval = 1.days,
-                        onClick = { },
+                        // Tutorial illustration — the real buttons appear during review.
+                        onClick = { /* illustrative only */ },
                         color = MaterialTheme.extraColorScheme.due
                     )
                     SrsAnswerButton(
                         label = resolveString { commonPractice.goodButton },
                         interval = 3.days,
-                        onClick = { },
+                        onClick = { /* illustrative only */ },
                         color = MaterialTheme.extraColorScheme.success
                     )
                     SrsAnswerButton(
                         label = resolveString { commonPractice.easyButton },
                         interval = 12.days,
-                        onClick = { },
+                        onClick = { /* illustrative only */ },
                         color = MaterialTheme.extraColorScheme.new
                     )
                 }

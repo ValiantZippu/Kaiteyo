@@ -93,6 +93,9 @@ import ua.syt0r.kanji.desktop.ui.media.MediaView
 import ua.syt0r.kanji.desktop.ui.mistakes.MistakesView
 import ua.syt0r.kanji.desktop.ui.browser_web.LearningBrowserView
 import ua.syt0r.kanji.desktop.ui.ocr.OcrView
+import ua.syt0r.kanji.desktop.ui.reading.ReadingView
+import ua.syt0r.kanji.desktop.ui.curriculum.CurriculumView
+import ua.syt0r.kanji.desktop.ui.graph.GraphExplorerView
 import ua.syt0r.kanji.desktop.ui.mining.MiningView
 import ua.syt0r.kanji.desktop.ui.mining.MiningDialog
 import ua.syt0r.kanji.desktop.ui.api.IntegrationsView
@@ -168,6 +171,9 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("tab-previous") { state.cycleTab(-1) }
         d.register("tab-reopen") { state.reopenClosedTab() }
         (1..9).forEach { index -> d.register("tab-jump-$index") { state.jumpToTab(index) } }
+        d.register("open-reading") { state.currentView = WorkspaceView.Reading }
+        d.register("open-curriculum") { state.currentView = WorkspaceView.Curriculum }
+        d.register("open-graph") { state.currentView = WorkspaceView.Graph }
         d.register("open-browser2") { state.currentView = WorkspaceView.LearningBrowser }
         d.register("open-ocr") { state.currentView = WorkspaceView.Ocr }
         d.register("open-integrations") { state.currentView = WorkspaceView.Integrations }
@@ -545,6 +551,9 @@ private fun viewContent(state: AppState, view: WorkspaceView) {
             WorkspaceView.Mining -> MiningView(state)
             WorkspaceView.Media -> MediaView(state)
             WorkspaceView.LearningBrowser -> LearningBrowserView(state)
+            WorkspaceView.Reading -> ReadingView(state)
+            WorkspaceView.Curriculum -> CurriculumView(state)
+            WorkspaceView.Graph -> GraphExplorerView(state)
             WorkspaceView.Ocr -> OcrView(state)
             WorkspaceView.Integrations -> IntegrationsView(state)
             WorkspaceView.Review -> ReviewView(state)

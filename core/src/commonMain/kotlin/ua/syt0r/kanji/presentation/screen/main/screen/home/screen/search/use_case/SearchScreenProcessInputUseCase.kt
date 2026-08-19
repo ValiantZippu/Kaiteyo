@@ -3,6 +3,7 @@ package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.use_ca
 import androidx.compose.runtime.mutableStateOf
 import ua.syt0r.kanji.core.app_data.AppDataRepository
 import ua.syt0r.kanji.core.japanese.isKana
+import ua.syt0r.kanji.core.knowledge.normalizeForSearch
 import ua.syt0r.kanji.presentation.common.PaginatableJapaneseWordList
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract
 
@@ -14,7 +15,12 @@ class SearchScreenProcessInputUseCase(
         input: String
     ): SearchScreenContract.ScreenState {
 
-        val knownCharacters = input.mapNotNull {
+        // Unify IME width/case and fold katakana to hiragana so queries match
+        // dictionary spellings regardless of how the text was typed
+        // (JapaneseTextNormalizer, KT-SEARCH-005).
+        val normalized = input.normalizeForSearch()
+
+        val knownCharacters = normalized.mapNotNull {
             val charString = it.toString()
             val areStrokesAvailable = appDataRepository.getStrokes(charString).isNotEmpty()
 
@@ -27,11 +33,11 @@ class SearchScreenProcessInputUseCase(
         }
 
 
-        val (wordsCount, words) = input.takeIf { it.isNotEmpty() }
+        val (wordsCount, words) = normalized.takeIf { it.isNotEmpty() }
             ?.let {
-                val wordsCount = appDataRepository.getWordsWithTextCount(input)
+                val wordsCount = appDataRepository.getWordsWithTextCount(normalized)
                 val words = appDataRepository.getWordsWithText(
-                    text = it,
+                    text = normalized,
                     limit = SearchScreenContract.InitialWordsCount
                 )
                 wordsCount to words
@@ -42,7 +48,7 @@ class SearchScreenProcessInputUseCase(
             isLoading = false,
             characters = knownCharacters,
             words = mutableStateOf(PaginatableJapaneseWordList(wordsCount, words)),
-            query = input
+            query = normalized
         )
     }
 

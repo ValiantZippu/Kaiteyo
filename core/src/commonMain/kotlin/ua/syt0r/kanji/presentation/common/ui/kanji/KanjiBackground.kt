@@ -7,98 +7,130 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
 
+private val MajorSegmentLength = 8.dp
+private val MajorSegmentWidth = 1.5.dp
+private val MinorSegmentLength = 6.dp
+private val MinorSegmentWidth = 0.5.dp
 
-private val LineSegmentLength = 6.dp
-private val LineSegmentWidth = 2.dp
-private val SmallerLineSegmentWidth = LineSegmentWidth / 4
-
+/**
+ * Premium writing grid background.
+ * Uses the current theme accent at very low opacity for a subtle, cohesive feel.
+ * Diagonal division lines + quarter lines = full hanjie-style practice grid.
+ */
 @Composable
 fun KanjiBackground(
     modifier: Modifier = Modifier,
     lineColor: Color = MaterialTheme.colorScheme.outline
 ) {
-
     Canvas(modifier) {
 
-        val segmentLengthPx = LineSegmentLength.toPx()
-        val segmentWidthPx = LineSegmentWidth.toPx()
-        val smallSegmentWidth = SmallerLineSegmentWidth.toPx()
-
-        val verticalSegmentSize = Size(segmentWidthPx, segmentLengthPx)
-        val smallVerticalSegmentSize = Size(smallSegmentWidth, segmentLengthPx)
-
-        val horizontalSegmentSize = Size(segmentLengthPx, segmentWidthPx)
-        val smallHorizontalSegmentSize = Size(segmentLengthPx, smallSegmentWidth)
-
-        val segmentsCount = ceil(size.maxDimension / segmentLengthPx / 2).toInt()
-
-        /***
-         * Drawing rectangles instead of line with path effect for backward compatibility
-         * Issue: https://github.com/syt0r/Kanji-Dojo/issues/12
-         */
-
-        /***
-         * Drawing rectangles instead of line with path effect for backward compatibility
-         * Issue: https://github.com/syt0r/Kanji-Dojo/issues/12
-         */
-        drawDottedLineWithRectangles(
-            Orientation.Vertical,
-            segmentsCount,
-            verticalSegmentSize,
-            Offset(size.width / 2 - verticalSegmentSize.width / 2, 0f),
-            lineColor
+        // Subtle radial gradient wash from the center — like premium paper
+        val washColors = listOf(
+            Color.Transparent,
+            lineColor.copy(alpha = 0.02f),
+            Color.Transparent
+        )
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = washColors,
+                center = Offset(size.width / 2f, size.height / 2f),
+                radius = size.maxDimension * 0.55f
+            )
         )
 
-        drawDottedLineWithRectangles(
+        val majorLenPx = MajorSegmentLength.toPx()
+        val majorW = MajorSegmentWidth.toPx()
+        val minorLenPx = MinorSegmentLength.toPx()
+        val minorW = MinorSegmentWidth.toPx()
+
+        // Major center cross
+        val majorColor = lineColor.copy(alpha = 0.35f)
+        val minorColor = lineColor.copy(alpha = 0.18f)
+
+        // Horizontal center (major)
+        drawDashedLine(
             Orientation.Horizontal,
-            segmentsCount,
-            horizontalSegmentSize,
-            Offset(0f, size.height / 2 - horizontalSegmentSize.height / 2),
-            lineColor
+            ceil(size.maxDimension / majorLenPx / 2).toInt(),
+            Size(majorLenPx, majorW),
+            Offset(0f, size.height / 2f - majorW / 2f),
+            majorColor
         )
 
-        drawDottedLineWithRectangles(
+        // Vertical center (major)
+        drawDashedLine(
             Orientation.Vertical,
-            segmentsCount,
-            smallVerticalSegmentSize,
-            Offset(size.width / 4 - smallVerticalSegmentSize.width / 2, 0f),
-            lineColor
+            ceil(size.maxDimension / majorLenPx / 2).toInt(),
+            Size(majorW, majorLenPx),
+            Offset(size.width / 2f - majorW / 2f, 0f),
+            majorColor
         )
 
-        drawDottedLineWithRectangles(
+        // Quarter lines (minor) — vertical
+        drawDashedLine(
             Orientation.Vertical,
-            segmentsCount,
-            smallVerticalSegmentSize,
-            Offset(size.width * 3 / 4 - smallVerticalSegmentSize.width / 2, 0f),
-            lineColor
+            ceil(size.maxDimension / minorLenPx / 2).toInt(),
+            Size(minorW, minorLenPx),
+            Offset(size.width / 4f - minorW / 2f, 0f),
+            minorColor
+        )
+        drawDashedLine(
+            Orientation.Vertical,
+            ceil(size.maxDimension / minorLenPx / 2).toInt(),
+            Size(minorW, minorLenPx),
+            Offset(size.width * 3f / 4f - minorW / 2f, 0f),
+            minorColor
         )
 
-        drawDottedLineWithRectangles(
+        // Quarter lines (minor) — horizontal
+        drawDashedLine(
             Orientation.Horizontal,
-            segmentsCount,
-            smallHorizontalSegmentSize,
-            Offset(0f, size.height / 4 - smallHorizontalSegmentSize.height / 2),
-            lineColor
+            ceil(size.maxDimension / minorLenPx / 2).toInt(),
+            Size(minorLenPx, minorW),
+            Offset(0f, size.height / 4f - minorW / 2f),
+            minorColor
         )
-
-        drawDottedLineWithRectangles(
+        drawDashedLine(
             Orientation.Horizontal,
-            segmentsCount,
-            smallHorizontalSegmentSize,
-            Offset(0f, size.height * 3 / 4 - smallHorizontalSegmentSize.height / 2),
-            lineColor
+            ceil(size.maxDimension / minorLenPx / 2).toInt(),
+            Size(minorLenPx, minorW),
+            Offset(0f, size.height * 3f / 4f - minorW / 2f),
+            minorColor
         )
 
+        // Diagonal lines (very subtle) — top-left to bottom-right
+        val diagAlpha = 0.08f
+        val diagColor = lineColor.copy(alpha = diagAlpha)
+        drawLine(
+            color = diagColor,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, size.height),
+            strokeWidth = 0.5.dp.toPx()
+        )
+        // top-right to bottom-left
+        drawLine(
+            color = diagColor,
+            start = Offset(size.width, 0f),
+            end = Offset(0f, size.height),
+            strokeWidth = 0.5.dp.toPx()
+        )
+
+        // Outer border — thin accent line
+        drawRect(
+            color = lineColor.copy(alpha = 0.25f),
+            topLeft = Offset.Zero,
+            size = size,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+        )
     }
-
 }
 
-private fun DrawScope.drawDottedLineWithRectangles(
+private fun DrawScope.drawDashedLine(
     orientation: Orientation,
     segmentsCount: Int,
     lineSegmentSize: Size,
@@ -113,4 +145,3 @@ private fun DrawScope.drawDottedLineWithRectangles(
         drawRect(color, offset, lineSegmentSize)
     }
 }
-

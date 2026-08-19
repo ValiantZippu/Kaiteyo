@@ -76,6 +76,36 @@ val textSepiaSecondary = Color(0xFF7A6B5D)
 val textSepiaMuted = Color(0xFFA89888)
 val borderSepia = Color(0xFFD4C8B8)
 
+// --- Cream (warm paper) ---
+val backgroundCream = Color(0xFFF7F3E8)
+val surfaceCreamDark = Color(0xFFEDE6D4)
+val surfaceCreamMedium = Color(0xFFE5DCC0)
+val surfaceCreamLight = Color(0xFFFAF7F0)
+val textCreamPrimary = Color(0xFF3A2F22)
+val textCreamSecondary = Color(0xFF6B5B47)
+val textCreamMuted = Color(0xFF988A75)
+val borderCream = Color(0xFFDED1BC)
+
+// --- Paper (clean off-white) ---
+val backgroundPaper = Color(0xFFFCFAF5)
+val surfacePaperDark = Color(0xFFF5F2E8)
+val surfacePaperMedium = Color(0xFFEDE9DE)
+val surfacePaperLight = Color(0xFFFFFFFF)
+val textPaperPrimary = Color(0xFF2A2A2A)
+val textPaperSecondary = Color(0xFF575757)
+val textPaperMuted = Color(0xFF888888)
+val borderPaper = Color(0xFFE6E0D4)
+
+// --- Midnight (deep dark blue) ---
+val backgroundMidnight = Color(0xFF0A0D1A)
+val surfaceMidnightDark = Color(0xFF121622)
+val surfaceMidnightMedium = Color(0xFF1A1F30)
+val surfaceMidnightLight = Color(0xFF232940)
+val textMidnightPrimary = Color(0xFFEAEAFF)
+val textMidnightSecondary = Color(0xFFB8B8D0)
+val textMidnightMuted = Color(0xFF808098)
+val borderMidnight = Color(0xFF2A324A)
+
 // --- Shared Surface Colors ---
 
 val surfaceBorder = Color(0xFF2A2A2A)
@@ -263,6 +293,162 @@ val favoriteYellow = Color(0xFFFFD93D)
 val dueOrange = Color(0xFFFF9F43)
 
 // ============================================
+// SEMANTIC COLOR TOKENS
+// Theme-aware replacements for hardcoded Color(0xFF...) values.
+// Follows the heatmap philosophy: accent-derived, surface-layered,
+// consistent across every screen.
+// ============================================
+
+data class KaiteyoSemanticColors(
+    // --- Review actions (again/hard/good/easy) ---
+    val reviewAgain: Color,
+    val reviewHard: Color,
+    val reviewGood: Color,
+    val reviewEasy: Color,
+    // --- Card status ---
+    val cardNew: Color,
+    val cardLearning: Color,
+    val cardYoung: Color,
+    val cardMature: Color,
+    val cardRelearning: Color,
+    val cardSuspended: Color,
+    val cardBuried: Color,
+    val cardArchived: Color,
+    // --- Semantic indicators ---
+    val success: Color,
+    val warning: Color,
+    val error: Color,
+    val info: Color,
+    val favorite: Color,
+    val due: Color,
+    val new: Color,
+    val suspended: Color,
+    val muted: Color,
+    // --- Card flags ---
+    val flagRed: Color,
+    val flagOrange: Color,
+    val flagYellow: Color,
+    val flagGreen: Color,
+    val flagBlue: Color,
+    val flagPurple: Color,
+    // --- Activity / history entry types ---
+    val activityReview: Color,
+    val activityReviewFailed: Color,
+    val activityEdit: Color,
+    val activityImport: Color,
+    val activityExport: Color,
+    val activityTag: Color,
+    val activityFlag: Color,
+    val activityNote: Color,
+    val activityStudy: Color,
+    val activitySystem: Color,
+    // --- Difficulty tiers ---
+    val difficultyEasy: Color,
+    val difficultyMedium: Color,
+    val difficultyHard: Color,
+    // --- Day/Night indicator ---
+    val dayColor: Color,
+    val nightColor: Color,
+    // --- Status badges ---
+    val automaticBackup: Color,
+    val favoriteStar: Color
+)
+
+val KaiteyoSemanticColorsDark = KaiteyoSemanticColors(
+    reviewAgain = Color(0xFFFF6B6B),
+    reviewHard = Color(0xFFFEAB57),
+    reviewGood = Color(0xFFC2FC8B),
+    reviewEasy = Color(0xFF7BC8FF),
+    cardNew = Color(0xFF7BC8FF),
+    cardLearning = Color(0xFFFEAB57),
+    cardYoung = Color(0xFFC2FC8B),
+    cardMature = Color(0xFF4CAF50),
+    cardRelearning = Color(0xFFFF6B6B),
+    cardSuspended = Color(0xFFB0B0B0),
+    cardBuried = Color(0xFF9B59B6),
+    cardArchived = Color(0xFF7F8C8D),
+    success = semanticSuccess,
+    warning = semanticWarning,
+    error = semanticError,
+    info = semanticInfo,
+    favorite = Color(0xFFFFD93D),
+    due = dueOrange,
+    new = semanticNew,
+    suspended = Color(0xFFB0B0B0),
+    muted = textMuted,
+    flagRed = Color(0xFFFF6B6B),
+    flagOrange = Color(0xFFFEAB57),
+    flagYellow = Color(0xFFFFD93D),
+    flagGreen = Color(0xFFC2FC8B),
+    flagBlue = Color(0xFF7BC8FF),
+    flagPurple = Color(0xFFA78BFA),
+    activityReview = Color(0xFF4CAF50),
+    activityReviewFailed = Color(0xFFF44336),
+    activityEdit = Color(0xFF2196F3),
+    activityImport = Color(0xFF9C27B0),
+    activityExport = Color(0xFF009688),
+    activityTag = Color(0xFFFF9800),
+    activityFlag = Color(0xFFFF5722),
+    activityNote = Color(0xFF3F51B5),
+    activityStudy = Color(0xFF00BCD4),
+    activitySystem = Color(0xFF9E9E9E),
+    difficultyEasy = Color(0xFFC2FC8B),
+    difficultyMedium = Color(0xFFFEAB57),
+    difficultyHard = Color(0xFFFF6B6B),
+    dayColor = Color(0xFFFFD93D),
+    nightColor = Color(0xFF7BC8FF),
+    automaticBackup = Color(0xFFFEAB57),
+    favoriteStar = Color(0xFFFFD93D)
+)
+
+val KaiteyoSemanticColorsLight = KaiteyoSemanticColors(
+    reviewAgain = Color(0xFFE53935),
+    reviewHard = Color(0xFFEF6C00),
+    reviewGood = Color(0xFF2E7D32),
+    reviewEasy = Color(0xFF1565C0),
+    cardNew = Color(0xFF1565C0),
+    cardLearning = Color(0xFFEF6C00),
+    cardYoung = Color(0xFF2E7D32),
+    cardMature = Color(0xFF1B5E20),
+    cardRelearning = Color(0xFFE53935),
+    cardSuspended = Color(0xFF757575),
+    cardBuried = Color(0xFF7B1FA2),
+    cardArchived = Color(0xFF616161),
+    success = Color(0xFF2E7D32),
+    warning = Color(0xFFEF6C00),
+    error = Color(0xFFE53935),
+    info = Color(0xFF1565C0),
+    favorite = Color(0xFFF9A825),
+    due = Color(0xFFEF6C00),
+    new = Color(0xFF7B1FA2),
+    suspended = Color(0xFF757575),
+    muted = textMutedLight,
+    flagRed = Color(0xFFE53935),
+    flagOrange = Color(0xFFEF6C00),
+    flagYellow = Color(0xFFF9A825),
+    flagGreen = Color(0xFF2E7D32),
+    flagBlue = Color(0xFF1565C0),
+    flagPurple = Color(0xFF7B1FA2),
+    activityReview = Color(0xFF2E7D32),
+    activityReviewFailed = Color(0xFFE53935),
+    activityEdit = Color(0xFF1565C0),
+    activityImport = Color(0xFF7B1FA2),
+    activityExport = Color(0xFF00796B),
+    activityTag = Color(0xFFEF6C00),
+    activityFlag = Color(0xFFE64A19),
+    activityNote = Color(0xFF303F9F),
+    activityStudy = Color(0xFF00838F),
+    activitySystem = Color(0xFF757575),
+    difficultyEasy = Color(0xFF2E7D32),
+    difficultyMedium = Color(0xFFEF6C00),
+    difficultyHard = Color(0xFFE53935),
+    dayColor = Color(0xFFF9A825),
+    nightColor = Color(0xFF1565C0),
+    automaticBackup = Color(0xFFEF6C00),
+    favoriteStar = Color(0xFFF9A825)
+)
+
+// ============================================
 // GRADIENT SYSTEM
 // ============================================
 
@@ -309,33 +495,99 @@ enum class BaseMode(val displayName: String) {
     Oled("OLED Black"),
     Dark("Dark Gray"),
     Light("Light"),
-    Sepia("Sepia")
+    Sepia("Sepia"),
+    Cream("Cream"),
+    Paper("Paper"),
+    Midnight("Midnight")
 }
+
+/** True for base modes whose surface is dark (needs light text / dark Material scheme). */
+val BaseMode.isDarkMode: Boolean get() = this == BaseMode.Oled || this == BaseMode.Dark || this == BaseMode.Midnight
 
 fun surfaceForBaseMode(mode: BaseMode): SurfaceColors = when (mode) {
     BaseMode.Oled -> SurfaceColors(
         background = backgroundOledBlack, surface = surfaceOledDark,
         surfaceElevated = surfaceOledMedium, surfaceInteractive = surfaceOledLight,
         border = surfaceBorder, textPrimary = textPrimary,
-        textSecondary = textSecondary, textMuted = textMuted, textInverse = textInverse
+        textSecondary = textSecondary, textMuted = textMuted, textInverse = textInverse,
+        kanjiKnown = frequencyBandColors(true)[0],
+        kanjiLearning = frequencyBandColors(true)[1],
+        kanjiNew = textMuted,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(true)
     )
     BaseMode.Dark -> SurfaceColors(
         background = backgroundDarkGray, surface = surfaceDarkGrayDark,
         surfaceElevated = surfaceDarkGrayMedium, surfaceInteractive = surfaceDarkGrayLight,
         border = surfaceBorder, textPrimary = textPrimary,
-        textSecondary = textSecondary, textMuted = textMuted, textInverse = textInverse
+        textSecondary = textSecondary, textMuted = textMuted, textInverse = textInverse,
+        kanjiKnown = frequencyBandColors(true)[0],
+        kanjiLearning = frequencyBandColors(true)[1],
+        kanjiNew = textMuted,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(true)
     )
     BaseMode.Light -> SurfaceColors(
         background = backgroundLight, surface = surfaceLightDark,
         surfaceElevated = surfaceLightMedium, surfaceInteractive = surfaceLightLight,
         border = surfaceBorderLight, textPrimary = textPrimaryLight,
-        textSecondary = textSecondaryLight, textMuted = textMutedLight, textInverse = textInverseLight
+        textSecondary = textSecondaryLight, textMuted = textMutedLight, textInverse = textInverseLight,
+        kanjiKnown = frequencyBandColors(false)[0],
+        kanjiLearning = frequencyBandColors(false)[1],
+        kanjiNew = textMutedLight,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(false)
     )
     BaseMode.Sepia -> SurfaceColors(
         background = backgroundSepia, surface = surfaceSepiaDark,
         surfaceElevated = surfaceSepiaMedium, surfaceInteractive = surfaceSepiaLight,
         border = borderSepia, textPrimary = textSepiaPrimary,
-        textSecondary = textSepiaSecondary, textMuted = textSepiaMuted, textInverse = textSepiaPrimary
+        textSecondary = textSepiaSecondary, textMuted = textSepiaMuted, textInverse = textSepiaPrimary,
+        kanjiKnown = frequencyBandColors(false)[0],
+        kanjiLearning = frequencyBandColors(false)[1],
+        kanjiNew = textSepiaMuted,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(false)
+    )
+    BaseMode.Cream -> SurfaceColors(
+        background = backgroundCream, surface = surfaceCreamDark,
+        surfaceElevated = surfaceCreamMedium, surfaceInteractive = surfaceCreamLight,
+        border = borderCream, textPrimary = textCreamPrimary,
+        textSecondary = textCreamSecondary, textMuted = textCreamMuted, textInverse = textCreamPrimary,
+        kanjiKnown = frequencyBandColors(false)[0],
+        kanjiLearning = frequencyBandColors(false)[1],
+        kanjiNew = textCreamMuted,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(false)
+    )
+    BaseMode.Paper -> SurfaceColors(
+        background = backgroundPaper, surface = surfacePaperDark,
+        surfaceElevated = surfacePaperMedium, surfaceInteractive = surfacePaperLight,
+        border = borderPaper, textPrimary = textPaperPrimary,
+        textSecondary = textPaperSecondary, textMuted = textPaperMuted, textInverse = textPaperPrimary,
+        kanjiKnown = frequencyBandColors(false)[0],
+        kanjiLearning = frequencyBandColors(false)[1],
+        kanjiNew = textPaperMuted,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(false)
+    )
+    BaseMode.Midnight -> SurfaceColors(
+        background = backgroundMidnight, surface = surfaceMidnightDark,
+        surfaceElevated = surfaceMidnightMedium, surfaceInteractive = surfaceMidnightLight,
+        border = borderMidnight, textPrimary = textMidnightPrimary,
+        textSecondary = textMidnightSecondary, textMuted = textMidnightMuted, textInverse = textMidnightPrimary,
+        kanjiKnown = frequencyBandColors(true)[0],
+        kanjiLearning = frequencyBandColors(true)[1],
+        kanjiNew = textMidnightMuted,
+        kanjiDue = semanticWarning,
+        kanjiMastered = semanticSuccess,
+        frequencyTiers = frequencyBandColors(true)
     )
 }
 
@@ -348,5 +600,39 @@ data class SurfaceColors(
     val textPrimary: Color,
     val textSecondary: Color,
     val textMuted: Color,
-    val textInverse: Color
+    val textInverse: Color,
+    /** Per-base-mode study-state tokens (theme-aware, not hardcoded). */
+    val kanjiKnown: Color = semanticSuccess,
+    val kanjiLearning: Color = semanticInfo,
+    val kanjiNew: Color = textMuted,
+    val kanjiDue: Color = semanticWarning,
+    val kanjiMastered: Color = semanticSuccess,
+    /** Five frequency bands, VeryCommon → Rare (Kaiteyo green→red language). */
+    val frequencyTiers: List<Color> = frequencyBandColors(false),
+    /** Study-state for suspended items; defaults to muted. */
+    val kanjiSuspended: Color = textMuted
 )
+
+/**
+ * Frequency band → color, luminance-adaptive so the green→red ramp reads on
+ * both light and dark themes. [true] = dark base mode (brighter ramp);
+ * [false] = light base mode (saturated ramp).
+ * Order: VeryCommon, Common, Moderate, Uncommon, Rare.
+ */
+fun frequencyBandColors(isDark: Boolean): List<Color> = if (isDark) {
+    listOf(
+        Color(0xFF86FF86), // Very common — green
+        Color(0xFF7FBDFE), // Common — blue
+        Color(0xFFFFE684), // Moderate — amber
+        Color(0xFFFFBB6B), // Uncommon — orange
+        Color(0xFFFF7B7B)  // Rare — red
+    )
+} else {
+    listOf(
+        Color(0xFF2E7D32), // Very common — green
+        Color(0xFF1565C0), // Common — blue
+        Color(0xFFEF6C00), // Moderate — amber
+        Color(0xFFFFA726), // Uncommon — orange
+        Color(0xFFFF3D3D)  // Rare — red
+    )
+}

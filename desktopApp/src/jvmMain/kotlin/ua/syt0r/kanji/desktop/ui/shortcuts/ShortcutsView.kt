@@ -33,6 +33,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.engine.shortcuts.KeyChord
 import ua.syt0r.kanji.desktop.engine.shortcuts.ShortcutCategory
 import ua.syt0r.kanji.desktop.engine.shortcuts.ShortcutDef
@@ -58,11 +59,12 @@ fun ShortcutsView(state: AppState) {
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Xl)
     ) {
         DsSectionHeader(
-            title = "Keyboard shortcuts",
-            subtitle = "${defs.count { it.enabled }} enabled of ${defs.size}",
+            title = resolveSuiteString { keyboardShortcutsTitle },
+            subtitle = "${defs.count { it.enabled }} ${resolveSuiteString { shortcutsEnabledOf }} ${defs.size}",
             action = {
                 DsButton(
-                    text = "Reset all",
+                    text = resolveSuiteString { resetAll },
+
                     kind = DsButtonKind.Ghost,
                     onClick = {
                         registry.resetAll()
@@ -103,7 +105,7 @@ fun ShortcutsView(state: AppState) {
     rebindTarget?.let { def ->
         DsPromptDialog(
             title = "Rebind '${def.name}'",
-            placeholder = "Chord, e.g. Ctrl+Shift+K",
+            placeholder = resolveSuiteString { rebindPlaceholder },
             initialValue = def.boundChord.label,
             onConfirm = { raw ->
                 val chord = KeyChord.fromLabel(raw)

@@ -1,13 +1,18 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.info
 
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
+import ua.syt0r.kanji.core.japanese.KanaReading
 import ua.syt0r.kanji.core.japanese.isKanji
+import ua.syt0r.kanji.core.japanese.kanaToRomaji
+import ua.syt0r.kanji.core.tts.KanaTtsManager
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenContract.ScreenState
 
 class InfoScreenViewModel(
@@ -15,14 +20,34 @@ class InfoScreenViewModel(
     screenData: InfoScreenData,
     private val loadLetterStateUseCase: InfoScreenContract.LoadLetterStateUseCase,
     private val loadVocabStateUseCase: InfoScreenContract.LoadVocabStateUseCase,
-    private val analyticsManager: AnalyticsManager
+    private val analyticsManager: AnalyticsManager,
+    private val kanaTtsManager: KanaTtsManager? = null
 ) : InfoScreenContract.ViewModel {
 
     override val state = mutableStateOf<ScreenState>(ScreenState.Loading)
 
+    private val _playingReading = mutableStateOf<String?>(null)
+    override val playingReading: State<String?> = _playingReading
+
     init {
         viewModelScope.launch {
             state.value = withContext(Dispatchers.IO) { screenData.toState() }
+        }
+    }
+
+    override fun speakReading(reading: String) {
+        if (kanaTtsManager == null) return
+        viewModelScope.launch {
+            try {
+                _playingReading.value = reading
+                val romaji = reading.kanaToRomaji()
+                kanaTtsManager.speak(KanaReading(nihonShiki = romaji))
+                delay(600)
+            } catch (_: Exception) {
+                // TTS failed gracefully without crash
+            } finally {
+                _playingReading.value = null
+            }
         }
     }
 

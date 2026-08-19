@@ -41,7 +41,10 @@ import ua.syt0r.kanji.desktop.designsystem.DsTextField
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.engine.grammar.CuratedGrammarFacts
+import ua.syt0r.kanji.desktop.engine.grammar.GrammarIndex
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.model.ToastKind
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -69,18 +72,51 @@ private data class GrammarItem(
     val prompt: String get() = "$sentenceBefore＿＿＿$sentenceAfter"
 }
 
-private val starterDeck: List<GrammarItem> = listOf(
-    GrammarItem("〜ながら", "while doing", "Connects two simultaneous actions done by the same person.", "テレビを見", "ながら", "ご飯を食べます。"),
-    GrammarItem("〜たことがある", "have done before", "Describes past experience; the verb takes the た-form.", "日本に行っ", "たことがある", "。"),
-    GrammarItem("〜てもいい", "may do", "Gives or asks permission.", "ここで写真を撮っ", "てもいい", "ですか。"),
-    GrammarItem("〜なければならない", "must do", "Expresses obligation; plain form of 〜なければいけない.", "薬を飲ま", "なければならない", "。"),
-    GrammarItem("〜そうだ", "looks like", "Conveys an appearance or guess based on how something looks.", "雨が降り", "そうだ", "。"),
-    GrammarItem("〜から", "because", "States a reason; casual and direct.", "時間がない", "から", "、急ぎます。"),
-    GrammarItem("〜ので", "because (polite)", "States a reason; softer and more objective than から.", "風邪を引いた", "ので", "、休みます。"),
-    GrammarItem("〜前に", "before doing", "Expresses 'before X happens'; verb in dictionary form.", "寝る", "前に", "、歯を磨きます。"),
-    GrammarItem("〜た後で", "after doing", "Expresses 'after X'; verb takes the た-form.", "食べた", "後で", "、散歩します。"),
-    GrammarItem("〜つもり", "intend to", "States an intention; verb in dictionary form.", "来年、日本へ行く", "つもり", "です。")
-)
+/**
+ * The built-in grammar content, derived from the curated reference facts via
+ * the GrammarIndex (no hardcoded per-card strings — the index is the source).
+ * Each example sentence is split around the pattern's real occurrence: the
+ * pattern's tail (〜ながら → ながら) is located inside the example and becomes
+ * the blank. Entries whose example doesn't literally contain the tail fall
+ * back to showing the whole sentence with the pattern appended as context,
+ * exactly like user-tagged grammar cards do.
+ */
+private fun curatedGrammarItems(): List<GrammarItem> {
+    val index = GrammarIndex(CuratedGrammarFacts.all)
+    return CuratedGrammarFacts.all.mapNotNull { entry ->
+        val tail = entry.pattern.removePrefix("〜")
+        if (tail.isBlank()) return@mapNotNull null
+        val example = entry.examples.firstOrNull()?.japanese ?: return@mapNotNull null
+        val at = example.indexOf(tail)
+        if (at >= 0) {
+            GrammarItem(
+                pattern = entry.pattern,
+                meaning = shortMeaning(entry.meaning),
+                explanation = entry.meaning,
+                sentenceBefore = example.substring(0, at),
+                answer = tail,
+                sentenceAfter = example.substring(at + tail.length)
+            )
+        } else {
+            GrammarItem(
+                pattern = entry.pattern,
+                meaning = shortMeaning(entry.meaning),
+                explanation = entry.meaning,
+                sentenceBefore = "",
+                answer = tail,
+                sentenceAfter = " ($example)"
+            )
+        }
+    }
+}
+
+/** Headline for the card header — first clause of the explanation text. */
+private fun shortMeaning(meaning: String): String =
+    meaning.split(" — ", " —", "— ", ";").first().trim().take(48)
+
+/** All built-in + user-tagged grammar items (deduplicated by pattern). */
+private fun allGrammarItems(state: AppState): List<GrammarItem> =
+    (curatedGrammarItems() + taggedGrammarItems(state)).distinctBy { it.pattern }
 
 /** Grammar items contributed by user cards tagged `grammar`. */
 private fun taggedGrammarItems(state: AppState): List<GrammarItem> =
@@ -113,10 +149,9 @@ fun GrammarPracticeView(state: AppState) {
         GrammarLaunchPanel(
             state = state,
             onStart = {
-                val deck = (starterDeck + taggedGrammarItems(state))
-                    .distinctBy { it.pattern }
+                val deck = allGrammarItems(state)
                     .shuffled()
-                    .take(10)
+                    .take(12)
                 session = deck
                 index = 0
                 revealed = false
@@ -151,7 +186,7 @@ fun GrammarPracticeView(state: AppState) {
                 fraction = if (items.isEmpty()) 0f else index.toFloat() / items.size,
                 modifier = Modifier.weight(1f)
             )
-            DsBadge(text = "Grammar", tint = accent().primary)
+            DsBadge(text = resolveSuiteString { grammarTitle }, tint = accent().primary)
         }
 
         if (item == null) {
@@ -310,20 +345,25 @@ private fun GrammarLaunchPanel(state: AppState, onStart: () -> Unit) {
     ) {
         DsCard(elevated = true) {
             Column(Modifier.padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                Text("Grammar practice", color = sc.textPrimary, fontSize = DsType.Heading, fontWeight = FontWeight.Bold)
+                Text(
+                    "${resolveSuiteString { grammarTitle }} practice",
+                    color = sc.textPrimary,
+                    fontSize = DsType.Heading,
+                    fontWeight = FontWeight.Bold
+                )
                 Text(
                     text = "Explanation-first pattern review: read the pattern and its explanation, complete the example sentence, then reveal and grade yourself.",
                     color = sc.textSecondary,
                     fontSize = DsType.Body
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    DsBadge(text = "${starterDeck.size} built-in patterns", tint = accent().primary)
+                    DsBadge(text = "${curatedGrammarItems().size} ${resolveSuiteString { builtInPatternsLabel }}", tint = accent().primary)
                     if (userPatterns > 0) {
-                        DsBadge(text = "+$userPatterns from your cards", tint = Color(0xFFC2FC8B))
+                        DsBadge(text = "+$userPatterns ${resolveSuiteString { fromYourCardsLabel }}", tint = Color(0xFFC2FC8B))
                     }
                 }
                 DsButton(
-                    text = "Start grammar session",
+                    text = resolveSuiteString { startGrammarSession },
                     icon = Icons.Default.PlayArrow,
                     onClick = onStart
                 )

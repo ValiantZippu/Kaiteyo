@@ -3,6 +3,7 @@ package ua.syt0r.kanji.presentation.screen.main
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 import org.koin.compose.koinInject
@@ -659,6 +660,376 @@ interface MainDestination {
 
     }
 
+    // ==================== KNOWLEDGE EXPLORER ====================
+
+    /**
+     * The dictionary explorer — universal grouped search, kanji / word
+     * entries and the progressively-expanding knowledge graph, all driven by
+     * the knowledge core (real bundled dictionary data).
+     */
+    @Serializable
+    data class KnowledgeExplorer(
+        val query: String = ""
+    ) : MainDestination {
+
+        override val analyticsName: String = "knowledge_explorer"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.knowledge_explorer.KnowledgeExplorerScreen(
+                initialQuery = query,
+                onClose = { state.navigateBack() }
+            )
+        }
+
+    }
+
+    // ==================== KANJI ENTRY ====================
+
+    /**
+     * The modular kanji page. Content is a persisted, user-configurable
+     * sequence of cards (meaning, readings, components, words, sentences,
+     * graph…) — see the KanjiEntry screen and the KanjiCardLayout store.
+     */
+    @Serializable
+    data class KanjiEntry(
+        val character: String
+    ) : MainDestination {
+
+        override val analyticsName: String = "kanji_entry"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.kanji_entry.KanjiEntryScreen(
+                character = character,
+                onClose = { state.navigateBack() },
+                onOpenWord = { wordId ->
+                    state.navigate(
+                        MainDestination.WordEntry(wordId = wordId)
+                    )
+                },
+                onOpenGraph = {
+                    state.navigate(MainDestination.KnowledgeGraph(character))
+                },
+                onOpenKanji = { relatedCharacter ->
+                    state.navigate(MainDestination.KanjiEntry(relatedCharacter))
+                },
+                onOpenSentence = { sentence, translation ->
+                    state.navigate(MainDestination.SentenceEntry(sentence, translation))
+                }
+            )
+        }
+
+    }
+
+    // ==================== WORD ENTRY ====================
+
+    /** The word page — readings, meanings, kanji connections, examples. */
+    @Serializable
+    data class WordEntry(
+        val wordId: Long
+    ) : MainDestination {
+
+        override val analyticsName: String = "word_entry"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.knowledge_explorer.WordEntryScreen(
+                wordId = wordId,
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                },
+                onOpenSentence = { sentence, translation ->
+                    state.navigate(MainDestination.SentenceEntry(sentence, translation))
+                }
+            )
+        }
+
+    }
+
+    // ==================== LEARNER PROFILE ====================
+
+    /**
+     * The level-adaptation picker (spec §23–§24). Profiles adapt
+     * presentation defaults — furigana, romaji, translations, depth,
+     * sentence difficulty, graph complexity, card preset. They never
+     * delete data.
+     */
+    @Serializable
+    object LearnerProfile : MainDestination {
+
+        override val analyticsName: String = "learner_profile"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.learner_profile.LearnerProfileScreen(
+                onClose = { state.navigateBack() }
+            )
+        }
+
+    }
+
+    /** Sentence corpus explorer — search sentences, then open any result. */
+    @Serializable
+    data class SentenceExplorer(
+        val query: String = ""
+    ) : MainDestination {
+
+        override val analyticsName: String = "sentence_explorer"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.sentence.SentenceScreen(
+                initialQuery = query,
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                },
+                onOpenWord = { wordId ->
+                    state.navigate(MainDestination.WordEntry(wordId))
+                }
+            )
+        }
+
+    }
+
+    // ==================== CARD SETTINGS ====================
+
+    /**
+     * The card customization screen (spec §20–§21). Lets the user pick
+     * which entity type to configure, then show/hide/reorder its cards
+     * and apply presets. Every toggle persists through the real layout
+     * store for that entity type.
+     */
+    @Serializable
+    data class CardSettings(
+        val entityType: String = "kanji"
+    ) : MainDestination {
+
+        override val analyticsName: String = "card_settings"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            val entity = ua.syt0r.kanji.core.knowledge.cards.CardEntityType.entries
+                .firstOrNull { it.name.equals(entityType, ignoreCase = true) }
+                ?: ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Kanji
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            ua.syt0r.kanji.presentation.common.ui.cards.CardSettingsScreen(
+                entityType = entity,
+                onBack = { state.navigateBack() },
+                onPresetSelected = { presetId ->
+                    // Persist the preset layout for this entity type immediately.
+                    scope.launch { persistPreset(entity, presetId) }
+                },
+                onSave = { order, hidden ->
+                    scope.launch { persistLayout(entity, order, hidden) }
+                    state.navigateBack()
+                }
+            )
+        }
+
+    }
+
+    // ==================== WORLD ====================
+
+    /**
+     * Kaiteyo World — the Kamakura vertical slice. A streamable 3D
+     * Japan over the World runtime: live state readouts, movement,
+     * camera switch, teleport to real landmarks, save/load.
+     */
+    @Serializable
+    object World : MainDestination {
+
+        override val analyticsName: String = "world"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.world.WorldScreen(
+                navigationState = state,
+                onClose = { state.navigateBack() }
+            )
+        }
+
+    }
+
+    // ==================== KNOWLEDGE GRAPH ====================
+
+    /**
+     * The standalone knowledge-graph explorer. A pan/zoom canvas over the
+     * progressively-expanding graph rooted at [root] (kanji / radical /
+     * word / sentence / grammar node).
+     */
+    @Serializable
+    data class KnowledgeGraph(
+        val root: String
+    ) : MainDestination {
+
+        override val analyticsName: String = "knowledge_graph"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.knowledge_graph.KnowledgeGraphScreen(
+                root = root,
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                }
+            )
+        }
+
+    }
+
+    // ==================== RADICAL EXPLORER ====================
+
+    /**
+     * The radical explorer. A first-class radical browser: selectable grid,
+     * stroke / JLPT / grade filtering, kanji previews and word drill-down —
+     * RADICAL → KANJI → WORDS → SENTENCES.
+     */
+    @Serializable
+    object RadicalExplorer : MainDestination {
+
+        override val analyticsName: String = "radical_explorer"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.radical_explorer.RadicalExplorerScreen(
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                }
+            )
+        }
+
+    }
+
+    // ==================== SENTENCE ENTRY ====================
+
+    /**
+     * A corpus sentence page with interactive tokens (tap a token → kanji /
+     * word entry), grammar highlighting and a difficulty estimate.
+     */
+    @Serializable
+    data class SentenceEntry(
+        val sentence: String,
+        val translation: String = ""
+    ) : MainDestination {
+
+        override val analyticsName: String = "sentence_entry"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.sentence_entry.SentenceEntryScreen(
+                sentence = sentence,
+                translation = translation,
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                },
+                onOpenWord = { wordId ->
+                    state.navigate(MainDestination.WordEntry(wordId = wordId))
+                }
+            )
+        }
+
+    }
+
+    // ==================== COMPONENT EXPLORER ====================
+
+    /**
+     * The component explorer — components are first-class entities. A
+     * component grid with real kanji counts; select one to see every kanji
+     * built from it, then drill into words and sentences.
+     */
+    @Serializable
+    object ComponentExplorer : MainDestination {
+
+        override val analyticsName: String = "component_explorer"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.component_explorer.ComponentExplorerScreen(
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                }
+            )
+        }
+
+    }
+
+    // ==================== BROWSE HUB ====================
+
+    /**
+     * The browse hub — "Explore Japanese": kanji by JLPT/grade, radicals,
+     * components, grammar patterns and library collections, all with real
+     * dataset counts.
+     */
+    @Serializable
+    object BrowseHub : MainDestination {
+
+        override val analyticsName: String = "browse_hub"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.browse_hub.BrowseHubScreen(
+                onClose = { state.navigateBack() },
+                onOpenRadicalExplorer = { state.navigate(MainDestination.RadicalExplorer) },
+                onOpenComponentExplorer = { state.navigate(MainDestination.ComponentExplorer) },
+                onOpenKanjiBrowser = { state.navigate(MainDestination.KanjiBrowser()) },
+                onOpenRecommended = { levels ->
+                    state.navigate(
+                        MainDestination.KanjiBrowser(
+                            ua.syt0r.kanji.presentation.screen.main.screen.kanji_browser.KanjiBrowserCriteria(
+                                jlptLevels = levels
+                            )
+                        )
+                    )
+                },
+                onOpenCollection = { collectionId ->
+                    state.navigate(MainDestination.CollectionDetail(collectionId))
+                },
+                onOpenCollections = { state.navigate(MainDestination.Collections) }
+            )
+        }
+
+    }
+
+    // ==================== COLLECTION DETAIL ====================
+
+    /**
+     * A library collection's page (JLPT / grade / course lesson): header with
+     * the real kanji count plus lazy-loaded kanji entries — COLLECTION →
+     * KANJI → WORDS → SENTENCES.
+     */
+    @Serializable
+    data class CollectionDetail(
+        val collectionId: String
+    ) : MainDestination {
+
+        override val analyticsName: String = "collection_detail"
+
+        @Composable
+        override fun Content(state: MainNavigationState) {
+            ua.syt0r.kanji.presentation.screen.main.screen.collection_detail.CollectionDetailScreen(
+                collectionId = collectionId,
+                onClose = { state.navigateBack() },
+                onOpenKanji = { character ->
+                    state.navigate(MainDestination.KanjiEntry(character))
+                },
+                onOpenDeck = { deckId ->
+                    state.navigate(
+                        MainDestination.DeckDetails(
+                            ua.syt0r.kanji.presentation.screen.main.screen.deck_details.data.DeckDetailsScreenConfiguration.LetterDeck(deckId)
+                        )
+                    )
+                }
+            )
+        }
+
+    }
+
     // ==================== MEDIA CENTRE ====================
 
     /**
@@ -676,7 +1047,10 @@ interface MainDestination {
         @Composable
         override fun Content(state: MainNavigationState) {
             val content = koinInject<ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent>()
-            content.Content(onClose = { state.navigateBack() })
+            content.Content(
+                navigationState = state,
+                onClose = { state.navigateBack() }
+            )
         }
 
     }
@@ -684,24 +1058,16 @@ interface MainDestination {
     // ==================== KAITEYO WORLD (GAME) ====================
 
     /**
-     * Kaiteyo World. The desktop app mounts the exploration game through the
-     * [ua.syt0r.kanji.presentation.screen.main.screen.game.GameCentreContent]
-     * contract (mirroring the Media Centre); every other platform gets the
-     * core node-based curriculum game that runs on top of the user's real
-     * study state.
+     * Kaiteyo World destination alias. Routes directly to the unified [World] experience.
      */
     @Serializable
     object Game : MainDestination {
 
-        override val analyticsName: String = "game"
+        override val analyticsName: String = "world"
 
         @Composable
         override fun Content(state: MainNavigationState) {
-            val content = koinInject<ua.syt0r.kanji.presentation.screen.main.screen.game.GameCentreContent>()
-            content.Content(
-                navigationState = state,
-                onClose = { state.navigateBack() }
-            )
+            World.Content(state)
         }
 
     }
@@ -801,6 +1167,91 @@ val defaultMainDestinations: List<MainDestinationConfiguration<*>> = listOf(
     MainDestination.UndoHistory.configuration(),
     MainDestination.KanjiBrowser::class.configuration(),
     MainDestination.Collections.configuration(),
+    MainDestination.KnowledgeExplorer::class.configuration(),
+    MainDestination.KanjiEntry::class.configuration(),
+    MainDestination.WordEntry::class.configuration(),
+    MainDestination.LearnerProfile.configuration(),
+    MainDestination.SentenceEntry::class.configuration(),
+    MainDestination.SentenceExplorer::class.configuration(),
+    MainDestination.KnowledgeGraph::class.configuration(),
+    MainDestination.RadicalExplorer.configuration(),
+    MainDestination.ComponentExplorer.configuration(),
+    MainDestination.BrowseHub.configuration(),
+    MainDestination.CollectionDetail::class.configuration(),
     MainDestination.Media.configuration(),
     MainDestination.Game.configuration(),
+    MainDestination.World.configuration(),
+    MainDestination.CardSettings::class.configuration(),
 )
+
+// ============================================================
+// Card-settings persistence helpers
+// ------------------------------------------------------------
+// Persist a card layout or preset for an entity type through its
+// real layout store (Koin-injected). Unknown stores fall back to
+// the kanji store — layouts are per-type JSON blobs.
+// ============================================================
+
+private suspend fun persistPreset(
+    entity: ua.syt0r.kanji.core.knowledge.cards.CardEntityType,
+    presetId: String
+) {
+    val koin = org.koin.mp.KoinPlatform.getKoin()
+    when (entity) {
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Kanji -> {
+            val preset = ua.syt0r.kanji.core.knowledge.cards.KanjiCardPresets.byId(presetId) ?: return
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.KanjiCardLayoutStore>().save(preset.layout)
+        }
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Word -> {
+            val preset = ua.syt0r.kanji.core.knowledge.cards.WordCardPresets.byId(presetId) ?: return
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.WordCardLayoutStore>().save(preset.layout)
+        }
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Sentence -> {
+            val preset = ua.syt0r.kanji.core.knowledge.cards.SentenceCardPresets.byId(presetId) ?: return
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.SentenceCardLayoutStore>().save(preset.layout)
+        }
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Grammar -> {
+            val preset = ua.syt0r.kanji.core.knowledge.cards.GrammarCardPresets.byId(presetId) ?: return
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.GrammarCardLayoutStore>().save(preset.layout)
+        }
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Collection -> {
+            val preset = ua.syt0r.kanji.core.knowledge.cards.CollectionCardPresets.byId(presetId) ?: return
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.CollectionCardLayoutStore>().save(preset.layout)
+        }
+    }
+}
+
+private suspend fun persistLayout(
+    entity: ua.syt0r.kanji.core.knowledge.cards.CardEntityType,
+    order: List<String>,
+    hidden: Set<String>
+) {
+    val koin = org.koin.mp.KoinPlatform.getKoin()
+    when (entity) {
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Kanji -> {
+            val store = koin.get<ua.syt0r.kanji.core.knowledge.cards.KanjiCardLayoutStore>()
+            // Preserve per-card settings (KT-CARD-005): the CardSettings
+            // screen only edits order/hidden — rebuilding the layout from
+            // scratch here would silently wipe the item limits set in the
+            // kanji page's edit mode.
+            val settings = store.load().cardSettings
+            store.save(
+                ua.syt0r.kanji.core.knowledge.cards.KanjiCardLayout(
+                    order = order, hidden = hidden, cardSettings = settings
+                )
+            )
+        }
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Word ->
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.WordCardLayoutStore>()
+                .save(ua.syt0r.kanji.core.knowledge.cards.WordCardLayout(order = order, hidden = hidden))
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Sentence ->
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.SentenceCardLayoutStore>()
+                .save(ua.syt0r.kanji.core.knowledge.cards.SentenceCardLayout(order = order, hidden = hidden))
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Grammar ->
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.GrammarCardLayoutStore>()
+                .save(ua.syt0r.kanji.core.knowledge.cards.GrammarCardLayout(order = order, hidden = hidden))
+        ua.syt0r.kanji.core.knowledge.cards.CardEntityType.Collection ->
+            koin.get<ua.syt0r.kanji.core.knowledge.cards.CollectionCardLayoutStore>()
+                .save(ua.syt0r.kanji.core.knowledge.cards.CollectionCardLayout(order = order, hidden = hidden))
+    }
+}

@@ -1,9 +1,12 @@
 package ua.syt0r.kanji.desktop.ui.dictionary
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,10 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.desktop.appstate.AppState
@@ -37,14 +43,17 @@ import ua.syt0r.kanji.desktop.designsystem.DsCard
 import ua.syt0r.kanji.desktop.designsystem.DsConfirmDialog
 import ua.syt0r.kanji.desktop.designsystem.DsEmptyState
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
+import ua.syt0r.kanji.desktop.designsystem.DsRadius
 import ua.syt0r.kanji.desktop.designsystem.DsSectionHeader
 import ua.syt0r.kanji.desktop.designsystem.DsSearchField
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.designsystem.DsType
+import ua.syt0r.kanji.desktop.designsystem.accent
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.engine.dictionary.DictionaryFormat
 import ua.syt0r.kanji.desktop.engine.dictionary.InstalledDictionary
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -76,8 +85,8 @@ fun DictionaryManagerView(state: AppState) {
 
     Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
         DsSectionHeader(
-            title = "Dictionaries",
-            subtitle = "${state.dictionary.installed.size} installed · ${state.dictionary.enabled.size} enabled · lookup by kanji, kana, romaji or English",
+            title = resolveSuiteString { dictionariesTitle },
+            subtitle = "${state.dictionary.installed.size} · ${state.dictionary.enabled.size} · ${resolveSuiteString { dictionariesSubtitle }}",
             action = {
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                     DsButton(
@@ -95,7 +104,7 @@ fun DictionaryManagerView(state: AppState) {
                         }
                     )
                     DsButton(
-                        text = if (showSearch) "Hide lookup" else "Look up",
+                        text = if (showSearch) resolveSuiteString { hideLookup } else resolveSuiteString { lookUpButton },
                         icon = Icons.Default.Search,
                         kind = DsButtonKind.Secondary,
                         onClick = { showSearch = !showSearch },
@@ -115,12 +124,12 @@ fun DictionaryManagerView(state: AppState) {
         if (state.dictionary.installed.isEmpty()) {
             DsCard {
                 DsEmptyState(
-                    title = "No dictionaries installed",
-                    message = "Install a Yomitan-compatible dictionary (ZIP or folder) to start looking up Japanese text. A bundled kanji dictionary is seeded on first run.",
+                    title = resolveSuiteString { noDictionariesTitle },
+                    message = resolveSuiteString { noDictionariesMessage },
                     icon = Icons.Default.MenuBook,
                     action = {
                         DsButton(
-                            text = "Install dictionary",
+                            text = resolveSuiteString { installDictionary },
                             icon = Icons.Default.Add,
                             onClick = {
                                 val file = chooseDictionaryFile()
@@ -166,6 +175,7 @@ fun DictionaryManagerView(state: AppState) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DictionaryLookupCard(state: AppState, query: String, onQueryChange: (String) -> Unit) {
     val sc = surfaceColors()
@@ -173,6 +183,12 @@ private fun DictionaryLookupCard(state: AppState, query: String, onQueryChange: 
     val groups = remember(query) {
         if (query.isBlank()) emptyList()
         else state.dictionary.lookup(query)
+    }
+    // Index-backed suggestions (Phase 8): instant headword/reading candidates
+    // from the trigram index while the full grouped search is being typed.
+    val suggestions = remember(query) {
+        if (query.isBlank()) emptyList()
+        else state.dictionary.suggestions(query, limit = 6)
     }
 
     DsCard {
@@ -183,6 +199,30 @@ private fun DictionaryLookupCard(state: AppState, query: String, onQueryChange: 
                 placeholder = "水, mizu, water, たべる…",
                 autoFocus = false
             )
+            if (suggestions.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs),
+                    verticalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+                ) {
+                    suggestions.forEach { match ->
+                        val headword = match.entry.headword
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(DsRadius.Md))
+                                .background(sc.surfaceInteractive)
+                                .clickable { onQueryChange(headword) }
+                                .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Xs)
+                        ) {
+                            Text(
+                                text = headword,
+                                color = accent().primary,
+                                fontSize = DsType.Caption,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
             if (query.isBlank()) {
                 Text("Type kanji, kana, romaji or English to search across enabled dictionaries.", color = sc.textMuted, fontSize = DsType.Caption)
             } else if (groups.isEmpty()) {
@@ -238,6 +278,16 @@ private fun DictionaryLookupCard(state: AppState, query: String, onQueryChange: 
                                         kind = DsButtonKind.Secondary,
                                         compact = true,
                                         onClick = { state.dictionary.toggleFavorite(match.dictionary.id, match.entry.headword) }
+                                    )
+                                    DsButton(
+                                        text = "Graph",
+                                        icon = Icons.Default.Route,
+                                        kind = DsButtonKind.Secondary,
+                                        compact = true,
+                                        onClick = {
+                                            state.pendingGraphNode = match.entry.headword
+                                            state.currentView = ua.syt0r.kanji.desktop.appstate.WorkspaceView.Graph
+                                        }
                                     )
                                 }
                             }

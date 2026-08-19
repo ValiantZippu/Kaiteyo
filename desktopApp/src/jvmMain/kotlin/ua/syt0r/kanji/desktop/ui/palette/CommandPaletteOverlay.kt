@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SpaceDashboard
@@ -513,6 +514,24 @@ private fun buildCommands(state: AppState): List<PaletteCommand> = buildList {
         action = { state.media.replayNextCue() }))
     add(PaletteCommand("Previous subtitle", "Media", Icons.Default.PlayArrow, mediaHint("prev-cue"),
         action = { state.media.replayPreviousCue() }))
+
+    // ---- Exam quick-starts -----------------------------------------
+    // Generated from real study state and staged for the Exams view; the
+    // palette never fabricates a session. Labels resolve through the suite
+    // l10n layer so the palette speaks the app's language.
+    fun stageExam(title: String, draft: ua.syt0r.kanji.desktop.engine.learning.ExamDraft?) {
+        if (draft == null) {
+            state.toastHost.show("No content for $title", kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
+        } else {
+            state.pendingExamDraft = draft
+            state.currentView = WorkspaceView.Exams
+        }
+    }
+
+    add(PaletteCommand("Start ${ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString { weeklyAssessmentLabel }}", "Exams", Icons.Default.School, "",
+        action = { stageExam("weekly assessment", state.learning.exams.generateWeekly()) }))
+    add(PaletteCommand("Start ${ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString { mistakesReviewLabel }}", "Exams", Icons.Default.School, "",
+        action = { stageExam("mistakes review", state.learning.exams.generate(ua.syt0r.kanji.desktop.engine.learning.ExamType.Mistakes, questionCount = 15)) }))
 
     add(PaletteCommand("Start review (due)", "Review", Icons.Default.PlayArrow, "3",
         action = { state.startReview() }))

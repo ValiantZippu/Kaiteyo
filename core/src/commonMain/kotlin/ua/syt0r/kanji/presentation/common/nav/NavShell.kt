@@ -45,6 +45,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ViewSidebar
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -76,6 +78,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -96,7 +99,14 @@ import kotlin.math.roundToInt
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesContract
 import ua.syt0r.kanji.core.user_data.preferences.PreferencesDefaultHomeTab
+import ua.syt0r.kanji.presentation.common.debug.DebugPanel
+import ua.syt0r.kanji.presentation.common.debug.DebugSettingsDialog
+import ua.syt0r.kanji.presentation.common.debug.DebugSettingsState
+import ua.syt0r.kanji.presentation.common.debug.LocalDebugSettings
+import ua.syt0r.kanji.presentation.common.debug.rememberDebugSettingsState
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.ui.PageIdentity
+import ua.syt0r.kanji.presentation.common.ui.PageRegistry
 import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoThemeState
@@ -105,6 +115,8 @@ import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SidebarPosition
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoSearch
 import ua.syt0r.kanji.presentation.screen.main.screen.home.HomeNavigationState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.HomeScreenTab
 import ua.syt0r.kanji.presentation.screen.main.screen.home.rememberHomeNavigationState
@@ -197,17 +209,20 @@ fun NavShell(
 
     val appPreferences = koinInject<PreferencesContract.AppPreferences>()
     val navSettings = rememberNavigationSettingsState(appPreferences)
+    val debugSettings = rememberDebugSettingsState(appPreferences)
     val defaultTab = remember { defaultHomeTab(appPreferences) }
     val homeNavState = rememberHomeNavigationState(defaultTab)
 
     CompositionLocalProvider(
         LocalNavigationSettings provides navSettings,
+        LocalDebugSettings provides debugSettings,
         LocalHomeNavigationState provides homeNavState
     ) {
         AdaptiveNavigation(
             navigationState = navigationState,
             homeNavState = homeNavState,
             navSettings = navSettings,
+            debugSettings = debugSettings,
             modifier = modifier,
             content = content
         )
@@ -219,6 +234,7 @@ private fun AdaptiveNavigation(
     navigationState: MainNavigationState,
     homeNavState: HomeNavigationState,
     navSettings: NavigationSettingsState,
+    debugSettings: DebugSettingsState,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -227,7 +243,8 @@ private fun AdaptiveNavigation(
     val mode = settings.mode
     val edge = settings.edgeFor(formFactor)
     val vertical = edge == SidebarPosition.Left || edge == SidebarPosition.Right
-    val animations = settings.animationsEnabled && !settings.accessibility.reducedMotion
+    val animations = settings.animationsEnabled && !settings.accessibility.reducedMotion &&
+        !debugSettings.settings.disableAnimations
     val expanded = settings.expansionFor(formFactor) == SidebarExpansion.Expanded
 
     // Publish the space the bottom bar / bottom-anchored bubble occupies so
@@ -257,6 +274,7 @@ private fun AdaptiveNavigation(
     }
 
     val sections = buildPrimaryNavSections(navigationState, homeNavState)
+    var debugSettingsOpen by remember { mutableStateOf(false) }
 
     // During a live resize drag the dock follows the window instantly — a
     // spring toward a size that changes every frame only adds lag and jitter.
@@ -311,20 +329,36 @@ private fun AdaptiveNavigation(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown && event.isCtrlPressed && event.key == Key.B) {
-                    // Ctrl+B toggles the presentation mode both ways: Floating
-                    // ↔ Sidebar. (Expansion is controlled from the sidebar
-                    // header, not this shortcut.)
-                    navSettings.update { current ->
-                        current.copy(
-                            mode = if (current.mode == NavigationMode.Floating)
-                                NavigationMode.Sidebar
-                            else NavigationMode.Floating
-                        )
+                if (event.type != KeyEventType.KeyDown) {
+                    return@onPreviewKeyEvent false
+                }
+                when {
+                    event.isCtrlPressed && event.key == Key.B -> {
+                        // Ctrl+B toggles the presentation mode both ways:
+                        // Floating ↔ Sidebar. (Expansion is controlled from
+                        // the sidebar header, not this shortcut.)
+                        navSettings.update { current ->
+                            current.copy(
+                                mode = if (current.mode == NavigationMode.Floating)
+                                    NavigationMode.Sidebar
+                                else NavigationMode.Floating
+                            )
+                        }
+                        true
                     }
-                    true
-                } else {
-                    false
+                    event.isCtrlPressed && event.isShiftPressed && event.key == Key.F -> {
+                        // Global universal search (spec §15) — the shortcut was
+                        // advertised by the overlay and palette but never wired.
+                        KaiteyoSearch.controller.toggle()
+                        true
+                    }
+                    event.isCtrlPressed && event.key == Key.K -> {
+                        // Global command palette (KT-SEARCH-008, spec §58) —
+                        // advertised as "Ctrl+K to open" but never bound.
+                        KaiteyoPalette.controller.toggle()
+                        true
+                    }
+                    else -> false
                 }
             }
     ) {
@@ -418,8 +452,204 @@ private fun AdaptiveNavigation(
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        // Page name indicator — a small top-right pill naming the current
+        // screen (plus its analytics code). Off by default; enabled in
+        // Navigation settings so bug reports can name the exact page.
+        // Page name indicator — a small pill naming the current screen.
+        // Positioned opposite the sidebar so it never hides behind the dock.
+        if (debugSettings.settings.showPageInfo) {
+            val sidebarOnLeft = settings.desktopEdge == SidebarPosition.Left
+            PageNameIndicator(
+                navigationState = navigationState,
+                homeNavState = homeNavState,
+                modifier = Modifier
+                    .align(
+                        if (sidebarOnLeft || mode == NavigationMode.Floating) Alignment.TopEnd
+                        else Alignment.TopStart
+                    )
+                    .padding(
+                        top = 10.dp,
+                        start = if (sidebarOnLeft || mode == NavigationMode.Floating) 0.dp else 12.dp,
+                        end = if (sidebarOnLeft || mode == NavigationMode.Floating) 12.dp else 0.dp
+                    )
+            )
+        }
+
+        // Debug overlay — the bottom-corner developer surface: page identity
+        // (Page / Route / Panel) with a one-tap "copy debug info" action,
+        // optional live FPS + viewport readouts, and a shortcut into Debug
+        // settings. Shown when any debug-overlay toggle is enabled.
+        if (debugSettings.settings.anyEnabled) {
+            val sidebarOnLeft = settings.desktopEdge == SidebarPosition.Left
+            DebugPanel(
+                page = currentPageIdentity(navigationState.currentDestination.value, homeNavState.selectedTab.value),
+                navigationMode = mode.name,
+                themeLabel = themeDebugLabel(),
+                windowState = LocalWindowPlacement.current?.name.orEmpty(),
+                showFps = debugSettings.settings.showFps,
+                showViewport = debugSettings.settings.showViewport,
+                onOpenSettings = { debugSettingsOpen = true },
+                modifier = Modifier
+                    .align(
+                        if (sidebarOnLeft || mode == NavigationMode.Floating) Alignment.BottomStart
+                        else Alignment.BottomEnd
+                    )
+                    .padding(
+                        bottom = 12.dp,
+                        start = if (sidebarOnLeft || mode == NavigationMode.Floating) 12.dp else 0.dp,
+                        end = if (sidebarOnLeft || mode == NavigationMode.Floating) 0.dp else 12.dp
+                    )
+            )
+        }
+        if (debugSettingsOpen) {
+            DebugSettingsDialog(
+                debugSettings = debugSettings,
+                navSettings = navSettings,
+                onDismiss = { debugSettingsOpen = false }
+            )
+        }
     }
 }
+
+// ============================================
+// PAGE NAME INDICATOR — screen name for bug reports
+// ============================================
+
+@Composable
+private fun PageNameIndicator(
+    navigationState: MainNavigationState,
+    homeNavState: HomeNavigationState,
+    modifier: Modifier = Modifier
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val (name, code) = currentPageLabel(
+        navigationState.currentDestination.value,
+        homeNavState.selectedTab.value
+    )
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(scaledRadius(Dimens.RadiusMd)))
+            .background(surfaceColors.surfaceElevated.copy(alpha = 0.92f))
+            .border(
+                width = 1.dp,
+                color = surfaceColors.border.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(scaledRadius(Dimens.RadiusMd))
+            )
+            .padding(horizontal = Dimens.Space3, vertical = Dimens.Space1),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(accent.primary)
+        )
+        Text(
+            text = "PAGE",
+            style = MaterialTheme.typography.labelSmall,
+            color = surfaceColors.textMuted,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelMedium,
+            color = surfaceColors.textPrimary,
+            fontWeight = FontWeight.SemiBold
+        )
+        if (code.isNotEmpty()) {
+            Text(
+                text = code,
+                style = MaterialTheme.typography.labelSmall,
+                color = surfaceColors.textMuted
+            )
+        }
+    }
+}
+
+/**
+ * Builds the debug-overlay identity for the current destination. The route
+ * derives from the destination's analytics code; the panel names the active
+ * sub-surface (e.g. the Home tab). Screens that know more detail can
+ * override via [ua.syt0r.kanji.presentation.common.ui.ProvidePageIdentity].
+ */
+@Composable
+private fun currentPageIdentity(
+    destination: MainDestination?,
+    homeTab: HomeScreenTab
+): PageIdentity {
+    val (name, code) = currentPageLabel(destination, homeTab)
+    val route = PageRegistry.routeFor(code.ifBlank { destination?.analyticsName })
+    val panel = if (destination is MainDestination.Home) {
+        homeTab.analyticsName
+    } else {
+        null
+    }
+    return PageIdentity(
+        id = code.ifBlank { "home" },
+        name = name,
+        route = route,
+        panel = panel
+    )
+}
+
+/** Human-readable screen name plus its analytics code, for bug reports. */
+@Composable
+private fun currentPageLabel(
+    destination: MainDestination?,
+    homeTab: HomeScreenTab
+): Pair<String, String> {
+    val homeTabName = resolveString(homeTab.titleResolver)
+    val (name, code) = when (destination) {
+        is MainDestination.Home -> homeTabName to homeTab.analyticsName
+        is MainDestination.DeckDetails -> "Deck details" to (destination.analyticsName ?: "")
+        is MainDestination.LetterPractice -> "Letter practice" to (destination.analyticsName ?: "")
+        is MainDestination.VocabPractice -> "Vocab practice" to (destination.analyticsName ?: "")
+        is MainDestination.DeckEdit -> "Deck editor" to (destination.analyticsName ?: "")
+        is MainDestination.DeckPicker -> "Deck picker" to (destination.analyticsName ?: "")
+        is MainDestination.CardBrowser -> "Card browser" to (destination.analyticsName ?: "")
+        is MainDestination.DeckBrowser -> "Deck browser" to (destination.analyticsName ?: "")
+        is MainDestination.Info -> "Details" to (destination.analyticsName ?: "")
+        is MainDestination.VocabCard -> "Word card" to (destination.analyticsName ?: "")
+        is MainDestination.StatisticsDashboard -> "Statistics" to (destination.analyticsName ?: "")
+        is MainDestination.DayPractice -> "Day practice" to (destination.analyticsName ?: "")
+        is MainDestination.KanjiBrowser -> "Kanji browser" to (destination.analyticsName ?: "")
+        is MainDestination.KanjiEntry -> "Kanji entry" to (destination.analyticsName ?: "")
+        is MainDestination.WordEntry -> "Word entry" to (destination.analyticsName ?: "")
+        is MainDestination.KnowledgeGraph -> "Knowledge graph" to (destination.analyticsName ?: "")
+        is MainDestination.RadicalExplorer -> "Radical explorer" to (destination.analyticsName ?: "")
+        is MainDestination.SentenceEntry -> "Sentence" to (destination.analyticsName ?: "")
+        is MainDestination.SentenceExplorer -> "Sentence explorer" to (destination.analyticsName ?: "")
+        is MainDestination.LearnerProfile -> "Learner profile" to (destination.analyticsName ?: "")
+        is MainDestination.ComponentExplorer -> "Component explorer" to (destination.analyticsName ?: "")
+        is MainDestination.BrowseHub -> "Browse" to (destination.analyticsName ?: "")
+        is MainDestination.CollectionDetail -> "Collection" to (destination.analyticsName ?: "")
+        is MainDestination.Collections -> "Collections" to (destination.analyticsName ?: "")
+        is MainDestination.Media -> "Media" to (destination.analyticsName ?: "")
+        is MainDestination.Game -> "World" to (destination.analyticsName ?: "")
+        is MainDestination.World -> "World 3D" to (destination.analyticsName ?: "")
+        is MainDestination.CardSettings -> "Card layouts" to (destination.analyticsName ?: "")
+        is MainDestination.SearchEngine -> "Search" to (destination.analyticsName ?: "")
+        is MainDestination.StudyHistory -> "Study history" to (destination.analyticsName ?: "")
+        is MainDestination.Backup -> "Backup" to (destination.analyticsName ?: "")
+        is MainDestination.Feedback -> "Feedback" to (destination.analyticsName ?: "")
+        is MainDestination.KeyboardShortcuts -> "Shortcuts" to (destination.analyticsName ?: "")
+        else -> {
+            val raw = destination?.analyticsName ?: "home"
+            val human = raw.replace('_', ' ').replaceFirstChar { it.uppercaseChar() }
+            human to raw
+        }
+    }
+    return name to code
+}
+
+/** The current theme's short label for the debug overlay copy payload. */
+@Composable
+private fun themeDebugLabel(): String =
+    LocalKaiteyoThemeState.current.baseMode.displayName
 
 @Composable
 private fun DockedSidebar(
@@ -482,8 +712,7 @@ private fun DockedSidebar(
                 )
                 .shadow(NavTokens.SidebarElevation, shape),
             shape = shape,
-            color = if (settings.accessibility.highContrast) surfaceColors.surface
-            else MaterialTheme.colorScheme.surfaceVariant
+            color = surfaceColors.surface
         ) {
             if (vertical) {
                 Column(Modifier.fillMaxSize()) {
@@ -1394,9 +1623,10 @@ private fun buildPrimaryNavSections(
         }
     )
 
-    return listOf(
-        NavSection(
-            title = null,
+    return buildList {
+        add(
+            NavSection(
+                title = null,
             entries = listOf(
                 homeEntry(HomeScreenTab.GeneralDashboard, { resolveString { nav.homeLabel } }),
                 // Library — the primary learning workspace. The unified
@@ -1441,10 +1671,20 @@ private fun buildPrimaryNavSections(
                     selected = currentDestination == MainDestination.Game,
                     onClick = { navigationState.navigate(MainDestination.Game) }
                 ),
+                // Kaiteyo World 3D — the streamable Kamakura runtime.
+                NavEntry(
+                    id = "primary_world",
+                    label = { "World 3D" },
+                    icon = Icons.Default.Public,
+                    iconContent = null,
+                    selected = currentDestination == MainDestination.World,
+                    onClick = { navigationState.navigate(MainDestination.World) }
+                ),
                 homeEntry(HomeScreenTab.Settings, { resolveString { home.settingsTabLabel } })
             )
         )
-    )
+        )
+    }
 }
 
 // ============================================

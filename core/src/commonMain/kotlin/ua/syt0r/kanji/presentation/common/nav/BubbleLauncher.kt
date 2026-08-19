@@ -396,15 +396,15 @@ fun BubbleLauncher(
 
                         try {
                             if (isSecondary) {
-                                // Right-click → mode switch panel (no hold needed).
+                                // Right-click → launchpad (quick access to navigation).
                                 longPressJob.cancel()
                                 while (true) {
                                     val event = awaitPointerEvent()
                                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                     if (event.type == PointerEventType.Release) {
                                         if (!dragged) {
-                                            modePanelOpen = true
-                                            launchpadOpen = false
+                                            launchpadOpen = true
+                                            modePanelOpen = false
                                         }
                                         break
                                     }

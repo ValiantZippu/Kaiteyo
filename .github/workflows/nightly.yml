@@ -1,0 +1,52 @@
+name: Nightly Build & Test
+
+# Nightly validation gate (KT-CI-003): compiles the desktop suite and runs
+# every engine test on the current develop tip, so regressions from bulk
+# feature work surface within 24 hours instead of at release time.
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 04:00 UTC every day
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-compile-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Compile desktop suite (no warnings gate)
+        run: |
+          chmod +x gradlew
+          ./gradlew :desktopApp:compileKotlinJvm
+
+      - name: Run desktop suite tests
+        run: |
+          ./gradlew :desktopApp:test
+
+      - name: Run shared core tests
+        run: |
+          ./gradlew :core:allTests
+
+      - name: Run data platform tests
+        run: |
+          ./gradlew :kjd:test
+
+  report:
+    runs-on: ubuntu-latest
+    needs: desktop-compile-and-test
+    if: failure()
+    steps:
+      - name: Notify on failure
+        run: |
+          echo "::error::Nightly build failed — desktop suite compile/tests or core tests failed on develop. Fix before next release."

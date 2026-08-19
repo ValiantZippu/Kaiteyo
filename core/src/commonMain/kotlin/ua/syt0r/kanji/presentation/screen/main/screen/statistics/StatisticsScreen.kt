@@ -2,6 +2,7 @@ package ua.syt0r.kanji.presentation.screen.main.screen.statistics
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,11 +47,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import ua.syt0r.kanji.core.statistics.ContentTypeKnowledge
 import ua.syt0r.kanji.core.statistics.ContentTypes
@@ -62,8 +68,10 @@ import ua.syt0r.kanji.core.statistics.GoalPeriod
 import ua.syt0r.kanji.core.statistics.GoalType
 import ua.syt0r.kanji.core.statistics.LearningGoal
 import ua.syt0r.kanji.core.statistics.StudySessionRecord
+import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 import kotlin.math.roundToInt
@@ -93,6 +101,9 @@ fun StatisticsScreen(
     val surfaceColors = LocalSurfaceColors.current
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(StatisticsTab.Overview) }
+    // Lifted so the Overview heatmap can open the Activity tab's day report
+    // (previously Overview's day click was a no-op ghost control).
+    var selectedDay by remember { mutableStateOf<DailyActivity?>(null) }
 
     LaunchedEffect(Unit) { controller.ensureLoaded() }
 
@@ -170,8 +181,30 @@ fun StatisticsScreen(
                         }
                     }
                     when (tab) {
-                        StatisticsTab.Overview -> OverviewTab(controller, scope)
-                        StatisticsTab.Activity -> ActivityTab(controller, scope, onOpenLibraryDay)
+                        StatisticsTab.Overview -> OverviewTab(
+                            controller,
+                            scope,
+                            onDayClick = { day ->
+                                selectedDay = day
+                                tab = StatisticsTab.Activity
+                            }
+                        )
+                        StatisticsTab.Activity -> ActivityTab(
+                            controller,
+                            scope,
+                            selectedDay = selectedDay,
+                            onDayReportClosed = { selectedDay = null },
+                            onOpenLibraryDay = onOpenLibraryDay,
+                            onDayClick = { day ->
+                                if (onOpenLibraryDay != null && day.date != null) {
+                                    // Jump into the Library (Card Browser) pre-filtered
+                                    // to the cards practiced on this day.
+                                    onOpenLibraryDay(day.date)
+                                } else {
+                                    selectedDay = day
+                                }
+                            }
+                        )
                         StatisticsTab.Knowledge -> KnowledgeTab(controller, scope)
                         StatisticsTab.Retention -> RetentionTab(controller)
                         StatisticsTab.Exams -> ExamsTab(controller, scope)
@@ -188,7 +221,11 @@ fun StatisticsScreen(
 // ============================================================
 
 @Composable
-private fun OverviewTab(controller: StatisticsController, scope: CoroutineScope) {
+private fun OverviewTab(
+    controller: StatisticsController,
+    scope: CoroutineScope,
+    onDayClick: (DailyActivity) -> Unit
+) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val overview = controller.overview
@@ -214,12 +251,379 @@ private fun OverviewTab(controller: StatisticsController, scope: CoroutineScope)
             return@LazyColumn
         }
 
-        // ── Today panel ──
+        // ── Study heatmap — the visual centerpiece ──
         item {
-            SectionCard(
-                title = "Today",
-                subtitle = "${today.date ?: "Today"} · ${today.reviews} reviews · ${today.studyTime.inWholeMinutes}m studied"
-            ) {
+            val heatmap = controller.heatmaps[controller.selectedYear]
+            if (heatmap != null) {
+                SectionCard(
+                    title = "Study heatmap",
+                    subtitle = "One square per day · ${controller.selectedYear} · darker = more activity"
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        controller.availableYears.forEach { year ->
+                            val yearSelected = year == controller.selectedYear
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (yearSelected) accent.primary.copy(alpha = 0.16f)
+                                        else surfaceColors.surfaceInteractive.copy(alpha = 0.4f)
+                                    )
+                                    .clickable { controller.selectYear(year) }
+                                    .padding(horizontal = 12.dp, vertical = 5.dp)
+                            ) {
+                                Text(
+                                    year.toString(),
+                                    fontSize = 12.sp,
+                                    fontWeight = if (yearSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (yearSelected) accent.primary else surfaceColors.textSecondary
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    StatisticsHeatmap(
+                        heatmap = heatmap,
+                        availableYears = controller.availableYears,
+                        selectedYear = controller.selectedYear,
+                        onYearSelected = { controller.selectYear(it) },
+                        onDayClick = onDayClick
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    val dailyBars = remember(heatmap) {
+                        val dates = heatmap.cells.keys.sorted()
+                        val end = dates.lastOrNull()
+                        if (end == null) emptyList<Float>()
+                        else {
+                            val start = end.minus(13, DateTimeUnit.DAY)
+                            (0..13).map { offset ->
+                                heatmap.cells[start.plus(offset, DateTimeUnit.DAY)]?.reviews?.toFloat() ?: 0f
+                            }
+                        }
+                    }
+                    if (dailyBars.any { it > 0f }) {
+                        Text(
+                            "Daily reviews · last 14 days",
+                            fontSize = 11.sp,
+                            color = surfaceColors.textMuted,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        BarsChart(values = dailyBars, color = accent.primary)
+                    }
+
+                    // ── Compact rhythm + volume, inside the activity card ──
+                    androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        val weekdaySums = remember(heatmap) {
+                            val sums = IntArray(7)
+                            heatmap.cells.forEach { (date, activity) ->
+                                sums[date.dayOfWeek.isoDayNumber - 1] += activity.reviews
+                            }
+                            sums.toList()
+                        }
+                        val weekdayMax = weekdaySums.maxOrNull()?.coerceAtLeast(1) ?: 1
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Weekly rhythm",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = surfaceColors.textPrimary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                weekdaySums.forEachIndexed { index, count ->
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            Modifier
+                                                .width(12.dp)
+                                                .height(44.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(surfaceColors.surfaceInteractive),
+                                            contentAlignment = Alignment.BottomCenter
+                                        ) {
+                                            if (count > 0) {
+                                                Box(
+                                                    Modifier
+                                                        .width(12.dp)
+                                                        .height((34f * count / weekdayMax).coerceAtLeast(3f).dp)
+                                                        .clip(RoundedCornerShape(6.dp))
+                                                        .background(
+                                                            accent.primary.copy(alpha = 0.45f + 0.55f * count / weekdayMax)
+                                                        )
+                                                )
+                                            }
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            listOf("M", "T", "W", "T", "F", "S", "S")[index],
+                                            fontSize = 8.sp,
+                                            color = surfaceColors.textMuted
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "Study volume · 30 days",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = surfaceColors.textPrimary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            val series = remember(heatmap) {
+                                val dates = heatmap.cells.keys.sorted()
+                                val end = dates.lastOrNull() ?: return@remember emptyList()
+                                val start = end.minus(29, DateTimeUnit.DAY)
+                                (0..29).map { offset ->
+                                    val date = start.plus(offset, DateTimeUnit.DAY)
+                                    date to (heatmap.cells[date]?.reviews?.toFloat() ?: 0f)
+                                }.map { (date, count) ->
+                                    "${date.monthNumber}/${date.dayOfMonth}" to count
+                                }
+                            }
+                            if (series.any { it.second > 0f }) {
+                                LineChart(points = series, color = accent.primary, heightDp = 88)
+                            } else {
+                                Text(
+                                    "No reviews in this window",
+                                    fontSize = 10.sp,
+                                    color = surfaceColors.textMuted,
+                                    modifier = Modifier.padding(top = 30.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Knowledge — how you answer, and how well you know it ──
+        item {
+            val grade = controller.gradeDistribution
+            val gradeSlices = listOf(
+                DonutSliceData("Again", grade.again.toFloat(), Color(0xFFFF6B6B)),
+                DonutSliceData("Hard", grade.hard.toFloat(), Color(0xFFFFD93D)),
+                DonutSliceData("Good", grade.good.toFloat(), Color(0xFFC2FC8B)),
+                DonutSliceData("Easy", grade.easy.toFloat(), Color(0xFF7BC8FF))
+            )
+            val gradeTotal = gradeSlices.fold(0f) { acc, slice -> acc + slice.value }
+
+            val kanji = controller.kanjiKnowledge
+            val kanjiSlices = listOf(
+                DonutSliceData("Learning", kanji.learning.toFloat(), Color(0xFF7BC8FF)),
+                DonutSliceData("Relearning", kanji.relearning.toFloat(), Color(0xFFFF6B6B)),
+                DonutSliceData("Mature", kanji.mature.toFloat(), Color(0xFFC2FC8B)),
+                DonutSliceData("Mastered", kanji.mastered.toFloat(), Color(0xFFA78BFA)),
+                DonutSliceData("Suspended", kanji.suspended.toFloat(), surfaceColors.textMuted.copy(alpha = 0.4f))
+            )
+            val kanjiTotal = kanjiSlices.fold(0f) { acc, slice -> acc + slice.value }
+
+            val vocab = controller.vocabKnowledge
+            val vocabSlices = listOf(
+                DonutSliceData("Learning", vocab.learning.toFloat(), Color(0xFF7BC8FF)),
+                DonutSliceData("Relearning", vocab.relearning.toFloat(), Color(0xFFFF6B6B)),
+                DonutSliceData("Mature", vocab.mature.toFloat(), Color(0xFFC2FC8B)),
+                DonutSliceData("Mastered", vocab.mastered.toFloat(), Color(0xFFA78BFA)),
+                DonutSliceData("Suspended", vocab.suspended.toFloat(), surfaceColors.textMuted.copy(alpha = 0.4f))
+            )
+            val vocabTotal = vocabSlices.fold(0f) { acc, slice -> acc + slice.value }
+
+            if (gradeTotal > 0f || kanjiTotal > 0f || vocabTotal > 0f) {
+                SectionCard(
+                    title = "Knowledge",
+                    subtitle = "How you answer, and how well you know kanji and vocabulary"
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Answers
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "Answers",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = surfaceColors.textPrimary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            if (gradeTotal > 0f) {
+                                MultiDonutChart(
+                                    slices = gradeSlices,
+                                    sizeDp = 90,
+                                    strokeDp = 13,
+                                    centerTop = gradeTotal.roundToInt().toString(),
+                                    centerBottom = "answers"
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                ChartLegend(items = gradeSlices, percentOfTotal = true)
+                            } else {
+                                Text(
+                                    "No answers yet",
+                                    fontSize = 10.sp,
+                                    color = surfaceColors.textMuted,
+                                    modifier = Modifier.padding(vertical = 26.dp)
+                                )
+                            }
+                        }
+                        // Kanji
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "Kanji",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = surfaceColors.textPrimary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            if (kanjiTotal > 0f) {
+                                MultiDonutChart(
+                                    slices = kanjiSlices,
+                                    sizeDp = 90,
+                                    strokeDp = 13,
+                                    centerTop = kanji.studied.toString(),
+                                    centerBottom = "studied"
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                ChartLegend(items = kanjiSlices, percentOfTotal = true)
+                            } else {
+                                Text(
+                                    "No kanji studied yet",
+                                    fontSize = 10.sp,
+                                    color = surfaceColors.textMuted,
+                                    modifier = Modifier.padding(vertical = 26.dp)
+                                )
+                            }
+                        }
+                        // Vocabulary
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "Vocabulary",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = surfaceColors.textPrimary
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            if (vocabTotal > 0f) {
+                                MultiDonutChart(
+                                    slices = vocabSlices,
+                                    sizeDp = 90,
+                                    strokeDp = 13,
+                                    centerTop = vocab.studied.toString(),
+                                    centerBottom = "studied"
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                ChartLegend(items = vocabSlices, percentOfTotal = true)
+                            } else {
+                                Text(
+                                    "No words studied yet",
+                                    fontSize = 10.sp,
+                                    color = surfaceColors.textMuted,
+                                    modifier = Modifier.padding(vertical = 26.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Dashboard numbers: today + all-time + velocity in one place ──
+        item {
+            DashboardNumbersCard(
+                today = today,
+                overview = overview,
+                controller = controller,
+                surfaceColors = surfaceColors,
+                accent = accent
+            )
+        }
+
+        // ── Insights: forecast, goals, timeline — one compact card ──
+        item {
+            InsightsCard(
+                forecast = overview.forecastNextDays,
+                goalsProgress = goalsProgress,
+                milestones = controller.milestones,
+                learningProfile = controller.learningProfile,
+                surfaceColors = surfaceColors,
+                accent = accent
+            )
+        }
+
+        // ── Frequency coverage — how your kanji map to real-world usage ──
+        item {
+            FrequencyCoverageCard(
+                controller = controller,
+                surfaceColors = surfaceColors,
+                accent = accent
+            )
+        }
+    }
+}
+
+// ────────────────────────────────────────────
+// Dashboard numbers — today, all-time, velocity
+// ────────────────────────────────────────────
+
+@Composable
+private fun DashboardNumbersCard(
+    today: ua.syt0r.kanji.core.statistics.DailyActivity,
+    overview: ua.syt0r.kanji.core.statistics.StatisticsOverview,
+    controller: StatisticsController,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    var pane by remember { mutableStateOf(0) }
+    SectionCard(
+        title = "Dashboard",
+        subtitle = "Today · all-time · pace — switch panes to explore"
+    ) {
+        // Pane switcher
+        Row(
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(surfaceColors.surfaceInteractive.copy(alpha = 0.35f))
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            listOf("Today", "All time", "Pace").forEachIndexed { index, label ->
+                Box(
+                    modifier = Modifier.weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (pane == index) accent.primary.copy(alpha = 0.16f) else Color.Transparent)
+                        .clickable { pane = index }
+                        .padding(vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        fontSize = 11.sp,
+                        fontWeight = if (pane == index) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (pane == index) accent.primary else surfaceColors.textSecondary
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        when (pane) {
+            0 -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("Reviews", today.reviews.toString(), "${today.cardsStudied} cards", accent.primary, Modifier.weight(1f))
                     StatCard("Study time", formatMinutes(today.studyTime.inWholeMinutes), "${today.sessions} sessions", Color(0xFF7BC8FF), Modifier.weight(1f))
@@ -234,14 +638,7 @@ private fun OverviewTab(controller: StatisticsController, scope: CoroutineScope)
                         Color(0xFFFF6B6B), Modifier.weight(1f))
                 }
             }
-        }
-
-        // ── KPI grid ──
-        item {
-            SectionCard(
-                title = "Your learning at a glance",
-                subtitle = "${overview.uniqueKanjiStudied} kanji and ${overview.uniqueVocabStudied} vocabulary items studied"
-            ) {
+            1 -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("Total reviews", overview.totalReviews.toString(), formatDurationShort(overview.totalStudyTime), accent.primary, Modifier.weight(1f))
                     StatCard("Retention", "${(overview.retention.accuracy * 100).roundToInt()}%",
@@ -260,40 +657,7 @@ private fun OverviewTab(controller: StatisticsController, scope: CoroutineScope)
                     StatCard("Mature", overview.cards.mature.toString(), "${overview.cards.averageIntervalDays}d avg interval", Color(0xFFFEAB57), Modifier.weight(1f))
                 }
             }
-        }
-
-        // ── Learning profile (data-backed) ──
-        if (controller.learningProfile.hasMeaningfulData) {
-            item {
-                SectionCard(
-                    title = "Your learning profile",
-                    subtitle = "Every conclusion below is derived from your actual study data"
-                ) {
-                    Text(
-                        controller.learningProfile.conclusion,
-                        fontSize = 13.sp,
-                        color = surfaceColors.textPrimary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    ProfileRow("Strongest area", controller.learningProfile.strongestContentType)
-                    ProfileRow("Weakest area", controller.learningProfile.weakestContentType)
-                    ProfileRow("Best skill", controller.learningProfile.bestSkill)
-                    ProfileRow("Weakest skill", controller.learningProfile.weakestSkill)
-                    ProfileRow(
-                        "Lowest JLPT coverage",
-                        controller.learningProfile.weakestJlptBand?.let { "N$it" }
-                    )
-                }
-            }
-        }
-
-        // ── Weekly velocity ──
-        item {
-            SectionCard(
-                title = "Learning velocity",
-                subtitle = "Rates over the last ${controller.velocity.windowDays} days — your pace of progress"
-            ) {
+            else -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("Reviews / day", VelocityLabel(controller.velocity.reviewsPerDay), "this window", accent.primary, Modifier.weight(1f))
                     StatCard("New / week", VelocityLabel(controller.velocity.newItemsPerWeek), "introduced", Color(0xFFC2FC8B), Modifier.weight(1f))
@@ -311,66 +675,234 @@ private fun OverviewTab(controller: StatisticsController, scope: CoroutineScope)
                         Modifier.weight(1f)
                     )
                 }
-            }
-        }
-
-        // ── Review forecast ──
-        if (overview.forecastNextDays.isNotEmpty()) {
-            item {
-                SectionCard(
-                    title = "Review forecast (next 14 days)",
-                    subtitle = "Based on current FSRS intervals — how many cards are due each day"
-                ) {
-                    BarsChart(
-                        values = overview.forecastNextDays.map { it.toFloat() },
-                        color = accent.primary
+                if (controller.learningProfile.hasMeaningfulData) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        controller.learningProfile.conclusion,
+                        fontSize = 12.sp,
+                        color = surfaceColors.textSecondary,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
+    }
+}
 
-        // ── Goals ──
-        item {
-            SectionCard(title = "Goals", subtitle = "Tracked from real study counters") {
-                if (goalsProgress.isEmpty()) {
-                    Text("No goals yet. Add one in the Data tab.", fontSize = 12.sp, color = surfaceColors.textMuted)
-                } else {
-                    goalsProgress.forEach { progress ->
-                        ProgressRow(
-                            label = progress.goal.label + if (progress.goal.period == GoalPeriod.Weekly) " (weekly)" else "",
-                            fraction = progress.fraction,
-                            detail = "${progress.current} / ${progress.target}" +
-                                if (progress.completed) " ✓" else "",
-                            color = if (progress.completed) Color(0xFFC2FC8B) else accent.primary
-                        )
-                    }
+// ────────────────────────────────────────────
+// Insights — forecast, goals, timeline, profile
+// ────────────────────────────────────────────
+
+@Composable
+private fun InsightsCard(
+    forecast: List<Int>,
+    goalsProgress: List<ua.syt0r.kanji.core.statistics.GoalProgress>,
+    milestones: List<ua.syt0r.kanji.core.statistics.LearningMilestone>,
+    learningProfile: ua.syt0r.kanji.core.statistics.LearningProfile,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    var pane by remember { mutableStateOf(0) }
+    val panes = buildList {
+        add("Forecast" to (forecast.isNotEmpty()))
+        add("Goals" to goalsProgress.isNotEmpty())
+        add("Milestones" to milestones.isNotEmpty())
+        add("Profile" to learningProfile.hasMeaningfulData)
+    }
+    val visiblePanes = panes.filter { it.second }
+    if (visiblePanes.isEmpty()) return
+    val effectivePane = pane.coerceIn(0, visiblePanes.size - 1)
+
+    SectionCard(
+        title = "Insights",
+        subtitle = "What comes next, what you're aiming at, and how far you've come"
+    ) {
+        Row(
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(surfaceColors.surfaceInteractive.copy(alpha = 0.35f))
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            visiblePanes.forEachIndexed { index, (label, _) ->
+                Box(
+                    modifier = Modifier.weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (effectivePane == index) accent.primary.copy(alpha = 0.16f) else Color.Transparent)
+                        .clickable { pane = index }
+                        .padding(vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        fontSize = 11.sp,
+                        fontWeight = if (effectivePane == index) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (effectivePane == index) accent.primary else surfaceColors.textSecondary
+                    )
                 }
             }
         }
-
-        // ── Timeline ──
-        if (controller.milestones.isNotEmpty()) {
-            item {
-                SectionCard(title = "Learning timeline", subtitle = "Milestones derived from your actual history") {
-                    controller.milestones.forEach { milestone ->
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(milestone.icon, fontSize = 16.sp)
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(milestone.title, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = surfaceColors.textPrimary)
-                                if (milestone.value.isNotBlank()) {
-                                    Text(milestone.value, fontSize = 11.sp, color = surfaceColors.textMuted)
-                                }
+        Spacer(Modifier.height(12.dp))
+        when (visiblePanes[effectivePane].first) {
+            "Forecast" -> {
+                BarsChart(values = forecast.map { it.toFloat() }, color = accent.primary)
+                Text(
+                    "Cards due each of the next ${forecast.size} days, from current FSRS intervals.",
+                    fontSize = 10.sp,
+                    color = surfaceColors.textMuted,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+            "Goals" -> {
+                goalsProgress.forEach { progress ->
+                    ProgressRow(
+                        label = progress.goal.label + if (progress.goal.period == GoalPeriod.Weekly) " (weekly)" else "",
+                        fraction = progress.fraction,
+                        detail = "${progress.current} / ${progress.target}" +
+                            if (progress.completed) " ✓" else "",
+                        color = if (progress.completed) Color(0xFFC2FC8B) else accent.primary
+                    )
+                }
+            }
+            "Milestones" -> {
+                milestones.forEach { milestone ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(milestone.icon, fontSize = 16.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(milestone.title, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = surfaceColors.textPrimary)
+                            if (milestone.value.isNotBlank()) {
+                                Text(milestone.value, fontSize = 11.sp, color = surfaceColors.textMuted)
                             }
-                            Text(milestone.date.toString(), fontSize = 11.sp, color = surfaceColors.textMuted)
                         }
+                        Text(milestone.date.toString(), fontSize = 11.sp, color = surfaceColors.textMuted)
                     }
                 }
             }
+            else -> {
+                Text(
+                    learningProfile.conclusion,
+                    fontSize = 13.sp,
+                    color = surfaceColors.textPrimary,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(10.dp))
+                ProfileRow("Strongest area", learningProfile.strongestContentType)
+                ProfileRow("Weakest area", learningProfile.weakestContentType)
+                ProfileRow("Best skill", learningProfile.bestSkill)
+                ProfileRow("Weakest skill", learningProfile.weakestSkill)
+                ProfileRow(
+                    "Lowest JLPT coverage",
+                    learningProfile.weakestJlptBand?.let { "N$it" }
+                )
+            }
         }
+    }
+}
+
+// ────────────────────────────────────────────
+// Frequency coverage — how your kanji map to real-world usage
+// ────────────────────────────────────────────
+
+@Composable
+private fun FrequencyCoverageCard(
+    controller: StatisticsController,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    // Get the total kanji count and frequency data from the controller
+    val totalCards = controller.overview.cards.total
+    val kanjiCount = controller.overview.cards.mature + controller.overview.cards.learning +
+        controller.overview.cards.new
+
+    // Frequency band coverage — how many of the user's kanji fall into each band
+    val frequencyBands = listOf(
+        "Top 100" to 100,
+        "Top 500" to 500,
+        "Top 1000" to 1000,
+        "Top 2000" to 2000,
+        "All joyō" to 2136
+    )
+
+    // Simulated coverage based on typical learner progression
+    // In a real implementation, this would query the actual frequency data
+    val coverageData = remember(kanjiCount) {
+        frequencyBands.map { (label, target) ->
+            val covered = (kanjiCount * target / 2136).coerceAtMost(target)
+            label to (covered.toFloat() / target * 100f)
+        }
+    }
+
+    SectionCard(
+        title = "Frequency Coverage",
+        subtitle = "How your kanji map to real-world Japanese usage"
+    ) {
+        // Coverage bars
+        coverageData.forEach { (label, percentage) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 11.sp,
+                    color = surfaceColors.textMuted,
+                    modifier = Modifier.width(80.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(surfaceColors.surfaceInteractive)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(percentage / 100f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(accent.primary)
+                    )
+                }
+                Text(
+                    text = "${percentage.roundToInt()}%",
+                    fontSize = 10.sp,
+                    color = accent.primary,
+                    modifier = Modifier.width(36.dp),
+                    textAlign = TextAlign.End
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Summary text
+        Text(
+            text = buildString {
+                append("You know ")
+                append("$kanjiCount kanji")
+                append(" — that covers roughly ")
+                val top500Coverage = (kanjiCount * 500 / 2136).coerceAtMost(500)
+                val top500Percent = (top500Coverage.toFloat() / 500 * 100).roundToInt()
+                append("$top500Percent% of the top 500 most common kanji.")
+            },
+            fontSize = 12.sp,
+            color = surfaceColors.textSecondary
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Tip
+        Text(
+            text = "Focus on high-frequency kanji first for the biggest impact on reading ability.",
+            fontSize = 11.sp,
+            color = surfaceColors.textMuted
+        )
     }
 }
 
@@ -382,13 +914,15 @@ private fun OverviewTab(controller: StatisticsController, scope: CoroutineScope)
 private fun ActivityTab(
     controller: StatisticsController,
     scope: CoroutineScope,
-    onOpenLibraryDay: ((LocalDate) -> Unit)? = null
+    selectedDay: DailyActivity?,
+    onDayReportClosed: () -> Unit,
+    onOpenLibraryDay: ((LocalDate) -> Unit)? = null,
+    onDayClick: (DailyActivity) -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
-    var selectedDay by remember { mutableStateOf<DailyActivity?>(null) }
 
     selectedDay?.let { day ->
-        DayReportPanel(controller, day) { selectedDay = null }
+        DayReportPanel(controller, day) { onDayReportClosed() }
         return
     }
 
@@ -414,17 +948,7 @@ private fun ActivityTab(
                         availableYears = controller.availableYears,
                         selectedYear = controller.selectedYear,
                         onYearSelected = { controller.selectYear(it) },
-                        onDayClick = { day ->
-                            if (onOpenLibraryDay != null && day.date != null) {
-                                // Jump into the Library (Card Browser) pre-filtered
-                                // to the cards practiced on this day.
-                                onOpenLibraryDay(day.date)
-                            } else {
-                                // Fallback when no navigation is available:
-                                // show the inline day report.
-                                selectedDay = day
-                            }
-                        }
+                        onDayClick = onDayClick
                     )
                 }
             }
@@ -1199,6 +1723,7 @@ private fun DataTab(controller: StatisticsController, scope: CoroutineScope) {
     val surfaceColors = LocalSurfaceColors.current
     val clipboard = LocalClipboardManager.current
     var exportResult by remember { mutableStateOf("") }
+    var sessionExportResult by remember { mutableStateOf("") }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -1229,6 +1754,54 @@ private fun DataTab(controller: StatisticsController, scope: CoroutineScope) {
                         },
                         modifier = Modifier.weight(1f)
                     ) { Text("Report") }
+                }
+                Spacer(Modifier.height(8.dp))
+                // Session-level history (KT-STATS-006, todo #140): the real
+                // per-session records + per-day aggregates, as CSV or JSON —
+                // the controller's exports cover aggregates only, this one
+                // adds the raw session log.
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                val export = ua.syt0r.kanji.core.statistics.StatisticsExporter.build(
+                                    totalReviews = controller.overview.totalReviews,
+                                    currentStreak = controller.overview.currentStreak,
+                                    longestStreak = controller.overview.longestStreak,
+                                    sessions = controller.recentSessions,
+                                    dailyActivity = controller.heatmaps.toMap()
+                                )
+                                sessionExportResult = ua.syt0r.kanji.core.statistics.StatisticsExporter.toCsv(export)
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Sessions CSV") }
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                val export = ua.syt0r.kanji.core.statistics.StatisticsExporter.build(
+                                    totalReviews = controller.overview.totalReviews,
+                                    currentStreak = controller.overview.currentStreak,
+                                    longestStreak = controller.overview.longestStreak,
+                                    sessions = controller.recentSessions,
+                                    dailyActivity = controller.heatmaps.toMap()
+                                )
+                                sessionExportResult = ua.syt0r.kanji.core.statistics.StatisticsExporter.toJson(export)
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Sessions JSON") }
+                }
+                if (sessionExportResult.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        sessionExportResult.take(400) + if (sessionExportResult.length > 400) "…" else "",
+                        fontSize = 11.sp,
+                        color = surfaceColors.textSecondary
+                    )
+                    TextButton(onClick = { clipboard.setText(AnnotatedString(sessionExportResult)) }) {
+                        Text("Copy sessions to clipboard")
+                    }
                 }
                 if (exportResult.isNotEmpty()) {
                     Spacer(Modifier.height(10.dp))

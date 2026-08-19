@@ -42,6 +42,14 @@ import ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent
 val desktopAppModule = module {
     factory<GetCreditLibrariesUseCase> { JvmGetCreditLibrariesUseCase }
 
+    // Universal-search "Scan image" OCR input mode (desktop only). The core
+    // overlay checks Koin for an optional SearchOcrProvider — on Android/iOS
+    // nothing is registered and the control is simply hidden, never a dead
+    // button.
+    single<ua.syt0r.kanji.core.knowledge.SearchOcrProvider> {
+        ua.syt0r.kanji.desktop.engine.ocr.DesktopSearchOcrProvider()
+    }
+
     // The Media Centre destination's real implementation — the desktop suite's
     // MediaView (player, subtitles, dictionary, mining) mounted with its own
     // AppState. Overrides the core default (honest desktop-only placeholder).

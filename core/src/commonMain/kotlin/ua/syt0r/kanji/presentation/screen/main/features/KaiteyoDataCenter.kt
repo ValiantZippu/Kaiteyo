@@ -45,6 +45,14 @@ import ua.syt0r.kanji.presentation.screen.main.screen.decks.KaiteyoCard
  */
 const val FAVORITE_FLAG_TYPE: Int = 8
 
+/**
+ * The reference kanji catalog deck. Every kanji in the bundled catalog gets
+ * a "Kanji Browser" card so the browser can list/filter them, but these
+ * cards are a REFERENCE, not a study queue — they must never inflate the
+ * "new"/"due" counts that drive the user's daily workload.
+ */
+const val KANJI_BROWSER_DECK_NAME: String = "Kanji Browser"
+
 val LETTER_WRITING_PRACTICE_TYPE: Long = SrsPracticeType.LetterWriting.value
 
 fun isFavoriteFlag(flagType: Int?): Boolean = flagType == FAVORITE_FLAG_TYPE
@@ -217,7 +225,7 @@ class KaiteyoDataCenter(
                     character = character,
                     meaning = meaningByKanji[character]?.firstOrNull() ?: "",
                     reading = onReadingsByKanji[character]?.take(3)?.joinToString("・") ?: "",
-                    deck = "Kanji Browser",
+                    deck = KANJI_BROWSER_DECK_NAME,
                     deckId = 0L,
                     tags = mutableListOf(),
                     tagNames = mutableListOf(),

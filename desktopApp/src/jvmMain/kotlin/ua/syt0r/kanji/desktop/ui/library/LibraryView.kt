@@ -128,6 +128,7 @@ import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.engine.learning.CardType
 import ua.syt0r.kanji.desktop.engine.learning.DeckStudyConfig
 import ua.syt0r.kanji.desktop.engine.learning.LearningEngine.UnifiedSearchResult
@@ -551,7 +552,7 @@ private fun CollectionsStrip(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Collections",
+                text = resolveSuiteString { collectionsButton },
                 color = sc.textPrimary,
                 fontSize = DsType.BodyLarge,
                 fontWeight = FontWeight.Bold,
@@ -636,7 +637,7 @@ private fun CollectionStripCard(
             if (cards.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
                 DsButton(
-                    text = "Study",
+                    text = resolveSuiteString { studyAction },
                     icon = Icons.Default.PlayArrow,
                     compact = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -726,7 +727,7 @@ private fun DeckCatalog(
             Text(
                 text = when (scope) {
                     is LibraryScope.Kind -> "${scope.kind.label} decks"
-                    LibraryScope.All -> "All decks"
+                    LibraryScope.All -> resolveSuiteString { allDecksLabel }
                     else -> scope.label
                 },
                 color = sc.textPrimary,
@@ -737,13 +738,13 @@ private fun DeckCatalog(
             DsIconButton(
                 icon = Icons.Default.GridView,
                 onClick = { viewMode = "grid"; state.settings.set("browser.library-view", viewMode) },
-                contentDescription = "Grid view",
+                contentDescription = resolveSuiteString { gridViewDesc },
                 tint = if (viewMode == "grid") accent().primary else sc.textMuted
             )
             DsIconButton(
                 icon = Icons.Default.ViewList,
                 onClick = { viewMode = "list"; state.settings.set("browser.library-view", viewMode) },
-                contentDescription = "List view",
+                contentDescription = resolveSuiteString { listViewDesc },
                 tint = if (viewMode == "list") accent().primary else sc.textMuted
             )
             DsSelect(
@@ -754,19 +755,19 @@ private fun DeckCatalog(
                 modifier = Modifier.width(140.dp)
             )
             DsButton(
-                text = "New folder",
+                text = resolveSuiteString { newFolderButton },
                 icon = Icons.Default.Folder,
                 onClick = { createFolder = true },
                 kind = DsButtonKind.Secondary
             )
             DsButton(
-                text = "New deck",
+                text = resolveSuiteString { newDeckButton },
                 icon = Icons.Default.Add,
                 onClick = onCreate,
                 kind = DsButtonKind.Secondary
             )
             DsButton(
-                text = if (selectionMode) "Exit select" else "Select",
+                text = if (selectionMode) resolveSuiteString { exitSelectButton } else resolveSuiteString { selectButton },
                 icon = Icons.Default.CheckBoxOutlineBlank,
                 kind = DsButtonKind.Ghost,
                 onClick = {
@@ -802,7 +803,7 @@ private fun DeckCatalog(
                 DsToggle(
                     checked = favoritesOnly,
                     onCheckedChange = { favoritesOnly = it; state.settings.setBool("browser.library-filter-favorites", it) },
-                    label = "Favorites only",
+                    label = resolveSuiteString { favoritesOnlyLabel },
                     modifier = Modifier.width(160.dp)
                 )
                 Spacer(Modifier.weight(1f))
@@ -825,7 +826,7 @@ private fun DeckCatalog(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "All decks",
+                    text = resolveSuiteString { allDecksLabel },
                     color = sc.textMuted,
                     fontSize = DsType.Body,
                     modifier = Modifier
@@ -870,7 +871,7 @@ private fun DeckCatalog(
             else -> {
                 if (decks.isEmpty()) {
                     DsEmptyState(
-                        title = if (folderDeck != null) "This folder is empty" else "No decks found",
+                        title = if (folderDeck != null) resolveSuiteString { thisFolderEmpty } else resolveSuiteString { noDecksFound },
                         message = when {
                             folderDeck != null -> "Move a deck into this folder, or create a new one here."
                             else -> "Create a deck or import content to get started."
@@ -899,7 +900,7 @@ private fun DeckCatalog(
                                     modifier = Modifier.weight(1f)
                                 )
                                 DsButton(
-                                    text = "Select all",
+                                    text = resolveSuiteString { selectAllButton },
                                     kind = DsButtonKind.Ghost,
                                     compact = true,
                                     onClick = {
@@ -908,7 +909,7 @@ private fun DeckCatalog(
                                     }
                                 )
                                 DsButton(
-                                    text = "Archive",
+                                    text = resolveSuiteString { archiveButton },
                                     icon = Icons.Default.Archive,
                                     kind = DsButtonKind.Secondary,
                                     compact = true,
@@ -921,7 +922,7 @@ private fun DeckCatalog(
                                     }
                                 )
                                 DsButton(
-                                    text = "Export",
+                                    text = resolveSuiteString { exportButton },
                                     icon = Icons.Default.FileDownload,
                                     kind = DsButtonKind.Secondary,
                                     compact = true,
@@ -931,7 +932,7 @@ private fun DeckCatalog(
                                     }
                                 )
                                 DsButton(
-                                    text = "Delete",
+                                    text = resolveSuiteString { deleteButton },
                                     icon = Icons.Default.Delete,
                                     kind = DsButtonKind.Danger,
                                     compact = true,
@@ -939,7 +940,7 @@ private fun DeckCatalog(
                                     onClick = { bulkDeleteConfirm = true }
                                 )
                                 DsButton(
-                                    text = "Done",
+                                    text = resolveSuiteString { doneButton },
                                     kind = DsButtonKind.Ghost,
                                     compact = true,
                                     onClick = { selectionMode = false; selectedIds.clear() }
@@ -1033,8 +1034,8 @@ private fun DeckCatalog(
 
     if (createFolder) {
         DsPromptDialog(
-            title = "New folder",
-            placeholder = "Folder name",
+            title = resolveSuiteString { newFolderTitle },
+            placeholder = resolveSuiteString { folderNamePlaceholder },
             onConfirm = { name ->
                 if (name.isNotBlank()) {
                     val folder = state.library.create(
@@ -1051,7 +1052,7 @@ private fun DeckCatalog(
     }
     if (bulkDeleteConfirm) {
         DsConfirmDialog(
-            title = "Delete ${selectedIds.size} decks?",
+            title = resolveSuiteString { deleteDecksTitle },
             message = "This permanently deletes the selected decks and everything inside them, including any sub-folders. This cannot be undone.",
             confirmText = "Delete",
             danger = true,
@@ -1119,7 +1120,7 @@ private fun EntryScopeGrid(
             )
             if (entries.isNotEmpty()) {
                 DsButton(
-                    text = "Study these ${entries.size}",
+                    text = "${resolveSuiteString { studyTheseLabel }} ${entries.size}",
                     icon = Icons.Default.PlayArrow,
                     compact = true,
                     onClick = {
@@ -1133,7 +1134,7 @@ private fun EntryScopeGrid(
         }
         if (entries.isEmpty()) {
             DsEmptyState(
-                title = "Nothing here yet",
+                title = resolveSuiteString { nothingHereYet },
                 message = "Study a deck to build this list.",
                 modifier = Modifier.fillMaxSize()
             )
@@ -1249,7 +1250,7 @@ private fun DeckCard(
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                 DsButton(
-                    text = if (isFolder) "Open" else "Study",
+                    text = if (isFolder) resolveSuiteString { openButton } else resolveSuiteString { studyAction },
                     icon = if (isFolder) Icons.Default.Folder else Icons.Default.PlayArrow,
                     onClick = onOpen,
                     modifier = Modifier.weight(1f),
@@ -1264,7 +1265,7 @@ private fun DeckCard(
                     DsIconButton(
                         icon = Icons.Default.MoreVert,
                         onClick = { manageOpen = true },
-                        contentDescription = "Deck actions",
+                        contentDescription = resolveSuiteString { deckActionsDesc },
                         size = 30.dp
                     )
                 }
@@ -1375,7 +1376,7 @@ private fun DeckListRow(
         DsBadge(text = "${stats.total} cards", tint = sc.textMuted)
         Spacer(Modifier.width(DsSpacing.Sm))
         DsButton(
-            text = if (isFolder) "Open" else "Study",
+            text = if (isFolder) resolveSuiteString { openButton } else resolveSuiteString { studyAction },
             icon = if (isFolder) Icons.Default.Folder else Icons.Default.PlayArrow,
             compact = true,
             onClick = onOpen

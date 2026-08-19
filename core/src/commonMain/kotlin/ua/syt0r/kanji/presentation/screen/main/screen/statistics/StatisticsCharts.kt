@@ -25,14 +25,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
-import kotlin.math.roundToInt
 
 // ============================================================
 // SHARED STATISTICS CHART COMPONENTS
@@ -212,37 +213,166 @@ fun BarsChart(
 fun LineChart(
     points: List<Pair<String, Float>>,
     color: Color,
-    heightDp: Int = 110
+    heightDp: Int = 110,
+    valueFormatter: (Float) -> String = { it.roundToInt().toString() }
 ) {
     val surfaceColors = LocalSurfaceColors.current
-    if (points.isEmpty()) {
-        EmptyChart()
+    if (points.isEmpty() || points.all { it.second <= 0f }) {
+        EmptyChart("No reviews in this window yet.")
         return
     }
-    val accent = LocalKaiteyoAccent.current
+    val maxValue = points.maxOf { it.second }
     Canvas(Modifier.fillMaxWidth().height(heightDp.dp)) {
         val chartWidth = size.width - 30f
-        val bottom = size.height - 12f
+        val bottom = size.height - 14f
         val stepX = chartWidth / (points.size - 1).coerceAtLeast(1)
         fun x(i: Int) = 15f + i * stepX
-        fun y(value: Float) = 10f + (bottom - 10f) * (1f - value.coerceIn(0f, 1f))
+        // Normalize by the real max so a 5-review day and a 50-review day
+        // both scale correctly (previous version clamped to 0..1).
+        fun y(value: Float) = 10f + (bottom - 10f) * (1f - value / maxValue)
         val path = Path()
         points.forEachIndexed { i, (_, value) ->
             val px = x(i); val py = y(value)
             if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
         }
-        drawPath(path, color, style = Stroke(width = 2.5f))
+        drawPath(path, color, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
         val fill = Path()
         fill.addPath(path)
         fill.lineTo(x(points.size - 1), bottom)
         fill.lineTo(x(0), bottom)
         fill.close()
-        drawPath(fill, color.copy(alpha = 0.12f))
+        drawPath(fill, color.copy(alpha = 0.14f))
         points.forEachIndexed { i, (_, value) ->
-            drawCircle(color, radius = 3f, center = Offset(x(i), y(value)))
+            if (value > 0f) {
+                drawCircle(color, radius = 2.5f, center = Offset(x(i), y(value)))
+            }
         }
-        if (accent.secondary != color) {
-            // reserved for future multi-series
+        // Baseline grid: a faint horizontal line at the bottom axis.
+        drawLine(
+            color = surfaceColors.textMuted.copy(alpha = 0.25f),
+            start = Offset(15f, bottom),
+            end = Offset(size.width - 15f, bottom),
+            strokeWidth = 1f
+        )
+    }
+    // Date labels: first, middle, last — keeps the axis readable.
+    Row(Modifier.fillMaxWidth().padding(start = 15.dp, end = 15.dp, top = 4.dp)) {
+        val indices = listOf(0, points.size / 2, points.lastIndex)
+        indices.distinct().forEach { i ->
+            val label = points[i].first
+            Text(
+                label, fontSize = 9.sp, color = surfaceColors.textMuted,
+                modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+// ============================================================
+// MULTI-SLICE DONUT — proportions with a legend
+// ============================================================
+
+data class DonutSliceData(
+    val label: String,
+    val value: Float,
+    val color: Color
+)
+
+@Composable
+fun MultiDonutChart(
+    slices: List<DonutSliceData>,
+    modifier: Modifier = Modifier,
+    sizeDp: Int = 120,
+    strokeDp: Int = 16,
+    centerTop: String = "",
+    centerBottom: String = ""
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val total = slices.fold(0f) { acc, slice -> acc + slice.value }
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(contentAlignment = Alignment.Center) {
+            Canvas(Modifier.size(sizeDp.dp)) {
+                val stroke = Stroke(width = strokeDp.dp.toPx(), cap = StrokeCap.Butt)
+                val active = slices.filter { it.value > 0f }
+                if (active.isEmpty() || total <= 0f) {
+                    drawArc(surfaceColors.surfaceInteractive, 0f, 360f, false, style = stroke)
+                } else {
+                    var start = -90f
+                    active.forEach { slice ->
+                        val sweep = slice.value / total * 360f
+                        drawArc(slice.color, start, sweep, false, style = stroke)
+                        start += sweep
+                    }
+                }
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (centerTop.isNotEmpty()) {
+                    Text(
+                        centerTop, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                        color = surfaceColors.textPrimary
+                    )
+                }
+                if (centerBottom.isNotEmpty()) {
+                    Text(centerBottom, fontSize = 9.sp, color = surfaceColors.textMuted)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChartLegend(
+    items: List<DonutSliceData>,
+    modifier: Modifier = Modifier,
+    valueFormatter: (Float) -> String = { it.roundToInt().toString() },
+    percentOfTotal: Boolean = false
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val total = items.fold(0f) { acc, item -> acc + item.value }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        items.forEach { item ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(9.dp).clip(RoundedCornerShape(3.dp)).background(item.color))
+                Spacer(Modifier.width(7.dp))
+                Text(
+                    item.label, fontSize = 11.sp, color = surfaceColors.textSecondary,
+                    modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = if (percentOfTotal && total > 0f)
+                        "${((item.value / total) * 100).roundToInt()}%"
+                    else valueFormatter(item.value),
+                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = surfaceColors.textPrimary
+                )
+            }
+        }
+    }
+}
+
+/** Thin stacked proportion bar — great for "studied vs remaining" splits. */
+@Composable
+fun StackedBar(
+    items: List<DonutSliceData>,
+    modifier: Modifier = Modifier,
+    heightDp: Int = 10
+) {
+    val total = items.fold(0f) { acc, item -> acc + item.value }
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(heightDp.dp)
+            .clip(RoundedCornerShape((heightDp / 2).dp)),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        items.forEach { item ->
+            if (item.value > 0f && total > 0f) {
+                Box(
+                    Modifier
+                        .weight(item.value / total)
+                        .height(heightDp.dp)
+                        .background(item.color)
+                )
+            }
         }
     }
 }

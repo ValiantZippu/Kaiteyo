@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Icon
@@ -231,13 +232,23 @@ fun DictionaryMatchRow(
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                 DsButton(
                     text = "Mine word",
                     icon = Icons.Default.Bookmark,
                     kind = DsButtonKind.Primary,
                     compact = true,
                     onClick = { onMine(state.mining.payloadForEntry(entry, match.dictionary.name)) }
+                )
+                DsButton(
+                    text = "Graph",
+                    icon = Icons.Default.Route,
+                    kind = DsButtonKind.Secondary,
+                    compact = true,
+                    onClick = {
+                        state.pendingGraphNode = entry.headword
+                        state.currentView = ua.syt0r.kanji.desktop.appstate.WorkspaceView.Graph
+                    }
                 )
             }
         }

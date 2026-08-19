@@ -18,6 +18,16 @@ import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.searchS
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.settingsScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.vocab_dashboard.vocabDashboardScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.info.infoScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.kanji_entry.kanjiEntryScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.knowledge_explorer.knowledgeExplorerScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.knowledge_graph.knowledgeGraphScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.radical_explorer.radicalExplorerScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.learner_profile.learnerProfileScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.sentence.sentenceScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.sentence_entry.sentenceEntryScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.component_explorer.componentExplorerScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.browse_hub.browseHubScreenModule
+import ua.syt0r.kanji.presentation.screen.main.screen.collection_detail.collectionDetailScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.letterPracticeScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.vocabPracticeScreenModule
 import ua.syt0r.kanji.presentation.screen.main.screen.sync.syncScreenModule
@@ -26,6 +36,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.vocab_card.vocabCardScreen
 import ua.syt0r.kanji.core.game.gameModule
 import ua.syt0r.kanji.presentation.screen.main.screen.game.gameCentreModule
 import ua.syt0r.kanji.presentation.screen.main.screen.media.mediaCentreModule
+import ua.syt0r.kanji.presentation.screen.main.screen.world.worldScreenModule
 
 private val screenModules = listOf(
     mainScreenModule,
@@ -47,10 +58,21 @@ private val screenModules = listOf(
     feedbackScreenModule,
     dailyLimitScreenModule,
     textAnalysisScreenModule,
+    knowledgeExplorerScreenModule,
+    kanjiEntryScreenModule,
+    knowledgeGraphScreenModule,
+    radicalExplorerScreenModule,
+    learnerProfileScreenModule,
+    sentenceScreenModule,
+    sentenceEntryScreenModule,
+    componentExplorerScreenModule,
+    browseHubScreenModule,
+    collectionDetailScreenModule,
     vocabCardScreenModule,
     mediaCentreModule,
     gameCentreModule,
-    gameModule
+    gameModule,
+    worldScreenModule
 )
 
 val appModules: List<Module> = screenModules + listOf(

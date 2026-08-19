@@ -1,125 +1,251 @@
-# Kaiteyo (書いてよ) — Architecture Overview
+# Kaiteyo Architecture Overview
 
-Kaiteyo is a Kotlin Multiplatform (KMP) project with **one shared `core` module** and thin
-platform entry points, plus a desktop-only immersion suite and a standalone data platform.
+## Core Philosophy
 
-## Module map
+Kaiteyo is a deeply connected Japanese dictionary, knowledge graph, learning environment, reading system, library, and eventually media/game ecosystem. The architecture answers five questions for every entity:
 
-```
-settings.gradle.kts  →  :app  :iosApp  :desktopApp  :core  :mediaGenerator  :kjd
-```
+1. **WHAT IS THIS?** — meaning, readings, classification
+2. **HOW IS IT BUILT?** — radical, components, decomposition
+3. **HOW IS IT USED?** — vocabulary, compounds, sentences
+4. **WHAT IS IT CONNECTED TO?** — related kanji, components, words
+5. **HOW SHOULD I LEARN IT?** — stroke order, mnemonic, graph, examples, SRS
 
-| Module | Role | Platforms |
-|---|---|---|
-| `core/` | **All shared code**: UI (Compose MPP), business logic, data layer. `commonMain` / `jvmMain` / `androidMain` / `iosMain` | all |
-| `desktopApp/` | Thin JVM wrapper: window shell, Koin init — **plus** the standalone desktop suite (`ua.syt0r.kanji.desktop.*`), JVM-only | Windows/macOS/Linux |
-| `app/` | Android entry point. Flavors: `googlePlay` (Firebase, billing, review), `fdroid` | Android |
-| `iosApp/` | iOS entry point (Swift project + Compose host) | iOS |
-| `kjd/` | **KJD** — Kaiteyo Japanese Data Platform: standalone JVM module that ingests open datasets and generates the bundled language database | build-time |
-| `mediaGenerator/` | JVM utility (javacv + coil) generating media assets | build-time |
-| `buildSrc/` | Gradle logic: `AppVersion.kt`, `AppAssets.kt`, asset prepare tasks | build-time |
-| `installer/` | Branded installer subsystem (scripts/configs, **not** a Gradle module) — wraps `:desktopApp:createDistributable` bundles | packaging |
-| `website/` | Static site, Python build — unrelated to the Kotlin build | — |
-
-## Dependency direction
+## Module Structure
 
 ```
-        ┌───────────────────────────────────────────────┐
-        │  desktopApp (window shell + desktop suite)     │
-        │  ├── depends on :core (engine, UI, jdata)      │
-        │  └── depends on :kjd (patch apply, DatabasePatcher) │
-        └──────────────────────┬────────────────────────┘
-                               │
-        ┌──────────────────────▼──────────────┐
-        │  app (Android)        iosApp (iOS)   │
-        │  └── depends on :core └── depends on :core │
-        └──────────────┬───────────────────────┘
-                       ▼
-                    :core  ← shared engine, UI, data layer
-                       ▲
-                       │ (build-time)
-                    :kjd  → generates AppDataDatabase asset
+core/                    Shared code (KMP)
+├── commonMain/          All platforms
+│   ├── kotlin/ua/syt0r/kanji/
+│   │   ├── core/        Data layer (repositories, models, services)
+│   │   ├── di/          Koin modules
+│   │   └── presentation/UI (Compose MPP)
+│   └── sqldelight_*/    Database schemas + migrations
+├── jvmMain/             JVM-specific (desktop)
+├── androidMain/         Android-specific
+└── iosMain/             iOS-specific
+
+desktopApp/              Thin JVM wrapper + desktop suite
+app/                     Android entry point
+iosApp/                  iOS entry point
+kjd/                     Data platform (ingests datasets → DB)
 ```
 
-## Package layout (everything under `ua.syt0r.kanji` in core)
+## Knowledge System
+
+### Domain Models (`core/knowledge/`)
 
 ```
-core/src/commonMain/kotlin/ua/syt0r/kanji/
-├── presentation/            # UI: KaiteyoApp (root), common/ (theme, resources, ui),
-│                            # screen/main/ (app shell, navigation, feature screens)
-├── core/                    # Data layer
-│   ├── app_data/            # Read-only dictionary DB (SQLDelight AppDataDatabase)
-│   ├── user_data/           # Mutable user DB (SQLDelight UserDataDatabase) + migrations
-│   ├── srs/                 # FSRS scheduling, SRS managers (fsrs/ subpackage)
-│   ├── sync/                # Sync engine + GitHub cloud provider
-│   ├── account/             # GitHub OAuth (device flow)
-│   ├── statistics/          # Statistics engine (heatmap, exams, retention, …)
-│   ├── transfer/            # Import/export pipeline (JSON/CSV/TSV/TXT + Anki .apkg)
-│   ├── backup/              # Backup/restore
-│   ├── stroke_evaluator/    # Kanji stroke evaluation
-│   ├── tts/                 # Kana TTS (Neural2B voices)
-│   └── theme_manager/       # Theme persistence
-└── di/                      # Koin modules (AppModule, PlatformComponentsModule, …)
+KanjiKnowledge       → character, meanings, readings, classifications, frequency
+RadicalKnowledge     → radical, stroke count
+RadicalStats         → radical + kanji count (for explorer grid)
+ComponentKnowledge   → component, radicalOf, strokes, source
+WordKnowledge        → id, kanjiReading, kanaReading, furigana, glossary, pos
+SentenceKnowledge    → text, translation, furigana
+GrammarPattern       → id, pattern, meaning, formation, register, jlpt
+GrammarMatch         → patternId, matchedText, startIndex, endIndex
 ```
 
-The desktop suite lives at `desktopApp/src/jvmMain/kotlin/ua/syt0r/kanji/desktop/`
-(JVM-only) with its own layers:
+### Knowledge Graph (`KnowledgeGraph.kt`)
 
-```
-desktop/
-├── appstate/       # AppState facade, WorkspacePanels
-├── engine/         # dictionary, media, mining, ocr, browser, review, srs, sync, transfer,
-│                   # theming, updates, plugins, shortcuts, settings, stats, collections,
-│                   # account, api, cli, jdata (language data platform copy)
-├── designsystem/   # Ds* components on core theme tokens
-├── ui/             # views per domain (Dashboard, Browser, Review, Media, Mining, Ocr, …)
-├── model/          # card/library/search models
-└── data/           # DemoData (first-run seeding)
-```
+The graph is a navigation surface, not decoration. Nodes are type-prefixed (`"kanji:食"`, `"radical:口"`, `"word:12345"`) and edges are labeled relationships.
 
-## UI architecture
+**Node types**: Kanji, Radical, Word, Sentence, Grammar
+**Edge types**: Contains, ComponentOf, RadicalOf, UsedIn, AppearsIn, ExampleOf, RelatedTo
 
-- **Compose Multiplatform** shared UI in `core`; desktop suite has its own JVM view layer
-  built on the same theme tokens.
-- **State management**: `StateFlow` in ViewModels, `mutableStateOf`/`derivedStateOf` for
-  local UI state, `CompositionLocal` for theme propagation.
-- **Screen pattern** (core): 4-file pattern per feature — Contract / ViewModel / Module /
-  Screen, registered in `di/AppModule.kt`.
-- **DI**: Koin (`appModules` + platform modules; `multiplatformViewModel` expect/actual).
+The graph is always expanded progressively — never thousands of nodes at once. See `GraphExpansionLimits` for caps.
+
+### Knowledge Repository (`KnowledgeRepository.kt`)
+
+Facade over `AppDataRepository`. The UI never touches raw SQLDelight rows. All lookups return domain models.
+
+Key methods:
+- `kanji(character)` → full kanji entry
+- `radicalsIn(character)` → components inside a kanji
+- `kanjiWithRadicals(radicals)` → intersection search
+- `wordsContaining(character)` → kanji → words
+- `sentencesWithText(text)` → word → sentences
+- `grammarIn(sentence)` → grammar matches
+- `kanjiSearchIndex()` → in-memory search index (cached)
+
+### Search Engine (`KnowledgeSearchEngine.kt`)
+
+Universal grouped search. One entry point from Home, Library, Browse, and the dictionary. Results are grouped: KANJI → WORDS → SENTENCES → GRAMMAR.
+
+**Categories** (filterable): Kanji, Words, Sentences, Grammar
+**Filters**: JLPT, Grade, Frequency, StrokeCount, PartOfSpeech
+**Sorts**: Relevance, Frequency, StrokeCount, Jlpt, Grade, Alphabetical, Reading
+
+Kanji search uses an in-memory index (~2k jōyō characters). Word/sentence searches are DB-backed.
+
+### Sentence Analysis (`SentenceAnalysis.kt`)
+
+Interactive tokenization of corpus sentences. Each token is annotated with dictionary links:
+- Kanji tokens → kanji entry
+- Mixed tokens (食べる) → word entry + per-character kanji
+- Kana tokens → word lookup (2+ chars)
+
+Grammar patterns are highlighted via substring matching from the built-in catalog.
+
+### Sentence Difficulty (`SentenceDifficulty.kt`)
+
+Surface-feature scoring (1..10) based on:
+- Sentence length
+- Kanji density
+- Unique kanji count
+- Grammar pattern density
+- Known-kanji overlay (optional)
+
+### Study State (`StudyStateMachine.kt`)
+
+One explicit state machine: New → Learning → Known → Due → Mastered → Relearning → Suspended. Derived from real FSRS cards. No scattered booleans.
+
+### Level Profiles (`LevelProfile.kt`)
+
+9 learner profiles (ChildBeginner → Research) + Custom. Controls:
+- Furigana visibility
+- Romaji visibility
+- Translation visibility
+- Rare reading visibility
+- Explanation depth
+- Sentence difficulty
+- Graph complexity
+- Card preset
+
+## Card System
+
+Every entity page (kanji, word, sentence, grammar, collection) is a sequence of modular cards. The layout is **data**, never hardcoded per screen — users can show/hide/reorder cards and apply presets. See `core/knowledge/cards/`.
+
+### Kanji Cards (`KanjiCardModels.kt`)
+
+16 card types: Hero, Meaning, Readings, Frequency, Classification, Radical, Component, Stroke, Vocabulary, Related, Variant, Sentence, Grammar, Graph, Media, Study.
+
+### Word Cards (`WordCardModels.kt`)
+
+9 card types: Hero, Readings, Meanings, PartOfSpeech, Kanji, Frequency, Sentences, Grammar, Study.
+
+### Sentence Cards (`SentenceCardModels.kt`)
+
+8 card types: Hero, Translation, Tokens, Grammar, Vocabulary, Difficulty, Source, Study.
+
+### Grammar Cards (`GrammarCardModels.kt`)
+
+8 card types: Hero, Meaning, Structure, Examples, JLPT, RelatedGrammar, Kanji, Study.
+
+### Collection Cards (`CollectionCardModels.kt`)
+
+7 card types: Hero, KanjiGrid, KanjiList, FrequencyDistribution, JLPTBreakdown, StudyState, Statistics.
+
+**Presets** (all five systems): Minimal, Beginner, Standard, Advanced, Research. (Kanji also has Intermediate / Writing / Reading / Dictionary.)
+
+### Registry & Adapter
+
+- `CardRegistry` — one API over all five card systems (cards, counts, presets, titles, visible-card resolution from stored JSON).
+- `PresetAdapter` — learner profile (§23) → recommended card preset per entity type, with fallback resolution.
+- `CardSettingsScreen` — per-entity show/hide/reorder (drag), presets, reset, save.
+- Layout is `CardLayout` (order + hidden), serialized as JSON, persisted per profile in app preferences, sanitized on load (corrupt blobs fall back to defaults). Stores registered in `CoreModule`.
+
+## World System
+
+Kaiteyo World is a streamable 3D Japan with its own isolated runtime (`core/world/`). See `docs/architecture/WORLD_SYSTEM.md`.
+
+- Geographic coordinate system (world space + WGS84 projection)
+- Chunk system (256 m chunks, streaming, load radius, hard cap)
+- Terrain, water/beach, buildings, vehicles, Enoden train, NPCs
+- Player controller + third/first-person camera
+- Time & weather cycle
+- Save/load (versioned JSON) + world map
+- `WorldController` + `KamakuraWorld` factory; `WorldScreen` wired into navigation
 
 ## Navigation
 
-- Core: `MainNavigation` / `MainNavigationState` with `DeepLinkHandler`, form-factor-aware
-  shell (`NavShell`, Launchpad, BubbleLauncher).
-- Desktop suite: `WorkspaceNav` + docked/floating panels (`WorkspacePanels`,
-  `FloatingLauncher`), compact tab bar below 720dp.
+### Two-Mode System
 
-## Data flow
+- **Sidebar**: Structured dock on screen edge (Left/Right/Top/Bottom)
+- **Floating**: Draggable launcher bubble with 12 snap points
 
-```mermaid
-flowchart LR
-    UI[Composable] --> VM[ViewModel / StateHolder]
-    VM --> UC[UseCase / Repository]
-    UC --> DB[(SQLDelight UserData)]
-    UC --> PREF[(DataStore Preferences)]
-    UC --> NET[Ktor / java.net.http — sync, OAuth]
-    DB --> UI
+Both use the same `NavigationController` — switching modes never recreates the app.
+
+### NavShell Architecture
+
+```
+NavShell
+├── AdaptiveNavigation
+│   ├── Row (vertical sidebar) or Column (horizontal bar)
+│   │   ├── DockedSidebar (animated width/height)
+│   │   └── Content (weighted sibling)
+│   └── BubbleLauncher (floating mode overlay)
+├── PageNameIndicator (debug, top-right)
+└── DebugPanel (debug, bottom-left)
 ```
 
-- UI observes state from ViewModels; ViewModels call repositories/use cases; repositories
-  coordinate local (SQLDelight/DataStore) and remote (Ktor) sources.
-- The bundled `AppDataDatabase` is read-only; user data is mutable with migrations.
+## Theme System
 
-## Key design decisions
+### Base Modes
+- OLED Black (default)
+- Dark Gray
+- Light
+- Sepia
 
-1. **Kotlin Multiplatform + Compose MPP** — one engine, one UI across desktop/Android/iOS
-   (ADR-0003).
-2. **Koin** — lightweight DI without codegen (ADR-0004).
-3. **Two SQLDelight databases** — immutable app data / mutable user data (ADR-0005).
-4. **FSRS-5** — modern spaced repetition, offline, deterministic (ADR-0006).
-5. **KJD data platform** — reproducible, provenance-tracked language database (ADR-0007).
-6. **Desktop suite as self-contained module** (ADR-0008).
-7. **GitHub device-flow + private gist sync** — no central service (ADR-0009).
-8. **Installer decoupled from Gradle** (ADR-0010).
+### Accent Schemes (7)
+Signature Pineapple, Cotton Candy, Ocean, Forest, Sunset, Lavender, Monochrome
 
-See [decisions/](decisions/README.md) for the full ADR list.
+### Token System
+- `SurfaceColors`: background, surface, surfaceElevated, surfaceInteractive, border, textPrimary/Secondary/Muted/Inverse
+- `KaiteyoAccentScheme`: primary, primaryDark, secondary, secondaryDark, onPrimary, onSecondary, tertiary
+- `Dimens`: spacing scale (4dp grid), corner radius system
+- `AnimationConfig`: speed, spring params, page transitions
+- `RadiusConfig`: style presets (Square/Rounded/VeryRounded/Soft)
+- `GlowConfig`: intensity, radius, opacity
+- `TypeScale`: fontScale, titleScale, lineHeight
+
+## Search
+
+### Universal Search (`UniversalSearch.kt`)
+
+Ctrl+Shift+F (desktop) or search icon. One overlay from any screen. Grouped results with category filter chips (Kanji/Words/Sentences/Grammar).
+
+### Library Search
+
+Inline unified search across kanji, vocabulary, and decks. Keyboard-navigable (↑/↓/Enter/Esc).
+
+### Browse Hub
+
+Exploratory surface: JLPT collections, grade collections, frequency distribution, radical grid, grammar catalog.
+
+## Performance Patterns
+
+- **Debounced search** (280ms default)
+- **In-memory kanji index** (~2k chars, trivial to scan)
+- **Lazy pagination** (`LazyPager<T>`)
+- **Search result cache** (30s TTL)
+- **Graph expansion limits** (12 nodes/expansion, 120 total, depth 4)
+- **LRU cache** for expensive computations
+
+## Accessibility
+
+- Focus indicators (accent-colored 2dp border)
+- Keyboard navigation (Escape, /, Ctrl+K)
+- Minimum touch targets (48dp)
+- Reduced motion support
+- High contrast mode
+- Screen reader labels
+- Non-color indicators
+
+## Data Flow
+
+```
+UI → ViewModel → KnowledgeRepository → AppDataRepository → SQLDelight
+                                    ↓
+                              KnowledgeSearchEngine (in-memory index)
+                                    ↓
+                              KnowledgeGraph (progressive expansion)
+```
+
+User data (bookmarks, progress, notes) is separate from dictionary data (canonical).
+
+## Testing
+
+- `commonTest/`: `kotlin.test` in commonMain
+- Unit tests for: search, filters, sorting, card layout, sentence analysis, difficulty scoring, study state machine, level profiles
+- Fake preferences for test isolation
+- Graph layout tests

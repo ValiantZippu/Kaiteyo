@@ -72,7 +72,7 @@ data class ShortcutDef(
 }
 
 @Serializable
-enum class ShortcutCategory { Review, Browser, Navigation, App, Search, Statistics, Media }
+enum class ShortcutCategory { Review, Browser, Navigation, App, Search, Statistics, Media, Reading, Study, World }
 
 /** Registry with rebinding, reset, conflict detection and export. */
 class ShortcutRegistry(initial: List<ShortcutDef> = defaultShortcuts()) {
@@ -196,7 +196,27 @@ fun defaultShortcuts(): List<ShortcutDef> = listOf(
     // catalog (Media → Settings → Keyboard shortcuts) so they are rebindable
     // without colliding with review/browser keys. Only the navigation chord
     // to open the workspace belongs to the global registry.
-    ShortcutDef("open-media", "Media", ShortcutCategory.Navigation, KeyChord("v", alt = true), "Open the media workspace")
+    ShortcutDef("open-media", "Media", ShortcutCategory.Navigation, KeyChord("v", alt = true), "Open the media workspace"),
+
+    // ---- Remaining workspace destinations --------------------------
+    // Every workspace view that has a dispatcher handler must also exist in
+    // this catalog, or the chord can never be matched (registry.matches runs
+    // against catalog entries only). These complete the keyboard map so
+    // every destination is reachable without a mouse.
+    ShortcutDef("open-exams", "Exams", ShortcutCategory.Study, KeyChord("e", ctrl = true, shift = true), "Open the exams workspace"),
+    ShortcutDef("open-mistakes", "Mistakes", ShortcutCategory.Study, KeyChord("x", ctrl = true, shift = true), "Open the mistakes review"),
+    ShortcutDef("open-dictionary", "Dictionary", ShortcutCategory.Navigation, KeyChord("d", ctrl = true, shift = true), "Open the dictionary manager"),
+    ShortcutDef("open-mining", "Mining", ShortcutCategory.Study, KeyChord("m", ctrl = true, alt = true), "Open the mining workspace"),
+    ShortcutDef("open-reading", "Reading", ShortcutCategory.Reading, KeyChord("r", ctrl = true, shift = true), "Open the reading workspace"),
+    ShortcutDef("open-curriculum", "Curriculum", ShortcutCategory.Study, KeyChord("c", ctrl = true, shift = true), "Open the curriculum workspace"),
+    ShortcutDef("open-graph", "Knowledge Graph", ShortcutCategory.Study, KeyChord("g", ctrl = true, shift = true), "Open the knowledge graph"),
+    ShortcutDef("open-browser2", "Web Browser", ShortcutCategory.Navigation, KeyChord("b", ctrl = true, shift = true), "Open the learning browser"),
+    ShortcutDef("open-ocr", "OCR", ShortcutCategory.Navigation, KeyChord("o", ctrl = true, shift = true), "Open the OCR workspace"),
+    ShortcutDef("open-integrations", "Integrations", ShortcutCategory.Navigation, KeyChord("i", ctrl = true, shift = true), "Open the integrations workspace"),
+    ShortcutDef("open-game", "Game", ShortcutCategory.World, KeyChord("f9"), "Open the game world"),
+    // Ctrl+Shift+M is the AGENTS.md mining-dialog chord; Ctrl+Alt+M opens the
+    // Mining workspace, keeping the two exclusive.
+    ShortcutDef("mine-selection", "Mine Selection", ShortcutCategory.App, KeyChord("m", ctrl = true, shift = true), "Mine the currently selected text")
 ) + tabShortcuts()
 
 /** Browser-style workspace tab shortcuts (Ctrl+T/W/Tab, Ctrl+1..9). */

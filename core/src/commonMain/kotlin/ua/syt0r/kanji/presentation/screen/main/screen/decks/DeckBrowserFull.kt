@@ -45,7 +45,7 @@ fun DeckBrowserFullScreen(
     onMove: (KaiteyoDeck, KaiteyoDeck) -> Unit = { _, _ -> },
     onRename: (KaiteyoDeck, String) -> Unit = { _, _ -> },
     onDelete: (KaiteyoDeck) -> Unit = {},
-    onCreateDeck: (String, String, String?) -> Unit = { _, _, _ -> },
+    onCreateDeck: (String, String, String?, String?) -> Unit = { _, _, _, _ -> },
     onBrowse: (KaiteyoDeck) -> Unit = {},
     onFindContent: (KaiteyoDeck) -> Unit = {},
     onClose: () -> Unit = {}
@@ -274,7 +274,10 @@ fun DeckBrowserFullScreen(
     if (showCreateDialog) {
         DeckCreateDialog(
             decks = decks,
-            onConfirm = { name, type, parentId -> onCreateDeck(name, type, parentId); showCreateDialog = false },
+            onConfirm = { name, type, parentId, noteTypeId ->
+                onCreateDeck(name, type, parentId, noteTypeId)
+                showCreateDialog = false
+            },
             onDismiss = { showCreateDialog = false }
         )
     }
@@ -850,11 +853,12 @@ private fun DeckDetailBar(
 @Composable
 private fun DeckCreateDialog(
     decks: List<KaiteyoDeck>,
-    onConfirm: (String, String, String?) -> Unit,
+    onConfirm: (String, String, String?, String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var deckType by remember { mutableStateOf("kanji") }
+    var noteTypeId by remember { mutableStateOf("kaiteyo-default") }
     var parentId by remember { mutableStateOf<String?>(null) }
     var description by remember { mutableStateOf("") }
 
@@ -873,16 +877,53 @@ private fun DeckCreateDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 // Deck type decides which real repository owns the deck:
-                // kanji decks hold characters, vocabulary decks hold words.
+                // writing decks hold characters, flashcard decks hold words.
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Type", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(52.dp))
-                    listOf("kanji" to "Kanji", "vocabulary" to "Vocabulary").forEach { (value, label) ->
+                    listOf(
+                        "kanji" to "Writing",
+                        "vocabulary" to "Flashcards"
+                    ).forEach { (value, label) ->
                         FilterChip(
                             selected = deckType == value,
                             onClick = { deckType = value },
                             label = { Text(label, fontSize = 12.sp) },
                             modifier = Modifier.padding(end = 6.dp)
                         )
+                    }
+                }
+                if (deckType == "vocabulary") {
+                    var noteTypeExpanded by remember { mutableStateOf(false) }
+                    Text("Note type", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    ExposedDropdownMenuBox(expanded = noteTypeExpanded, onExpandedChange = { noteTypeExpanded = it }) {
+                        OutlinedTextField(
+                            value = defaultKaiteyoNoteTypes
+                                .firstOrNull { it.id == noteTypeId }?.name
+                                ?: "Kaiteyo (default)",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Flashcard note type") },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(noteTypeExpanded) },
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(expanded = noteTypeExpanded, onDismissRequest = { noteTypeExpanded = false }) {
+                            defaultKaiteyoNoteTypes.forEach { type ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(type.name, fontSize = 13.sp)
+                                            Text(
+                                                type.fields.joinToString(" · ") { it.label },
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    onClick = { noteTypeId = type.id; noteTypeExpanded = false }
+                                )
+                            }
+                        }
                     }
                 }
                 OutlinedTextField(
@@ -914,7 +955,12 @@ private fun DeckCreateDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(name, deckType, parentId) }, enabled = name.isNotBlank()) { Text("Create") } },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name, deckType, parentId, noteTypeId) },
+                enabled = name.isNotBlank()
+            ) { Text("Create") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

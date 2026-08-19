@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,7 +24,10 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import org.koin.compose.koinInject
+import ua.syt0r.kanji.core.knowledge.home.HomeCommandCenterStore
 import ua.syt0r.kanji.core.analytics.AnalyticsManager
 import ua.syt0r.kanji.core.user_data.database.DatabaseMigrationState
 import ua.syt0r.kanji.presentation.common.nav.LocalNavBarBottomSpace
@@ -34,9 +38,11 @@ import ua.syt0r.kanji.presentation.screen.main.features.CommandPaletteOverlay
 import ua.syt0r.kanji.presentation.screen.main.features.DeepLinkHandler
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoSearch
 import ua.syt0r.kanji.presentation.screen.main.features.MigrationDialog
 import ua.syt0r.kanji.presentation.screen.main.features.PaletteAction
 import ua.syt0r.kanji.presentation.screen.main.features.SyncDialog
+import ua.syt0r.kanji.presentation.screen.main.features.UniversalSearchOverlay
 
 @Composable
 fun MainScreen(
@@ -45,6 +51,22 @@ fun MainScreen(
 
     val viewModel = getMultiplatformViewModel<MainContract.ViewModel>()
     val navigationState = rememberMainNavigationState()
+
+    // Universal search: route results through the real navigation state and
+    // persist committed queries into the Home command-center store (the
+    // store is Koin-injected here so the overlay itself stays storage-free).
+    val homeCommandCenterStore = koinInject<HomeCommandCenterStore>()
+    val searchScope = rememberCoroutineScope()
+    LaunchedEffect(navigationState) {
+        KaiteyoSearch.controller.onNavigate = { destination ->
+            navigationState.navigate(destination)
+        }
+        KaiteyoSearch.controller.onSearchRecorded = { query ->
+            searchScope.launch {
+                homeCommandCenterStore.recordSearch(query, Clock.System.now().toEpochMilliseconds())
+            }
+        }
+    }
     val migrationState = viewModel.migrationState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val dataCenter = koinInject<KaiteyoDataCenter>()
@@ -157,6 +179,55 @@ fun MainScreen(
                 )
                 add(
                     PaletteAction(
+                        title = "Dictionary Explorer",
+                        subtitle = "Search kanji, words, sentences and grammar — explore the knowledge graph",
+                        keywords = "dictionary kanji word sentence grammar graph knowledge explore",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.KnowledgeExplorer()) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Radical Explorer",
+                        subtitle = "Find kanji by radical — stroke, JLPT and grade filters",
+                        keywords = "radical explorer kangxi stroke jlpt grade find kanji",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.RadicalExplorer) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Component Explorer",
+                        subtitle = "Every component and the kanji built from it",
+                        keywords = "component explorer decomposition parts kanji structure",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.ComponentExplorer) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Browse",
+                        subtitle = "Explore Japanese by JLPT, grade, radicals, grammar and collections",
+                        keywords = "browse explore jlpt grade kanji radicals grammar collections",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.BrowseHub) }
+                )
+                add(
+                    PaletteAction(
+                        title = "JLPT / Grade collections",
+                        subtitle = "Kanji by JLPT level or school grade",
+                        keywords = "jlpt grade collections kanji list",
+                        category = "Navigate"
+                    ) { navigationState.navigate(MainDestination.BrowseHub) }
+                )
+                add(
+                    PaletteAction(
+                        title = "Universal Search",
+                        subtitle = "Search kanji, words, sentences and grammar from anywhere",
+                        keywords = "search universal dictionary kanji word sentence grammar",
+                        category = "Navigate",
+                        shortcut = "Ctrl+Shift+F"
+                    ) { KaiteyoSearch.controller.toggle() }
+                )
+                add(
+                    PaletteAction(
                         title = "Media Centre",
                         subtitle = "Immersion workspace: player, subtitles, dictionary, mining",
                         keywords = "media video anime player subtitles immersion dictionary mining",
@@ -193,6 +264,7 @@ fun MainScreen(
     }
 
     CommandPaletteOverlay()
+    UniversalSearchOverlay()
 
     deepLinkHandler.HandleDeepLinksLaunchedEffect(navigationState)
 

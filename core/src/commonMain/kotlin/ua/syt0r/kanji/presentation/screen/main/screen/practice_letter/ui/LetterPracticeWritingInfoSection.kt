@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -40,18 +44,24 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.core.app_data.data.CharacterRadical
 import ua.syt0r.kanji.core.app_data.data.formattedFurigana
 import ua.syt0r.kanji.core.app_data.data.withEncodedText
 import ua.syt0r.kanji.core.getUnicodeHex
 import ua.syt0r.kanji.core.japanese.KanaReading
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.common.ui.kanji.Kanji
 import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiReadingsContainer
@@ -108,6 +118,8 @@ fun State<LetterPracticeReviewState.Writing>.asInfoSectionState(
 }
 
 private val MaxTransitionSlideDistance = 200.dp
+private val CardShape = RoundedCornerShape(16.dp)
+private val PillShape = RoundedCornerShape(12.dp)
 
 @Composable
 fun LetterPracticeWritingInfoSection(
@@ -125,6 +137,8 @@ fun LetterPracticeWritingInfoSection(
     )
 
     val density = LocalDensity.current
+    val accent = LocalKaiteyoAccent.current
+    val surfaceColors = LocalSurfaceColors.current
 
     transition.AnimatedContent(
         contentKey = { it.characterData.character to it.isStudyMode },
@@ -151,8 +165,8 @@ fun LetterPracticeWritingInfoSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
             when (currentSectionData.characterData) {
@@ -250,6 +264,8 @@ private fun ColumnScope.KanjiDetails(
     shouldHighlightRadicals: State<Boolean>,
     toggleRadicalsHighlight: () -> Unit,
 ) {
+    val accent = LocalKaiteyoAccent.current
+    val surfaceColors = LocalSurfaceColors.current
 
     when {
         noTranslationsLayout -> {
@@ -268,9 +284,24 @@ private fun ColumnScope.KanjiDetails(
 
         else -> {
 
+            // Kanji + meanings in a gradient card
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(CardShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                accent.primary.copy(alpha = 0.06f),
+                                accent.secondary.copy(alpha = 0.04f),
+                                surfaceColors.surface.copy(alpha = 0.8f)
+                            )
+                        )
+                    )
+                    .border(0.5.dp, accent.primary.copy(alpha = 0.10f), CardShape)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
                 if (isStudyMode) {
@@ -291,21 +322,45 @@ private fun ColumnScope.KanjiDetails(
         }
     }
 
+    // Readings in a clean card
     KanjiReadingsContainer(
         on = details.on,
         kun = details.kun,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardShape)
+            .background(surfaceColors.surface.copy(alpha = 0.6f))
+            .border(0.5.dp, accent.primary.copy(alpha = 0.08f), CardShape)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     )
 
+    // Variants + meta info
     if (details.variants != null) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(PillShape)
+                .background(accent.primary.copy(alpha = 0.06f))
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            KanjiVariantsRow(details.variants)
 
-        KanjiVariantsRow(details.variants)
+            val unicodeHex = details.character.first().getUnicodeHex()
+            Text(
+                text = resolveString { letterPractice.unicodeTitle(unicodeHex) },
+                fontSize = 11.sp,
+                color = surfaceColors.textSecondary
+            )
 
-        val unicodeHex = details.character.first().getUnicodeHex()
-        Text(text = resolveString { letterPractice.unicodeTitle(unicodeHex) })
-
-        Text(text = resolveString { letterPractice.strokeCountTitle(details.strokes.size) })
-
+            Text(
+                text = resolveString { letterPractice.strokeCountTitle(details.strokes.size) },
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = accent.primary
+            )
+        }
     }
 
 }
@@ -318,6 +373,7 @@ private fun AnimatedKanjiSection(
     toggleRadicalsHighlight: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val accent = LocalKaiteyoAccent.current
 
     val radicalsTransition = updateTransition(
         targetState = shouldHighlightRadicals.value,
@@ -328,6 +384,12 @@ private fun AnimatedKanjiSection(
         modifier = modifier
             .size(80.dp)
             .clip(MaterialTheme.shapes.small)
+            .border(
+                width = 1.dp,
+                color = if (shouldHighlightRadicals.value) accent.primary.copy(alpha = 0.3f)
+                else accent.primary.copy(alpha = 0.1f),
+                shape = MaterialTheme.shapes.small
+            )
             .clickable(onClick = toggleRadicalsHighlight),
         transitionSpec = { fadeIn() togetherWith fadeOut() }
     ) { shouldHighlight ->
@@ -360,11 +422,13 @@ private fun KanjiMeanings(
     meanings: List<String>,
     modifier: Modifier = Modifier
 ) {
+    val surfaceColors = LocalSurfaceColors.current
 
     if (meanings.isNotEmpty()) {
         Text(
             text = meanings.joinToString(),
             style = MaterialTheme.typography.headlineSmall,
+            color = surfaceColors.textPrimary,
             modifier = modifier
         )
     }
@@ -382,34 +446,62 @@ private fun ExpressionsSection(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val accent = LocalKaiteyoAccent.current
+    val surfaceColors = LocalSurfaceColors.current
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clip(CardShape)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        accent.secondary.copy(alpha = 0.06f),
+                        surfaceColors.surface.copy(alpha = 0.7f)
+                    )
+                )
+            )
+            .border(0.5.dp, accent.secondary.copy(alpha = 0.10f), CardShape)
             .clickable(onClick = onClick)
-            .padding(start = 16.dp, top = 16.dp)
+            .padding(start = 16.dp, top = 14.dp)
     ) {
 
-        Text(
-            text = resolveString { letterPractice.headerWordsMessage(totalExamplesCount) },
-            style = MaterialTheme.typography.titleLarge
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Accent dot
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier.size(6.dp)
+            ) {
+                drawCircle(accent.secondary)
+            }
+
+            Text(
+                text = resolveString { letterPractice.headerWordsMessage(totalExamplesCount) },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = surfaceColors.textPrimary
+            )
+        }
 
         Row(verticalAlignment = Alignment.Bottom) {
 
             FlowRow(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(bottom = 16.dp, top = 4.dp),
+                    .padding(bottom = 14.dp, top = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 maxLines = 1
             ) {
                 if (isNoTranslationLayout) {
                     examples.take(NoTranslationLayoutPreviewWordsLimit).forEach { exampleWord ->
                         when {
-                            exampleWord.romaji != null -> Text(exampleWord.romaji)
+                            exampleWord.romaji != null -> Text(
+                                text = exampleWord.romaji,
+                                color = surfaceColors.textSecondary,
+                                fontSize = 13.sp
+                            )
                             else -> {
                                 val string = exampleWord.word.reading.formattedFurigana()
                                     .let { if (reveal) it else it.withEncodedText(letter) }
@@ -431,7 +523,11 @@ private fun ExpressionsSection(
                 onClick = onClick,
                 modifier = Modifier.padding(bottom = 4.dp)
             ) {
-                Icon(Icons.Default.KeyboardArrowDown, null)
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    null,
+                    tint = accent.secondary
+                )
             }
 
         }

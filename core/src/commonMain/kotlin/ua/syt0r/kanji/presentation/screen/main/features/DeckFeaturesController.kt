@@ -1202,12 +1202,17 @@ class DeckFeaturesController(
     }
 
     /**
-     * Creates a real empty deck. [type] is "kanji" (letter family) or
-     * "vocabulary" (vocab family) and decides which repository owns it.
+     * Creates a real empty deck. [type] is "kanji" (letter/writing family) or
+     * "vocabulary" (flashcard family) and decides which repository owns it.
+     * [noteTypeId] becomes the deck's flashcard note type preference (writing
+     * decks ignore it) so new cards know their field schema.
      */
-    suspend fun createDeck(name: String, type: String = "kanji") {
+    suspend fun createDeck(name: String, type: String = "kanji", noteTypeId: String? = null) {
         val clean = name.trim()
         if (clean.isBlank()) return
+        if (noteTypeId != null) {
+            appPreferences.vocabNoteTypeId.set(noteTypeId)
+        }
         when (type) {
             "vocabulary", "vocab" -> vocabPracticeRepository.createDeck(clean, emptyList())
             else -> letterPracticeRepository.createDeck(clean, emptyList())

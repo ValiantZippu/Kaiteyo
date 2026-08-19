@@ -3,10 +3,12 @@ package ua.syt0r.kanji.presentation.screen.main.screen.decks
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +22,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -33,6 +44,7 @@ import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
+import ua.syt0r.kanji.presentation.screen.main.features.KANJI_BROWSER_DECK_NAME
 import kotlin.math.roundToInt
 
 // ============================================
@@ -48,6 +60,8 @@ fun CardBrowserFullScreen(
     presetCardIds: Set<String> = emptySet(),
     presetLabel: String? = null,
     initialDeckFilter: String? = null,
+    decks: List<KaiteyoDeck> = emptyList(),
+    embedded: Boolean = false,
     onFlagCard: (String, CardFlagType) -> Unit = { _, _ -> },
     onStatusChange: (String, CardStatus) -> Unit = { _, _ -> },
     onUpdateCard: (KaiteyoCard) -> Unit = {},
@@ -66,16 +80,32 @@ fun CardBrowserFullScreen(
     var showColumnPicker by remember { mutableStateOf(false) }
     var showFilterPanel by remember { mutableStateOf(false) }
     var flagFilter by remember { mutableStateOf<CardFlagType?>(null) }
-    var statusFilter by remember { mutableStateOf<CardStatus?>(null) }
+    var anyFlagFilter by remember { mutableStateOf(false) }
+    // Multi-select card state filter (Anki's card-state sidebar is multi).
+    var statusFilter by remember { mutableStateOf(setOf<CardStatus>()) }
     var deckFilter by remember { mutableStateOf(initialDeckFilter) }
     var tagFilter by remember { mutableStateOf<String?>(null) }
+    // Right-click target for the desktop row context menu.
+    var contextMenuCard by remember { mutableStateOf<KaiteyoCard?>(null) }
+    // Filters the rail contents (saved searches, decks, tags) by text.
+    var railQuery by remember { mutableStateOf("") }
+    // User-created saved searches (session-scoped): captured from the current
+    // filter combination with the "Save current search" rail action.
+    var customSearches by remember { mutableStateOf(listOf<SavedSearch>()) }
+    // Lets '/' or Ctrl+F jump straight into the search field.
+    val searchFocusRequester = remember { FocusRequester() }
     // Optional day-filter preset: landing view for "cards practiced on <day>".
     var dayCardIds by remember { mutableStateOf(presetCardIds) }
     var showCardDetail by remember { mutableStateOf<KaiteyoCard?>(null) }
     var visibleColumns by remember { mutableStateOf(columns.filter { it.isVisible }.map { it.id }.toSet()) }
+    // The note editor pane mirrors the Anki browser: clicking a row opens the
+    // note on the right side instead of a modal dialog.
+    var noteEditorCard by remember { mutableStateOf<KaiteyoCard?>(null) }
+    // Which bulk-action dialog is open for the multi-selected cards.
+    var bulkAction by remember { mutableStateOf<String?>(null) }
 
     // ── Filtered & Sorted Cards ──
-    val processedCards = remember(cards, searchQuery, flagFilter, statusFilter, deckFilter, tagFilter, dayCardIds, sortColumn, sortAscending) {
+    val processedCards = remember(cards, searchQuery, flagFilter, anyFlagFilter, statusFilter, deckFilter, tagFilter, dayCardIds, sortColumn, sortAscending) {
         var result = cards
 
         // Day preset filter (cards practiced on a specific day)
@@ -83,27 +113,54 @@ fun CardBrowserFullScreen(
             result = result.filter { it.id in dayCardIds }
         }
 
-        // Text search
+        // Query syntax — tag: flag: deck: status: due: plus free text across
+        // every readable field (Anki-style search).
         if (searchQuery.isNotBlank()) {
-            val q = searchQuery.lowercase()
+            val parsed = parseBrowserQuery(searchQuery)
             result = result.filter { card ->
-                card.character.lowercase().contains(q) ||
-                card.meaning.lowercase().contains(q) ||
-                card.reading.lowercase().contains(q) ||
-                card.deck.lowercase().contains(q) ||
-                card.tagNames.any { it.lowercase().contains(q) } ||
-                card.notes.lowercase().contains(q) ||
-                card.flag.displayName.lowercase().contains(q) ||
-                card.status.displayName.lowercase().contains(q) ||
-                card.id.lowercase().contains(q)
+                val text = parsed.text
+                val matchesText = text.isEmpty() ||
+                    card.character.contains(text, ignoreCase = true) ||
+                    card.meaning.contains(text, ignoreCase = true) ||
+                    card.reading.contains(text, ignoreCase = true) ||
+                    card.deck.contains(text, ignoreCase = true) ||
+                    card.notes.contains(text, ignoreCase = true) ||
+                    card.id.contains(text, ignoreCase = true) ||
+                    card.tagNames.any { it.contains(text, ignoreCase = true) }
+                val matchesTag = parsed.tag == null ||
+                    card.tagNames.any { it.contains(parsed.tag, ignoreCase = true) }
+                val matchesFlag = parsed.flag == null || card.flag == parsed.flag
+                val matchesDeck = parsed.deck == null ||
+                    card.deck.contains(parsed.deck, ignoreCase = true)
+                val matchesStatus = parsed.status == null || card.status == parsed.status
+                val matchesDue = parsed.due == null || when (parsed.due) {
+                    "new" -> card.status == CardStatus.New
+                    "learning" -> card.status == CardStatus.Learning || card.status == CardStatus.Relearning
+                    "due", "today", "review" -> card.status == CardStatus.Young || card.status == CardStatus.Mature
+                    "suspended" -> card.status == CardStatus.Suspended
+                    "buried" -> card.status == CardStatus.Buried
+                    "archived" -> card.status == CardStatus.Archived
+                    else -> true
+                }
+                matchesText && matchesTag && matchesFlag && matchesDeck && matchesStatus && matchesDue
             }
         }
 
         // Filters
         flagFilter?.let { flag -> result = result.filter { it.flag == flag } }
-        statusFilter?.let { status -> result = result.filter { it.status == status } }
+        if (anyFlagFilter) result = result.filter { it.flag != CardFlagType.None }
+        if (statusFilter.isNotEmpty()) result = result.filter { it.status in statusFilter }
         deckFilter?.let { deck -> result = result.filter { it.deck == deck } }
         tagFilter?.let { tag -> result = result.filter { it.tagNames.contains(tag) } }
+
+        // The reference kanji catalog is a browseable REFERENCE, not a study
+        // queue: status searches (New / Learning / Due / Card-State chips)
+        // exclude it unless the user explicitly drilled into the Kanji
+        // Browser deck. This is what keeps "New: 6410" nonsense from ever
+        // appearing — the queue only ever shows real study decks.
+        if (statusFilter.isNotEmpty() && deckFilter != KANJI_BROWSER_DECK_NAME) {
+            result = result.filter { it.deck != KANJI_BROWSER_DECK_NAME }
+        }
 
         // Sort
         result = when (sortColumn) {
@@ -115,6 +172,9 @@ fun CardBrowserFullScreen(
             "flag" -> result.sortedBy { it.flag.ordinal }
             "status" -> result.sortedBy { it.status.ordinal }
             "interval" -> result.sortedBy { it.interval }
+            "stability" -> result.sortedBy { it.interval }
+            "difficulty" -> result.sortedBy { (1f - it.accuracy) + it.lapses * 0.05f }
+            "due" -> result.sortedBy { it.status.ordinal }
             "ease" -> result.sortedBy { it.ease }
             "reviews" -> result.sortedBy { it.reviewCount }
             "lapses" -> result.sortedBy { it.lapses }
@@ -132,22 +192,68 @@ fun CardBrowserFullScreen(
     }
 
     // ── Aggregate Data ──
+    // Cards belonging to real study decks. The reference kanji catalog stays
+    // fully browseable but never participates in queue counts.
+    val studyCards = remember(cards) { cards.filter { it.deck != KANJI_BROWSER_DECK_NAME } }
     val uniqueDecks = remember(cards) { cards.map { it.deck }.distinct().sorted() }
     val uniqueTags = remember(cards) { cards.flatMap { it.tagNames }.distinct().sorted() }
     val totalCards = cards.size
     val filteredCount = processedCards.size
     val selectedCount = selectedCardIds.size
 
+    // ── Bulk action dialogs — wired to the same single-card callbacks so
+    // flag / status / tag apply to every selected card in one step. ──
+    when (bulkAction) {
+        "flag" -> BulkFlagDialog(
+            onPick = { flag ->
+                selectedCardIds.forEach { onFlagCard(it, flag) }
+                selectedCardIds = emptySet()
+                isSelectionMode = false
+                bulkAction = null
+            },
+            onDismiss = { bulkAction = null }
+        )
+        "status" -> BulkStatusDialog(
+            onPick = { status ->
+                selectedCardIds.forEach { onStatusChange(it, status) }
+                selectedCardIds = emptySet()
+                isSelectionMode = false
+                bulkAction = null
+            },
+            onDismiss = { bulkAction = null }
+        )
+        "tag" -> BulkTagDialog(
+            onApply = { tags ->
+                processedCards
+                    .filter { it.id in selectedCardIds }
+                    .forEach { card ->
+                        onUpdateCard(
+                            card.copy(tagNames = (card.tagNames + tags).distinct().toMutableList())
+                        )
+                    }
+                selectedCardIds = emptySet()
+                isSelectionMode = false
+                bulkAction = null
+            },
+            onDismiss = { bulkAction = null }
+        )
+        else -> {}
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Card Browser") },
-                navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") } },
+                title = { Text(if (embedded) "Browse" else "Card Browser") },
+                navigationIcon = {
+                    if (!embedded) {
+                        IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") }
+                    }
+                },
                 actions = {
                     IconButton(onClick = { showColumnPicker = true }) { Icon(Icons.Default.ViewColumn, "Columns") }
                     IconButton(onClick = { showFilterPanel = !showFilterPanel }) {
                         Icon(Icons.Default.FilterList, "Filters",
-                            tint = if (flagFilter != null || statusFilter != null || deckFilter != null || tagFilter != null || dayCardIds.isNotEmpty())
+                            tint = if (flagFilter != null || anyFlagFilter || statusFilter.isNotEmpty() || deckFilter != null || tagFilter != null || dayCardIds.isNotEmpty())
                                 accent.primary else surfaceColors.textMuted)
                     }
                     if (isSelectionMode) {
@@ -167,7 +273,98 @@ fun CardBrowserFullScreen(
             )
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // The Anki-style panes need width to breathe: on narrow windows the
+        // rail collapses and the note editor falls back to the detail dialog
+        // so the table never gets squeezed out.
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                // Browser-wide shortcuts: Ctrl+F jumps to search, Ctrl+A selects
+                // every visible card, Escape clears the search + filters.
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        when {
+                            event.isCtrlPressed && event.key == Key.F -> {
+                                searchFocusRequester.requestFocus()
+                                true
+                            }
+                            event.isCtrlPressed && event.key == Key.A -> {
+                                if (processedCards.isNotEmpty()) {
+                                    selectedCardIds = processedCards.map { it.id }.toSet()
+                                    isSelectionMode = true
+                                }
+                                true
+                            }
+                            event.key == Key.Escape -> {
+                                val anythingActive = searchQuery.isNotBlank() || flagFilter != null ||
+                                    anyFlagFilter || statusFilter.isNotEmpty() ||
+                                    deckFilter != null || tagFilter != null || dayCardIds.isNotEmpty()
+                                if (anythingActive) {
+                                    flagFilter = null; anyFlagFilter = false; statusFilter = emptySet()
+                                    deckFilter = null; tagFilter = null
+                                    dayCardIds = emptySet()
+                                    searchQuery = ""
+                                    true
+                                } else false
+                            }
+                            else -> false
+                        }
+                    } else false
+                }
+        ) {
+            val wideLayout = maxWidth >= 680.dp
+        Row(Modifier.fillMaxSize()) {
+            // ── LEFT RAIL — Anki-style browser sidebar ──
+            if (wideLayout) {
+                BrowserFilterRail(
+                    decks = decks,
+                    uniqueDecks = uniqueDecks,
+                    uniqueTags = uniqueTags,
+                    cards = cards,
+                    railQuery = railQuery,
+                    onRailQueryChange = { railQuery = it },
+                    customSearches = customSearches,
+                    onSaveCustomSearch = { label ->
+                        val newSearch = SavedSearch(
+                            label = label,
+                            flag = flagFilter,
+                            anyFlag = anyFlagFilter,
+                            statuses = statusFilter.toList(),
+                            deck = deckFilter
+                        )
+                        customSearches = if (customSearches.any { it.label == label }) {
+                            customSearches.map { if (it.label == label) newSearch else it }
+                        } else {
+                            customSearches + newSearch
+                        }
+                    },
+                    onRemoveCustomSearch = { search -> customSearches = customSearches - search },
+                    flagFilter = flagFilter,
+                    anyFlagFilter = anyFlagFilter,
+                    statusFilter = statusFilter,
+                    deckFilter = deckFilter,
+                    tagFilter = tagFilter,
+                    onFlagFilterChange = { flagFilter = it },
+                    onAnyFlagFilterChange = { anyFlagFilter = it },
+                    onStatusFilterChange = { statusFilter = it },
+                    onDeckFilterChange = { deckFilter = it },
+                    onTagFilterChange = { tagFilter = it },
+                    onClearFilters = {
+                        flagFilter = null; anyFlagFilter = false; statusFilter = emptySet()
+                        deckFilter = null; tagFilter = null
+                        dayCardIds = emptySet()
+                        searchQuery = ""
+                    },
+                    surfaceColors = surfaceColors,
+                    accent = accent
+                )
+
+                VerticalDivider(color = surfaceColors.border.copy(alpha = 0.4f))
+            }
+
+            // ── CENTER — table ──
+            Column(Modifier.weight(1f).fillMaxHeight()) {
             // ── Stats Bar ──
             BrowserStatsBar(
                 totalCards = totalCards,
@@ -182,6 +379,7 @@ fun CardBrowserFullScreen(
             BrowserSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
+                focusRequester = searchFocusRequester,
                 flagFilter = flagFilter,
                 statusFilter = statusFilter,
                 deckFilter = deckFilter,
@@ -193,7 +391,7 @@ fun CardBrowserFullScreen(
                 onDeckFilterChange = { deckFilter = it },
                 onTagFilterChange = { tagFilter = it },
                 onClearFilters = {
-                    flagFilter = null; statusFilter = null
+                    flagFilter = null; anyFlagFilter = false; statusFilter = emptySet()
                     deckFilter = null; tagFilter = null
                     dayCardIds = emptySet()
                     searchQuery = ""
@@ -271,18 +469,22 @@ fun CardBrowserFullScreen(
                     modifier = Modifier.weight(1f),
                     state = rememberLazyListState()
                 ) {
-                    items(processedCards, key = { it.id }) { card ->
+                    itemsIndexed(processedCards, key = { _, it -> it.id }) { index, card ->
                         BrowserCardRow(
+                            rowIndex = index,
                             card = card,
                             visibleColumns = visibleColumns,
                             columns = columns,
                             isSelected = card.id in selectedCardIds,
                             isSelectionMode = isSelectionMode,
+                            contextMenuCard = contextMenuCard,
                             onToggleSelect = { id ->
                                 selectedCardIds = if (id in selectedCardIds) selectedCardIds - id
                                 else selectedCardIds + id
                             },
-                            onClick = { showCardDetail = card },
+                            onClick = { if (wideLayout) noteEditorCard = card else showCardDetail = card },
+                            onContextMenu = { contextMenuCard = if (contextMenuCard?.id == card.id) null else card },
+                            onOpenDetails = { showCardDetail = card },
                             onFlagClick = { onFlagCard(card.id, it) },
                             onStatusClick = { onStatusChange(card.id, it) },
                             surfaceColors = surfaceColors,
@@ -298,17 +500,33 @@ fun CardBrowserFullScreen(
                 BrowserSelectionBar(
                     selectedCount = selectedCount,
                     onDeselectAll = { selectedCardIds = emptySet() },
-                    onDelete = {
-                        // Delete selected
-                    },
-                    onExport = { /* Export selected */ },
-                    onBulkTag = { /* Bulk tag */ },
-                    onBulkFlag = { /* Bulk flag */ },
-                    onBulkStatus = { /* Bulk status */ },
+                    onBulkTag = { bulkAction = "tag" },
+                    onBulkFlag = { bulkAction = "flag" },
+                    onBulkStatus = { bulkAction = "status" },
                     surfaceColors = surfaceColors,
                     accent = accent
                 )
             }
+            }
+
+            // ── RIGHT PANE — Anki-style note editor for the selected note ──
+            if (noteEditorCard != null && wideLayout) {
+                VerticalDivider(color = surfaceColors.border.copy(alpha = 0.4f))
+                BrowserNoteEditorPane(
+                    card = noteEditorCard!!,
+                    onUpdate = { updated ->
+                        onUpdateCard(updated)
+                        noteEditorCard = updated
+                        // Keep the detail dialog in sync when it is open.
+                        if (showCardDetail?.id == updated.id) showCardDetail = updated
+                    },
+                    onClose = { noteEditorCard = null },
+                    onShowDetails = { showCardDetail = noteEditorCard },
+                    surfaceColors = surfaceColors,
+                    accent = accent
+                )
+            }
+        }
         }
     }
 
@@ -377,21 +595,22 @@ private fun BrowserStatsBar(
 private fun BrowserSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
+    focusRequester: FocusRequester,
     flagFilter: CardFlagType?,
-    statusFilter: CardStatus?,
+    statusFilter: Set<CardStatus>,
     deckFilter: String?,
     tagFilter: String?,
     dayFilterLabel: String?,
     onClearDayFilter: () -> Unit,
     onFlagFilterChange: (CardFlagType?) -> Unit,
-    onStatusFilterChange: (CardStatus?) -> Unit,
+    onStatusFilterChange: (Set<CardStatus>) -> Unit,
     onDeckFilterChange: (String?) -> Unit,
     onTagFilterChange: (String?) -> Unit,
     onClearFilters: () -> Unit,
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
-    val hasFilters = flagFilter != null || statusFilter != null || deckFilter != null || tagFilter != null || dayFilterLabel != null || query.isNotBlank()
+    val hasFilters = flagFilter != null || statusFilter.isNotEmpty() || deckFilter != null || tagFilter != null || dayFilterLabel != null || query.isNotBlank()
     var showSearchTips by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
@@ -399,7 +618,7 @@ private fun BrowserSearchBar(
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.weight(1f).height(44.dp),
+                modifier = Modifier.weight(1f).height(44.dp).focusRequester(focusRequester),
                 placeholder = { Text("Search cards... (e.g. tag:jlpt flag:red deck:N5)", fontSize = 13.sp) },
                 leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(18.dp)) },
                 trailingIcon = {
@@ -447,8 +666,8 @@ private fun BrowserSearchBar(
                         trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(12.dp)) },
                         modifier = Modifier.height(24.dp), shape = RoundedCornerShape(12.dp))
                 }
-                statusFilter?.let { s ->
-                    AssistChip(onClick = { onStatusFilterChange(null) }, label = { Text("Status: ${s.displayName}", fontSize = 10.sp) },
+                statusFilter.forEach { s ->
+                    AssistChip(onClick = { onStatusFilterChange(statusFilter - s) }, label = { Text("Status: ${s.displayName}", fontSize = 10.sp) },
                         trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(12.dp)) },
                         modifier = Modifier.height(24.dp), shape = RoundedCornerShape(12.dp))
                 }
@@ -493,11 +712,11 @@ private fun BrowserSearchBar(
 @Composable
 private fun FilterPanel(
     flagFilter: CardFlagType?,
-    statusFilter: CardStatus?,
+    statusFilter: Set<CardStatus>,
     deckFilter: String?,
     tagFilter: String?,
     onFlagFilterChange: (CardFlagType?) -> Unit,
-    onStatusFilterChange: (CardStatus?) -> Unit,
+    onStatusFilterChange: (Set<CardStatus>) -> Unit,
     onDeckFilterChange: (String?) -> Unit,
     onTagFilterChange: (String?) -> Unit,
     uniqueDecks: List<String>,
@@ -534,8 +753,13 @@ private fun FilterPanel(
             LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(CardStatus.entries) { status ->
                     FilterChip(
-                        selected = statusFilter == status,
-                        onClick = { onStatusFilterChange(if (statusFilter == status) null else status) },
+                        selected = status in statusFilter,
+                        onClick = {
+                            onStatusFilterChange(
+                                if (status in statusFilter) statusFilter - status
+                                else statusFilter + status
+                            )
+                        },
                         label = { Text(status.displayName, fontSize = 11.sp) },
                         modifier = Modifier.height(28.dp)
                     )
@@ -645,28 +869,55 @@ private fun BrowserColumnHeaders(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BrowserCardRow(
+    rowIndex: Int,
     card: KaiteyoCard,
     visibleColumns: Set<String>,
     columns: List<BrowserColumn>,
     isSelected: Boolean,
     isSelectionMode: Boolean,
+    contextMenuCard: KaiteyoCard?,
     onToggleSelect: (String) -> Unit,
     onClick: () -> Unit,
+    onContextMenu: () -> Unit,
+    onOpenDetails: () -> Unit,
     onFlagClick: (CardFlagType) -> Unit,
     onStatusClick: (CardStatus) -> Unit,
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    // Zebra striping: alternate rows get a whisper of surface tint so the
+    // table reads as a real grid instead of floating text (Anki parity).
+    val zebra = if (rowIndex % 2 == 1) surfaceColors.surfaceInteractive.copy(alpha = 0.28f)
+    else androidx.compose.ui.graphics.Color.Transparent
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) accent.primary.copy(alpha = 0.08f)
-        else androidx.compose.ui.graphics.Color.Transparent,
+        targetValue = if (isSelected) accent.primary.copy(alpha = 0.08f) else zebra,
         animationSpec = tween(150)
     )
 
+    Box {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(bgColor)
+            .pointerInput(card.id) {
+                // Desktop right-click opens the same row actions as the
+                // selection bar — mirroring the Anki browser's context menu.
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val pressEvent = awaitPointerEvent()
+                    val isSecondary = down.type == PointerType.Mouse &&
+                        pressEvent.buttons.isSecondaryPressed
+                    if (isSecondary) {
+                        // Consume the press so the plain click cannot also fire.
+                        down.consume()
+                        onContextMenu()
+                    }
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type == PointerEventType.Release) break
+                    }
+                }
+            }
             .combinedClickable(
                 onClick = {
                     if (isSelectionMode) onToggleSelect(card.id)
@@ -739,6 +990,26 @@ private fun BrowserCardRow(
                             CardStatus.Buried -> surfaceColors.textMuted
                             CardStatus.Archived -> surfaceColors.textMuted
                         })
+                    "stability" -> Text(formatStability(card), fontSize = 11.sp, color = surfaceColors.textPrimary)
+                    "difficulty" -> Text(formatDifficulty(card), fontSize = 11.sp, color = difficultyColor(card, surfaceColors, accent))
+                    "due" -> Text(
+                        when (card.status) {
+                            CardStatus.New -> "New"
+                            CardStatus.Learning -> "Learning"
+                            CardStatus.Relearning -> "Relearning"
+                            CardStatus.Young, CardStatus.Mature -> if (card.lastReviewed.isBlank()) "New" else "Due"
+                            CardStatus.Suspended -> "Suspended"
+                            CardStatus.Buried -> "Buried"
+                            CardStatus.Archived -> "Archived"
+                        },
+                        fontSize = 11.sp,
+                        color = when (card.status) {
+                            CardStatus.New -> Color(0xFF7BC8FF)
+                            CardStatus.Learning, CardStatus.Relearning -> Color(0xFFFEAB57)
+                            CardStatus.Young, CardStatus.Mature -> Color(0xFFC2FC8B)
+                            else -> surfaceColors.textMuted
+                        }
+                    )
                     "interval" -> Text(formatInterval(card.interval), fontSize = 11.sp, color = surfaceColors.textPrimary)
                     "ease" -> Text(formatFloat(card.ease, 1), fontSize = 11.sp, color = surfaceColors.textPrimary)
                     "reviews" -> Text("${card.reviewCount}", fontSize = 11.sp, color = surfaceColors.textPrimary)
@@ -759,6 +1030,63 @@ private fun BrowserCardRow(
             }
         }
     }
+
+    // Desktop right-click context menu — the same row actions as the
+    // selection bar, mirroring the Anki browser's context menu.
+    DropdownMenu(
+        expanded = contextMenuCard?.id == card.id,
+        onDismissRequest = onContextMenu,
+        modifier = Modifier.background(surfaceColors.surfaceElevated)
+    ) {
+        DropdownMenuItem(
+            text = { Text("Preview / details", fontSize = 12.sp) },
+            leadingIcon = { Icon(Icons.Default.Visibility, null, Modifier.size(16.dp)) },
+            onClick = {
+                onContextMenu()
+                onOpenDetails()
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Suspend", fontSize = 12.sp) },
+            leadingIcon = { Icon(Icons.Default.Pause, null, Modifier.size(16.dp)) },
+            onClick = {
+                onContextMenu()
+                onStatusClick(if (card.status == CardStatus.Suspended) CardStatus.New else CardStatus.Suspended)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text("Bury", fontSize = 12.sp) },
+            leadingIcon = { Icon(Icons.Default.HideImage, null, Modifier.size(16.dp)) },
+            onClick = {
+                onContextMenu()
+                onStatusClick(if (card.status == CardStatus.Buried) CardStatus.New else CardStatus.Buried)
+            }
+        )
+        HorizontalDivider(color = surfaceColors.border.copy(alpha = 0.3f))
+        CardFlagType.entries.filter { it != CardFlagType.None }.forEach { flag ->
+            DropdownMenuItem(
+                text = { Text("Flag ${flag.displayName}", fontSize = 12.sp) },
+                leadingIcon = {
+                    Box(Modifier.size(12.dp).clip(CircleShape).background(flag.colorFromHex()))
+                },
+                onClick = {
+                    onContextMenu()
+                    onFlagClick(flag)
+                }
+            )
+        }
+        if (card.flag != CardFlagType.None) {
+            DropdownMenuItem(
+                text = { Text("Clear flag", fontSize = 12.sp) },
+                leadingIcon = { Icon(Icons.Default.Close, null, Modifier.size(16.dp)) },
+                onClick = {
+                    onContextMenu()
+                    onFlagClick(CardFlagType.None)
+                }
+            )
+        }
+    }
+    }
 }
 
 // ════════════════════════════════════════════
@@ -769,8 +1097,6 @@ private fun BrowserCardRow(
 private fun BrowserSelectionBar(
     selectedCount: Int,
     onDeselectAll: () -> Unit,
-    onDelete: () -> Unit,
-    onExport: () -> Unit,
     onBulkTag: () -> Unit,
     onBulkFlag: () -> Unit,
     onBulkStatus: () -> Unit,
@@ -803,11 +1129,6 @@ private fun BrowserSelectionBar(
                 Icon(Icons.Default.SwapVert, null, Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Status", fontSize = 12.sp)
-            }
-            FilledTonalButton(onClick = onExport, modifier = Modifier.height(32.dp)) {
-                Icon(Icons.Default.FileUpload, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Export", fontSize = 12.sp)
             }
             IconButton(onClick = onDeselectAll, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Default.Close, "Deselect", Modifier.size(18.dp))
@@ -983,4 +1304,1244 @@ private fun DetailField(label: String, value: String) {
         Text("$label: ", fontSize = 12.sp, color = surfaceColors.textMuted)
         Text(value, fontSize = 13.sp, color = surfaceColors.textPrimary)
     }
+}
+
+// ════════════════════════════════════════════
+// BROWSER FILTER RAIL — Anki-style sidebar
+// Saved searches, flags, card state and the
+// deck tree, each narrowing the table.
+// ════════════════════════════════════════════
+
+@Composable
+private fun BrowserFilterRail(
+    decks: List<KaiteyoDeck>,
+    uniqueDecks: List<String>,
+    uniqueTags: List<String>,
+    cards: List<KaiteyoCard>,
+    railQuery: String,
+    onRailQueryChange: (String) -> Unit,
+    customSearches: List<SavedSearch>,
+    onSaveCustomSearch: (String) -> Unit,
+    onRemoveCustomSearch: (SavedSearch) -> Unit,
+    flagFilter: CardFlagType?,
+    anyFlagFilter: Boolean,
+    statusFilter: Set<CardStatus>,
+    deckFilter: String?,
+    tagFilter: String?,
+    onFlagFilterChange: (CardFlagType?) -> Unit,
+    onAnyFlagFilterChange: (Boolean) -> Unit,
+    onStatusFilterChange: (Set<CardStatus>) -> Unit,
+    onDeckFilterChange: (String?) -> Unit,
+    onTagFilterChange: (String?) -> Unit,
+    onClearFilters: () -> Unit,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    val hasActiveFilter = flagFilter != null || anyFlagFilter || statusFilter.isNotEmpty() || deckFilter != null || tagFilter != null
+    val q = railQuery.trim().lowercase()
+    // Mirror the parent's derivation: the kanji-browser pseudo-deck is not a
+    // study deck, so it never contributes to filter counts.
+    val studyCards = remember(cards) { cards.filter { it.deck != KANJI_BROWSER_DECK_NAME } }
+
+    Column(
+        modifier = Modifier
+            .width(224.dp)
+            .fillMaxHeight()
+            .background(surfaceColors.surface)
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Browse", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textPrimary)
+            Spacer(Modifier.weight(1f))
+            if (hasActiveFilter) {
+                TextButton(
+                    onClick = onClearFilters,
+                    modifier = Modifier.height(24.dp)
+                ) { Text("Clear", fontSize = 11.sp, color = accent.primary) }
+            }
+        }
+
+        // Sidebar filter — narrows everything below by text (Anki's sidebar
+        // filter box).
+        OutlinedTextField(
+            value = railQuery,
+            onValueChange = onRailQueryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
+                .height(36.dp),
+            placeholder = { Text("Filter sidebar…", fontSize = 11.sp) },
+            leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(14.dp)) },
+            trailingIcon = {
+                if (railQuery.isNotBlank()) {
+                    IconButton(onClick = { onRailQueryChange("") }, modifier = Modifier.size(22.dp)) {
+                        Icon(Icons.Default.Close, "Clear sidebar filter", Modifier.size(12.dp))
+                    }
+                }
+            },
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 12.sp,
+                color = surfaceColors.textPrimary
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accent.primary.copy(alpha = 0.5f),
+                unfocusedBorderColor = surfaceColors.border.copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(8.dp)
+        )
+
+        // Today — Anki-style quick day filters with live counts.
+        val todayChips = todaySearchChips().filter { it.label.contains(q, ignoreCase = true) }
+        if (todayChips.isNotEmpty()) {
+            FilterRailSection("Today", surfaceColors, accent) {
+                todayChips.forEach { search ->
+                    FilterRailChip(
+                        label = search.label,
+                        selected = search.isActive(flagFilter, anyFlagFilter, statusFilter, deckFilter, tagFilter),
+                        onClick = { search.apply(
+                            onFlagFilterChange, onAnyFlagFilterChange, onStatusFilterChange, onDeckFilterChange, onTagFilterChange
+                        ) },
+                        count = search.countOf(studyCards),
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                }
+            }
+        }
+
+        // Saved searches — each entry shows its live card count, mirroring
+        // Anki's browser sidebar. A "＋" captures the current filter combo as
+        // a custom search the user can jump back to at any time.
+        val savedSearches = savedSearchChips().filter { it.label.contains(q, ignoreCase = true) }
+        val customMatches = customSearches.filter { it.label.contains(q, ignoreCase = true) }
+        if (savedSearches.isNotEmpty() || customMatches.isNotEmpty()) {
+            FilterRailSection(
+                title = "Saved Searches",
+                surfaceColors = surfaceColors,
+                accent = accent,
+                trailing = {
+                    var showSaveDialog by remember { mutableStateOf(false) }
+                    IconButton(
+                        onClick = { showSaveDialog = true },
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Icon(Icons.Default.Add, "Save current search", Modifier.size(14.dp), tint = accent.primary)
+                    }
+                    if (showSaveDialog) {
+                        SaveSearchDialog(
+                            suggestedLabel = buildString {
+                                if (deckFilter != null) append("$deckFilter ")
+                                if (statusFilter.isNotEmpty()) append(statusFilter.joinToString("+") { it.displayName })
+                                if (flagFilter != null) append(" ${flagFilter.displayName}")
+                            }.trim().ifBlank { "Custom search" },
+                            onSave = { label ->
+                                showSaveDialog = false
+                                onSaveCustomSearch(label)
+                            },
+                            onDismiss = { showSaveDialog = false }
+                        )
+                    }
+                }
+            ) {
+                savedSearches.forEach { search ->
+                    FilterRailChip(
+                        label = search.label,
+                        selected = search.isActive(flagFilter, anyFlagFilter, statusFilter, deckFilter, tagFilter),
+                        onClick = { search.apply(
+                            onFlagFilterChange, onAnyFlagFilterChange, onStatusFilterChange, onDeckFilterChange, onTagFilterChange
+                        ) },
+                        count = search.countOf(studyCards),
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                }
+                if (customMatches.isNotEmpty()) {
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp), color = surfaceColors.border.copy(alpha = 0.3f))
+                    customMatches.forEach { search ->
+                        FilterRailChip(
+                            label = search.label,
+                            selected = search.isActive(flagFilter, anyFlagFilter, statusFilter, deckFilter, tagFilter),
+                            onClick = { search.apply(
+                                onFlagFilterChange, onAnyFlagFilterChange, onStatusFilterChange, onDeckFilterChange, onTagFilterChange
+                            ) },
+                            count = search.countOf(cards),
+                            surfaceColors = surfaceColors,
+                            accent = accent,
+                            trailing = {
+                                IconButton(
+                                    onClick = { onRemoveCustomSearch(search) },
+                                    modifier = Modifier.size(16.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, "Remove search", Modifier.size(10.dp), tint = surfaceColors.textMuted)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Flags
+        val flagOptions = CardFlagType.entries.filter { it.displayName.contains(q, ignoreCase = true) }
+        if (flagOptions.isNotEmpty()) {
+            FilterRailSection("Flags", surfaceColors, accent) {
+                flagOptions.forEach { flag ->
+                    FilterRailChip(
+                        label = flag.displayName,
+                        selected = flagFilter == flag,
+                        onClick = { onFlagFilterChange(if (flagFilter == flag) null else flag) },
+                        leadingDot = if (flag != CardFlagType.None) flag.colorFromHex() else null,
+                        count = cards.count { it.flag == flag },
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                }
+            }
+        }
+
+        // Card state — multi-select, each with a live count.
+        val stateOptions = CardStatus.entries.filter { it.displayName.contains(q, ignoreCase = true) }
+        if (stateOptions.isNotEmpty()) {
+            FilterRailSection("Card State", surfaceColors, accent) {
+                stateOptions.forEach { status ->
+                    FilterRailChip(
+                        label = status.displayName,
+                        selected = status in statusFilter,
+                        onClick = {
+                            onStatusFilterChange(
+                                if (status in statusFilter) statusFilter - status
+                                else statusFilter + status
+                            )
+                        },
+                        count = studyCards.count { it.status == status },
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                }
+            }
+        }
+
+        // Decks — nested expandable tree with live card counts (Anki-style).
+        // Falls back to a flat list of deck names when no deck objects are
+        // supplied (e.g. day-practice presets that only pass cards).
+        val matchingDecks = decks.filter { it.name.contains(q, ignoreCase = true) }
+        val matchingUniqueDecks = uniqueDecks.filter { it.contains(q, ignoreCase = true) }
+        if (matchingDecks.isNotEmpty() || (decks.isEmpty() && matchingUniqueDecks.isNotEmpty())) {
+            val expandedDecks = remember { mutableStateOf(if (matchingDecks.size <= 8) matchingDecks.map { it.id }.toSet() else setOf<String>()) }
+            FilterRailSection("Decks", surfaceColors, accent) {
+                if (matchingDecks.isNotEmpty()) {
+                    BrowserDeckTree(
+                        decks = matchingDecks,
+                        cards = cards,
+                        deckFilter = deckFilter,
+                        filterQuery = q,
+                        expandedIds = expandedDecks.value,
+                        onToggleExpanded = { id ->
+                            expandedDecks.value = if (id in expandedDecks.value) expandedDecks.value - id
+                            else expandedDecks.value + id
+                        },
+                        onSelect = { name -> onDeckFilterChange(if (deckFilter == name) null else name) },
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                } else {
+                    matchingUniqueDecks.forEach { deck ->
+                        FilterRailChip(
+                            label = deck,
+                            selected = deckFilter == deck,
+                            onClick = { onDeckFilterChange(if (deckFilter == deck) null else deck) },
+                            surfaceColors = surfaceColors,
+                            accent = accent
+                        )
+                    }
+                }
+            }
+        }
+
+        // Tags
+        val matchingTags = uniqueTags.filter { it.contains(q, ignoreCase = true) }
+        if (matchingTags.isNotEmpty()) {
+            FilterRailSection("Tags", surfaceColors, accent) {
+                matchingTags.forEach { tag ->
+                    FilterRailChip(
+                        label = tag,
+                        selected = tagFilter == tag,
+                        onClick = { onTagFilterChange(if (tagFilter == tag) null else tag) },
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class SavedSearch(
+    val label: String,
+    val icon: String = "",
+    val flag: CardFlagType? = null,
+    val anyFlag: Boolean = false,
+    val statuses: List<CardStatus> = emptyList(),
+    val deck: String? = null
+) {
+    fun matchesCard(card: KaiteyoCard): Boolean = when {
+        flag != null -> card.flag == flag
+        anyFlag -> card.flag != CardFlagType.None
+        statuses.isNotEmpty() -> card.status in statuses
+        deck != null -> card.deck == deck
+        else -> true
+    }
+
+    fun isActive(
+        flagFilter: CardFlagType?,
+        anyFlagFilter: Boolean,
+        statusFilter: Set<CardStatus>,
+        deckFilter: String?,
+        tagFilter: String?
+    ): Boolean {
+        val statusMatch = if (statuses.isEmpty()) {
+            statusFilter.isEmpty()
+        } else {
+            statusFilter.isNotEmpty() && statusFilter.all { it in statuses } && statuses.all { it in statusFilter }
+        }
+        return flagFilter == flag && anyFlagFilter == anyFlag &&
+            statusMatch && deckFilter == deck && tagFilter == null
+    }
+
+    fun apply(
+        onFlagFilterChange: (CardFlagType?) -> Unit,
+        onAnyFlagFilterChange: (Boolean) -> Unit,
+        onStatusFilterChange: (Set<CardStatus>) -> Unit,
+        onDeckFilterChange: (String?) -> Unit,
+        onTagFilterChange: (String?) -> Unit
+    ) {
+        onFlagFilterChange(flag)
+        onAnyFlagFilterChange(anyFlag)
+        onStatusFilterChange(statuses.toSet())
+        onDeckFilterChange(deck)
+        onTagFilterChange(null)
+    }
+
+    /** Live count of cards matching this saved search. */
+    fun countOf(cards: List<KaiteyoCard>): Int = cards.count(::matchesCard)
+}
+
+/** Anki-style saved searches. */
+private fun savedSearchChips(): List<SavedSearch> = listOf(
+    SavedSearch("All cards"),
+    SavedSearch("New", statuses = listOf(CardStatus.New)),
+    SavedSearch("Learning", statuses = listOf(CardStatus.Learning)),
+    SavedSearch("Review", statuses = listOf(CardStatus.Mature)),
+    SavedSearch("Young", statuses = listOf(CardStatus.Young)),
+    SavedSearch("Relearning", statuses = listOf(CardStatus.Relearning)),
+    SavedSearch("Suspended", statuses = listOf(CardStatus.Suspended)),
+    SavedSearch("Buried", statuses = listOf(CardStatus.Buried)),
+    SavedSearch("Flagged", anyFlag = true)
+)
+
+/** Anki-style "Today" quick filters. */
+private fun todaySearchChips(): List<SavedSearch> = listOf(
+    SavedSearch("Due", statuses = listOf(CardStatus.Young, CardStatus.Mature)),
+    SavedSearch("New", statuses = listOf(CardStatus.New)),
+    SavedSearch("Learning", statuses = listOf(CardStatus.Learning, CardStatus.Relearning)),
+    SavedSearch("Suspended", statuses = listOf(CardStatus.Suspended)),
+    SavedSearch("Buried", statuses = listOf(CardStatus.Buried))
+)
+
+/**
+ * Splits a browser query into structured filters plus free text:
+ *   tag:jlpt  flag:red  deck:N5  status:learning  due:today
+ * Unknown prefixes are treated as plain text.
+ */
+private data class BrowserQuery(
+    val text: String = "",
+    val tag: String? = null,
+    val flag: CardFlagType? = null,
+    val deck: String? = null,
+    val status: CardStatus? = null,
+    val due: String? = null
+)
+
+private fun parseBrowserQuery(raw: String): BrowserQuery {
+    var textParts = mutableListOf<String>()
+    var tag: String? = null
+    var flag: CardFlagType? = null
+    var deck: String? = null
+    var status: CardStatus? = null
+    var due: String? = null
+
+    raw.split(Regex("\\s+")).forEach { token ->
+        val colon = token.indexOf(':')
+        if (colon > 0) {
+            val key = token.substring(0, colon).lowercase()
+            val value = token.substring(colon + 1).trim().lowercase()
+            if (value.isEmpty()) {
+                textParts += token
+            } else when (key) {
+                "tag", "tags" -> tag = value
+                "flag" -> flag = CardFlagType.entries.firstOrNull { it.displayName.equals(value, ignoreCase = true) }
+                "deck", "decks" -> deck = value
+                "status", "state" -> status = CardStatus.entries.firstOrNull { it.displayName.equals(value, ignoreCase = true) }
+                "due", "is" -> due = value
+                else -> textParts += token
+            }
+        } else {
+            textParts += token
+        }
+    }
+
+    return BrowserQuery(
+        text = textParts.joinToString(" "),
+        tag = tag,
+        flag = flag,
+        deck = deck,
+        status = status,
+        due = due
+    )
+}
+
+@Composable
+private fun FilterRailSection(
+    title: String,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme,
+    trailing: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                title.uppercase(),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = surfaceColors.textMuted,
+                letterSpacing = 0.8.sp,
+                modifier = Modifier.weight(1f)
+            )
+            if (trailing != null) trailing()
+        }
+        content()
+    }
+}
+
+@Composable
+private fun FilterRailChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    leadingDot: Color? = null,
+    count: Int? = null,
+    trailing: (@Composable () -> Unit)? = null,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (selected) accent.primary.copy(alpha = 0.14f) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        leadingDot?.let { dotColor ->
+            Box(
+                Modifier
+                    .size(9.dp)
+                    .clip(CircleShape)
+                    .background(dotColor)
+            )
+            Spacer(Modifier.width(7.dp))
+        }
+        Text(
+            label,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) accent.primary else surfaceColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (count != null) {
+            Text(
+                text = count.toString(),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (selected) accent.primary.copy(alpha = 0.9f) else surfaceColors.textMuted
+            )
+        }
+        if (trailing != null) {
+            Spacer(Modifier.width(2.dp))
+            trailing()
+        }
+    }
+}
+
+// ════════════════════════════════════════════
+// DECK TREE — nested expandable tree (Anki-style)
+// ════════════════════════════════════════════
+
+@Composable
+private fun BrowserDeckTree(
+    decks: List<KaiteyoDeck>,
+    cards: List<KaiteyoCard>,
+    deckFilter: String?,
+    filterQuery: String = "",
+    expandedIds: Set<String>,
+    onToggleExpanded: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    val rootDecks = decks.filter { it.parentId == null || decks.none { d -> d.id == it.parentId } }
+    // Cards may carry deck names not present in the deck objects; fold them in.
+    val cardDeckNames = cards.map { it.deck }.distinct().sorted()
+    val allRoots = (rootDecks.map { it.name } + cardDeckNames).distinct()
+        .filter { it.contains(filterQuery, ignoreCase = true) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        // "All decks" pseudo-root
+        FilterRailChip(
+            label = "All decks (${cards.size})",
+            selected = deckFilter == null,
+            onClick = { onSelect("") },
+            surfaceColors = surfaceColors,
+            accent = accent
+        )
+
+        allRoots.forEach { rootName ->
+            val deck = decks.firstOrNull { it.name == rootName }
+            BrowserDeckNode(
+                name = rootName,
+                deck = deck,
+                cards = cards,
+                deckFilter = deckFilter,
+                filterQuery = filterQuery,
+                depth = 0,
+                expandedIds = expandedIds,
+                onToggleExpanded = onToggleExpanded,
+                onSelect = onSelect,
+                surfaceColors = surfaceColors,
+                accent = accent
+            )
+        }
+    }
+}
+
+@Composable
+private fun BrowserDeckNode(
+    name: String,
+    deck: KaiteyoDeck?,
+    cards: List<KaiteyoCard>,
+    deckFilter: String?,
+    filterQuery: String = "",
+    depth: Int,
+    expandedIds: Set<String>,
+    onToggleExpanded: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    val count = cards.count { it.deck == name }
+    val hasChildren = deck?.children?.isNotEmpty() == true
+    val expanded = deck == null || deck.id in expandedIds
+    val selected = deckFilter == name
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (selected) accent.primary.copy(alpha = 0.14f) else Color.Transparent)
+            .clickable { if (hasChildren) onToggleExpanded(deck!!.id) else onSelect(name) }
+            .padding(start = (8 + depth * 12).dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (hasChildren) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = surfaceColors.textMuted,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(2.dp))
+        } else {
+            Spacer(Modifier.width(16.dp))
+        }
+        Text(
+            text = name,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) accent.primary else surfaceColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (count > 0) {
+            Text(
+                text = count.toString(),
+                fontSize = 10.sp,
+                color = surfaceColors.textMuted
+            )
+        }
+    }
+
+    if (hasChildren && expanded) {
+        deck!!.children
+            .filter { it.name.contains(filterQuery, ignoreCase = true) }
+            .forEach { child ->
+                BrowserDeckNode(
+                    name = child.name,
+                    deck = child,
+                    cards = cards,
+                    deckFilter = deckFilter,
+                    filterQuery = filterQuery,
+                    depth = depth + 1,
+                    expandedIds = expandedIds,
+                    onToggleExpanded = onToggleExpanded,
+                    onSelect = onSelect,
+                    surfaceColors = surfaceColors,
+                    accent = accent
+                )
+            }
+    }
+}
+
+// ════════════════════════════════════════════
+// BROWSER NOTE EDITOR PANE — Anki-style editor
+// Fields from the note type, cloze support and
+// a live preview, saving back through onUpdate.
+// ════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BrowserNoteEditorPane(
+    card: KaiteyoCard,
+    onUpdate: (KaiteyoCard) -> Unit,
+    onClose: () -> Unit,
+    onShowDetails: () -> Unit,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    val allNoteTypes = remember { defaultKaiteyoNoteTypes }
+    val noteType = remember(card.noteTypeId(), allNoteTypes) {
+        allNoteTypes.firstOrNull { it.id == card.noteTypeId() } ?: allNoteTypes.first()
+    }
+
+    var expression by remember(card.id) { mutableStateOf(card.character) }
+    var reading by remember(card.id) { mutableStateOf(card.reading) }
+    var meaning by remember(card.id) { mutableStateOf(card.meaning) }
+    var tags by remember(card.id) { mutableStateOf(card.tagNames.joinToString(", ")) }
+    var notes by remember(card.id) { mutableStateOf(card.notes) }
+    var customValues by remember(card.id) { mutableStateOf(card.customFields.toMap()) }
+    var noteTypeExpanded by remember { mutableStateOf(false) }
+    var showNoteTypeDialog by remember { mutableStateOf(false) }
+
+    fun currentCard(): KaiteyoCard {
+        val updatedTags = tags.split(',').map { it.trim() }.filter { it.isNotBlank() }
+        return card.copy(
+            character = expression,
+            reading = reading,
+            meaning = meaning,
+            notes = notes,
+            tagNames = updatedTags.toMutableList(),
+            customFields = customValues.toMutableMap()
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .width(300.dp)
+            .fillMaxHeight()
+            .background(surfaceColors.surfaceElevated)
+            .verticalScroll(rememberScrollState())
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // Pane header
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Note", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textPrimary)
+                Text(card.deck, fontSize = 10.sp, color = surfaceColors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            IconButton(onClick = onShowDetails, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.Info, "Card details", Modifier.size(16.dp), tint = surfaceColors.textMuted)
+            }
+            IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.Close, "Close editor", Modifier.size(16.dp), tint = surfaceColors.textMuted)
+            }
+        }
+
+        HorizontalDivider(color = surfaceColors.border.copy(alpha = 0.4f))
+
+        // Note type selector
+        Box {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(surfaceColors.surfaceInteractive)
+                    .clickable { noteTypeExpanded = true }
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Description, null, Modifier.size(14.dp), tint = accent.primary)
+                Spacer(Modifier.width(6.dp))
+                Text("Note type: ${noteType.name}", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = surfaceColors.textPrimary)
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Default.KeyboardArrowDown, null, Modifier.size(16.dp), tint = surfaceColors.textMuted)
+            }
+            DropdownMenu(expanded = noteTypeExpanded, onDismissRequest = { noteTypeExpanded = false }) {
+                allNoteTypes.forEach { type ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(type.name, fontSize = 13.sp)
+                                if (type.description.isNotBlank()) {
+                                    Text(type.description, fontSize = 10.sp, color = surfaceColors.textMuted, maxLines = 2)
+                                }
+                            }
+                        },
+                        trailingIcon = {
+                            if (type.id == card.noteTypeId()) {
+                                Icon(Icons.Default.Check, null, Modifier.size(16.dp), tint = accent.primary)
+                            }
+                        },
+                        onClick = {
+                            customValues = customValues + ("noteType" to type.id)
+                            noteTypeExpanded = false
+                            onUpdate(currentCard())
+                        }
+                    )
+                }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text("Note types…", fontSize = 13.sp, color = accent.primary) },
+                    onClick = { noteTypeExpanded = false; showNoteTypeDialog = true }
+                )
+            }
+        }
+
+        // Editable fields — the core Anki-style editor body
+        BrowserNoteField(
+            label = "Expression",
+            value = expression,
+            onValueChange = { expression = it },
+            surfaceColors = surfaceColors,
+            accent = accent
+        )
+        BrowserNoteField(
+            label = "Reading",
+            value = reading,
+            onValueChange = { reading = it },
+            surfaceColors = surfaceColors,
+            accent = accent
+        )
+        BrowserNoteField(
+            label = "Meaning",
+            value = meaning,
+            onValueChange = { meaning = it },
+            surfaceColors = surfaceColors,
+            accent = accent
+        )
+
+        // Extra fields from the note type (stored in customFields)
+        noteType.fields.filter { field ->
+            field.id !in setOf("expression", "reading", "meaning", "notes")
+        }.forEach { field ->
+            val value = customValues["field:${field.id}"] ?: ""
+            if (field.kind == NoteFieldKind.Cloze) {
+                ClozeField(
+                    label = field.label,
+                    value = value,
+                    onValueChange = { newValue ->
+                        customValues = customValues + ("field:${field.id}" to newValue)
+                    },
+                    surfaceColors = surfaceColors,
+                    accent = accent
+                )
+            } else {
+                BrowserNoteField(
+                    label = field.label,
+                    value = value,
+                    onValueChange = { newValue ->
+                        customValues = customValues + ("field:${field.id}" to newValue)
+                    },
+                    surfaceColors = surfaceColors,
+                    accent = accent
+                )
+            }
+        }
+
+        // Tags
+        BrowserNoteField(
+            label = "Tags (comma separated)",
+            value = tags,
+            onValueChange = { tags = it },
+            surfaceColors = surfaceColors,
+            accent = accent
+        )
+
+        // Notes (markdown)
+        Text("Notes", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textMuted)
+        OutlinedTextField(
+            value = notes,
+            onValueChange = { notes = it },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
+            placeholder = { Text("Markdown supported…", fontSize = 11.sp) },
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = surfaceColors.textPrimary),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accent.primary.copy(alpha = 0.5f),
+                unfocusedBorderColor = surfaceColors.border.copy(alpha = 0.3f),
+                cursorColor = accent.primary
+            ),
+            shape = RoundedCornerShape(8.dp)
+        )
+
+        // Save row — Anki keeps the action bar pinned below the fields.
+        FilledTonalButton(
+            onClick = { onUpdate(currentCard()) },
+            modifier = Modifier.fillMaxWidth().height(34.dp)
+        ) {
+            Icon(Icons.Default.Save, null, Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Save note", fontSize = 12.sp)
+        }
+
+        // Live card preview — always visible below the fields (Anki-style).
+        Text("Preview", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textMuted)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = surfaceColors.surface),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Front", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textMuted)
+                Text(expression.ifBlank { "—" }, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textPrimary)
+                if (reading.isNotBlank()) {
+                    Text(reading, fontSize = 13.sp, color = surfaceColors.textMuted)
+                }
+                if (notes.hasClozeDeletions()) {
+                    Text(
+                        "Cloze: " + Regex("""\{\{c\d+::""").findAll(notes).count() + " deletion(s)",
+                        fontSize = 10.sp,
+                        color = accent.primary
+                    )
+                }
+                HorizontalDivider(color = surfaceColors.border.copy(alpha = 0.4f))
+                Text("Back", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textMuted)
+                Text(meaning.ifBlank { "—" }, fontSize = 13.sp, color = surfaceColors.textPrimary)
+                if (notes.isNotBlank()) {
+                    Text(notes, fontSize = 11.sp, color = surfaceColors.textMuted)
+                }
+                if (tagNamesDisplay(tags).isNotEmpty()) {
+                    Text("Tags: ${tagNamesDisplay(tags).joinToString(", ")}", fontSize = 10.sp, color = surfaceColors.textMuted)
+                }
+            }
+        }
+    }
+
+    if (showNoteTypeDialog) {
+        NoteTypeInfoDialog(onDismiss = { showNoteTypeDialog = false })
+    }
+}
+
+private fun tagNamesDisplay(tags: String): List<String> =
+    tags.split(',').map { it.trim() }.filter { it.isNotBlank() }
+
+@Composable
+private fun BrowserNoteField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textMuted)
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = surfaceColors.textPrimary),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = accent.primary.copy(alpha = 0.5f),
+            unfocusedBorderColor = surfaceColors.border.copy(alpha = 0.3f),
+            cursorColor = accent.primary
+        ),
+        shape = RoundedCornerShape(8.dp)
+    )
+}
+
+@Composable
+private fun ClozeField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+) {
+    // A real TextFieldValue so selection is tracked: cloze wraps exactly the
+    // selected part of the sentence (or the whole text when nothing is
+    // selected), Anki-style.
+    var fieldValue by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(value)) }
+
+    fun commit(text: String) {
+        fieldValue = fieldValue.copy(text = text, selection = androidx.compose.ui.text.TextRange(text.length))
+        onValueChange(text)
+    }
+
+    Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = surfaceColors.textMuted)
+    OutlinedTextField(
+        value = fieldValue,
+        onValueChange = { fieldValue = it },
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("あなたは{{c1::日本人}}です。", fontSize = 11.sp) },
+        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = surfaceColors.textPrimary),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = accent.primary.copy(alpha = 0.5f),
+            unfocusedBorderColor = surfaceColors.border.copy(alpha = 0.3f),
+            cursorColor = accent.primary
+        ),
+        shape = RoundedCornerShape(8.dp)
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(
+            onClick = {
+                val (updated, _) = insertCloze(
+                    fieldValue.text,
+                    fieldValue.selection.min,
+                    fieldValue.selection.max
+                )
+                commit(updated)
+            },
+            modifier = Modifier.height(28.dp)
+        ) {
+            Icon(Icons.Default.PlayArrow, null, Modifier.size(14.dp), tint = accent.primary)
+            Spacer(Modifier.width(4.dp))
+            Text("Cloze", fontSize = 11.sp, color = accent.primary)
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+            if (value.hasClozeDeletions()) "${Regex("""\{\{c\d+::""").findAll(value).count()} deletions" else "No deletions",
+            fontSize = 10.sp,
+            color = if (value.hasClozeDeletions()) accent.primary else surfaceColors.textMuted
+        )
+    }
+}
+
+@Composable
+private fun NoteTypeInfoDialog(onDismiss: () -> Unit) {
+    val surfaceColors = LocalSurfaceColors.current
+    KaiteyoAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Note Types") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "A note type defines the fields a flashcard carries. Kaiteyo ships with a default type (front expression, back reading + meaning + example + audio) with full cloze support — use {{c1::…}} around any part of a sentence to hide it.",
+                    fontSize = 12.sp
+                )
+                defaultKaiteyoNoteTypes.forEach { type ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceContainerHighest),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Column(Modifier.padding(10.dp)) {
+                            Text(type.name, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(type.description, fontSize = 11.sp)
+                            Text(
+                                type.fields.joinToString(" · ") { it.label },
+                                fontSize = 10.sp,
+                                color = surfaceColors.textMuted
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Got it") } }
+    )
+}
+
+// ── Stability / difficulty helpers (Anki-style columns) ──
+
+private fun formatStability(card: KaiteyoCard): String = when {
+    card.reviewCount == 0 -> "—"
+    card.interval <= 0 -> "(new)"
+    card.interval < 30 -> "${card.interval}d"
+    card.interval < 365 -> "${(card.interval / 30.4).roundToInt()}mo"
+    else -> "${(card.interval / 365.25).roundToInt()}y"
+}
+
+private fun formatDifficulty(card: KaiteyoCard): String {
+    if (card.reviewCount == 0) return "—"
+    // Derive a 0–100 style difficulty from accuracy + lapses, matching Anki's
+    // "difficulty %" column semantics (lower = easier).
+    val lapsePenalty = card.lapses * 4f
+    val difficulty = ((1f - card.accuracy) * 100f + lapsePenalty).coerceIn(0f, 100f)
+    return "${difficulty.roundToInt()}%"
+}
+
+private fun difficultyColor(
+    card: KaiteyoCard,
+    surfaceColors: SurfaceColors,
+    accent: KaiteyoAccentScheme
+): Color = when {
+    card.reviewCount == 0 -> surfaceColors.textMuted
+    card.lapses > 0 -> Color(0xFFFF6B6B)
+    card.accuracy >= 0.9f -> accent.primary
+    card.accuracy >= 0.7f -> Color(0xFFFEAB57)
+    else -> Color(0xFF7BC8FF)
+}
+
+// ════════════════════════════════════════════
+// BULK ACTION DIALOGS — one flag / status / tag
+// applied to every selected card in a single step
+// ════════════════════════════════════════════
+
+@Composable
+private fun BulkFlagDialog(
+    onPick: (CardFlagType) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    KaiteyoAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set Flag on Selected") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Choose one flag color to apply to every selected card.",
+                    fontSize = 12.sp,
+                    color = surfaceColors.textMuted
+                )
+                // Flag palette — 4 per row, Anki-style
+                CardFlagType.entries.chunked(4).forEach { rowFlags ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowFlags.forEach { flag ->
+                            val color = flag.colorFromHex()
+                            val isNone = flag == CardFlagType.None
+                            Column(
+                                modifier = Modifier.weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (isNone) surfaceColors.surfaceElevated
+                                        else color.copy(alpha = 0.18f)
+                                    )
+                                    .clickable { onPick(flag) }
+                                    .padding(vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isNone) Color.Transparent else color)
+                                        .then(
+                                            if (isNone) Modifier.border(1.dp, surfaceColors.textMuted, CircleShape)
+                                            else Modifier
+                                        )
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    flag.displayName,
+                                    fontSize = 10.sp,
+                                    color = if (isNone) surfaceColors.textMuted else surfaceColors.textPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun BulkStatusDialog(
+    onPick: (CardStatus) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    KaiteyoAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Change Status of Selected") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    "Apply a card state to every selected card.",
+                    fontSize = 12.sp,
+                    color = surfaceColors.textMuted,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+                CardStatus.entries.forEach { status ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onPick(status) }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier.size(8.dp)
+                                .clip(CircleShape)
+                                .background(statusColor(status))
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(status.displayName, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            modifier = Modifier.size(16.dp),
+                            tint = surfaceColors.textMuted
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun BulkTagDialog(
+    onApply: (List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    var tagInput by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    KaiteyoAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Tags to Selected") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Tags are appended to every selected card. Separate multiple tags with commas or spaces.",
+                    fontSize = 12.sp,
+                    color = surfaceColors.textMuted
+                )
+                OutlinedTextField(
+                    value = tagInput,
+                    onValueChange = {
+                        tagInput = it
+                        error = null
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("e.g. jlpt-n5, travel, food") },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        val tags = tagInput.split(",", " ", "、")
+                            .map { it.trim() }
+                            .filter { it.isNotBlank() }
+                        if (tags.isEmpty()) error = "Enter at least one tag."
+                        else onApply(tags)
+                    }),
+                    isError = error != null,
+                    supportingText = error?.let { { Text(it, fontSize = 11.sp) } }
+                )
+                if (tagInput.isNotBlank()) {
+                    val preview = tagInput.split(",", " ", "、")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                    if (preview.isNotEmpty()) {
+                        Text(
+                            "Will add: ${preview.joinToString(" · ") { it }}",
+                            fontSize = 11.sp,
+                            color = accent.primary
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val tags = tagInput.split(",", " ", "、")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                    if (tags.isEmpty()) error = "Enter at least one tag."
+                    else onApply(tags)
+                }
+            ) { Text("Apply") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun SaveSearchDialog(
+    suggestedLabel: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    var label by remember { mutableStateOf(suggestedLabel) }
+    KaiteyoAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save current search") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    "This captures the active filters (deck, status, flag) so you can return to them with one click.",
+                    fontSize = 12.sp,
+                    color = surfaceColors.textMuted
+                )
+                OutlinedTextField(
+                    value = label,
+                    onValueChange = { label = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("Search name", fontSize = 13.sp) },
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (label.isNotBlank()) onSave(label.trim())
+                    })
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (label.isNotBlank()) onSave(label.trim()) }
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun statusColor(status: CardStatus): Color = when (status) {
+    CardStatus.New -> Color(0xFF7BC8FF)
+    CardStatus.Learning -> Color(0xFFFFD93D)
+    CardStatus.Young -> Color(0xFFC2FC8B)
+    CardStatus.Mature -> Color(0xFF2ECC71)
+    CardStatus.Relearning -> Color(0xFFFEAB57)
+    CardStatus.Suspended -> Color(0xFFB0B0B0)
+    CardStatus.Buried -> Color(0xFF9B59B6)
+    CardStatus.Archived -> Color(0xFF7F8C8D)
 }

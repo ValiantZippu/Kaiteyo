@@ -7,21 +7,20 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -65,22 +64,20 @@ import ua.syt0r.kanji.info_no_data_vocab
 import ua.syt0r.kanji.presentation.common.AppListItem
 import ua.syt0r.kanji.presentation.common.ExpandButton
 import ua.syt0r.kanji.presentation.common.ExtraListSpacerState
-import ua.syt0r.kanji.presentation.common.FuriganaWordHeadline
-import ua.syt0r.kanji.presentation.common.JapaneseWordUI
 import ua.syt0r.kanji.presentation.common.PaginateableState
 import ua.syt0r.kanji.presentation.common.copyCentered
 import ua.syt0r.kanji.presentation.common.rememberExtraListSpacerState
 import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.neutralButtonColors
 import ua.syt0r.kanji.presentation.common.trackOverlay
-import ua.syt0r.kanji.presentation.common.ui.ClickableFuriganaText
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoSentenceRow
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoVocabRow
 import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LetterInfoUI
 import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.LearningAction
 import ua.syt0r.kanji.presentation.screen.main.screen.info.ui.VocabInfoUI
 import ua.syt0r.kanji.presentation.screen.main.screen.info.use_case.ItemLearningState
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,9 +87,11 @@ fun InfoScreenUI(
     learningActions: List<LearningAction>,
     onUpButtonClick: () -> Unit,
     onLetterClick: (String) -> Unit,
-    onWordClick: (JapaneseWord) -> Unit
+    onWordClick: (JapaneseWord) -> Unit,
+    onPlayReading: ((String) -> Unit)? = null,
+    isPlayingReading: String? = null,
+    onSaveUserNote: ((String) -> Unit)? = null
 ) {
-
     ScreenLayout(
         state = state,
         toolbar = {
@@ -113,7 +112,10 @@ fun InfoScreenUI(
                 learningState = learningState,
                 learningActions = learningActions,
                 onFuriganaClick = onLetterClick,
-                onWordClick = onWordClick
+                onWordClick = onWordClick,
+                onPlayReading = onPlayReading,
+                isPlayingReading = isPlayingReading,
+                onSaveUserNote = onSaveUserNote
             )
         },
         vocab = { data, listState, listSpacerState ->
@@ -123,11 +125,11 @@ fun InfoScreenUI(
                 listSpacerState = listSpacerState,
                 learningState = learningState,
                 learningActions = learningActions,
-                onLetterClick = onLetterClick
+                onLetterClick = onLetterClick,
+                onWordClick = onWordClick
             )
         },
         noData = {
-
             val searchTerm: String
             val message: String
 
@@ -154,7 +156,6 @@ fun InfoScreenUI(
                     ))
                     .padding(Dimens.ContentPadding)
             ) {
-
                 Text(
                     text = message,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -180,12 +181,9 @@ fun InfoScreenUI(
                     Text(text = stringResource(Res.string.info_no_data_jisho))
                 }
             }
-
         }
     )
-
 }
-
 
 @Composable
 private fun ScreenLayout(
@@ -195,178 +193,110 @@ private fun ScreenLayout(
     vocab: @Composable (VocabInfoData, LazyListState, ExtraListSpacerState) -> Unit,
     noData: @Composable (InfoScreenData) -> Unit
 ) {
-
     val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val listSpacerState = rememberExtraListSpacerState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val listState = rememberLazyListState()
-
-    val extraListSpacerState = rememberExtraListSpacerState()
-
-    val shouldShowScrollButton = remember {
-        derivedStateOf { listState.firstVisibleItemIndex != 0 }
-    }
-
     Scaffold(
-        topBar = { toolbar() },
+        topBar = toolbar,
         floatingActionButton = {
+            val showUpButton = remember {
+                derivedStateOf { listState.firstVisibleItemIndex > 0 }
+            }
+
             AnimatedVisibility(
-                visible = shouldShowScrollButton.value,
-                enter = scaleIn(),
-                exit = scaleOut(),
-                modifier = Modifier.trackOverlay(extraListSpacerState)
+                visible = showUpButton.value,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
             ) {
                 FloatingActionButton(
-                    onClick = { coroutineScope.launch { listState.scrollToItem(0) } }
+                    onClick = { coroutineScope.launch { listState.scrollToItem(0) } },
+                    modifier = Modifier
+                        .trackOverlay(listSpacerState)
                 ) {
-                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = null
+                    )
                 }
             }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) {
-
-        AnimatedContent(
-            targetState = state.value,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .trackOverlay(listSpacerState)
+            )
+        }
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(it)
-        ) { screenState ->
+                .padding(paddingValues)
+        ) {
+            AnimatedContent(
+                targetState = state.value,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                contentKey = { it::class }
+            ) {
+                when (it) {
+                    is ScreenState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
 
-            when (screenState) {
-
-                ScreenState.Loading -> {
-                    LoadingState()
-                }
-
-                is ScreenState.NoData -> {
-                    noData(screenState.data)
-                }
-
-                is ScreenState.Loaded.Letter -> {
-                    letter(screenState.data, listState, extraListSpacerState)
-                }
-
-                is ScreenState.Loaded.Vocab -> {
-                    vocab(screenState.data, listState, extraListSpacerState)
+                    is ScreenState.Loaded.Letter -> letter(it.data, listState, listSpacerState)
+                    is ScreenState.Loaded.Vocab -> vocab(it.data, listState, listSpacerState)
+                    is ScreenState.NoData -> noData(it.data)
                 }
             }
-
-        }
-
-    }
-
-
-}
-
-@Composable
-private fun LoadingState() {
-    Box(Modifier.fillMaxSize(), Alignment.Center) {
-        CircularProgressIndicator()
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-fun LazyListScope.infoScreenExpandableSection(
-    headerText: String,
-    headerCount: Int,
-    expanded: MutableState<Boolean>,
-    expandedContent: LazyListScope.() -> Unit
-) {
-
-    stickyHeader {
-        ExpandableSectionHeader(headerText, headerCount, expanded)
-    }
-
-    if (expanded.value) {
-        expandedContent()
-    }
-
-}
-
-private fun <T> LazyListScope.paginateableContent(
-    paginateable: PaginateableState<T>,
-    item: @Composable (Int, T) -> Unit
-) {
-    itemsIndexed(paginateable.list) { index, listItem -> item(index, listItem) }
-
-    if (paginateable.canLoadMore) {
-        item {
-            CircularProgressIndicator(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(vertical = 16.dp)
-                    .wrapContentSize()
-            )
         }
     }
-}
-
-
-@Composable
-private fun ExpandableSectionHeader(
-    headerText: String,
-    headerCount: Int,
-    expanded: MutableState<Boolean>
-) {
-
-    val toggleExpanded = { expanded.value = expanded.value.not() }
-
-    AppListItem(
-        headlineContent = {
-            Text(
-                text = "$headerText ($headerCount)",
-                style = MaterialTheme.typography.titleMedium.copyCentered(),
-            )
-        },
-        trailingContent = {
-            ExpandButton(
-                expanded = expanded.value,
-                onClick = toggleExpanded,
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.offset(2.dp)
-            )
-        },
-        onClick = toggleExpanded
-    )
-
 }
 
 fun LazyListScope.infoScreenExpandableVocabSection(
     expanded: MutableState<Boolean>,
     paginateable: PaginateableState<JapaneseWord>,
     onWordClick: (JapaneseWord) -> Unit,
-    addWordToVocabDeckClick: (JapaneseWord) -> Unit,
-    onFuriganaClick: (String) -> Unit
+    onFuriganaClick: (String) -> Unit,
+    addWordToVocabDeckClick: (JapaneseWord) -> Unit
 ) {
+    val items = paginateable.list
 
-    infoScreenExpandableSection(
-        headerText = "Vocab",
-        headerCount = paginateable.total,
-        expanded = expanded,
-        expandedContent = {
-            paginateableContent(
-                paginateable = paginateable,
-                item = { index, word ->
-                    JapaneseWordUI(
-                        index = index,
-                        headline = {
-                            SelectionContainer {
-                                FuriganaWordHeadline(
-                                    reading = word.reading,
-                                    glossary = word.combinedGlossary(),
-                                    onFuriganaClick = onFuriganaClick
-                                )
-                            }
-                        },
-                        onClick = { onWordClick(word) },
-                        addWordToVocabDeckClick = { addWordToVocabDeckClick(word) }
+    if (items.isEmpty()) return
+
+    item {
+        AppListItem(
+            headlineContent = {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Vocab (${paginateable.total})", style = MaterialTheme.typography.titleSmall)
+                    ExpandButton(
+                        expanded = expanded.value,
+                        onClick = { expanded.value = !expanded.value }
                     )
                 }
+            }
+        )
+    }
+
+    if (expanded.value) {
+        itemsIndexed(
+            items = items,
+            key = { index, item -> "vocab_${index}_${item.reading.kanaReading}" }
+        ) { _, word ->
+            KaiteyoVocabRow(
+                word = word,
+                onClick = { onWordClick(word) },
+                onBookmarkClick = { addWordToVocabDeckClick(word) },
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
             )
         }
-    )
-
+    }
 }
 
 fun LazyListScope.infoScreenExpandableSentenceSection(
@@ -374,33 +304,34 @@ fun LazyListScope.infoScreenExpandableSentenceSection(
     paginateable: PaginateableState<Sentence>,
     onFuriganaClick: (String) -> Unit
 ) {
+    val items = paginateable.list
 
-    infoScreenExpandableSection(
-        headerText = "Sentences",
-        headerCount = paginateable.total,
-        expanded = expanded,
-        expandedContent = {
-            paginateableContent(
-                paginateable = paginateable,
-                item = { index, sentence ->
-                    AppListItem(
-                        leadingContent = { InfoScreenPaddedListIndex(index) },
-                        headlineContent = {
-                            ClickableFuriganaText(
-                                furiganaString = sentence.furigana,
-                                onClick = onFuriganaClick
-                            )
-                        },
-                        supportingContent = { SelectionContainer { Text(sentence.translation) } }
+    if (items.isEmpty()) return
+
+    item {
+        AppListItem(
+            headlineContent = {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Sentences (${paginateable.total})", style = MaterialTheme.typography.titleSmall)
+                    ExpandButton(
+                        expanded = expanded.value,
+                        onClick = { expanded.value = !expanded.value }
                     )
                 }
+            }
+        )
+    }
+
+    if (expanded.value) {
+        itemsIndexed(
+            items = items,
+            key = { index, item -> "sentence_${index}_${item.value.take(10)}" }
+        ) { _, item ->
+            KaiteyoSentenceRow(
+                sentence = item,
+                onFuriganaClick = onFuriganaClick,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
         }
-    )
-
-}
-
-@Composable
-fun InfoScreenPaddedListIndex(i: Int) {
-    Text(text = (i + 1).toString())
+    }
 }

@@ -18,7 +18,9 @@ object LauncherSnapMath {
         val windowHeight: Float,
         val bubbleSize: Float,
         /** Top/bottom anchors keep this clearance from the window edge (tab bars / gesture zones). */
-        val edgeInset: Float
+        val edgeInset: Float,
+        /** Minimum clearance from every window edge so the bubble never clips. */
+        val safeMargin: Float = 0f
     )
 
     /** Top-left position of the bubble when parked on [snap]. */
@@ -27,15 +29,20 @@ object LauncherSnapMath {
         val h = layout.windowHeight
         val size = layout.bubbleSize
         val inset = layout.edgeInset
+        val margin = layout.safeMargin
+        // Vertical clearance: the larger of the phone gesture inset and the
+        // safe margin so the bubble never clips the window edge or gesture zone.
+        val topY = maxOf(inset, margin)
+        val bottomY = maxOf(inset, margin)
         return when (snap) {
-            LauncherSnapPoint.TopLeft, LauncherSnapPoint.LeftTop -> Offset(0f, inset)
-            LauncherSnapPoint.TopCenter -> Offset((w - size) / 2f, inset)
-            LauncherSnapPoint.TopRight, LauncherSnapPoint.RightTop -> Offset(w - size, inset)
-            LauncherSnapPoint.BottomLeft, LauncherSnapPoint.LeftBottom -> Offset(0f, h - inset - size)
-            LauncherSnapPoint.BottomCenter -> Offset((w - size) / 2f, h - inset - size)
-            LauncherSnapPoint.BottomRight, LauncherSnapPoint.RightBottom -> Offset(w - size, h - inset - size)
-            LauncherSnapPoint.LeftCenter -> Offset(0f, (h - size) / 2f)
-            LauncherSnapPoint.RightCenter -> Offset(w - size, (h - size) / 2f)
+            LauncherSnapPoint.TopLeft, LauncherSnapPoint.LeftTop -> Offset(margin, topY)
+            LauncherSnapPoint.TopCenter -> Offset((w - size) / 2f, topY)
+            LauncherSnapPoint.TopRight, LauncherSnapPoint.RightTop -> Offset(w - size - margin, topY)
+            LauncherSnapPoint.BottomLeft, LauncherSnapPoint.LeftBottom -> Offset(margin, h - bottomY - size)
+            LauncherSnapPoint.BottomCenter -> Offset((w - size) / 2f, h - bottomY - size)
+            LauncherSnapPoint.BottomRight, LauncherSnapPoint.RightBottom -> Offset(w - size - margin, h - bottomY - size)
+            LauncherSnapPoint.LeftCenter -> Offset(margin, (h - size) / 2f)
+            LauncherSnapPoint.RightCenter -> Offset(w - size - margin, (h - size) / 2f)
         }
     }
 
@@ -82,8 +89,9 @@ object LauncherSnapMath {
      *     anchor instead of drifting out of the window.
      */
     fun restorePosition(storedX: Float, storedY: Float, layout: SnapLayout): Offset {
-        val maxX = (layout.windowWidth - layout.bubbleSize).coerceAtLeast(0f)
-        val maxY = (layout.windowHeight - layout.bubbleSize).coerceAtLeast(0f)
+        val margin = layout.safeMargin
+        val maxX = (layout.windowWidth - layout.bubbleSize - margin).coerceAtLeast(0f)
+        val maxY = (layout.windowHeight - layout.bubbleSize - margin).coerceAtLeast(0f)
         // NaN would poison every downstream comparison — treat corrupt input
         // as "unset" (falls back to the bottom-right default region).
         fun sane(v: Float): Float = if (v.isFinite()) v.coerceIn(0f, 1f) else 0f
@@ -91,7 +99,7 @@ object LauncherSnapMath {
             sane(storedX) * layout.windowWidth,
             sane(storedY) * layout.windowHeight
         )
-        val clamped = Offset(raw.x.coerceIn(0f, maxX), raw.y.coerceIn(0f, maxY))
+        val clamped = Offset(raw.x.coerceIn(margin, maxX), raw.y.coerceIn(margin, maxY))
         // The stored spot only stays as-is when it lands the bubble fully
         // inside the window; otherwise re-snap to the nearest valid anchor.
         return if (clamped == raw) clamped else anchorPosition(nearestSnap(clamped, layout), layout)

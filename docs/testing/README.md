@@ -1,91 +1,174 @@
-# Testing Strategy
+# Kaiteyo Test Strategy
 
-## Where tests live
+## Overview
 
-| Location | What it covers | Runner |
-|---|---|---|
-| `core/src/commonTest/` | Shared logic: SRS/FSRS, stroke evaluation, statistics, transfer codecs, import pipeline, writing sessions | `./gradlew :core:allTests` |
-| `core/src/jvmTest/` | JVM-specific shared code (e.g. Anki package round-trips) | `./gradlew :core:allTests` |
-| `desktopApp/src/jvmTest/` | Desktop suite: dictionary/segmenter, jdata (SVG paths, KanjiVG provider, stroke bridge, writing sessions), media (library, subtitles, media keys, stats), transfer (Anki import mapper), updates (KJD patches) | `./gradlew :desktopApp:test` |
-| `kjd/src/test/` | Data platform: parsers, normalization, entity resolution, FTS search, schema migration, DB diff/patch, attribution writer, safe archive extraction, end-to-end pipeline | `./gradlew :kjd:test` |
-| `mediaGenerator/src/commonTest/` | Asset generator: screenshot/video recording tests | `./gradlew :mediaGenerator:test` |
+Kaiteyo uses `kotlin.test` in `commonTest` for cross-platform testing. Tests run on JVM via JUnit platform.
 
-Tests use `kotlin.test` with JUnit Platform (`useJUnitPlatform()` in the module build
-files). Test naming uses backtick sentences, e.g. `` `load data should update state` ``.
+## Test Categories
 
-## Test levels
+### Unit Tests
 
-### Unit tests
-Cover pure logic with no platform dependencies — this is the bulk of the suite:
-- **SRS / FSRS** — `FsrsSchedulerTest.kt`, `WritingSessionTest.kt`,
-  `StrokeEvaluatorTest.kt`
-- **Statistics** — `DayPracticeBreakdownTest`, `DeckRetentionTest`, `ExamGeneratorTest`,
-  `ExamScorerTest`, `GoalHistoryTest`, `KnowledgeGrowthTest`, `LearningProfileTest`,
-  `StatisticsCalculatorTest`, `StudyVelocityTest`, `WeeklyExamTest`
-- **Transfer** — `TransferCodecsTest` (JSON/CSV/TSV/TXT round trips), `ImportPipelineTest`
-  (preview/duplicates/policies), `AnkiPackageJvmTest` (round trip, GUID stability,
-  malformed input)
-- **Desktop suite** — `JapaneseSegmenterTest`, `SvgPathConverterTest`,
-  `KanjiVgGeometryProviderTest`, `StrokeEvaluationBridgeTest`, `KanjiWritingSessionTest`,
-  `MediaLibraryTest` family, `SubtitleEngineTest`, `SubtitleNormalizerTest`,
-  `SystemMediaKeysTest`, `AnkiImportMapperTest`, `KjdDatabaseUpdaterTest`,
-  `KjdPatchFeedParserTest`
-- **KJD** — `ParsersTest`, `JapaneseNormalizerTest`, `EntityResolutionTest`,
-  `FtsSearchTest`, `SchemaMigrationTest`, `DatabaseDiffTest`, `DatabasePatcherTest`,
-  `AttributionWriterTest`, `SafeArchiveExtractorTest`, `EndToEndPipelineTest`
+Pure logic tests with no Android/UI dependencies:
 
-### Integration tests
-- KJD `EndToEndPipelineTest` — full source → canonical → database pipeline.
-- `ImportPipelineTest` / `AnkiPackageJvmTest` — import/export round trips across formats.
-- JVM transfer tests exercise real SQLite through sqlite-jdbc.
+| Test File | What it Tests |
+|---|---|
+| `KanjiCardModelsTest` | Kanji card layout, presets, persistence, sanitization |
+| `WordCardModelsTest` | Word card layout, presets, persistence, sanitization |
+| `LevelProfileTest` | Learner profile catalog, presentation defaults |
+| `NavigationSettingsStateTest` | Navigation settings persistence, mode switching |
+| `PerformanceUtilsTest` | LruCache, SearchResultCache, frequencyNormalized |
+| `FsrsSchedulerTest` | FSRS scheduling algorithm |
+| `SentenceDifficultyTest` | Difficulty scoring accuracy |
+| `KnowledgeGraphTest` | Graph expansion, node/edge management |
+| `SearchEngineTest` | Kanji search index, grouped results |
 
-### UI tests
-- **Not yet established.** Compose UI tests (`createComposeRule` style) are not present.
-  The `mediaGenerator` module has screenshot/recording-based visual tests
-  (`ScreenshotTests`, `VideoTests`, `ComposableRecorderTest`) that capture composables to
-  assets — a form of visual verification, not assertion-based UI testing.
+### Integration Tests
 
-### Database tests
-- SQLDelight schemas are exercised indirectly through repository-level tests; migration
-  correctness is covered in KJD (`SchemaMigrationTest`) and by the
-  `UserDataDatabaseMigrationAfter*` Kotlin migrations (compiled, applied at runtime).
+Tests that verify component interaction:
 
-### Platform tests
-- iOS targets cannot be tested on non-macOS hosts; iOS/Android platform actuals (file
-  pickers, APKG, backup archives) are largely verified by build + manual testing. Several
-  entries in `docs/planning/CURRENT_ISSUES.md` note "pending compile + runtime
-  verification" for exactly this reason.
+| Test File | What it Tests |
+|---|---|
+| `KnowledgeRepositoryTest` | Repository → AppDataRepository integration |
+| `SearchIntegrationTest` | Full search pipeline (query → grouped results) |
+| `GraphExpansionTest` | Progressive expansion with type filtering |
 
-## Commands
+### UI Tests
 
-```bash
-# Shared core logic (JVM + common tests)
-./gradlew :core:allTests
+Compose UI tests (when established):
 
-# Desktop suite tests
-./gradlew :desktopApp:test
+| Test File | What it Tests |
+|---|---|
+| `NavigationTest` | Sidebar ↔ Floating switching |
+| `ThemeSwitchingTest` | Theme persistence across restarts |
+| `CardCustomizationTest` | Card show/hide/reorder persistence |
 
-# Data platform tests
-./gradlew :kjd:test
+## Test Patterns
 
-# Everything
-./gradlew build
+### Fake Preferences
+
+All tests use `FakeAppPreferences` that implements `PreferencesContract.AppPreferences` with in-memory maps:
+
+```kotlin
+private class FakeAppPreferences : PreferencesContract.AppPreferences {
+    private val values = mutableMapOf<String, Any?>()
+    private fun <T> mem(key: String, default: T): SuspendedProperty<T> = ...
+    
+    override val kanjiCardLayoutJson get() = mem("kanjiCardLayoutJson", "")
+    override val wordCardLayoutJson get() = mem("wordCardLayoutJson", "")
+    override val learnerProfileJson get() = mem("learnerProfileJson", "")
+    // ... all other properties
+}
 ```
 
-## Gaps & next steps (honest)
+### Test Execution
 
-1. **UI tests** — none. Recommend adding Compose UI tests for the core study flow
-   (practice screens, review) once the project adopts a UI-test harness.
-2. **Android/iOS platform actuals** — file pickers, APKG import/export, backup archive
-   handlers lack automated tests on-device.
-3. **Sync engine** — no automated tests for the GitHub gist transport (network + OAuth).
-4. **OCR engine** — untested (depends on Tesseract availability).
-5. **Subtitle parsing fuzzing** — malformed SRT/ASS inputs are only partially covered.
-6. **Regression suite** — consider CI wiring for `:desktopApp:test` and `:kjd:test`
-   (CI currently builds artifacts; see `.github/workflows/`).
+```bash
+# Run all tests
+./gradlew :core:allTests
 
-## Definition of done for changes
+# Run specific test class
+./gradlew :core:jvmTest --tests "ua.syt0r.kanji.core.knowledge.cards.KanjiCardModelsTest"
 
-- Logic changes come with a unit test in the matching module's test source set.
-- `./gradlew :core:allTests` (and the affected module's tests) pass.
-- No new compiler warnings.
+# Run desktop tests
+./gradlew :desktopApp:test
+
+# Run data platform tests
+./gradlew :kjd:test
+```
+
+## What to Test
+
+### Card System
+
+- Default layout shows all cards
+- Hide/show individual cards
+- Move cards up/down
+- Preset application
+- Layout persistence round-trip
+- Corrupt JSON fallback
+- Unknown card ID sanitization
+
+### Search
+
+- Exact kanji match (highest priority)
+- Reading match
+- Meaning match (case-insensitive)
+- Category filtering (Kanji/Words/Sentences/Grammar)
+- JLPT filtering
+- Grade filtering
+- Frequency filtering
+- Sort by frequency/strokes/JLPT/grade
+- Empty query returns nothing
+- Debouncing cancels old queries
+
+### Knowledge Graph
+
+- Initial graph has root + first ring
+- Expand adds neighbors
+- Type filter limits expansion
+- Grammar nodes are leaves (no expansion)
+- Exhausted nodes tracked
+- Graph never exceeds limits
+
+### Sentence Analysis
+
+- Tokenization splits correctly
+- Mixed tokens (食べる) recognized
+- Punctuation excluded from dictionary lookup
+- Grammar patterns matched
+- Difficulty scoring accuracy
+- Profile-based sentence filtering
+
+### Study State
+
+- FSRS card → StudyState projection
+- State transitions (New → Learning → Known → Due → Mastered)
+- Relearning from lapse
+- Suspend/resume
+- Forget resets to New
+
+### Level Profiles
+
+- Each profile has correct defaults
+- Custom profile uses overrides
+- Profile switching preserves custom config
+- Invalid profile falls back to Intermediate
+
+### Performance
+
+- LruCache eviction order
+- LruCache access refreshes
+- SearchResultCache TTL
+- Search cache invalidation
+- Frequency normalization
+- Graph expansion limits
+
+## Coverage Goals
+
+| Area | Target | Current |
+|---|---|---|
+| Card System | 100% | ✅ |
+| Search Engine | 90% | 80% |
+| Knowledge Graph | 85% | 75% |
+| Sentence Analysis | 90% | 85% |
+| Study State | 95% | 90% |
+| Level Profiles | 100% | ✅ |
+| Performance Utils | 90% | 85% |
+| Navigation | 80% | 70% |
+| Theme System | 75% | 65% |
+
+## Test Anti-Patterns to Avoid
+
+1. **Don't test implementation details** — test behavior
+2. **Don't depend on test ordering** — each test is independent
+3. **Don't use real databases** — use fakes
+4. **Don't test UI rendering** — test state and logic
+5. **Don't skip error cases** — test failure modes
+
+## Adding New Tests
+
+1. Create test file in `core/src/commonTest/kotlin/ua/syt0r/kanji/...`
+2. Use `kotlin.test` assertions
+3. Use `FakeAppPreferences` for persistence tests
+4. Run `./gradlew :core:allTests` to verify
+5. Update this document with new test file

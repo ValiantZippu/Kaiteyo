@@ -15,6 +15,21 @@ rendered in-app on the Credits/About screen via AboutLibraries.
 | [Tanos JLPT lists](http://www.tanos.co.uk/jlpt/) | JLPT kanji classification | CC BY 3.0 (per in-app credits) | © Jonathan Waller — verify current terms |
 | [Leeds frequency data](https://corpus.leeds.ac.uk/list.html) | Word frequency ranking | CC BY 2.5 (per in-app credits) | University of Leeds — verify current terms |
 | [yomichan-jlpt-vocab](https://github.com/stephenmk/yomichan-jlpt-vocab) | JLPT tags for vocabulary | CC BY-SA 4.0 | © stephenmk |
+| [Netflix Japanese Frequency List](https://github.com/pciavolici/Netflix-Japanese-Subtitle-Frequency-List) | Subtitle word frequency | Custom (free with attribution) | © OhTalkWho オタク (Dave Doebrick) |
+| [Chris Kempson Subtitle Frequency](https://github.com/chriskempson/japanese-subtitles-word-frequency-list) | Word + kanji frequency from subtitles | MIT | © Chris Kempson |
+| [Patrick Kandrac 2242](https://forum.koohii.com/viewtopic.php?id=16394) | 2242 kanji frequency | Public | © Patrick Kandrac (sources: Google/KUF/MCD/文化庁) |
+| [Nukemarine RTK Frequency](https://www.reddit.com/r/LearnJapanese/) | RTK frequency groups | Public | © Nukemarine |
+| [Alex Yatskov Wikipedia Frequency](https://github.com/yatskov) | Wikipedia kanji frequency | Public | © Alex Yatskov |
+| [Alexandre Girardi Word Frequency](http://ftp.monash.edu.au/pub/nihongo/) | Word frequency list | Public Domain | © Alexandre Girardi (Monash FTP Archive) |
+| [Kanji Keys / TopoKanji](https://github.com/dshpika) | Kanji metadata + decomposition | CC BY 4.0 | © Dmitry Shpika |
+| [CJK Decompositions Data](https://github.com/nieldlr/CJK-Decompositions) | Component decomposition | Public Domain | Public domain |
+| [文化庁 (Agency for Cultural Affairs)](https://www.bunka.go.jp/) | Official kanji classifications | Government (public) | © Japanese Agency for Cultural Affairs |
+| [kanjidatabase.com](https://kanjidatabase.com/) | Supplementary kanji metadata | Free (attribution) | kanjidatabase.com |
+| [David Gouveia Kanji Data](https://github.com/davidgouveia) | Supplementary kanji data | Public | © David Gouveia |
+| [Usagi Chan Phonetics Deck](https://ankiweb.net/shared/info/1218648935) | Phonetic component groups | CC BY-SA 4.0 | © shoui520 |
+| [Shirabe Jisho](https://www.shirabejisho.com/) | JLPT lists + common words | Public | Shirabe Jisho |
+| [kanjiapi.dev](https://kanjiapi.dev/) | REST API kanji data | Public | kanjiapi.dev (uses EDICT, KANJIDIC) |
+| [Kanji School](https://github.com/drewdrawsws/kanji-school) | Kanji data from Jisho.org | Public | © Drew Edwards |
 
 > Full provenance, update process, and transformations: [`../data/SOURCES.md`](../data/SOURCES.md).
 

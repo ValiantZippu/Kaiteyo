@@ -15,6 +15,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,13 +47,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -251,7 +262,7 @@ fun StatisticsHeatmap(
         HeatmapLegend(surfaceColors.textMuted, accent.primary)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Hover a day for a live summary · tap for the full day report (every card you practiced).",
+            "Hover or focus a day for a live summary · tap / Enter for the full day report (every card you practiced).",
             fontSize = 10.sp,
             color = surfaceColors.textMuted
         )
@@ -373,6 +384,8 @@ private fun HeatmapCell(
     onPositioned: (LayoutCoordinates) -> Unit
 ) {
     var isHovered by remember(date) { mutableStateOf(false) }
+    var isFocused by remember(date) { mutableStateOf(false) }
+    val enabled = activity != null && !activity.isEmpty
 
     Box(
         modifier = Modifier
@@ -381,7 +394,7 @@ private fun HeatmapCell(
             .background(activity?.heatmapLevelColor(accent, maxTotal, emptyColor) ?: Color.Transparent)
             .border(
                 width = 1.dp,
-                color = if (isHovered) accent.copy(alpha = 0.9f) else Color.Transparent,
+                color = if (isHovered || isFocused) accent.copy(alpha = 0.9f) else Color.Transparent,
                 shape = shape
             )
             .onGloballyPositioned(onPositioned)
@@ -403,7 +416,37 @@ private fun HeatmapCell(
                     }
                 }
             }
-            .clickable(enabled = activity != null && !activity.isEmpty) {
+            // Keyboard access: empty days are skipped entirely (no tab stop),
+            // active days can be focused and opened with Enter / Space. A
+            // focused day also shows the live tooltip (same path as hover), so
+            // keyboard users get the summary too — not just pointer users.
+            .focusable(enabled = enabled)
+            .onFocusChanged { focused ->
+                isFocused = focused.isFocused
+                // Report the focused day as the hovered day (and clear on
+                // focus loss) so the tooltip follows keyboard navigation.
+                if (enabled) onHover(if (focused.isFocused) activity else null)
+            }
+            .onKeyEvent { event ->
+                if (enabled && event.type == KeyEventType.KeyUp &&
+                    (event.key == Key.Enter || event.key == Key.Spacebar)
+                ) {
+                    activity?.let(onClick)
+                    true
+                } else {
+                    false
+                }
+            }
+            .semantics {
+                if (enabled && activity != null) {
+                    role = Role.Button
+                    contentDescription =
+                        "${activity.date} — ${activity.reviews} reviews, " +
+                            "${activity.studyTime.inWholeMinutes} minutes studied, " +
+                            "${(activity.accuracy * 100).roundToInt()}% accuracy"
+                }
+            }
+            .clickable(enabled = enabled) {
                 activity?.let(onClick)
             }
     )

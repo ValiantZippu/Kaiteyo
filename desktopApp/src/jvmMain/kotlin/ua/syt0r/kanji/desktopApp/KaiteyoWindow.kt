@@ -49,6 +49,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -87,8 +88,10 @@ import ua.syt0r.kanji.presentation.common.nav.LocalWindowPlacement
 import ua.syt0r.kanji.presentation.common.nav.LocalWindowResizing
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoPalette
+import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoSearch
 
 /** How often the floating-window work-area safety check runs (ms). */
 private const val WorkAreaWatchIntervalMs = 2_000L
@@ -229,9 +232,10 @@ fun FrameWindowScope.KaiteyoWindow(
 
     // The window's corner radius comes from the shared radius tokens, so the
     // Theme Studio's radius setting shapes the window chrome too. Maximized
-    // windows are square, matching the OS.
+    // windows are square, matching the OS. During resize we keep the rounding
+    // stable to avoid the flash-to-rectangle glitch.
     val cornerRadius = if (isMaximized) 0.dp else DsRadius.Xl
-    val surfaceShape = RoundedCornerShape(cornerRadius)
+    val surfaceShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
 
     // Windows 11: hand the OS the rounding and a theme-colored hairline
     // border. Retried until the frame is realized (the HWND peer only exists
@@ -270,12 +274,35 @@ fun FrameWindowScope.KaiteyoWindow(
         modifier = Modifier
             .fillMaxSize()
             // Fill the entire window (including what sits under the rounded
-            // app surface) with the theme background — never the OS black.
-            .background(surfaceColors.background)
+            // app surface) with the theme surface — never white or OS black.
+            // Using surface (not background) prevents the white flash during
+            // resize because surface is the same color as the app content.
+            .background(surfaceColors.surface)
             .onPreviewKeyEvent { keyEvent ->
                 val palette = KaiteyoPalette.controller
+                val search = KaiteyoSearch.controller
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when {
+                        search.isOpen && keyEvent.key == Key.Escape -> {
+                            search.close()
+                            true
+                        }
+                        search.isOpen && keyEvent.key == Key.DirectionUp -> {
+                            search.moveSelection(-1)
+                            true
+                        }
+                        search.isOpen && keyEvent.key == Key.DirectionDown -> {
+                            search.moveSelection(1)
+                            true
+                        }
+                        search.isOpen && keyEvent.key == Key.Enter -> {
+                            search.executeSelected()
+                            true
+                        }
+                        keyEvent.key == Key.F && keyEvent.isCtrlPressed && keyEvent.isShiftPressed -> {
+                            search.toggle()
+                            true
+                        }
                         palette.isOpen && keyEvent.key == Key.Escape -> {
                             palette.close()
                             true
@@ -564,8 +591,8 @@ private fun WindowControlButtons(
         WindowControlButton(
             icon = "\u2715",
             onClick = onClose,
-            glowColor = Color(0xFFE81123),
-            hoverTextColor = Color.White,
+            glowColor = LocalKaiteyoAccent.current.primary.copy(alpha = 0.25f),
+            hoverTextColor = LocalKaiteyoAccent.current.primary,
             contentDescription = "Close"
         )
     }

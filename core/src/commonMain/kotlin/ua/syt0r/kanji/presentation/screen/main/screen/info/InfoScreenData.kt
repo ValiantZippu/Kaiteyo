@@ -62,6 +62,8 @@ sealed interface LetterInfoData {
         val frequency: Int?,
         val radicalsSectionData: KanjiRadicalsSectionData,
         val displayRadicals: List<String>,
+        val phonetics: List<String> = emptyList(),
+        val mnemonics: List<ua.syt0r.kanji.core.knowledge.KanjiMnemonic> = emptyList(),
         override val vocab: Paginateable<JapaneseWord>,
         override val sentences: Paginateable<Sentence>
     ) : LetterInfoData

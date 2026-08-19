@@ -34,7 +34,9 @@ class DefaultUpdateDeckDetailsConfigurationUseCase(
     }
 
     override suspend fun invoke(configuration: DeckDetailsConfiguration.VocabDeckConfiguration) {
-
+        appPreferences.apply {
+            vocabNoteTypeId.set(configuration.noteTypeId)
+        }
     }
 
 }

@@ -78,6 +78,21 @@ class PluginRegistry {
     private val _messages = mutableListOf<String>()
 
     fun install(manifest: PluginManifest, source: String = "local"): Result<Unit> = runCatching {
+        // Sandbox gate (ADR-0011, KT-SEC-002): deny by default. Every declared
+        // permission must be a known capability name or a known legacy tag
+        // (the marketplace's tag vocabulary, used as pre-capability-model
+        // permissions) — anything else is rejected before the plugin is stored.
+        val knownCapabilities = PluginCapability.entries.map { it.name }.toSet()
+        val knownLegacyTags = setOf(
+            "audio", "reading", "pitch", "accent", "pronunciation", "radicals",
+            "study", "theme", "appearance", "anki", "export", "sync", "import",
+            "stats", "analytics", "insights", "dictionary", "search", "mine",
+            "cards", "network", "files", "ui", "subtitle", "lookup"
+        )
+        val unknown = manifest.permissions - (knownCapabilities + knownLegacyTags)
+        if (unknown.isNotEmpty()) {
+            error("install rejected by sandbox — unknown permissions: ${unknown.joinToString(", ")} (deny by default)")
+        }
         val existing = _installed.firstOrNull { it.manifest.id == manifest.id }
         if (existing != null) {
             _installed.remove(existing)

@@ -260,6 +260,9 @@ object EnglishSettingsCenterStrings : SettingsCenterStrings {
     override val newCardsLast: String = "Last"
     override val newCardsMixed: String = "Mixed"
 
+    override val learnerProfile: String = "Learner profile"
+    override val learnerProfileDescription: String =
+        "Adapt kanji, word and sentence pages to your level — furigana, romaji, depth and more"
     override val shuffle: String = "Shuffle order"
     override val shuffleDescription: String =
         "Randomize the order of items in practice sessions"
@@ -572,6 +575,10 @@ object EnglishSettingsStrings : SettingsStrings {
     override val themeLight: String = "Light"
     override val themeDark: String = "Dark"
     override val themeAmoled: String = "AMOLED"
+    override val themeSepia: String = "Sepia"
+    override val themeCream: String = "Cream"
+    override val themePaper: String = "Paper"
+    override val themeMidnight: String = "Midnight"
     override val reminderTitle: String = "Reminder Notification"
     override val reminderEnabled: String = "Enabled"
     override val reminderDisabled: String = "Disabled"

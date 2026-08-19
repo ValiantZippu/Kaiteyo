@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.engine.media.AudioPlayer
 import java.io.File
 import ua.syt0r.kanji.desktop.appstate.AppState
@@ -88,12 +89,12 @@ fun MiningView(state: AppState) {
 
     Column(Modifier.fillMaxSize().padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
         DsSectionHeader(
-            title = "Mining",
+            title = resolveSuiteString { miningTitle },
             subtitle = "Review and refine words before they become cards. ${state.miningStatistics.totalMined} mined all-time.",
             action = {
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                     DsButton(
-                        text = "New card",
+                        text = resolveSuiteString { newCardButton },
                         icon = Icons.Default.Add,
                         onClick = { mining.openMining(MiningPayload(headword = "")) }
                     )
@@ -110,14 +111,14 @@ fun MiningView(state: AppState) {
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
             DsStatTile("Mined all-time", miningStats.totalMined.toString(), Modifier.weight(1f))
-            DsStatTile("This week", miningStats.minedBetween(weekStart, today).toString(), Modifier.weight(1f))
-            DsStatTile("This month", miningStats.minedBetween(LocalDate(today.year, today.month, 1), today).toString(), Modifier.weight(1f))
-            DsStatTile("Sources", miningStats.bySource.size.toString(), Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { thisWeekLabel2 }, miningStats.minedBetween(weekStart, today).toString(), Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { thisMonthLabel }, miningStats.minedBetween(LocalDate(today.year, today.month, 1), today).toString(), Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { sourcesLabel }, miningStats.bySource.size.toString(), Modifier.weight(1f))
         }
 
         DsCard {
             Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                Text("Sources", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(resolveSuiteString { sourcesLabel }, color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
                 Row(
                     Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
@@ -150,10 +151,10 @@ fun MiningView(state: AppState) {
         // Recent mines feed
         DsCard {
             Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                Text("Recently mined", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(resolveSuiteString { recentlyMinedLabel }, color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
                 if (mining.minedRecords.isEmpty()) {
                     DsEmptyState(
-                        title = "Nothing mined yet",
+                        title = resolveSuiteString { nothingMinedYet },
                         message = "Look up a word in the Dictionary workspace, select text in the Learning Browser, run OCR or use the local API to create your first mined card."
                     )
                 } else {
@@ -182,9 +183,9 @@ fun MiningView(state: AppState) {
         DsCard {
             Column(Modifier.fillMaxWidth().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Templates", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Text(resolveSuiteString { templatesLabel }, color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                     DsButton(
-                        text = "New template",
+                        text = resolveSuiteString { newTemplateButton },
                         icon = Icons.Default.Add,
                         kind = DsButtonKind.Ghost,
                         compact = true,
@@ -212,7 +213,7 @@ fun MiningView(state: AppState) {
                                 }
                             }
                             DsButton(
-                                text = "Use",
+                                text = resolveSuiteString { useTemplateButton },
                                 kind = DsButtonKind.Secondary,
                                 compact = true,
                                 onClick = {
@@ -245,7 +246,7 @@ fun MiningDialog(state: AppState) {
     val sc = surfaceColors()
 
     DsDialog(
-        title = "Mine a new card",
+        title = resolveSuiteString { mineNewCardTitle },
         onDismiss = { mining.closeMining() }
         // Width is adaptive (DsDialog) — a rich form like this spreads with
         // the window instead of floating at a fixed 560dp.
@@ -261,13 +262,13 @@ fun MiningDialog(state: AppState) {
                 value = draft.headword,
                 onValueChange = { mining.draft = draft.copy(headword = it) },
                 placeholder = "Word (e.g. 勉強する)",
-                label = "Headword"
+                label = resolveSuiteString { headwordLabel }
             )
             DsTextField(
                 value = draft.reading,
                 onValueChange = { mining.draft = draft.copy(reading = it) },
                 placeholder = "Reading (e.g. べんきょうする)",
-                label = "Reading"
+                label = resolveSuiteString { readingLabel }
             )
             DsTextArea(
                 value = draft.definition,
@@ -278,14 +279,14 @@ fun MiningDialog(state: AppState) {
             DsTextField(
                 value = draft.sentence,
                 onValueChange = { mining.draft = draft.copy(sentence = it) },
-                placeholder = "Sentence context",
-                label = "Sentence"
+                placeholder = resolveSuiteString { sentencePlaceholder },
+                label = resolveSuiteString { sentenceLabel }
             )
             DsTextField(
                 value = draft.tags.joinToString(", "),
                 onValueChange = { mining.draft = draft.copy(tags = it.split(",").map { t -> t.trim() }.filter { t -> t.isNotEmpty() }) },
-                placeholder = "tags, comma, separated",
-                label = "Tags"
+                placeholder = resolveSuiteString { tagsPlaceholder },
+                label = resolveSuiteString { tagsLabel }
             )
 
             // Deck selection — mined cards land in a real Kaiteyo deck.
@@ -327,7 +328,7 @@ fun MiningDialog(state: AppState) {
             val anki = state.miningIntegration.anki
             val ankiAvailable = ankiEnabled && anki.configured
             var destination by remember { mutableStateOf(mining.defaultDestination()) }
-            Text("Destination", color = sc.textSecondary, fontSize = DsType.Label, fontWeight = FontWeight.SemiBold)
+            Text(resolveSuiteString { destinationLabel }, color = sc.textSecondary, fontSize = DsType.Label, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm), verticalAlignment = Alignment.CenterVertically) {
                 CardDestination.entries.forEach { d ->
                     val selectable = d == CardDestination.Kaiteyo || ankiAvailable
@@ -367,7 +368,7 @@ fun MiningDialog(state: AppState) {
 
             Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                 DsButton(
-                    text = "Create card",
+                    text = resolveSuiteString { createCardButton },
                     icon = Icons.Default.Add,
                     onClick = {
                         if (draft.headword.isNotBlank()) {
@@ -378,7 +379,7 @@ fun MiningDialog(state: AppState) {
                     enabled = draft.headword.isNotBlank()
                 )
                 DsButton(
-                    text = "Cancel",
+                    text = resolveSuiteString { cancelButton },
                     kind = DsButtonKind.Secondary,
                     onClick = { mining.closeMining() }
                 )

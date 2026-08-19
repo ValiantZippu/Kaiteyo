@@ -1916,6 +1916,10 @@ class MediaEngine(private val state: AppState) {
         miningEvents.add(0, event)
         while (miningEvents.size > 500) miningEvents.removeAt(miningEvents.lastIndex)
         save()
+        // Knowledge ⇄ media bridge (spec §28, ADR-0013): surface the real
+        // card id so the core media-reference store can record a MINED
+        // reference and the node layer can build the mined_from edge.
+        onMined?.invoke(event)
     }
 
     /**
@@ -2268,6 +2272,22 @@ class MediaEngine(private val state: AppState) {
     // Bookmark / clip persistence (kept from the original workspace)
     // ------------------------------------------------------------
 
+    /**
+     * Hook fired when a bookmark is created. The Media Centre host wires it
+     * to the core MediaReferenceStore so knowledge pages can show "Found in
+     * your media" — the label (subtitle cue text when present) becomes the
+     * Japanese text reference.
+     */
+    var onBookmarkCreated: ((MediaBookmark) -> Unit)? = null
+
+    /**
+     * Hook fired when a subtitle cue is mined into a card (the card id is
+     * real — it is the desktop card that was just created). The Media
+     * Centre host wires it to the core MediaReferenceStore so the node
+     * layer can build a real mined_from edge (spec §28, ADR-0013).
+     */
+    var onMined: ((MediaMiningEvent) -> Unit)? = null
+
     fun addBookmark(label: String = "") {
         val item = currentItem ?: return
         val bm = MediaBookmark(
@@ -2279,6 +2299,7 @@ class MediaEngine(private val state: AppState) {
         )
         bookmarks.add(bm)
         save()
+        onBookmarkCreated?.invoke(bm)
         state.toastHost.show("Bookmarked at ${formatTime(positionMs)}", kind = ToastKind.Success)
     }
 

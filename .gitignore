@@ -138,3 +138,8 @@ __pycache__/
 
 # Kaiteyo CLI — project-local cache (gradle task list, project config)
 .kaiteyo/
+
+.tools/
+*.txt
+*.png
+repro/

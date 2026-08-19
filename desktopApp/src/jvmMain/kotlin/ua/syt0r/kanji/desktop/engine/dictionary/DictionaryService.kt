@@ -9,6 +9,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import ua.syt0r.kanji.desktop.data.demoKanji
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.search.SearchPipeline
+import ua.syt0r.kanji.desktop.engine.search.TrigramIndex
 import ua.syt0r.kanji.desktop.appstate.AppState
 import java.io.File
 
@@ -59,6 +61,48 @@ class DictionaryService(val repository: DictionaryRepository) {
         val groups = repository.lookupGrouped(query, mode)
         if (query.isNotBlank()) recordSearch(query)
         return groups
+    }
+
+    // ------------------------------------------------------------
+    // Index-backed suggestions (Phase 8 search pipeline)
+    // ------------------------------------------------------------
+
+    private var suggestionIndex: TrigramIndex? = null
+    private var suggestionEntryCount = -1
+
+    /**
+     * Fast, index-backed headword/reading suggestions over the enabled
+     * dictionaries, per STANDARDS §187 (normalize → tokenize → rank → filter):
+     * a lazily rebuilt TrigramIndex supplies substring candidates and the
+     * SearchPipeline ranks them Exact > Prefix > Contains > Kana. Used by the
+     * lookup card to show instant candidates while typing — a cheap first
+     * pass before the full grouped search resolves.
+     */
+    fun suggestions(query: String, limit: Int = 8): List<DictionaryMatch> {
+        val q = SearchPipeline.normalize(query)
+        if (q.isBlank()) return emptyList()
+        val ranked = SearchPipeline.rankAndSort(q, ensureSuggestionIndex().search(q, limit = 40).map { it.first })
+        return ranked
+            .mapNotNull { (headword, _) -> repository.lookup(headword, SearchMode.Exact).firstOrNull() }
+            .distinctBy { it.entry.headword }
+            .take(limit)
+    }
+
+    private fun ensureSuggestionIndex(): TrigramIndex {
+        val current = repository.allEntries()
+        // Rebuild only when the corpus changes (installs/removes/reimports);
+        // a count change is a cheap and reliable invalidation signal.
+        if (suggestionIndex == null || current.size != suggestionEntryCount) {
+            suggestionEntryCount = current.size
+            suggestionIndex = TrigramIndex().apply {
+                current.forEach { entry ->
+                    add(entry.headword)
+                    entry.spellings.forEach(::add)
+                    entry.readings.forEach { add(it.reading) }
+                }
+            }
+        }
+        return suggestionIndex!!
     }
 
     fun lookupFlat(query: String, mode: SearchMode = SearchMode.All): List<DictionaryMatch> {

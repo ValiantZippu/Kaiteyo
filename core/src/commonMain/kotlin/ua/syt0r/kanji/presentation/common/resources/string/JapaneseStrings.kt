@@ -258,6 +258,9 @@ object JapaneseSettingsCenterStrings : SettingsCenterStrings {
     override val newCardsLast: String = "末尾"
     override val newCardsMixed: String = "混在"
 
+    override val learnerProfile: String = "学習プロフィール"
+    override val learnerProfileDescription: String =
+        "漢字・単語・文の表示をあなたのレベルに合わせて調整 — ふりがな、ローマ字、解説の深さなど"
     override val shuffle: String = "順序をシャッフル"
     override val shuffleDescription: String =
         "練習セッション内の項目の順序をランダムにします"
@@ -564,6 +567,10 @@ object JapaneseSettingsStrings : SettingsStrings {
     override val themeLight: String = "ライト"
     override val themeDark: String = "ダーク"
     override val themeAmoled: String = "AMOLED（純黒）"
+    override val themeSepia: String = "セピア（読書）"
+    override val themeCream: String = "クリーム"
+    override val themePaper: String = "パーペット"
+    override val themeMidnight: String = "ミッドナイト"
     override val reminderTitle: String = "リマインダー通知"
     override val reminderEnabled: String = "有効"
     override val reminderDisabled: String = "無効"

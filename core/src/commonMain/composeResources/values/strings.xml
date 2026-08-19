@@ -56,6 +56,18 @@
     <string name="general_dashboard_study_target_no_decks">No decks. Click to create</string>
     <string name="general_dashboard_study_target_nothing_left">Nothing left to study today</string>
 
+    <string name="general_dashboard_discover">Discover</string>
+    <string name="general_dashboard_discover_dictionary">Dictionary</string>
+    <string name="general_dashboard_discover_dictionary_description">Search kanji, words, sentences and grammar</string>
+    <string name="general_dashboard_discover_radicals">Radicals</string>
+    <string name="general_dashboard_discover_radicals_description">Browse kanji by radical — stroke, JLPT and grade filters</string>
+    <string name="general_dashboard_discover_kanji_browser">Kanji Browser</string>
+    <string name="general_dashboard_discover_kanji_browser_description">Filter the full kanji set by JLPT, grade and frequency</string>
+    <string name="general_dashboard_discover_sentences">Sentences</string>
+    <string name="general_dashboard_discover_sentences_description">Read and analyze corpus sentences token by token</string>
+    <string name="general_dashboard_discover_profile">Learner Profile</string>
+    <string name="general_dashboard_discover_profile_description">Adapt kanji, word and sentence pages to your level</string>
+
     <string name="general_dashboard_text_analysis">Text Analysis (Preview)</string>
     <string name="general_dashboard_social">Social</string>
     <string name="general_dashboard_downloads">Downloads</string>

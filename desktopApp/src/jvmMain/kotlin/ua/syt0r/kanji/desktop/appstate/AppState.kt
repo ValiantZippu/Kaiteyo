@@ -61,6 +61,9 @@ import kotlin.time.Duration
 enum class WorkspaceView(val label: String, val icon: String) {
     Dashboard("Dashboard", "I"),
     Browser("Browser", "B"),
+    Reading("Reading", "R"),
+    Curriculum("Curriculum", "C"),
+    Graph("Knowledge Graph", "K"),
     Review("Review", "R"),
     Writing("Writing", "W"),
     Grammar("Grammar", "G"),
@@ -269,6 +272,28 @@ class AppState(
      */
     val activity = ActivityTracker(settings)
 
+    /**
+     * Append-only domain event log (EVENT_CATALOG): the single source of
+     * truth for derived metrics. JSON snapshot in the user data dir.
+     */
+    val eventLog: ua.syt0r.kanji.desktop.engine.events.EventLog by lazy {
+        ua.syt0r.kanji.desktop.engine.events.EventLog(
+            java.io.File(System.getProperty("user.home"), ".kaiteyo/event_log.json")
+        )
+    }
+
+    /**
+     * Media node family — Series → Episode → Scene → SubtitleLine, rebuilt
+     * lazily from real mined-card provenance so the graph surfaces (media
+     * exposure, sentence search) reflect actual watch/mine history.
+     */
+    val mediaNodeGraph: ua.syt0r.kanji.desktop.engine.media.MediaNodeGraph by lazy {
+        ua.syt0r.kanji.desktop.engine.media.MediaNodeGraph().apply {
+            media.miningEvents.forEach { addMiningEvent(it) }
+            media.bookmarks.forEach { addBookmark(it) }
+        }
+    }
+
 
     /** Reduced motion is the OR of the global preference and the nav-specific one. */
     private fun refreshReducedMotion() {
@@ -300,6 +325,49 @@ class AppState(
     val media = MediaEngine(this)
     val browserEngine = BrowserEngine()
     val ocr = OcrEngine()
+    /**
+     * Native reading workspace: local documents (TXT/Markdown/HTML) with
+     * dictionary-backed word lookup, mining, bookmarks, highlights and
+     * reading history. Lazy so it can reference the dictionary repository.
+     */
+    val reading by lazy {
+        ua.syt0r.kanji.desktop.engine.reading.ReadingEngine(
+            dictionaryRepository = dictionary.repository
+        )
+    }
+    /** Persists the reading library + history to ~/.kaiteyo/reading/. */
+    val readingLibrary by lazy {
+        ua.syt0r.kanji.desktop.engine.reading.ReadingLibrary(reading)
+    }
+    /**
+     * Canonical language database (jdata) — the read-only knowledge graph
+     * source. Built once from the installed dictionaries; null when no
+     * dictionary data is available.
+     */
+    val languageDatabase by lazy {
+        runCatching {
+            val data = ua.syt0r.kanji.desktop.engine.jdata.integration.PlatformBuilder.fromRepository(
+                dictionary.repository,
+                geometry = ua.syt0r.kanji.desktop.engine.jdata.engine.NoStrokeGeometryProvider
+            )
+            if (data.kanji.isEmpty() && data.vocab.isEmpty()) null
+            else ua.syt0r.kanji.desktop.engine.jdata.api.LanguageDatabase.open(data)
+        }.getOrNull()
+    }
+    /** Knowledge graph: nodes over the language database + live card pool. */
+    val knowledgeGraph by lazy {
+        ua.syt0r.kanji.desktop.engine.graph.KnowledgeGraph(
+            database = languageDatabase,
+            repository = dictionary.repository,
+            cards = cards
+        )
+    }
+    /** Structured curriculum measured against real study data. */
+    val curriculum by lazy {
+        ua.syt0r.kanji.desktop.engine.curriculum.CurriculumEngine(
+            dataSource = ua.syt0r.kanji.desktop.engine.curriculum.AppStateCurriculumDataSource(this)
+        )
+    }
     val localApi = LocalApiServer(mining, media, settings)
     /** Anki → Kaiteyo import bridge (deck/note/card/tag pull with dedupe). */
     val ankiImporter = ua.syt0r.kanji.desktop.engine.transfer.AnkiImporter(this, miningIntegration.anki)
@@ -427,6 +495,8 @@ init {
         })
         loadWorkspacePanels()
         loadOnboardingFlag()
+        // Reading library + history survive restarts.
+        readingLibrary.load()
         // The card pool is the user's study data: restore it first so a
         // relaunch continues exactly where the previous session stopped.
         // On a true first run there is nothing to restore — the suite starts
@@ -842,6 +912,24 @@ init {
     // Card editor state (opened from browser, review, dashboard)
     // ---------------------------------------------------------------
     var editingCard by mutableStateOf<DesktopCard?>(null)
+
+    // ---------------------------------------------------------------
+    // Staged exam draft (palette / shortcut quick-start)
+    // ---------------------------------------------------------------
+    // A generated ExamDraft waiting to be picked up by the Exams view. Set by
+    // the command palette ("Start weekly assessment", "Start mistakes review")
+    // and consumed by ExamView on next composition — the view owns session
+    // state, so staging keeps the quick-start honest without duplicating it.
+    var pendingExamDraft by mutableStateOf<ua.syt0r.kanji.desktop.engine.learning.ExamDraft?>(null)
+
+    // ---------------------------------------------------------------
+    // Staged graph node (deep link from dictionary surfaces)
+    // ---------------------------------------------------------------
+    // An expression waiting to be opened in the Knowledge Graph. Set by the
+    // "Explore in graph" actions on dictionary/lookup surfaces and consumed
+    // by GraphExplorerView on next composition (Phase 4: traversal reachable
+    // from any kanji/word page in the suite).
+    var pendingGraphNode by mutableStateOf<String?>(null)
 
     // ---------------------------------------------------------------
     // Writing practice session state (kanji handwriting drills)

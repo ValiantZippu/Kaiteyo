@@ -78,6 +78,7 @@ fun SourceMetadata.toSourceRef(recordId: String? = null, transformation: String 
 
 /** Well-known source ids used across the pipeline. */
 object SourceIds {
+    // Original bundled sources
     const val KANJIVG = "kanjivg"
     const val KANJIDIC = "kanjidic"
     const val JMDICT = "jmdict"
@@ -86,4 +87,24 @@ object SourceIds {
     const val LEEDS_FREQUENCY = "leeds-frequency"
     const val YOMICHAN_JLPT_VOCAB = "yomichan-jlpt-vocab"
     const val TATOEBA = "tatoeba"
+    // Frequency sources
+    const val NETFLIX_FREQUENCY = "netflix-frequency"
+    const val KEMPSON_FREQUENCY = "kempson-frequency"
+    const val KANDRAC_2242 = "kandrac-2242"
+    const val NUKEMARINE_RTK = "nukemarine-rtk"
+    const val YATSKOV_WIKIPEDIA = "yatskov-wikipedia"
+    const val GIRARDI_WORD_FREQ = "girardi-word-freq"
+    const val SHPIKA_KANJI_KEYS = "shpika-kanji-keys"
+    const val TOPOKANJI = "topokanji"
+    // Structural data
+    const val CJK_DECOMPOSITIONS = "cjk-decompositions"
+    const val BUNKACHO = "bunkacho"
+    const val KANJIDATABASE = "kanjidatabase"
+    const val DAVID_GOUVEIA = "david-gouveia"
+    // Learning metadata
+    const val USAGI_CHAN_PHONETICS = "usagi-chan-phonetics"
+    const val SHIRABE_JLPT = "shirabe-jlpt"
+    const val SHIRABE_COMMON = "shirabe-common"
+    const val KANJI_API = "kanji-api"
+    const val KANJI_SCHOOL = "kanji-school"
 }

@@ -45,6 +45,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsToggle
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.engine.plugin.MarketplaceIndex
 import ua.syt0r.kanji.desktop.engine.plugin.MarketplacePlugin
 import ua.syt0r.kanji.desktop.engine.plugin.PluginMarketplace
@@ -71,8 +72,8 @@ fun PluginsView(state: AppState) {
     ) {
         DsTabRow(
             tabs = listOf(
-                "Installed (${registry.installed.size})",
-                "Marketplace"
+                "${resolveSuiteString { pluginsInstalledTab }} (${registry.installed.size})",
+                resolveSuiteString { pluginsMarketplaceTab }
             ),
             selectedIndex = tab,
             onSelect = { tab = it }
@@ -100,7 +101,7 @@ private fun InstalledPanel(state: AppState) {
         verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
     ) {
         Text(
-            text = "${registry.installed.size} installed · ${registry.installed.count { it.manifest.enabled }} enabled",
+            text = "${registry.installed.size} ${resolveSuiteString { pluginsCountSubtitle }} · ${registry.installed.count { it.manifest.enabled }} ${resolveSuiteString { enabledBadge }}",
             color = sc.textMuted,
             fontSize = DsType.Caption
         )
@@ -108,8 +109,8 @@ private fun InstalledPanel(state: AppState) {
         if (registry.installed.isEmpty()) {
             DsCard {
                 DsEmptyState(
-                    title = "No plugins installed",
-                    message = "Visit the Marketplace tab to discover and install plugins.",
+                    title = resolveSuiteString { noPluginsTitle },
+                    message = resolveSuiteString { noPluginsMessage },
                     icon = Icons.Default.Extension
                 )
             }
@@ -125,16 +126,16 @@ private fun InstalledPanel(state: AppState) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
                                 Text(plugin.name, color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
                                 DsBadge(text = "v${plugin.version}", tint = sc.textMuted)
-                                if (plugin.enabled) DsBadge(text = "enabled", tint = Color(0xFFC2FC8B))
-                                if (!plugin.enabled) DsBadge(text = "disabled", tint = Color(0xFFFEAB57))
+                                if (plugin.enabled) DsBadge(text = resolveSuiteString { enabledBadge }, tint = Color(0xFFC2FC8B))
+                                if (!plugin.enabled) DsBadge(text = resolveSuiteString { disabledBadge }, tint = Color(0xFFFEAB57))
                             }
                             Text(
-                                text = plugin.description.ifBlank { "No description" },
+                                text = plugin.description.ifBlank { resolveSuiteString { noDescription } },
                                 color = sc.textMuted,
                                 fontSize = DsType.Body
                             )
                             Text(
-                                text = "By ${plugin.author.ifBlank { "Unknown" }} · ${install.source} · ${install.installedAt.toString().take(19)}",
+                                text = "By ${plugin.author.ifBlank { resolveSuiteString { unknownAuthor } }} · ${install.source} · ${install.installedAt.toString().take(19)}",
                                 color = sc.textMuted,
                                 fontSize = DsType.Caption
                             )
@@ -151,7 +152,7 @@ private fun InstalledPanel(state: AppState) {
                         DsIconButton(
                             icon = Icons.Default.Delete,
                             onClick = { deleteTarget = plugin.id },
-                            contentDescription = "Uninstall ${plugin.name}",
+                            contentDescription = resolveSuiteString { uninstallActionDesc }.format(plugin.name),
                             size = 30.dp
                         )
                     }
@@ -164,9 +165,9 @@ private fun InstalledPanel(state: AppState) {
         val plugin = registry.installed.firstOrNull { it.manifest.id == id }?.manifest
         if (plugin != null) {
             DsConfirmDialog(
-                title = "Uninstall plugin",
-                message = "Remove '${plugin.name}'? Contributed commands and panels will disappear.",
-                confirmText = "Uninstall",
+                title = resolveSuiteString { uninstallConfirmTitle },
+                message = resolveSuiteString { uninstallConfirmMessage }.format(plugin.name),
+                confirmText = resolveSuiteString { uninstallButton },
                 danger = true,
                 onConfirm = {
                     registry.uninstall(id)
@@ -207,7 +208,7 @@ private fun MarketplacePanel(state: AppState) {
             result.onFailure { e ->
                 index = MarketplaceIndex(plugins = PluginMarketplace.demoCatalog())
                 offline = true
-                state.toastHost.show("Marketplace offline — showing featured plugins", kind = ToastKind.Warning)
+                state.toastHost.show(resolveSuiteString { marketplaceOfflineToast }, kind = ToastKind.Warning)
             }
             loading = false
         }
@@ -239,15 +240,15 @@ private fun MarketplacePanel(state: AppState) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Community plugins", color = sc.textPrimary, fontSize = DsType.Heading, fontWeight = FontWeight.SemiBold)
+                Text(resolveSuiteString { communityPluginsTitle }, color = sc.textPrimary, fontSize = DsType.Heading, fontWeight = FontWeight.SemiBold)
                 Text(
-                    text = if (offline) "GitHub unreachable — showing the featured catalog." else "Curated from GitHub — install with one click.",
+                    text = if (offline) resolveSuiteString { marketplaceOfflineSubtitle } else resolveSuiteString { marketplaceOnlineSubtitle },
                     color = sc.textMuted,
                     fontSize = DsType.Body
                 )
             }
             DsButton(
-                text = "Refresh",
+                text = resolveSuiteString { refreshLabel },
                 icon = Icons.Default.Refresh,
                 kind = DsButtonKind.Ghost,
                 onClick = { refresh() },
@@ -258,8 +259,8 @@ private fun MarketplacePanel(state: AppState) {
         if (loading) {
             DsCard {
                 DsEmptyState(
-                    title = "Loading marketplace…",
-                    message = "Fetching the plugin index from GitHub.",
+                    title = resolveSuiteString { loadingMarketplace },
+                    message = resolveSuiteString { marketplaceFetchingMessage },
                     icon = Icons.Default.Download
                 )
             }
@@ -268,8 +269,8 @@ private fun MarketplacePanel(state: AppState) {
             if (plugins.isEmpty()) {
                 DsCard {
                     DsEmptyState(
-                        title = "Marketplace is empty",
-                        message = "No plugins are published to the index yet.",
+                        title = resolveSuiteString { marketplaceEmpty },
+                        message = resolveSuiteString { marketplaceEmptyMessage },
                         icon = Icons.Default.Extension
                     )
                 }
@@ -294,10 +295,10 @@ private fun MarketplacePanel(state: AppState) {
                             Text(plugin.description, color = sc.textMuted, fontSize = DsType.Body)
                             Text(
                                 text = buildString {
-                                    append("By ${plugin.author.ifBlank { "Unknown" }}")
-                                    if (plugin.downloads > 0) append(" · ${plugin.downloads} downloads")
-                                    if (plugin.stars > 0) append(" · ${plugin.stars} stars")
-                                    if (updateAvailable) append(" · installed v$installedVersion")
+                                    append("By ${plugin.author.ifBlank { resolveSuiteString { unknownAuthor } }}")
+                                    if (plugin.downloads > 0) append(" · ${plugin.downloads} ${resolveSuiteString { downloadsSuffix }}")
+                                    if (plugin.stars > 0) append(" · ${plugin.stars} ${resolveSuiteString { starsSuffix }}")
+                                    if (updateAvailable) append(" · ${resolveSuiteString { installedVersionSuffix }}$installedVersion")
                                 },
                                 color = sc.textMuted,
                                 fontSize = DsType.Caption
@@ -305,15 +306,15 @@ private fun MarketplacePanel(state: AppState) {
                         }
                         when {
                             updateAvailable -> DsButton(
-                                text = "Update",
+                                text = resolveSuiteString { updateButton },
                                 icon = Icons.Default.Download,
                                 compact = true,
                                 enabled = installingId != plugin.id,
                                 onClick = { install(plugin) }
                             )
-                            installed -> DsBadge(text = "Installed", tint = Color(0xFFC2FC8B))
+                            installed -> DsBadge(text = resolveSuiteString { installedBadge }, tint = Color(0xFFC2FC8B))
                             else -> DsButton(
-                                text = if (installingId == plugin.id) "Installing…" else "Install",
+                                text = if (installingId == plugin.id) resolveSuiteString { installingLabel } else resolveSuiteString { installButton },
                                 icon = Icons.Default.Download,
                                 compact = true,
                                 enabled = installingId != plugin.id,

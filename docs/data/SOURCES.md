@@ -111,6 +111,186 @@ Attribution manifest (THIRD_PARTY_DATA.json / .md)
 | Bundled or downloaded | Generated into the bundled app database by KJD (secondary JLPT source) |
 | Update process | Re-run KJD with a newer export |
 
+## Frequency sources (new)
+
+### Netflix Japanese Frequency List
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/pciavolici/Netflix-Japanese-Subtitle-Frequency-List> |
+| Purpose | Word frequency from Netflix Japanese subtitles |
+| License | Custom (free with attribution) |
+| Attribution | © OhTalkWho オタク (Dave Doebrick) |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer frequency list |
+
+### Chris Kempson Subtitle Frequency
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/chriskempson/japanese-subtitles-word-frequency-list> |
+| Purpose | Word + kanji frequency from Japanese subtitles |
+| License | MIT |
+| Attribution | © Chris Kempson |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### Patrick Kandrac 2242 Kanji Frequency
+
+| Field | Value |
+|---|---|
+| Official source | <https://forum.koohii.com/viewtopic.php?id=16394> |
+| Purpose | Frequency ranking for 2242 kanji from multiple sources |
+| License | Public (free with attribution) |
+| Attribution | © Patrick Kandrac (sources: Google Kanji Data, KUF, MCD, 文化庁) |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer list |
+
+### Nukemarine RTK Frequency Groups
+
+| Field | Value |
+|---|---|
+| Official source | <https://www.reddit.com/r/LearnJapanese/> |
+| Purpose | Frequency groups organized by RTK order |
+| License | Public (free with attribution) |
+| Attribution | © Nukemarine |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### Alex Yatskov Wikipedia Frequency
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/yatskov> |
+| Purpose | Kanji frequency extracted from Japanese Wikipedia |
+| License | Public (free with attribution) |
+| Attribution | © Alex Yatskov |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### Alexandre Girardi Word Frequency
+
+| Field | Value |
+|---|---|
+| Official source | <http://ftp.monash.edu.au/pub/nihongo/> |
+| Purpose | Word frequency from Japanese text corpus |
+| License | Public Domain |
+| Attribution | © Alexandre Girardi (public domain, Monash FTP Archive) |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer list |
+
+### Kanji Keys / TopoKanji (Dmitry Shpika)
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/dshpika> |
+| Purpose | Kanji metadata and frequency data |
+| License | CC BY 4.0 |
+| Attribution | © Dmitry Shpika |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+## Structural data sources (new)
+
+### CJK Decompositions Data
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/nieldlr/CJK-Decompositions> |
+| Purpose | Kanji component decomposition data |
+| License | Public Domain |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### 文化庁 (Agency for Cultural Affairs)
+
+| Field | Value |
+|---|---|
+| Official source | <https://www.bunka.go.jp/> |
+| Purpose | Official kanji classifications (jōyō, jinmeiyō, educational) |
+| License | Government (public) |
+| Attribution | © Japanese Agency for Cultural Affairs |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### kanjidatabase.com
+
+| Field | Value |
+|---|---|
+| Official source | <https://kanjidatabase.com/> |
+| Purpose | Supplementary kanji metadata |
+| License | Free (with attribution) |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### David Gouveia Kanji Data
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/davidgouveia> |
+| Purpose | Supplementary kanji metadata |
+| License | Public (free with attribution) |
+| Attribution | © David Gouveia |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+## Learning metadata sources (new)
+
+### Usagi Chan Kanji Phonetics Deck
+
+| Field | Value |
+|---|---|
+| Official source | <https://ankiweb.net/shared/info/1218648935> |
+| Purpose | Phonetic component groups for kanji study |
+| License | CC BY-SA 4.0 |
+| Attribution | © shoui520 |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### Shirabe Jisho JLPT Lists
+
+| Field | Value |
+|---|---|
+| Official source | <https://www.shirabejisho.com/> |
+| Purpose | JLPT kanji classification |
+| License | Public (free with attribution) |
+| Attribution | Shirabe Jisho |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### Shirabe Jisho Common Words
+
+| Field | Value |
+|---|---|
+| Official source | <https://www.shirabejisho.com/> |
+| Purpose | Common Japanese words list |
+| License | Public (free with attribution) |
+| Attribution | Shirabe Jisho |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### kanjiapi.dev
+
+| Field | Value |
+|---|---|
+| Official source | <https://kanjiapi.dev/> |
+| Purpose | REST API data for kanji readings, meanings, examples |
+| License | Public (free with attribution) |
+| Attribution | kanjiapi.dev (uses EDICT, KANJIDIC) |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
+### Kanji School (Drew Edwards)
+
+| Field | Value |
+|---|---|
+| Official source | <https://github.com/drewdrawsws/kanji-school> |
+| Purpose | Kanji data from Jisho.org (KANJIDIC-derived) |
+| License | Public (free with attribution) |
+| Attribution | © Drew Edwards |
+| Bundled or downloaded | Downloaded at build time |
+| Update process | Re-run KJD with a newer export |
+
 ## Other data assets (not dictionary content)
 
 | Asset | Source / license | Notes |

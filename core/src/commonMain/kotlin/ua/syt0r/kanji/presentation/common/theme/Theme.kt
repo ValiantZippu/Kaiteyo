@@ -36,6 +36,9 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
@@ -58,6 +61,7 @@ import ua.syt0r.kanji.presentation.common.ui.Orientation
 val LocalKaiteyoAccent = compositionLocalOf { AllAccentSchemes.first() }
 val LocalBaseMode = compositionLocalOf { BaseMode.Oled }
 val LocalSurfaceColors = compositionLocalOf { surfaceForBaseMode(BaseMode.Oled) }
+val LocalKaiteyoSemanticColors = compositionLocalOf { KaiteyoSemanticColorsDark }
 
 // ============================================
 // ANIMATION CONFIGURATION
@@ -411,7 +415,8 @@ fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val surface = customSurface ?: surfaceForBaseMode(baseMode)
-    val isDark = baseMode != BaseMode.Light
+    // Every base mode (incl. Cream/Paper/Midnight) declares its own darkness.
+    val isDark = baseMode.isDarkMode
 
     // Material components (buttons, fields, chips, dialogs, menus…) inherit
     // the Kaiteyo corner-radius system instead of Material defaults, so every
@@ -454,8 +459,17 @@ fun AppTheme(
     // reading LocalSurfaceColors or the accent (e.g. the desktop design
     // system's DsTokens) fades in lockstep with the Material scheme
     // instead of snapping to the new values mid-transition.
+    //
+    // For light base modes the bright accent primary clashes with warm
+    // paper backgrounds (Sepia/Cream/Paper). Swap to the darker variant
+    // so green/pink/orange accents stay readable on light surfaces.
+    val adaptedAccent = if (isDark) accentScheme
+    else accentScheme.copy(
+        primary = accentScheme.primaryDark,
+        secondary = accentScheme.secondaryDark
+    )
     val animatedAccent =
-        accentScheme.withThemeTransition(animateThemeTransition, themeFadeDuration)
+        adaptedAccent.withThemeTransition(animateThemeTransition, themeFadeDuration)
     val animatedSurface =
         surface.withThemeTransition(animateThemeTransition, themeFadeDuration)
 
@@ -480,7 +494,20 @@ fun AppTheme(
                     LocalStrings provides getStrings(),
                     LocalTextSelectionColors provides neutralTextSelectionColors()
                 ) {
-                    content()
+                    // Apply the user's displayScale as a root-level transform
+                    // so the entire UI scales proportionally when the slider moves.
+                    val rootScale = layoutConfig.displayScale
+                    androidx.compose.foundation.layout.Box(
+                        modifier = if (rootScale != 1f) {
+                            Modifier.graphicsLayer {
+                                scaleX = rootScale
+                                scaleY = rootScale
+                                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+                            }
+                        } else Modifier
+                    ) {
+                        content()
+                    }
                 }
             }
         )
@@ -609,9 +636,58 @@ private fun SurfaceColors.withThemeTransition(enabled: Boolean, duration: Int): 
         textPrimary = animateColorAsState(textPrimary, animationSpec = spec, label = "surfaceTextPrimary").value,
         textSecondary = animateColorAsState(textSecondary, animationSpec = spec, label = "surfaceTextSecondary").value,
         textMuted = animateColorAsState(textMuted, animationSpec = spec, label = "surfaceTextMuted").value,
-        textInverse = animateColorAsState(textInverse, animationSpec = spec, label = "surfaceTextInverse").value
+        textInverse = animateColorAsState(textInverse, animationSpec = spec, label = "surfaceTextInverse").value,
+        kanjiKnown = animateColorAsState(kanjiKnown, animationSpec = spec, label = "surfaceKanjiKnown").value,
+        kanjiLearning = animateColorAsState(kanjiLearning, animationSpec = spec, label = "surfaceKanjiLearning").value,
+        kanjiNew = animateColorAsState(kanjiNew, animationSpec = spec, label = "surfaceKanjiNew").value,
+        kanjiDue = animateColorAsState(kanjiDue, animationSpec = spec, label = "surfaceKanjiDue").value,
+        kanjiMastered = animateColorAsState(kanjiMastered, animationSpec = spec, label = "surfaceKanjiMastered").value,
+        frequencyTiers = frequencyTiers.map { c ->
+            animateColorAsState(c, animationSpec = spec, label = "surfaceFrequencyTier").value
+        },
+        kanjiSuspended = animateColorAsState(kanjiSuspended, animationSpec = spec, label = "surfaceKanjiSuspended").value
     )
 }
+
+/**
+ * Luminance-adaptive study-state color accessor. Returns the kanji study-state
+ * color for the supplied [state] under the current surface tokens, so dictionary,
+ * graph and list surfaces read study state from theme tokens instead of
+ * hardcoding colors that break under Sepia/Cream/Paper/Midnight.
+ */
+@Composable
+fun MaterialTheme.studyColorFor(state: ua.syt0r.kanji.core.knowledge.StudyState): Color {
+    val surfaces = LocalSurfaceColors.current
+    return when (state) {
+        ua.syt0r.kanji.core.knowledge.StudyState.Known -> surfaces.kanjiKnown
+        ua.syt0r.kanji.core.knowledge.StudyState.Learning -> surfaces.kanjiLearning
+        ua.syt0r.kanji.core.knowledge.StudyState.Due -> surfaces.kanjiDue
+        ua.syt0r.kanji.core.knowledge.StudyState.Mastered -> surfaces.kanjiMastered
+        ua.syt0r.kanji.core.knowledge.StudyState.Suspended -> surfaces.kanjiSuspended
+        ua.syt0r.kanji.core.knowledge.StudyState.New,
+        ua.syt0r.kanji.core.knowledge.StudyState.Relearning -> surfaces.kanjiNew
+    }
+}
+
+/** Frequency band → theme-aware color via the live SurfaceColors tokens. */
+@Composable
+fun MaterialTheme.frequencyColorFor(band: ua.syt0r.kanji.core.knowledge.FrequencyBand?): Color {
+    val isDark = LocalBaseMode.current.isDarkMode
+    return frequencyColorForBand(band, isDark)
+}
+
+/**
+ * Single-source frequency-band color. Used by the composable
+ * [frequencyColorFor] and directly by tests so the green→red ramp is defined
+ * in exactly one place and adapts to every base mode.
+ */
+fun frequencyColorForBand(
+    band: ua.syt0r.kanji.core.knowledge.FrequencyBand?,
+    isDark: Boolean
+): Color = if (band == null) FrequencyColorFallback
+    else frequencyBandColors(isDark).getOrElse(band.ordinal) { FrequencyColorFallback }
+
+private val FrequencyColorFallback = Color(0xFF888888)
 
 /** Same morphing treatment for the accent scheme (name/preview stay static). */
 @Composable

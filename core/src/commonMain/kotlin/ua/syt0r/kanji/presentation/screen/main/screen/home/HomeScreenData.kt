@@ -15,9 +15,9 @@ import ua.syt0r.kanji.presentation.common.resources.string.StringResolveScope
 import ua.syt0r.kanji.presentation.common.textDp
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.features.BrowseTabBrowser
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreen
-import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.settings.SettingsScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.library.LibraryScreen
 import ua.syt0r.kanji.presentation.screen.main.screen.statistics.StatisticsScreen
@@ -57,7 +57,7 @@ enum class HomeScreenTab(
         analyticsName = "search",
         iconContent = { Icon(Icons.Default.Search, null) },
         titleResolver = { home.searchTabLabel },
-        content = { SearchScreen(mainNavigationState = it) }
+        content = { BrowseTabBrowser() }
     ),
     Settings(
         analyticsName = "settings",

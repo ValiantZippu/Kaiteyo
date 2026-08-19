@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.RadioButtonChecked
@@ -75,8 +76,21 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import ua.syt0r.kanji.core.app_data.data.RadicalData
+import org.koin.compose.koinInject
+import ua.syt0r.kanji.core.knowledge.FrequencyBand
+import ua.syt0r.kanji.core.knowledge.LearnerProfileStore
+import ua.syt0r.kanji.core.knowledge.StudyState
+import ua.syt0r.kanji.core.knowledge.level.LevelAdapter
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.theme.favoriteColor
+import ua.syt0r.kanji.presentation.common.theme.frequencyColorFor
+import ua.syt0r.kanji.presentation.common.theme.studyColorFor
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.CompactGlyphGraph
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.FrequencySource
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.GlyphNode
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KanjiFrequencyData
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KanjiFrequencyHeatmap
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardFlagType
@@ -113,7 +127,7 @@ data class KanjiBrowserCriteria(
 )
 
 @Serializable
-enum class KanjiBrowserViewMode { Grid, List }
+enum class KanjiBrowserViewMode { Grid, List, Heatmap }
 
 @Serializable
 enum class KanjiBrowserSort { Frequency, StrokeCount, JLPT, Difficulty, LastReviewed, Kanji }
@@ -153,6 +167,14 @@ fun KanjiBrowserScreen(
     var tagPickerTarget by remember { mutableStateOf<List<String>?>(null) }
 
     val scope = rememberCoroutineScope()
+
+    // Level-adaptive default (spec §23): the "For your level" chip applies
+    // the profile's recommended JLPT band to the current filter.
+    val profileStore = koinInject<LearnerProfileStore>()
+    var recommendedLevels by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    LaunchedEffect(Unit) {
+        recommendedLevels = LevelAdapter.recommendedJlpt(profileStore.load().profile)
+    }
 
     // Radical search: query DB for chars containing all selected radicals
     LaunchedEffect(radicals) {
@@ -321,6 +343,8 @@ fun KanjiBrowserScreen(
                 onNotReviewedDaysAgo = { notReviewedDaysAgo = it },
                 sortBy = sortBy,
                 onSortBy = { sortBy = it },
+                recommendedLevels = recommendedLevels,
+                onApplyRecommended = { jlptLevels = recommendedLevels },
                 onReset = {
                     jlptLevels = emptySet(); grades = emptySet()
                     minStrokes = null; maxStrokes = null
@@ -402,6 +426,31 @@ fun KanjiBrowserScreen(
                                     selectionMode = true
                                     selectedIds = setOf(card.id)
                                 }
+                            )
+                        }
+                    }
+                    KanjiBrowserViewMode.Heatmap -> {
+                        var selectedFreqSource by remember { mutableStateOf(FrequencySource.Kanjidic) }
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(16.dp)
+                        ) {
+                            KanjiFrequencyHeatmap(
+                                kanjiData = filteredCards.map { card ->
+                                    KanjiFrequencyData(
+                                        character = card.character,
+                                        rank = dataCenter.frequencies[card.id],
+                                        count = null,
+                                        percentile = null
+                                    )
+                                },
+                                allKanji = filteredCards.map { it.character },
+                                selectedSource = selectedFreqSource,
+                                onSourceSelected = { selectedFreqSource = it },
+                                onKanjiSelected = { kanji ->
+                                    val card = filteredCards.find { it.character == kanji }
+                                    if (card != null) detailCardId = card.id
+                                },
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -495,9 +544,19 @@ private fun BrowserHeader(
         HeaderIconButton(icon = Icons.Default.FilterList, selected = showFilters, onClick = onToggleFilters, accent = accent, surfaceColors = surfaceColors)
         HeaderIconButton(icon = Icons.Outlined.Flag, selected = showRadicals, onClick = onToggleRadicals, accent = accent, surfaceColors = surfaceColors)
         HeaderIconButton(
-            icon = if (viewMode == KanjiBrowserViewMode.Grid) Icons.Default.List else Icons.Default.GridView,
+            icon = when (viewMode) {
+                KanjiBrowserViewMode.Grid -> Icons.Default.List
+                KanjiBrowserViewMode.List -> Icons.Default.BarChart
+                KanjiBrowserViewMode.Heatmap -> Icons.Default.GridView
+            },
             selected = false,
-            onClick = { onViewModeChange(if (viewMode == KanjiBrowserViewMode.Grid) KanjiBrowserViewMode.List else KanjiBrowserViewMode.Grid) },
+            onClick = { 
+                onViewModeChange(when (viewMode) {
+                    KanjiBrowserViewMode.Grid -> KanjiBrowserViewMode.List
+                    KanjiBrowserViewMode.List -> KanjiBrowserViewMode.Heatmap
+                    KanjiBrowserViewMode.Heatmap -> KanjiBrowserViewMode.Grid
+                })
+            },
             accent = accent,
             surfaceColors = surfaceColors
         )
@@ -666,6 +725,8 @@ private fun BrowserFilters(
     onNotReviewedDaysAgo: (Int?) -> Unit,
     sortBy: KanjiBrowserSort,
     onSortBy: (KanjiBrowserSort) -> Unit,
+    recommendedLevels: Set<Int>,
+    onApplyRecommended: () -> Unit,
     onReset: () -> Unit
 ) {
     val surfaceColors = LocalSurfaceColors.current
@@ -688,6 +749,17 @@ private fun BrowserFilters(
 
         FilterSection("JLPT") {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (recommendedLevels.isNotEmpty()) {
+                    item {
+                        FilterChip(
+                            label = "For your level (${LevelAdapter.recommendedJlptLabel(recommendedLevels)})",
+                            selected = jlptLevels == recommendedLevels,
+                            onClick = onApplyRecommended,
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                    }
+                }
                 items((5 downTo 1).toList()) { level ->
                     FilterChip(
                         label = "N$level",
@@ -1009,6 +1081,19 @@ private fun KanjiGridTile(
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
 
+    val learned = dataCenter.isLearned(card.id)
+    val difficult = dataCenter.isDifficult(card.id)
+    val strokeCount = dataCenter.strokeCounts[card.id]
+    val frequencyRank = dataCenter.frequencies[card.id]
+    val frequencyBandEnum = frequencyRank?.let { FrequencyBand.forRank(it) }
+    val frequencyLabel = frequencyBandEnum?.label
+    val frequencyColor = MaterialTheme.frequencyColorFor(frequencyBandEnum)
+    val jlptLevel = dataCenter.classifications[card.id].orEmpty()
+        .firstOrNull { it.startsWith("n") }
+    val grade = dataCenter.classifications[card.id].orEmpty()
+        .firstOrNull { it.startsWith("o") }
+        ?.drop(1)?.toIntOrNull()
+
     val bg by animateColorAsState(
         targetValue = when {
             isSelected -> accent.primary.copy(alpha = 0.16f)
@@ -1018,50 +1103,121 @@ private fun KanjiGridTile(
         label = "tileBg"
     )
 
-    Box(
+    Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(bg)
-            .border(1.dp, if (isSelected) accent.primary.copy(alpha = 0.5f) else Color.Transparent, RoundedCornerShape(12.dp))
+            .border(1.dp, if (isSelected) accent.primary.copy(alpha = 0.5f) else Color.Transparent, RoundedCornerShape(16.dp))
             .clickable(interactionSource = interactionSource, indication = null) {
                 if (selectionMode) onSelect(card.id) else onClick(card.id)
             }
             .hoverable(interactionSource)
-            .padding(8.dp)
+            .padding(horizontal = 6.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = card.character,
-                fontSize = 30.sp,
-                color = surfaceColors.textPrimary,
-                fontWeight = FontWeight.Normal
-            )
-            Spacer(Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+
+        // Top meta row: status dot, favorite, JLPT badge.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (selectionMode) {
+                    Icon(
+                        imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (isSelected) accent.primary else surfaceColors.textMuted,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
                 card.flag.takeIf { it != CardFlagType.None }?.let { flag ->
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(flag.colorFromHex()))
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(flag.colorFromHex()))
                 }
                 if (card.isFavorite) {
-                    Icon(Icons.Default.Star, null, tint = accent.secondary, modifier = Modifier.size(10.dp))
+                    Icon(Icons.Default.Star, null, tint = MaterialTheme.favoriteColor, modifier = Modifier.size(11.dp))
                 }
-                dataCenter.classifications[card.id].orEmpty()
-                    .firstOrNull { it.startsWith("n") }
-                    ?.let { level ->
-                        Text(
-                            text = level.uppercase(),
-                            color = surfaceColors.textMuted,
-                            fontSize = 9.sp
-                        )
-                    }
+                if (learned) {
+                    val studyState = if (learned) StudyState.Known else StudyState.New
+                    Box(
+                        Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.studyColorFor(studyState))
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            jlptLevel?.let { level ->
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(accent.primary.copy(alpha = 0.14f))
+                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = level.uppercase(),
+                        color = accent.primary,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
-        if (selectionMode) {
-            Icon(
-                imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
-                contentDescription = null,
-                tint = if (isSelected) accent.primary else surfaceColors.textMuted,
-                modifier = Modifier.align(Alignment.TopStart).size(16.dp)
-            )
+
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = card.character,
+            fontSize = 34.sp,
+            color = surfaceColors.textPrimary,
+            fontWeight = if (difficult) FontWeight.Bold else FontWeight.Normal
+        )
+
+        Spacer(Modifier.height(3.dp))
+
+        Text(
+            text = card.reading.ifBlank { "—" },
+            fontSize = 9.sp,
+            color = surfaceColors.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 2.dp)
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Bottom meta row: strokes · frequency band.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            strokeCount?.let { strokes ->
+                KaiteyoMetaPill(text = "${strokes}画", color = surfaceColors.textMuted)
+            }
+            if (frequencyLabel != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(frequencyColor.copy(alpha = 0.13f))
+                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                ) {
+                    Box(Modifier.size(5.dp).clip(CircleShape).background(frequencyColor))
+                    Text(
+                        text = frequencyLabel,
+                        color = frequencyColor,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+            grade?.let {
+                KaiteyoMetaPill(text = "G$it", color = surfaceColors.textMuted)
+            }
         }
     }
 }
@@ -1081,6 +1237,15 @@ private fun KanjiListRow(
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
 
+    val learned = dataCenter.isLearned(card.id)
+    val difficult = dataCenter.isDifficult(card.id)
+    val frequencyRank = dataCenter.frequencies[card.id]
+    val frequencyBandEnum = frequencyRank?.let { FrequencyBand.forRank(it) }
+    val frequencyLabel = frequencyBandEnum?.label
+    val frequencyColor = MaterialTheme.frequencyColorFor(frequencyBandEnum)
+    val jlptLevel = dataCenter.classifications[card.id].orEmpty()
+        .firstOrNull { it.startsWith("n") }
+
     val bg by animateColorAsState(
         targetValue = when {
             isSelected -> accent.primary.copy(alpha = 0.14f)
@@ -1093,13 +1258,13 @@ private fun KanjiListRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(bg)
             .clickable(interactionSource = interactionSource, indication = null) {
                 if (selectionMode) onSelect(card.id) else onClick(card.id)
             }
             .hoverable(interactionSource)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -1111,43 +1276,92 @@ private fun KanjiListRow(
                 modifier = Modifier.size(18.dp)
             )
         }
-        Text(
-            text = card.character,
-            fontSize = 22.sp,
-            color = surfaceColors.textPrimary,
-            modifier = Modifier.width(44.dp)
-        )
-        Column(Modifier.weight(1f)) {
+
+        // Character in a Kaiteyo glyph plate.
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(accent.primary.copy(alpha = if (difficult) 0.16f else 0.08f)),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                text = card.reading.ifBlank { "—" },
-                color = surfaceColors.textSecondary,
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                text = card.character,
+                fontSize = 24.sp,
+                color = if (difficult) accent.primary else surfaceColors.textPrimary,
+                fontWeight = FontWeight.SemiBold
             )
+        }
+
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = card.reading.ifBlank { "—" },
+                    color = surfaceColors.textSecondary,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                jlptLevel?.let { level ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(accent.primary.copy(alpha = 0.14f))
+                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = level.uppercase(),
+                            color = accent.primary,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
             Text(
-                text = card.meaning.take(60).ifBlank { "No meaning" },
+                text = card.meaning.take(70).ifBlank { "No meaning" },
                 color = surfaceColors.textMuted,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            dataCenter.strokeCounts[card.id]?.let { strokes ->
-                Text("${strokes}画", color = surfaceColors.textMuted, fontSize = 11.sp)
+
+        // Right meta: frequency band · strokes · status marks.
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (frequencyLabel != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(frequencyColor))
+                    Text(
+                        text = frequencyLabel,
+                        color = frequencyColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
-            dataCenter.classifications[card.id].orEmpty().firstOrNull { it.startsWith("n") }?.let {
-                JlptBadge(it, accent, surfaceColors)
-            }
-            card.flag.takeIf { it != CardFlagType.None }?.let { flag ->
-                Box(Modifier.size(8.dp).clip(CircleShape).background(flag.colorFromHex()))
-            }
-            if (card.isFavorite) {
-                Icon(Icons.Default.Favorite, null, tint = Color(0xFFFF6B9D), modifier = Modifier.size(14.dp))
-            }
-            if (dataCenter.isDifficult(card.id)) {
-                Text("⚠", fontSize = 12.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                dataCenter.strokeCounts[card.id]?.let { strokes ->
+                    Text("${strokes}画", color = surfaceColors.textMuted, fontSize = 10.sp)
+                }
+                card.flag.takeIf { it != CardFlagType.None }?.let { flag ->
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(flag.colorFromHex()))
+                }
+                if (card.isFavorite) {
+                    Icon(Icons.Default.Favorite, null, tint = Color(0xFFFF6B9D), modifier = Modifier.size(12.dp))
+                }
+                if (learned) {
+                    Icon(Icons.Default.Done, null, tint = Color(0xFFC2FC8B), modifier = Modifier.size(13.dp))
+                }
+                if (difficult) {
+                    Text("⚠", fontSize = 11.sp)
+                }
             }
         }
     }
@@ -1166,6 +1380,23 @@ private fun JlptBadge(
             .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
         Text(level.uppercase(), color = accent.primary, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Small neutral pill used for stroke counts and grades. */
+@Composable
+private fun KaiteyoMetaPill(
+    text: String,
+    color: Color
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(surfaceColors.surfaceInteractive.copy(alpha = 0.7f))
+            .padding(horizontal = 5.dp, vertical = 1.dp)
+    ) {
+        Text(text, color = color, fontSize = 8.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -1304,7 +1535,29 @@ fun KanjiDetailDialog(
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
+
+                    // Glyph Graph — kanji decomposition visualization
+                    // Build component nodes from radical data if available
+                    val radicalChars = dataCenter.radicalsInCharacter[cardId].orEmpty()
+                    if (radicalChars.isNotEmpty()) {
+                        CompactGlyphGraph(
+                            character = card.character,
+                            meaning = card.meaning,
+                            components = radicalChars.map { r ->
+                                GlyphNode(
+                                    character = r,
+                                    meaning = r,
+                                    depth = 1,
+                                    type = ua.syt0r.kanji.presentation.common.ui.kaiteyo.GlyphNodeType.Radical
+                                )
+                            },
+                            onCharacterClick = { /* navigate to that character */ },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
 
                     // Flag selector
                     Text("Flag", color = surfaceColors.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)

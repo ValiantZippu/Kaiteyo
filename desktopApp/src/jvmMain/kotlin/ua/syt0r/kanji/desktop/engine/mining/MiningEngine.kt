@@ -230,6 +230,19 @@ class MiningEngine(val state: AppState) {
             details = definition,
             cardIds = listOf(card.id)
         )
+        // Append the mining fact to the domain event log (EVENT_CATALOG).
+        state.eventLog.record(
+            ua.syt0r.kanji.desktop.engine.events.EventType.CardMined,
+            source = payload.source,
+            payload = mapOf(
+                "headword" to payload.headword,
+                "reading" to payload.reading,
+                "cardId" to card.id,
+                "deckId" to payload.deckId,
+                "sentence" to payload.sentence.take(120),
+                "mediaRef" to (payload.videoPath?.let { "$it@${payload.timestamp}" } ?: "")
+            )
+        )
 
         // External transports (GameSentenceMiner / AnkiConnect) when enabled —
         // Kaiteyo mining never depends on them. Anki failures are queued as

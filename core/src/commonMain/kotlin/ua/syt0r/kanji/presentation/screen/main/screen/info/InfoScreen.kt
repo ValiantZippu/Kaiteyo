@@ -277,6 +277,26 @@ fun InfoScreen(
             val nextScreenData = it.toInfoScreenData()
             if (screenData != nextScreenData)
                 mainNavigationState.navigate(MainDestination.Info(nextScreenData))
+        },
+        onPlayReading = { reading -> viewModel.speakReading(reading) },
+        isPlayingReading = viewModel.playingReading.value,
+        onSaveUserNote = { content ->
+            scope.launch {
+                val (key, practiceType) = when (screenData) {
+                    is InfoScreenData.Letter ->
+                        screenData.letter to LETTER_WRITING_PRACTICE_TYPE
+
+                    is InfoScreenData.Vocab ->
+                        (screenData.id ?: return@launch).toString() to
+                            VocabPracticeType.Flashcard.srsPracticeType.value
+                }
+                if (content.isBlank()) {
+                    cardDatabaseManager.deleteNote(key, practiceType)
+                } else {
+                    cardDatabaseManager.setNote(key, practiceType, content, 0)
+                }
+                learningState = learningState?.copy(note = content)
+            }
         }
     )
 

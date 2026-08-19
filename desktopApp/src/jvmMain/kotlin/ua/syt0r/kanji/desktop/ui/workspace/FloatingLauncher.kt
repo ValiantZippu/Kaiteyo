@@ -180,6 +180,10 @@ fun DsFloatingLauncher(state: AppState) {
             },
             label = "launcherPos"
         )
+        // During drag the bubble follows the pointer directly (no animation)
+        // so it never lags behind or flashes. The animated offset only kicks
+        // in for the snap-back on release and the settings-triggered reposition.
+        val displayPos = if (dragging) dragPos else animatedPos
 
         val bubbleDiameterPx = with(density) { bubbleSize.roundToPx() }
         val hitboxPaddingPx = with(density) { hitboxExtra.roundToPx() }
@@ -276,7 +280,7 @@ fun DsFloatingLauncher(state: AppState) {
         // The launcher bubble, positioned at the animated offset.
         Box(
             modifier = Modifier.offset {
-                IntOffset(animatedPos.x.roundToInt(), animatedPos.y.roundToInt())
+                IntOffset(displayPos.x.roundToInt(), displayPos.y.roundToInt())
             }
         ) {
             Box(
@@ -328,9 +332,14 @@ fun DsFloatingLauncher(state: AppState) {
                                 var previous = down.position
                                 var longPressFired = false
 
-                                // The one command behind both long-press and
-                                // right-click — never duplicated per gesture.
-                                fun openFloatingBubbleMenu() {
+                                // Right-click opens the launchpad (navigation destinations).
+                                // Long-press opens the mode switch panel (Floating ↔ Sidebar).
+                                fun openLaunchpad() {
+                                    menuOpen = true
+                                    modePanelOpen = false
+                                    lastActive = System.currentTimeMillis()
+                                }
+                                fun openModePanel() {
                                     modePanelOpen = true
                                     menuOpen = false
                                     lastActive = System.currentTimeMillis()
@@ -339,19 +348,19 @@ fun DsFloatingLauncher(state: AppState) {
                                 val longPressJob = scope.launch {
                                     delay(LongPressTimeoutMs)
                                     longPressFired = true
-                                    openFloatingBubbleMenu()
+                                    openModePanel()
                                 }
 
                                 try {
                                     if (isSecondary) {
-                                        // Right-click → the same mode panel.
+                                        // Right-click → launchpad (navigation destinations).
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                             when (event.type) {
                                                 PointerEventType.Release, PointerEventType.Exit -> {
                                                     longPressJob.cancel()
-                                                    if (!longPressFired) openFloatingBubbleMenu()
+                                                    if (!longPressFired) openLaunchpad()
                                                     return@awaitEachGesture
                                                 }
                                                 else -> {}
@@ -378,7 +387,6 @@ fun DsFloatingLauncher(state: AppState) {
                                                     if (dragged && previous.x.isFinite() && previous.y.isFinite() && pos.x.isFinite() && pos.y.isFinite()) {
                                                         change.consume()
                                                         dragPos += pos - previous
-                                                        target = dragPos
                                                         previous = pos
                                                     }
                                                 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -18,10 +19,12 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.rememberBottomSheetScaffoldState
@@ -40,6 +43,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +63,7 @@ import ua.syt0r.kanji.presentation.common.clickable
 import ua.syt0r.kanji.presentation.common.copyCentered
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.Dimens
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.trackItemPosition
 import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
@@ -160,7 +167,7 @@ fun LetterPracticeWritingUI(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Brush selector toolbar above the drawing input
+            // Brush selector toolbar — floating above drawing input
             BrushSelector(
                 brushSettings = brushSettings,
                 onBrushSettingsChange = { brushSettings = it },
@@ -173,6 +180,7 @@ fun LetterPracticeWritingUI(
                         wideMax = 560.dp
                     ))
                     .padding(horizontal = 20.dp)
+                    .padding(bottom = 4.dp)
             )
 
             LetterPracticeWritingInputSection(
@@ -189,7 +197,7 @@ fun LetterPracticeWritingUI(
                         wideMax = 560.dp
                     ))
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 20.dp)
+                    .padding(bottom = 64.dp)
                     .aspectRatio(1f, matchHeightConstraintsFirst = true)
             )
 
@@ -198,6 +206,8 @@ fun LetterPracticeWritingUI(
         }
 
     } else {
+
+        val accent = LocalKaiteyoAccent.current
 
         val infoSection: @Composable RowScope.() -> Unit = {
             Material3BottomSheetScaffold(
@@ -235,7 +245,9 @@ fun LetterPracticeWritingUI(
                 BrushSelector(
                     brushSettings = brushSettings,
                     onBrushSettingsChange = { brushSettings = it },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
                 LetterPracticeWritingInputSection(
                     state = reviewState,
@@ -248,7 +260,7 @@ fun LetterPracticeWritingUI(
                             wideMax = 560.dp
                         ))
                         .aspectRatio(1f)
-                        .padding(20.dp)
+                        .padding(16.dp)
                 )
             }
         }
@@ -265,6 +277,23 @@ fun LetterPracticeWritingUI(
             ) {
 
                 firstSection()
+
+                // Accent gradient divider between panels
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .widthIn(min = 1.dp, max = 1.dp)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    accent.primary.copy(alpha = 0.0f),
+                                    accent.primary.copy(alpha = 0.15f),
+                                    accent.secondary.copy(alpha = 0.15f),
+                                    accent.primary.copy(alpha = 0.0f)
+                                )
+                            )
+                        )
+                )
 
                 secondSection()
 

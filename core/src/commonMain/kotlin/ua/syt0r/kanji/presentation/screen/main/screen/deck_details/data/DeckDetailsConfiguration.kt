@@ -22,7 +22,8 @@ sealed interface DeckDetailsConfiguration {
 
     data class VocabDeckConfiguration(
         val practiceType: ScreenVocabPracticeType,
-        val filterConfiguration: FilterConfiguration
+        val filterConfiguration: FilterConfiguration,
+        val noteTypeId: String = "kaiteyo-default"
     ) : DeckDetailsConfiguration
 
 }

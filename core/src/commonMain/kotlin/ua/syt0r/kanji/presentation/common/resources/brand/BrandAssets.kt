@@ -72,7 +72,10 @@ fun brandAsset(
 ): DrawableResource = when (variant) {
     BrandAssetVariant.Light -> light
     BrandAssetVariant.Dark -> dark
-    BrandAssetVariant.Auto -> if (LocalBaseMode.current == BaseMode.Light) light else dark
+    BrandAssetVariant.Auto -> when (LocalBaseMode.current) {
+        BaseMode.Light, BaseMode.Sepia, BaseMode.Cream, BaseMode.Paper -> light
+        else -> dark
+    }
 }
 
 /**

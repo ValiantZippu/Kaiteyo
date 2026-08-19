@@ -27,9 +27,14 @@ import ua.syt0r.kanji.core.logger.Logger
 import ua.syt0r.kanji.core.logger.runWithTimeLog
 import ua.syt0r.kanji.core.mergeSharedFlows
 import ua.syt0r.kanji.core.refreshableDataProducerFlow
+import ua.syt0r.kanji.core.knowledge.KnowledgeRepository
+import ua.syt0r.kanji.core.knowledge.RecommendationCandidate
+import ua.syt0r.kanji.core.knowledge.StudyOverlayBuilder
+import ua.syt0r.kanji.core.knowledge.StudyRecommendationEngine
 import ua.syt0r.kanji.core.srs.LetterPracticeType
 import ua.syt0r.kanji.core.srs.LetterSrsDeck
 import ua.syt0r.kanji.core.srs.LetterSrsManager
+import ua.syt0r.kanji.core.srs.SrsCardRepository
 import ua.syt0r.kanji.core.srs.SrsDecksData
 import ua.syt0r.kanji.core.srs.VocabPracticeType
 import ua.syt0r.kanji.core.srs.VocabSrsDeck
@@ -42,6 +47,7 @@ import ua.syt0r.kanji.presentation.LifecycleState
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardDaySummary
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardDeckCategory
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardRecommendation
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.DashboardDeckSummary
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardStats
@@ -67,7 +73,9 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
     private val preferencesRepository: PreferencesContract.AppPreferences,
     private val reviewHistoryRepository: ReviewHistoryRepository,
     private val timeUtils: TimeUtils,
-    private val dataCenter: KaiteyoDataCenter
+    private val dataCenter: KaiteyoDataCenter,
+    private val srsCardRepository: SrsCardRepository,
+    private val knowledgeRepository: KnowledgeRepository
 ) : SubscribeOnGeneralDashboardScreenDataUseCase {
 
     override fun invoke(
@@ -147,13 +155,19 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
                 .thenBy { it.title }
         ).take(RECENT_DECKS_LIMIT)
 
+        // "What should I study next?" — real FSRS state per kanji + real
+        // corpus frequency, ranked by the recommendation engine (spec §31).
+        // A kanji with no card projects to New; nothing is ever invented.
+        val recommendations = getRecommendations(lettersDecks)
+
         val state = ScreenState.Loaded(
             studyTargets = studyTargets,
             stats = deferredStats.await(),
             recentDecks = recentDecks,
             allDecks = allDecks,
             recentActivity = dataCenter.activity.take(ACTIVITY_LIMIT),
-            collections = dataCenter.collections.toList()
+            collections = dataCenter.collections.toList(),
+            recommendations = recommendations
         )
         send(state)
 
@@ -174,7 +188,12 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             category = category,
             lastReview = lastReview,
             newCount = progressMap.values.sumOf { it.dailyNew.size },
-            dueCount = progressMap.values.sumOf { it.dailyDue.size }
+            dueCount = progressMap.values.sumOf { it.dailyDue.size },
+            totalCount = items.size,
+            studiedCount = progressMap.values
+                .flatMap { it.done + it.due }
+                .distinct()
+                .size
         )
     }
 
@@ -185,7 +204,12 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
             category = category,
             lastReview = lastReview,
             newCount = progressMap.values.sumOf { it.dailyNew.size },
-            dueCount = progressMap.values.sumOf { it.dailyDue.size }
+            dueCount = progressMap.values.sumOf { it.dailyDue.size },
+            totalCount = items.size,
+            studiedCount = progressMap.values
+                .flatMap { it.done + it.due }
+                .distinct()
+                .size
         )
     }
 
@@ -269,6 +293,43 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
         )
     }
 
+    private suspend fun getRecommendations(lettersDecks: SrsDecksData<LetterSrsDeck, LetterPracticeType>): List<DashboardRecommendation> {
+        val cards = srsCardRepository.getAll()
+        val overlay = StudyOverlayBuilder.build(cards)
+        val frequencyRanks = knowledgeRepository.kanjiFrequencyRanks()
+
+        // Candidates: every kanji in the letter decks (the real study pool),
+        // with its real projected study state and real frequency rank.
+        val candidates = lettersDecks.decks
+            .flatMap { it.items }
+            .distinct()
+            .map { character ->
+                RecommendationCandidate(
+                    character = character,
+                    keyword = null,
+                    frequencyRank = frequencyRanks[character],
+                    studyState = overlay.state(character),
+                    lastReviewMs = overlay.info(character)?.lastReview?.toEpochMilliseconds(),
+                    jlpt = null
+                )
+            }
+
+        val recommended = StudyRecommendationEngine.recommend(
+            candidates = candidates,
+            limit = RECOMMENDATIONS_LIMIT
+        )
+        // Keywords for the recommended set only (a handful of cheap lookups).
+        return recommended.map { rec ->
+            DashboardRecommendation(
+                character = rec.character,
+                keyword = rec.keyword
+                    ?: runCatching { knowledgeRepository.kanji(rec.character)?.meanings?.firstOrNull() }.getOrNull(),
+                reason = rec.reason,
+                urgency = rec.urgency
+            )
+        }
+    }
+
     private suspend fun getStats(): GeneralDashboardStats {
 
         fun StreakData.includesDate(date: LocalDate): Boolean {
@@ -345,6 +406,7 @@ class DefaultSubscribeOnGeneralDashboardScreenDataUseCase(
         private const val RECENT_DECKS_LIMIT = 6
         private const val ACTIVITY_LIMIT = 8
         private const val HEATMAP_DAYS = 84L
+        private const val RECOMMENDATIONS_LIMIT = 6
     }
 
 }

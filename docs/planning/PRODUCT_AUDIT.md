@@ -123,23 +123,20 @@ Verified by reading call chains from entry point to database:
 | `screen/decks/PluginSystem.kt` | Refresh toolbar button was `onClick = { }`; plugin config dialog had dead inputs (fields never applied, `if (config.isNotEmpty() \|\| true)` hack) | Refresh re-registers built-ins and clears per-plugin error state; dialog now shows stored config, Apply writes key/value via `updateConfig` (enabled only when both fields are non-blank). |
 | `screen/decks/BackupSystemExt.kt` `BackupVerifier` | `verifyChecksum()` returned hardcoded "Backup integrity verified"; `verifyDatabaseIntegrity()` returned "passed" without a database; `estimateCompressionRatio()` fabricated 0.4 | `verifyChecksum` now computes a real SHA-256 (pure-Kotlin, commonMain-safe — JVM `MessageDigest` is unavailable there) and compares honestly, reporting mismatch/read failures; `verifyDatabaseIntegrity` reports honestly that it needs the app DB handle; compression estimate documented as an expectation, not a measurement. The SHA-256 implementation was verified against FIPS test vectors and 200 random buffers vs node crypto. |
 
-### 5.2 Dead code / shadow implementations (removal candidates — NOT yet removed)
+### 5.2 Dead code / shadow implementations — REMOVED (2026-08-18 pass)
 
-These are real, often large, and currently unreachable. They should be removed
-(or revived into the chosen product) — but deletion is a separate, deliberate
-step, not done silently in this pass:
+All three dead shadows are gone from the tree (verified by `grep` across
+`core/src` and `desktopApp/src` — only this document still names them).
 
-- **`screen/decks/LearningPowerHub.kt` + friends** — a whole "Learning Power"
-  hub never called from anywhere. Inside it: `BackupManagerScreen` with *all*
-  callbacks empty (`onCreateBackup = { }`, `onRestoreBackup = { }`,
-  `onDeleteBackup = { }`, `onVerifyBackup = { }`, `onUpdateConfig = { }`);
-  `SearchEngineScreen(onSearch = { })`; `BulkActionsFullScreen` mutating a
-  local `cards` copy (fake persistence); decorative stats; "Start Restore"
-  button with `onClick = { }`; `RestoreTab` checkboxes that control nothing.
-  This is precisely the "looks complete but is placeholder" category.
-- **`screen/sync/SyncSettingsUI.kt`** — 443-line parallel sync settings screen
-  with a dead "Sync Now" button (`onClick = { }`); zero code references
-  (only a docs table mentions it). The real sync UI is `SyncScreen`.
+- **`screen/decks/LearningPowerHub.kt` + friends** — the whole "Learning Power"
+  hub (placeholder `BackupManagerScreen`, `SearchEngineScreen(onSearch = { })`,
+  `BulkActionsFullScreen` with fake persistence, decorative stats, dead
+  "Start Restore" button) was **removed**. The real destinations it faked
+  (Backup, Search, Bulk actions, Card manager, Statistics) all ship as wired
+  `MainDestination`s (`BackupRoute`, `SearchRoute`, `BulkActionsRoute`, …).
+- **`screen/sync/SyncSettingsUI.kt`** — the 443-line parallel sync settings
+  screen with the dead "Sync Now" button was **removed**. The real sync UI is
+  `SyncScreen`.
 - **`BackupSystemExt.kt` (BackupManagerScreen path)** — reachable only through
   the dead LearningPowerHub; the real backup UI is `BackupRoute`/`BackupScreen`.
 - **`app/src/main/.../preview/screen/StatsScreenPreview.kt`** — preview only,

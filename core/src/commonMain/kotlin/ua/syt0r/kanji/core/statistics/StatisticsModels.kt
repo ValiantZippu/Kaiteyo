@@ -156,6 +156,7 @@ data class HeatmapYear(
 )
 
 /** A recorded study session (start/end, mode, counts, accuracy). */
+@Serializable
 data class StudySessionRecord(
     val id: Long = 0,
     val startTime: kotlinx.datetime.Instant,

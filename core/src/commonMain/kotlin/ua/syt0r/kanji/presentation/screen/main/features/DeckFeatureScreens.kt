@@ -348,6 +348,77 @@ fun CardBrowserRoute(
     )
 }
 
+/**
+ * The Browse tab hosts the Anki-style browser directly: the deck tree rail,
+ * the sortable table with Stability/Difficulty/Due columns, and the inline
+ * note editor all render against the live library, exactly like Anki's
+ * Browse window.
+ */
+@Composable
+fun BrowseTabBrowser(
+    onOpenDeck: (String) -> Unit = {},
+    onOpenCard: (String) -> Unit = {}
+) {
+    val controller = koinInject<DeckFeaturesController>()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) { controller.ensureLoaded() }
+    LaunchedEffect(controller.isLoading) {
+        if (!controller.isLoading && controller.isLoaded) controller.loadDecks()
+    }
+    LaunchedEffect(Unit) {
+        controller.deckChangesFlow.collect { controller.loadDecks() }
+    }
+
+    if (controller.isLoading) {
+        LoadingView()
+        return
+    }
+    if (controller.loadError) {
+        ErrorView(onRetry = { scope.launch { controller.loadAll() } })
+        return
+    }
+
+    var parts by remember { mutableStateOf<DeckFeaturesController.BrowserCatalogParts?>(null) }
+    LaunchedEffect(controller.isLoaded) {
+        if (controller.isLoaded) {
+            parts = controller.browserCatalogParts()
+        }
+    }
+
+    val catalog = remember(controller.cards, parts) {
+        if (parts == null) return@remember emptyList()
+        val kanjiRows = controller.cards.map { card ->
+            val name = parts!!.deckNameByCharacter[card.id]
+            if (name != null && name != card.deck) card.copy(deck = name) else card
+        }
+        kanjiRows + parts!!.vocabRows
+    }
+
+    // Decks with the parent/child hierarchy attached so the rail tree nests.
+    val deckObjects = remember(controller.deckSummaries) {
+        val flat = buildRealDecks(controller.deckSummaries)
+        val byId = flat.associateBy { it.id }
+        val roots = flat.filter { deck ->
+            deck.parentId == null || byId[deck.parentId] == null
+        }
+        roots.forEach { root ->
+            root.children.clear()
+            flat.filter { it.parentId == root.id }.forEach { root.children.add(it) }
+        }
+        roots
+    }
+
+    CardBrowserFullScreen(
+        cards = catalog,
+        decks = deckObjects,
+        embedded = true,
+        onFlagCard = { id, flag -> scope.launch { controller.setFlagForCards(listOf(id), flag) } },
+        onStatusChange = { id, status -> scope.launch { controller.changeCardStatus(id, status) } },
+        onUpdateCard = { card -> scope.launch { controller.updateCardFields(card) } }
+    )
+}
+
 @Composable
 fun DayPracticeCardsRoute(
     day: String,
@@ -529,7 +600,9 @@ fun DeckBrowserRoute(
         onMove = { a, b -> scope.launch { controller.moveDeck(a.id, b.id) } },
         onRename = { deck, name -> scope.launch { controller.renameDeck(deck.id, name) } },
         onDelete = { deck -> scope.launch { controller.deleteDeck(deck.id) } },
-        onCreateDeck = { name, type, _ -> scope.launch { controller.createDeck(name, type) } },
+        onCreateDeck = { name, type, _, noteTypeId ->
+            scope.launch { controller.createDeck(name, type, noteTypeId) }
+        },
         onBrowse = { deck -> onBrowse(deck.id) },
         onFindContent = { onFindContent() },
         onClose = onClose

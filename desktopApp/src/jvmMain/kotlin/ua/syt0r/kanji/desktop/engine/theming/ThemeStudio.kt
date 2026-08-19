@@ -360,6 +360,9 @@ object ThemeMapper {
         "light" -> BaseMode.Light
         "dark" -> BaseMode.Dark
         "sepia" -> BaseMode.Sepia
+        "cream" -> BaseMode.Cream
+        "paper" -> BaseMode.Paper
+        "midnight" -> BaseMode.Midnight
         else -> BaseMode.Oled
     }
 

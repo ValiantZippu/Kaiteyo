@@ -57,6 +57,17 @@ Additional dimension used here: **where** the feature lives.
 | **Dictionary (import + popup)** | `IMPLEMENTED (suite, unshipped)` | suite | `desktop/engine/dictionary/*` — `DictionaryService`, `DictionaryImporter`, `DictionaryPopup` | Yomitan ZIP/JSON/JMdict; EXACT/PREFIX/KANA/DEINFLECT; TTS; mining actions |
 | **Search** | `IMPLEMENTED` | core + suite | `SearchScreen` (core), `SearchEngine` (suite) | Radical/word/sentence search; node-family browse is target |
 | **Text analysis** | `IMPLEMENTED` | core | text_analysis screen | Word-by-word breakdown (Ichiran-style) |
+| **Reading environment** | `IMPLEMENTED (suite)` | suite | `desktop/engine/reading/*` + `desktop/ui/reading/*` — `ReadingEngine`, `ReadingParsers`, `ReadingLibrary`, `ReadingView` | Native reading workspace: TXT/Markdown/HTML; tokenized dictionary lookup + mining (incl. phrase mining); bookmarks/highlights; in-document search; reading history; EPUB planned |
+| **Curriculum** | `IMPLEMENTED (suite)` | suite | `desktop/engine/curriculum/*` + `desktop/ui/curriculum/CurriculumView.kt` | Structured courses (kana foundation, JLPT N5/N4) measured against real card/review data; objectives, auto-advance, persistence |
+| **Knowledge graph (user-facing)** | `IMPLEMENTED (suite)` | suite | `desktop/engine/graph/*` + `desktop/ui/graph/GraphExplorerView.kt` | Node read-model over jdata LanguageDatabase: traversal, BFS path finder UI, Practice (review filtered to node), card-derived knowledge states, media exposure; reachable from dictionary/popup surfaces via `pendingGraphNode` deep-link |
+| **Grammar index** | `IMPLEMENTED (suite)` | suite | `desktop/engine/grammar/*` + `desktop/ui/grammar/GrammarPracticeView.kt` | GrammarEntry model + GrammarIndex (lookup/search/sentence match) + curated reference facts; GrammarPracticeView derives its content from the index; full dataset adoption gated by `docs/data/SOURCES.md` |
+| **Search pipeline** | `IMPLEMENTED (suite)` | suite | `desktop/engine/search/*` + `DictionaryService.suggestions()` | NFKC normalize → tokenize → rank → filter + trigram index; wired into the dictionary lookup card as index-backed suggestions |
+| **Exam question types** | `IMPLEMENTED (suite)` | suite | `ExamQuestionGenerators.kt` + `ExamEngine` | Matching/reading/cloze/ordering/free-response/timed generators + tests; wired as the "Kanji workshop" exam type with full scoring |
+| **Plugin sandbox** | `IMPLEMENTED (suite)` | suite | `desktop/engine/plugin/*` (capabilities, manifest, sandbox) + `PluginRegistry.install` gate | Capability model + deny-by-default inspection gate enforced at registry install (known capabilities + legacy tag vocabulary pass); no runtime loading (ADR-0011) |
+| **Suite localization** | `PARTIALLY_IMPLEMENTED (suite)` | suite | `engine/l10n/SuiteStrings.kt` | EN/JA strings interface + resolver (~230 strings, guard-tested); covers new views (Curriculum/Graph/Reading/Grammar/Exams/palette) + Dashboard/Mining/Plugins/Dictionary/Stats/Library chrome; remaining legacy views (Media/Settings/About/Browser/etc.) follow-up |
+| **Event log** | `IMPLEMENTED (suite)` | suite | `engine/events/EventLog.kt` | Append-only EVENT_CATALOG store (semantic payloads, JSON snapshot, corrupt-snapshot recovery, summary read-model) + tests; wired into mining (`CardMined`); core table gated on ADR-0013 |
+| **Media node family** | `IMPLEMENTED (suite)` | suite | `engine/media/MediaNodeFamily.kt` | Series → Episode → Scene → SubtitleLine graph built from real mined-card provenance + bookmarks; exposure counts, series inference, sentence surface; `AppState.mediaNodeGraph`; tests |
+| **Keyboard shortcuts** | `IMPLEMENTED (suite)` | suite | `engine/shortcuts/*` + `ShortcutRegistryTest` | Complete rebindable catalog: every workspace destination has a `ShortcutDef` (Reading/Curriculum/Graph/Game/Exams/Dictionary/Mining/OCR/Integrations/LearningBrowser added); Reading/Study/World categories; Ctrl+Shift+M = mine selection; palette covers all views + exam quick-starts |
 | **Media center** | `IMPLEMENTED (suite, unshipped)` | suite | `desktop/engine/media/*` — `MediaEngine`, `AudioPlayer`, `SubtitleEngine` | VLC/mpv/Java Sound backends; SRT/ASS/SSA/VTT; screenshots; bookmarks; A–B; speed |
 | **Mining** | `IMPLEMENTED (suite, unshipped)` | suite | `desktop/engine/mining/*` — `MiningEngine`, `MiningPayload` | Sources: dictionary/subtitle/browser/OCR/clipboard; duplicate protection |
 | **OCR** | `PARTIALLY_IMPLEMENTED (suite)` | suite | `desktop/engine/ocr/OcrEngine` (Tess4J when present) | Capture pipeline works; detection needs external Tesseract |
@@ -67,19 +78,19 @@ Additional dimension used here: **where** the feature lives.
 | **Plugin system** | `PLACEHOLDER→PLANNED` | suite | `desktop/engine/plugin/` | Registry + marketplace scaffold; **no runtime loading** (ADR-0011) |
 | **Auto-update** | `PARTIALLY_IMPLEMENTED` | desktop | installer update feeds, `Updater` | Architecture complete (channels, sha256, rollback); rollout staged |
 | **Onboarding** | `IMPLEMENTED (suite)` | suite | `OnboardingWizard` | 8 steps; core app has no onboarding (gap) |
-| **Grammar study** | `PARTIALLY_IMPLEMENTED (suite)` | suite | `GrammarPracticeView` + starter deck | No bundled grammar dataset (RESEARCH) |
+| **Grammar study** | `IMPLEMENTED (suite)` | suite | `GrammarPracticeView` + `engine/grammar/*` | Explanation-first practice over the curated GrammarIndex (examples split at the real pattern tail) + user-tagged cards; full dataset adoption gated by `docs/data/SOURCES.md` |
 | **Pitch accent** | `PLANNED` | — | RESEARCH in TODO | No open pitch dataset adopted |
 | **Knowledge graph (language)** | `IMPLEMENTED` | kjd + core | kjd entity resolution → `AppDataDatabase` | kanji↔readings↔meanings↔radicals↔words |
 | **Knowledge graph (user)** | `ARCHITECTED (TARGET)` | — | ADR-0013/0016, `nodes/KNOWLEDGE_STATE_MODEL.md` | Node/edge layer + event-derived knowledge states |
 | **Node architecture** | `ARCHITECTED (TARGET)` | — | ADR-0013, `NODE_ARCHITECTURE.md` | No node tables exist yet |
-| **Journey (game)** | `ARCHITECTED (TARGET)` | — | ADR-0014/0018, `docs/game/`, `nodes/` | **No implementation**; engine decision pending |
-| **World / content packages** | `ARCHITECTED (TARGET)` | — | ADR-0015, `CONTENT_AUTHORING.md` | Schema + validation gates specified |
-| **Curriculum / courses** | `PLANNED` | — | `docs/learning/curriculum-engine.md` | Not implemented; deck-generation groundwork exists |
+| **Journey (game)** | `IMPLEMENTED (suite)` | suite | `desktop/game/*` — engine core, world (2 regions), player/camera/input, NPCs, dialogue, quests, story, photography, collections, travel, time/weather/seasons, save system, Kaiteyo bridge, kids mode | Engine decision **Accepted** (ADR-0018; evidence in `docs/game/engine-evaluation.md`, decision in `ENGINE_DECISION.md`); vertical slice reachable via `WorkspaceView.Game` / `open-game`; honest per-system status in `docs/game/VERTICAL_SLICE.md` |
+| **World / content packages** | `IMPLEMENTED (suite)` | suite | `desktop/game/content/*` — data-driven JSON (regions/quests/NPCs/dialogue/knowledge/collectibles/stories/audio) + `ContentValidator` | ADR-0015 schemas in use; new regions/quests/content need no engine rewrites (see `docs/game/WORLD.md`) |
+| **Curriculum / courses** | `IMPLEMENTED (suite)` | suite | `desktop/engine/curriculum/*` + `desktop/ui/curriculum/CurriculumView.kt` | Structured courses (kana foundation, JLPT N5/N4) measured against real card/review data; objectives, auto-advance, persistence |
 | **Children's world** | `PLANNED (TARGET)` | — | `docs/vision/child-experience.md` | After vertical slice (NODE §115) |
 | **Website** | `IMPLEMENTED` | website/ | Python build consuming `docs` | `dist/` committed; regeneration is a tracked debt |
 | **Web trial** | `PLANNED` | — | MASTER_TODO KT-WEB-001 | Requires WASM/Compose-Web evaluation |
 | **Embedded browser** | `PARTIALLY_IMPLEMENTED (suite)` | suite | `desktop/ui/browser` (reader + WebView) | Full browser architecture is `PLANNED` (`docs/architecture/browser.md`) |
-| **Gamepad input** | `PLANNED` | — | `docs/game/player.md`, `docs/input/` | No game exists; app controller support partial |
+| **Gamepad input** | `IMPLEMENTED (suite)` | suite | `desktop/game/engine/input/*` — JNA provider (XInput + evdev), Xbox/PS/generic layouts, dead zones, rebinding | Gamepad hot-plug (Linux re-probe, Windows XInput poll); app-side controller support remains partial |
 
 ## 2. Platform status
 
@@ -114,7 +125,7 @@ Additional dimension used here: **where** the feature lives.
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | One-product decision stalls → suite engines rot | High | High | ADR-0017 is first in MASTER_TODO dependency order |
-| Game engine chosen without evaluation → rewrite | Medium | High | ADR-0018 gate: no Journey code before decision (STANDARDS §242) |
+| Game engine chosen without evaluation → rewrite | Low | High | ADR-0018 **Accepted** with evidence (`docs/game/engine-evaluation.md`); 3D swap path documented in `ENGINE_DECISION.md` |
 | Node layer added as parallel data store → drift | Medium | High | Read-model-over-existing-DB option in ADR-0013; docs-first |
 | Dataset license issues (grammar/pitch/geo) | Medium | Medium | All new datasets gated by `docs/data/SOURCES.md` verification |
 | Docs drift from code after large feature work | High | Medium | MASTER §69 change rules; link check at end of every pass |

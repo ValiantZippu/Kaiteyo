@@ -36,6 +36,12 @@ val searchScreenModule = module {
         )
     }
 
+    factory<SearchScreenContract.LoadKaiteyoHomeUseCase> {
+        SearchScreenKaiteyoHomeUseCase(
+            appDataRepository = get()
+        )
+    }
+
     multiplatformViewModel<SearchScreenContract.ViewModel> {
         SearchViewModel(
             viewModelScope = it.component1(),
@@ -44,6 +50,7 @@ val searchScreenModule = module {
             loadRadicalsUseCase = get(),
             searchByRadicalsUseCase = get(),
             updateEnabledRadicalsUseCase = get(),
+            loadKaiteyoHomeUseCase = get(),
             analyticsManager = get()
         )
     }

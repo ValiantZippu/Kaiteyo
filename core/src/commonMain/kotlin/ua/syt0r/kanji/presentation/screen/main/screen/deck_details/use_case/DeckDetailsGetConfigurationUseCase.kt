@@ -41,7 +41,8 @@ class DefaultDeckDetailsGetConfigurationUseCase(
                     showNew = true,
                     showDue = true,
                     showDone = true
-                )
+                ),
+                noteTypeId = vocabNoteTypeId.get()
             )
         }
     }

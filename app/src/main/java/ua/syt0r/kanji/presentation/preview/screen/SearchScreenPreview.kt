@@ -6,6 +6,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import ua.syt0r.kanji.presentation.common.PaginatableJapaneseWordList
 import ua.syt0r.kanji.presentation.common.theme.AppTheme
 import ua.syt0r.kanji.presentation.common.ui.kanji.PreviewKanji
+import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.KanjiverseHomeState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.SearchScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.data.RadicalSearchState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.search.ui.SearchScreenUI
@@ -18,13 +19,15 @@ private fun GenericPreview(
         SearchScreenUI(
             state = rememberUpdatedState(screenState),
             radicalsState = rememberUpdatedState(RadicalSearchState.random()),
+            kanjiverseHomeState = rememberUpdatedState(KanjiverseHomeState(isLoading = false)),
             onSubmitInput = {},
             onRadicalsSectionExpanded = {},
             onRadicalsSelected = {},
             onCharacterClick = {},
             onWordClick = {},
             onScrolledToEnd = {},
-            onWordFeedback = {}
+            onWordFeedback = {},
+            onLoadKanjiverseHome = {}
         )
     }
 }

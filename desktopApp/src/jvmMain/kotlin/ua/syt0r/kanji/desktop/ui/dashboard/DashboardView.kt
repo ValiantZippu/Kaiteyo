@@ -69,6 +69,7 @@ import ua.syt0r.kanji.desktop.designsystem.newColor
 import ua.syt0r.kanji.desktop.designsystem.rememberWidthTier
 import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.engine.media.MediaEngine
 import ua.syt0r.kanji.desktop.engine.settings.SettingsEngine
@@ -140,41 +141,41 @@ fun DashboardView(state: AppState) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Quick actions",
+                    text = resolveSuiteString { quickActions },
                     color = surfaceColors().textMuted,
                     fontSize = DsType.Caption,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
                 DsButton(
-                    text = "Study",
+                    text = resolveSuiteString { studyButton },
                     icon = Icons.Default.PlayArrow,
                     compact = true,
                     onClick = { state.startReview() }
                 )
                 DsButton(
-                    text = "Writing",
+                    text = resolveSuiteString { writingButton },
                     icon = Icons.Default.Create,
                     kind = DsButtonKind.Secondary,
                     compact = true,
                     onClick = { state.startWritingPractice() }
                 )
                 DsButton(
-                    text = "Browse",
+                    text = resolveSuiteString { browseButton },
                     icon = Icons.Default.GridView,
                     kind = DsButtonKind.Secondary,
                     compact = true,
                     onClick = { state.currentView = WorkspaceView.Browser }
                 )
                 DsButton(
-                    text = "New card",
+                    text = resolveSuiteString { newCardButton },
                     icon = Icons.Default.Add,
                     kind = DsButtonKind.Secondary,
                     compact = true,
                     onClick = { state.newCard() }
                 )
                 DsButton(
-                    text = "Library",
+                    text = resolveSuiteString { libraryButton },
                     icon = Icons.Default.Folder,
                     kind = DsButtonKind.Secondary,
                     compact = true,
@@ -189,31 +190,31 @@ fun DashboardView(state: AppState) {
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
             DsStatTile(
-                label = "Due now",
+                label = resolveSuiteString { dueNowLabel },
                 value = state.dueCount().toString(),
                 modifier = Modifier.weight(1f),
                 delta = "${state.dueCount()} review${if (state.dueCount() == 1) "" else "s"}",
                 deltaPositive = state.dueCount() >= 0
             )
             DsStatTile(
-                label = "New",
+                label = resolveSuiteString { newLabel },
                 value = state.newCount().toString(),
                 modifier = Modifier.weight(1f)
             )
             DsStatTile(
-                label = "Mastered",
+                label = resolveSuiteString { masteredLabel },
                 value = state.masteredCount().toString(),
                 modifier = Modifier.weight(1f),
                 delta = "21d+ intervals"
             )
             DsStatTile(
-                label = "Study time",
+                label = resolveSuiteString { studyTimeLabel },
                 value = state.formatDuration(state.totalStudyTime()),
                 modifier = Modifier.weight(1f),
                 delta = "${state.totalReviews()} total reviews"
             )
             DsStatTile(
-                label = "Total cards",
+                label = resolveSuiteString { totalCardsLabel },
                 value = cards.size.toString(),
                 modifier = Modifier.weight(1f)
             )
@@ -223,27 +224,27 @@ fun DashboardView(state: AppState) {
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
             DsStatTile(
-                label = "This week",
+                label = resolveSuiteString { thisWeekLabel },
                 value = state.weeklyReviews().toString(),
                 modifier = Modifier.weight(1f),
                 delta = "${state.studiedDaysInWeek()}/7 days active"
             )
             DsStatTile(
-                label = "Streak",
+                label = resolveSuiteString { streakLabel },
                 value = "${HeatmapEngine.currentStreak(state.summaries)}d",
                 modifier = Modifier.weight(1f),
                 delta = "current streak"
             )
             DsStatTile(
-                label = "Suspended",
+                label = resolveSuiteString { suspendedLabel },
                 value = state.suspendedCount().toString(),
                 modifier = Modifier.weight(1f)
             )
             DsStatTile(
-                label = "Recalled",
+                label = resolveSuiteString { recalledLabel },
                 value = state.collections.collections.count { it.favorite }.toString(),
                 modifier = Modifier.weight(1f),
-                delta = "favorite collections"
+                delta = resolveSuiteString { favoriteCollections }
             )
         }
 
@@ -255,11 +256,11 @@ fun DashboardView(state: AppState) {
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
                 DsSectionHeader(
-                    title = "Immersion",
-                    subtitle = "Media activity today",
+                    title = resolveSuiteString { immersionTitle },
+                    subtitle = resolveSuiteString { immersionSubtitle },
                     action = {
                         DsButton(
-                            text = "Open Media",
+                            text = resolveSuiteString { openMediaButton },
                             icon = Icons.Default.PlayArrow,
                             kind = DsButtonKind.Secondary,
                             compact = true,
@@ -277,31 +278,31 @@ fun DashboardView(state: AppState) {
                     horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
                 ) {
                     ImmersionStat(
-                        label = "Watched today",
+                        label = resolveSuiteString { watchedTodayLabel },
                         value = MediaEngine.formatTime(todayStat.watchMs),
                         detail = "${mediaStats.watchMsBetween(last7, today) / 3600000}h in the last 7 days",
                         modifier = Modifier.weight(1f)
                     )
                     ImmersionStat(
-                        label = "Media study",
+                        label = resolveSuiteString { mediaStudyLabel },
                         value = MediaEngine.formatTime(todayStat.studyMs),
                         detail = if (todayStat.studyMs > 0) "counts toward study time" else "enable study mode in the player",
                         modifier = Modifier.weight(1f)
                     )
                     ImmersionStat(
-                        label = "Mined today",
+                        label = resolveSuiteString { minedTodayLabel },
                         value = todayStat.mined.toString(),
                         detail = "${mediaStats.minedBetween(last7, today)} in the last 7 days",
                         modifier = Modifier.weight(1f)
                     )
                     ImmersionStat(
-                        label = "Lookups today",
+                        label = resolveSuiteString { lookupsTodayLabel },
                         value = todayStat.lookups.toString(),
                         detail = "dictionary lookups",
                         modifier = Modifier.weight(1f)
                     )
                     ImmersionStat(
-                        label = "Mined all (7d)",
+                        label = resolveSuiteString { minedAll7dLabel },
                         value = state.miningStatistics.minedBetween(last7, today).toString(),
                         detail = "dictionary · media · OCR · browser",
                         modifier = Modifier.weight(1f)
@@ -356,10 +357,10 @@ fun DashboardView(state: AppState) {
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
                 DsSectionHeader(
-                    title = "Recent Activity",
+                    title = resolveSuiteString { recentActivityTitle },
                     action = {
                         androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.History }) {
-                            androidx.compose.material3.Text("View all", color = accent().primary)
+                            androidx.compose.material3.Text(resolveSuiteString { viewAllLabel }, color = accent().primary)
                         }
                     }
                 )
@@ -453,7 +454,7 @@ private fun HeatmapCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg)) {
             DsSectionHeader(
-                title = "Activity Heatmap",
+                title = resolveSuiteString { activityHeatmapTitle },
                 subtitle = "${HeatmapEngine.currentStreak(state.summaries)} day streak"
             )
             Spacer(Modifier.height(DsSpacing.Md))
@@ -470,7 +471,7 @@ private fun ReviewPaceCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg)) {
             DsSectionHeader(
-                title = "Review Pace",
+                title = resolveSuiteString { reviewPaceTitle },
                 subtitle = "Daily reviews, last 30 days"
             )
             Spacer(Modifier.height(DsSpacing.Lg))
@@ -504,11 +505,11 @@ private fun GoalsCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg)) {
             DsSectionHeader(
-                title = "Goals",
-                subtitle = "Progress toward your targets",
+                title = resolveSuiteString { goalsTitle },
+                subtitle = resolveSuiteString { goalsSubtitle },
                 action = {
                     androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Statistics }) {
-                        androidx.compose.material3.Text("All stats", color = accent().primary)
+                        androidx.compose.material3.Text(resolveSuiteString { allStatsLabel }, color = accent().primary)
                     }
                 }
             )
@@ -611,7 +612,7 @@ private fun StudyTargetCard(state: AppState) {
                 )
             }
             DsButton(
-                text = if (complete) "Extra review" else "Study now",
+                text = if (complete) resolveSuiteString { extraReviewLabel } else resolveSuiteString { studyNowLabel },
                 icon = Icons.Default.PlayArrow,
                 onClick = { state.startReview() }
             )
@@ -852,8 +853,8 @@ private fun WritingPracticeCard(state: AppState, modifier: Modifier = Modifier) 
             verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
             DsSectionHeader(
-                title = "Writing practice",
-                subtitle = "Weakest area from your real attempts"
+                title = resolveSuiteString { writingPracticeTitle },
+                subtitle = resolveSuiteString { writingPracticeSubtitle }
             )
             val weakest = remember(state.learning.revision) { state.learning.weakestKanji(limit = 1).firstOrNull() }
             val allWriting = remember(state.learning.revision) { state.learning.writingStats(limit = 100) }
@@ -918,8 +919,8 @@ private fun WeakSpotsCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg)) {
             DsSectionHeader(
-                title = "Weak Spots",
-                subtitle = "Cards that need attention"
+                title = resolveSuiteString { weakSpotsTitle },
+                subtitle = resolveSuiteString { weakSpotsSubtitle }
             )
             Spacer(Modifier.height(DsSpacing.Md))
             val difficult = WeakSpotEngine.mostDifficult(state.cards.toList(), limit = 4)
@@ -976,11 +977,11 @@ private fun JlptCoverageCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
             DsSectionHeader(
-                title = "JLPT coverage",
-                subtitle = "Estimated study coverage from real SRS stages — not a prediction",
+                title = resolveSuiteString { jlptCoverageTitle },
+                subtitle = resolveSuiteString { jlptCoverageSubtitle },
                 action = {
                     DsButton(
-                        text = "Study JLPT",
+                        text = resolveSuiteString { studyJlptButton },
                         icon = Icons.Default.PlayArrow,
                         kind = DsButtonKind.Secondary,
                         compact = true,
@@ -1040,8 +1041,8 @@ private fun DueForecastCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
             DsSectionHeader(
-                title = "Due forecast",
-                subtitle = "Expected review workload, next 14 days"
+                title = resolveSuiteString { dueForecastTitle },
+                subtitle = resolveSuiteString { dueForecastSubtitle }
             )
             if (forecast.isEmpty()) {
                 Text("Nothing scheduled.", color = sc.textMuted, fontSize = DsType.Body)
@@ -1085,7 +1086,7 @@ private fun PinnedDecksCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
             DsSectionHeader(
-                title = "Pinned decks",
+                title = resolveSuiteString { pinnedDecksTitle },
                 action = {
                     androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Library }) {
                         androidx.compose.material3.Text("Library", color = accent().primary)
@@ -1156,7 +1157,7 @@ private fun RecentImportsCard(state: AppState, modifier: Modifier = Modifier) {
     DsCard(modifier = modifier) {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
             DsSectionHeader(
-                title = "Recent imports",
+                title = resolveSuiteString { recentImportsTitle },
                 action = {
                     androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Transfer }) {
                         androidx.compose.material3.Text("Transfer", color = accent().primary)
@@ -1251,8 +1252,8 @@ private fun StudyRecommendationsCard(state: AppState) {
     DsCard {
         Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
             DsSectionHeader(
-                title = "Recommended for you",
-                subtitle = "Based on your current workload"
+                title = resolveSuiteString { recommendedForYouTitle },
+                subtitle = resolveSuiteString { recommendedSubtitle }
             )
             recommendations.forEach { rec ->
                 Row(
@@ -1715,7 +1716,7 @@ private fun WelcomeHero(state: AppState) {
             verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
         ) {
             Text(
-                text = "Welcome to Kaiteyo",
+                text = resolveSuiteString { welcomeTitle },
                 color = sc.textPrimary,
                 fontSize = DsType.Heading,
                 fontWeight = FontWeight.Bold
@@ -1731,27 +1732,27 @@ private fun WelcomeHero(state: AppState) {
                 horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
             ) {
                 DsButton(
-                    text = "Create a deck",
+                    text = resolveSuiteString { createDeckButton },
                     icon = Icons.Default.Add,
                     modifier = Modifier.weight(1f),
                     onClick = { state.currentView = WorkspaceView.Library }
                 )
                 DsButton(
-                    text = "Import content",
+                    text = resolveSuiteString { importContentButton },
                     icon = Icons.Default.FileDownload,
                     kind = DsButtonKind.Secondary,
                     modifier = Modifier.weight(1f),
                     onClick = { state.currentView = WorkspaceView.Transfer }
                 )
                 DsButton(
-                    text = "Explore dictionary",
+                    text = resolveSuiteString { exploreDictionaryButton },
                     icon = Icons.Default.MenuBook,
                     kind = DsButtonKind.Secondary,
                     modifier = Modifier.weight(1f),
                     onClick = { state.currentView = WorkspaceView.Dictionary }
                 )
                 DsButton(
-                    text = "Try Browse",
+                    text = resolveSuiteString { tryBrowseButton },
                     icon = Icons.Default.GridView,
                     kind = DsButtonKind.Secondary,
                     modifier = Modifier.weight(1f),
@@ -1782,7 +1783,7 @@ private fun ReviewPaceChart(summaries: List<ua.syt0r.kanji.desktop.model.StudyDa
     ) {
         if (points.isEmpty()) {
             Text(
-                text = "No data yet",
+                text = resolveSuiteString { noDataYetLabel },
                 color = sc.textMuted,
                 fontSize = DsType.Body
             )

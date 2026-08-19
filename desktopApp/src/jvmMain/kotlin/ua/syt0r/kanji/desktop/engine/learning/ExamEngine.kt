@@ -43,6 +43,7 @@ enum class ExamType(val label: String) {
     GrammarUsage("Grammar usage"),
     MixedJlpt("Mixed JLPT-style"),
     JlptSimulation("JLPT simulation"),
+    GeneratorMixed("Kanji workshop"),
     Mistakes("Mistakes review"),
     Weekly("Weekly assessment")
 }
@@ -106,7 +107,10 @@ data class ExamAnswer(
     val responseTimeMs: Long = 0
 )
 
-class ExamEngine(private val store: LearningStore) {
+class ExamEngine(
+    private val store: LearningStore,
+    private val eventLog: ua.syt0r.kanji.desktop.engine.events.EventLog? = null
+) {
 
     private val random = Random(System.nanoTime())
 
@@ -132,6 +136,13 @@ class ExamEngine(private val store: LearningStore) {
         // JLPT simulation is a sectioned exam — build it directly.
         if (type == ExamType.JlptSimulation) {
             return buildJlptSimulation(jlpt = jlpt, deckId = deckId, now = now)
+        }
+        // The generator-mix exam is built from the standalone question
+        // generators (meaning/reading matching, single-kanji cloze, free
+        // response) over the real vocab pool — question shapes the engine's
+        // own generator doesn't produce.
+        if (type == ExamType.GeneratorMixed) {
+            return buildGeneratorMixed(deckId = deckId, jlpt = jlpt, questionCount = questionCount, timeLimitMs = timeLimitMs)
         }
         val pool = selectPool(type, deckId, jlpt, includeNew, includeMature, now)
         if (pool.isEmpty()) return null
@@ -359,7 +370,7 @@ class ExamEngine(private val store: LearningStore) {
         ExamType.RadicalRecognition -> listOf(CardType.Recognition, CardType.Meaning)
         ExamType.GrammarStructure -> listOf(CardType.Pattern, CardType.Meaning, CardType.Cloze)
         ExamType.GrammarUsage -> listOf(CardType.Cloze, CardType.Pattern, CardType.Meaning)
-        ExamType.MixedJlpt, ExamType.Mistakes, ExamType.Weekly, ExamType.JlptSimulation -> CardType.entries.toList()
+        ExamType.MixedJlpt, ExamType.Mistakes, ExamType.Weekly, ExamType.JlptSimulation, ExamType.GeneratorMixed -> CardType.entries.toList()
     }
 
     private fun generateQuestion(type: ExamType, entry: Pair<NoteCard?, LearningNote>): ExamQuestion? {
@@ -384,12 +395,90 @@ class ExamEngine(private val store: LearningStore) {
                 2 -> generateQuestionFor(note, card, ExamQuestionType.PatternSelection)
                 else -> generateQuestionFor(note, card, ExamQuestionType.MultipleChoiceMeaning)
             }
-            ExamType.Mistakes, ExamType.Weekly, ExamType.JlptSimulation -> when (random.nextInt(3)) {
+            ExamType.Mistakes, ExamType.Weekly, ExamType.JlptSimulation, ExamType.GeneratorMixed -> when (random.nextInt(3)) {
                 0 -> generateQuestionFor(note, card, ExamQuestionType.MultipleChoiceMeaning)
                 1 -> generateQuestionFor(note, card, ExamQuestionType.TypedReading)
                 else -> generateQuestionFor(note, card, ExamQuestionType.TypedExpression)
             }
         }
+    }
+
+    /**
+     * Build the "Kanji workshop" exam from the standalone question
+     * generators: meaning matching, reading matching, single-kanji cloze and
+     * free response over the real vocab pool at the requested scope. Ordering
+     * questions are excluded — they need a sequence UI the single-answer
+     * runner doesn't have yet (they remain available through the generators
+     * for a future dedicated surface).
+     */
+    private fun buildGeneratorMixed(
+        deckId: String,
+        jlpt: Int?,
+        questionCount: Int,
+        timeLimitMs: Long
+    ): ExamDraft? {
+        val notes = jlptNotes(jlpt, deckId)
+            .filter { it.kind == LearningItemKind.Kanji || it.kind == LearningItemKind.Vocabulary }
+            .take(questionCount + 12)
+        if (notes.isEmpty()) return null
+
+        val items = notes.map { note ->
+            ExamVocabItem(
+                expression = note.expression,
+                reading = note.allReadings.firstOrNull().orEmpty(),
+                meaning = note.meanings.joinToString("; ")
+            )
+        }
+        val generated = ExamQuestionGenerators.mixedExam(items)
+        val questions = generated
+            .filter { it.type != GeneratorQuestionType.Ordering }
+            .mapNotNull(::convertGenerator)
+            .take(questionCount)
+        if (questions.isEmpty()) return null
+
+        return ExamDraft(
+            type = ExamType.GeneratorMixed,
+            title = "Kanji workshop" + if (jlpt != null) " · JLPT N$jlpt" else "",
+            sections = listOf(
+                ExamSection(
+                    id = "workshop",
+                    label = "Kanji workshop",
+                    questions = questions,
+                    timeLimitMs = timeLimitMs
+                )
+            ),
+            deckId = deckId,
+            jlpt = jlpt,
+            timeLimitMs = timeLimitMs
+        )
+    }
+
+    /** Map a generator question onto the engine's evaluatable model. */
+    private fun convertGenerator(q: GeneratorQuestion): ExamQuestion? {
+        val correctAnswer = q.correct.firstOrNull() ?: return null
+        val engineType = when (q.type) {
+            // Matching is used by both meaning and reading generators; the
+            // context discriminates: reading matching carries the English
+            // meaning (ASCII), meaning matching carries the kana reading.
+            GeneratorQuestionType.Matching ->
+                if (q.context.isNotBlank() && q.context.none { it.code > 127 }) ExamQuestionType.MultipleChoiceReading
+                else ExamQuestionType.MultipleChoiceMeaning
+            GeneratorQuestionType.Cloze -> ExamQuestionType.SentenceCompletion
+            GeneratorQuestionType.Ordering -> ExamQuestionType.MultipleChoiceReading
+            GeneratorQuestionType.FreeResponse -> ExamQuestionType.TypedExpression
+            GeneratorQuestionType.Timed -> ExamQuestionType.MultipleChoiceMeaning
+        }
+        return ExamQuestion(
+            id = LearningIds.eventId("q"),
+            cardId = "",
+            noteId = "",
+            questionType = engineType,
+            prompt = q.prompt,
+            correctAnswer = correctAnswer,
+            options = q.options,
+            jlpt = null,
+            deckId = ""
+        )
     }
 
     /**
@@ -588,6 +677,21 @@ class ExamEngine(private val store: LearningStore) {
         )
         store.recordExam(result)
 
+        // Append the exam fact to the domain event log (EVENT_CATALOG).
+        eventLog?.record(
+            ua.syt0r.kanji.desktop.engine.events.EventType.ExamCompleted,
+            source = "exam",
+            payload = mapOf(
+                "examId" to result.id,
+                "title" to result.title,
+                "examType" to result.examType,
+                "score" to result.percentage.toString(),
+                "correct" to result.correctCount.toString(),
+                "questions" to result.questionCount.toString(),
+                "timeMs" to result.timeLimitMs.toString()
+            )
+        )
+
         // Exams also feed the review log — answers are real study activity,
         // so they update SRS for the tested cards exactly like normal reviews.
         val events = mutableListOf<LearningReviewEvent>()
@@ -618,6 +722,9 @@ class ExamEngine(private val store: LearningStore) {
     // ------------------------------------------------------------
     private fun titleFor(type: ExamType, deckId: String, jlpt: Int?, weekly: Boolean): String {
         if (weekly) return "Weekly assessment"
+        if (type == ExamType.GeneratorMixed) {
+            return "Kanji workshop" + if (jlpt != null) " · JLPT N$jlpt" else ""
+        }
         val scope = when {
             jlpt != null -> "JLPT N$jlpt"
             deckId.isNotBlank() -> "Deck"
@@ -628,6 +735,7 @@ class ExamEngine(private val store: LearningStore) {
 
     private fun sectionLabelFor(type: ExamType): String = when (type) {
         ExamType.GrammarStructure, ExamType.GrammarUsage -> "Grammar"
+        ExamType.GeneratorMixed -> "Kanji workshop"
         else -> type.label
     }
 

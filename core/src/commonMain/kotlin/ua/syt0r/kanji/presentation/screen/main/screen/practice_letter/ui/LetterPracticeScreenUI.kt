@@ -62,6 +62,7 @@ import ua.syt0r.kanji.presentation.common.resolveString
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeAnswer
+import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigSection
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationCharactersPreview
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationContainer
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_common.PracticeConfigurationEnumSelector
@@ -241,85 +242,95 @@ private fun ConfiguringState(
                 var selectedInputMode by configuration.inputMode
                 var selectedStrictness by configuration.strictness
 
-                PracticeConfigurationItemsSelector(
-                    state = configuration.selectorState
-                )
+                PracticeConfigSection(title = "Selection") {
+                    PracticeConfigurationItemsSelector(
+                        state = configuration.selectorState
+                    )
 
-                PracticeConfigurationCharactersPreview(
-                    characters = configuration.unfilteredResultCardsList.value.map { it.letter },
-                    selectedCharactersCount = configuration.selectorState.selectedCountIntState
-                )
+                    PracticeConfigurationCharactersPreview(
+                        characters = configuration.unfilteredResultCardsList.value.map { it.letter },
+                        selectedCharactersCount = configuration.selectorState.selectedCountIntState
+                    )
+                }
 
-                PracticeConfigurationEnumSelector(
-                    title = resolveString { letterPractice.hintStrokesTitle },
-                    subtitle = resolveString { letterPractice.hintStrokesMessage },
-                    values = WritingPracticeHintMode.entries,
-                    selected = selectedHintMode,
-                    onSelected = { selectedHintMode = it }
-                )
+                PracticeConfigSection(title = "Input") {
+                    PracticeConfigurationEnumSelector(
+                        title = resolveString { letterPractice.hintStrokesTitle },
+                        subtitle = resolveString { letterPractice.hintStrokesMessage },
+                        values = WritingPracticeHintMode.entries,
+                        selected = selectedHintMode,
+                        onSelected = { selectedHintMode = it }
+                    )
 
-                PracticeConfigurationEnumSelector(
-                    title = resolveString { letterPractice.inputModeTitle },
-                    subtitle = resolveString { letterPractice.inputModeMessage },
-                    values = WritingPracticeInputMode.entries,
-                    selected = selectedInputMode,
-                    onSelected = { selectedInputMode = it }
-                )
+                    PracticeConfigurationEnumSelector(
+                        title = resolveString { letterPractice.inputModeTitle },
+                        subtitle = resolveString { letterPractice.inputModeMessage },
+                        values = WritingPracticeInputMode.entries,
+                        selected = selectedInputMode,
+                        onSelected = { selectedInputMode = it }
+                    )
 
-                PracticeConfigurationEnumSelector(
-                    title = resolveString { letterPractice.evaluationStrictnessTitle },
-                    subtitle = resolveString { letterPractice.evaluationStrictnessMessage },
-                    values = WritingStrictness.entries,
-                    selected = selectedStrictness,
-                    onSelected = { selectedStrictness = it }
-                )
+                    PracticeConfigurationEnumSelector(
+                        title = resolveString { letterPractice.evaluationStrictnessTitle },
+                        subtitle = resolveString { letterPractice.evaluationStrictnessMessage },
+                        values = WritingStrictness.entries,
+                        selected = selectedStrictness,
+                        onSelected = { selectedStrictness = it }
+                    )
 
-                PracticeConfigurationOption(
-                    title = strings.kanaRomajiTitle,
-                    subtitle = strings.kanaRomajiMessage,
-                    checked = kanaRomaji,
-                    onChange = { kanaRomaji = it }
-                )
+                    PracticeConfigurationOption(
+                        title = strings.altStrokeEvaluatorTitle,
+                        subtitle = strings.altStrokeEvaluatorMessage,
+                        checked = altStrokeEvaluatorEnabled,
+                        onChange = { altStrokeEvaluatorEnabled = it }
+                    )
+                }
 
-                PracticeConfigurationOption(
-                    title = strings.noTranslationLayoutTitle,
-                    subtitle = strings.noTranslationLayoutMessage,
-                    checked = noTranslationLayout,
-                    onChange = { noTranslationLayout = it }
-                )
+                PracticeConfigSection(title = "Display & accessibility") {
+                    PracticeConfigurationOption(
+                        title = strings.kanaRomajiTitle,
+                        subtitle = strings.kanaRomajiMessage,
+                        checked = kanaRomaji,
+                        onChange = { kanaRomaji = it }
+                    )
 
-                PracticeConfigurationOption(
-                    title = strings.leftHandedModeTitle,
-                    subtitle = strings.leftHandedModeMessage,
-                    checked = leftHandedMode,
-                    onChange = { leftHandedMode = it }
-                )
+                    PracticeConfigurationOption(
+                        title = strings.noTranslationLayoutTitle,
+                        subtitle = strings.noTranslationLayoutMessage,
+                        checked = noTranslationLayout,
+                        onChange = { noTranslationLayout = it }
+                    )
 
-                PracticeConfigurationOption(
-                    title = strings.altStrokeEvaluatorTitle,
-                    subtitle = strings.altStrokeEvaluatorMessage,
-                    checked = altStrokeEvaluatorEnabled,
-                    onChange = { altStrokeEvaluatorEnabled = it }
-                )
+                    PracticeConfigurationOption(
+                        title = strings.leftHandedModeTitle,
+                        subtitle = strings.leftHandedModeMessage,
+                        checked = leftHandedMode,
+                        onChange = { leftHandedMode = it }
+                    )
+                }
             }
 
             is LetterPracticeConfiguration.Reading -> {
 
-                PracticeConfigurationItemsSelector(
-                    state = configuration.selectorState
-                )
+                PracticeConfigSection(title = "Selection") {
+                    PracticeConfigurationItemsSelector(
+                        state = configuration.selectorState
+                    )
 
-                PracticeConfigurationCharactersPreview(
-                    characters = configuration.unfilteredResultCardsList.value.map { it.letter },
-                    selectedCharactersCount = configuration.selectorState.selectedCountIntState
-                )
+                    PracticeConfigurationCharactersPreview(
+                        characters = configuration.unfilteredResultCardsList.value.map { it.letter },
+                        selectedCharactersCount = configuration.selectorState.selectedCountIntState
+                    )
+                }
 
-                PracticeConfigurationOption(
-                    title = resolveString { letterPractice.kanaRomajiTitle },
-                    subtitle = resolveString { letterPractice.kanaRomajiMessage },
-                    checked = configuration.useRomajiForKanaWords.value,
-                    onChange = { configuration.useRomajiForKanaWords.value = it }
-                )
+                PracticeConfigSection(title = "Display") {
+                    PracticeConfigurationOption(
+                        title = resolveString { letterPractice.kanaRomajiTitle },
+                        subtitle = resolveString { letterPractice.kanaRomajiMessage },
+                        checked = configuration.useRomajiForKanaWords.value,
+                        onChange = { configuration.useRomajiForKanaWords.value = it }
+                    )
+                }
 
             }
         }

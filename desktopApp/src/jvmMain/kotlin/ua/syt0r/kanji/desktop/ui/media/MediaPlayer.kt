@@ -1524,6 +1524,13 @@ fun DictionaryPanel(state: AppState, modifier: Modifier = Modifier) {
                 DsIconButton(icon = Icons.Default.Replay, onClick = { media.replayCue() }, contentDescription = "Replay sentence", size = 26.dp)
                 DsIconButton(icon = Icons.Default.ChevronRight, onClick = { media.replayNextCue() }, contentDescription = "Next sentence", size = 26.dp)
             }
+            // Kaiteyo vocabulary breakdown of this line: every real token
+            // with status, reading and one-click lookup / mine actions.
+            KaiteyoSentenceBreakdown(
+                media = media,
+                cue = cue,
+                modifier = Modifier.padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm)
+            )
         }
 
         val groups = remember(query) {

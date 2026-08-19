@@ -26,7 +26,12 @@ interface GeneralDashboardScreenContract {
             val recentDecks: List<DashboardDeckSummary>,
             val allDecks: List<DashboardDeckSummary>,
             val recentActivity: List<KaiteyoActivity>,
-            val collections: List<KaiteyoCollection>
+            val collections: List<KaiteyoCollection>,
+            /**
+             * Explained "study this next" picks, computed from real SRS state
+             * + frequency (spec §31). Empty when nothing is recommended yet.
+             */
+            val recommendations: List<DashboardRecommendation> = emptyList()
         ) : ScreenState
 
     }

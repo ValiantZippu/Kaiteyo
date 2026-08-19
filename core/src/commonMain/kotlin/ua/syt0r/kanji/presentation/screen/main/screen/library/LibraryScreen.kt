@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -54,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -63,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
@@ -71,6 +75,11 @@ import org.koin.compose.koinInject
 import ua.syt0r.kanji.core.app_data.AppDataRepository
 import ua.syt0r.kanji.core.app_data.WordClassification
 import ua.syt0r.kanji.core.app_data.data.JapaneseWord
+import ua.syt0r.kanji.core.knowledge.KnowledgeRepository
+import ua.syt0r.kanji.core.knowledge.SentenceKnowledge
+import ua.syt0r.kanji.core.knowledge.media.MediaReference
+import ua.syt0r.kanji.core.knowledge.media.MediaReferenceKind
+import ua.syt0r.kanji.core.knowledge.media.MediaReferenceStore
 import ua.syt0r.kanji.core.srs.LetterPracticeType
 import ua.syt0r.kanji.core.srs.LetterSrsDeck
 import ua.syt0r.kanji.core.srs.LetterSrsDecksData
@@ -81,18 +90,28 @@ import ua.syt0r.kanji.core.srs.VocabSrsDecksData
 import ua.syt0r.kanji.core.srs.VocabSrsManager
 import ua.syt0r.kanji.presentation.common.ScreenLetterPracticeType
 import ua.syt0r.kanji.presentation.common.ScreenVocabPracticeType
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoCountBadge
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoEmptyState
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoProgressRing
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.features.ExamWorkspace
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoCollection
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoDataCenter
+import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
+import ua.syt0r.kanji.presentation.screen.main.features.StudyDecksSnapshot
+import ua.syt0r.kanji.presentation.screen.main.features.resumeStudy
+import ua.syt0r.kanji.presentation.screen.main.features.totalDue
+import ua.syt0r.kanji.presentation.screen.main.features.totalNew
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_details.data.DeckDetailsScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.deck_picker.data.DeckPickerScreenConfiguration
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.CardFlagType
 import ua.syt0r.kanji.presentation.screen.main.screen.decks.KaiteyoCard
+import ua.syt0r.kanji.presentation.screen.main.screen.library.KaiteyoLibraryMode
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenData
 import ua.syt0r.kanji.presentation.screen.main.screen.info.toInfoScreenData
 import ua.syt0r.kanji.presentation.screen.main.screen.practice_letter.data.LetterPracticeScreenConfiguration
@@ -135,21 +154,27 @@ private data class UnifiedDeck(
     val category: DeckCategory,
     val lastReview: Instant?,
     val newCount: Int,
-    val dueCount: Int
-)
-
-private data class LibraryDecksState(
-    val letters: LetterSrsDecksData,
-    val vocab: VocabSrsDecksData
-)
+    val dueCount: Int,
+    val totalCount: Int
+) {
+    /** Fraction of cards already introduced (not new) — a real progress signal. */
+    val studiedFraction: Float
+        get() = if (totalCount == 0) 0f else (totalCount - newCount).coerceAtLeast(0).toFloat() / totalCount
+}
 
 private enum class LibraryMode(val label: String) {
     All("All"),
     Decks("Decks"),
     Kanji("Kanji"),
     Vocabulary("Vocabulary"),
+    Sentences("Sentences"),
+    Grammar("Grammar"),
+    Courses("Courses"),
+    Kaiteyo("Kaiteyo"),
+    Exams("Exams"),
     Due("Due"),
-    Favorites("Favorites")
+    Favorites("Favorites"),
+    Media("Media")
 }
 
 // A single flat, keyboard-navigable view of every unified-search hit, in
@@ -159,11 +184,13 @@ private sealed interface SearchEntry {
     data class Deck(val deck: UnifiedDeck) : SearchEntry
     data class Kanji(val card: KaiteyoCard) : SearchEntry
     data class Vocab(val word: JapaneseWord) : SearchEntry
+    data class Sentence(val sentence: SentenceKnowledge) : SearchEntry
 
     fun key(): String = when (this) {
         is Deck -> "deck-${deck.category}-${deck.deckId}"
         is Kanji -> "kanji-${card.id}"
         is Vocab -> "vocab-${word.id}"
+        is Sentence -> "sentence-${sentence.text.hashCode()}"
     }
 }
 
@@ -171,6 +198,7 @@ private fun SearchEntry.sectionTitle(): String = when (this) {
     is SearchEntry.Deck -> "DECKS"
     is SearchEntry.Kanji -> "KANJI"
     is SearchEntry.Vocab -> "VOCABULARY"
+    is SearchEntry.Sentence -> "SENTENCES"
 }
 
 // LazyColumn index of the row for `selectedIndex` in the unified results list,
@@ -200,25 +228,36 @@ private fun LibraryHub(
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
+    val statisticsController = koinInject<StatisticsController>()
+    val scope = rememberCoroutineScope()
 
     var mode by remember { mutableStateOf(LibraryMode.All) }
 
     // Unified search — while anything is typed, the Library body becomes
     // live results across kanji, vocabulary and decks (no separate screens).
+    val knowledgeRepository = koinInject<KnowledgeRepository>()
+
     var query by remember { mutableStateOf("") }
     var vocabMatches by remember { mutableStateOf<List<JapaneseWord>>(emptyList()) }
     var vocabSearching by remember { mutableStateOf(false) }
+    var sentenceMatches by remember { mutableStateOf<List<SentenceKnowledge>>(emptyList()) }
+    var sentenceSearching by remember { mutableStateOf(false) }
     LaunchedEffect(query) {
         val q = query.trim()
         if (q.isBlank()) {
             vocabMatches = emptyList()
             vocabSearching = false
+            sentenceMatches = emptyList()
+            sentenceSearching = false
             return@LaunchedEffect
         }
         vocabSearching = true
+        sentenceSearching = true
         delay(200) // debounce the dictionary query
         vocabMatches = appDataRepository.getWordsWithText(q, limit = 8)
         vocabSearching = false
+        sentenceMatches = knowledgeRepository.sentencesWithText(q, limit = 5)
+        sentenceSearching = false
     }
 
     val kanjiMatches by remember(dataCenter.cards, query) {
@@ -256,9 +295,9 @@ private fun LibraryHub(
         return
     }
 
-    val decksState by produceState<LibraryDecksState?>(null, letterSrsManager, vocabSrsManager) {
+    val decksState by produceState<StudyDecksSnapshot?>(null, letterSrsManager, vocabSrsManager) {
         suspend fun reload() {
-            value = LibraryDecksState(
+            value = StudyDecksSnapshot(
                 letters = letterSrsManager.getDecks(),
                 vocab = vocabSrsManager.getDecks()
             )
@@ -292,11 +331,12 @@ private fun LibraryHub(
 
     // Flat, ordered list of every visible result — the single source of truth
     // for both the rendered sections and arrow-key navigation.
-    val searchEntries = remember(deckMatches, kanjiMatches, vocabMatches) {
+    val searchEntries = remember(deckMatches, kanjiMatches, vocabMatches, sentenceMatches) {
         buildList {
             deckMatches.forEach { add(SearchEntry.Deck(it)) }
             kanjiMatches.forEach { add(SearchEntry.Kanji(it)) }
             vocabMatches.forEach { add(SearchEntry.Vocab(it)) }
+            sentenceMatches.forEach { add(SearchEntry.Sentence(it)) }
         }
     }
     var selectedIndex by remember { mutableStateOf(0) }
@@ -306,6 +346,9 @@ private fun LibraryHub(
     }
     val openVocab: (JapaneseWord) -> Unit = {
         navigationState.navigate(MainDestination.Info(it.toInfoScreenData()))
+    }
+    val openSentence: (SentenceKnowledge) -> Unit = {
+        navigationState.navigate(MainDestination.SentenceEntry(it.text, it.translation))
     }
     val openDeck: (UnifiedDeck) -> Unit = { deck ->
         val configuration = when (deck.category) {
@@ -368,6 +411,7 @@ private fun LibraryHub(
                                     is SearchEntry.Deck -> openDeck(entry.deck)
                                     is SearchEntry.Kanji -> openKanji(entry.card.id)
                                     is SearchEntry.Vocab -> openVocab(entry.word)
+                                    is SearchEntry.Sentence -> openSentence(entry.sentence)
                                 }
                                 true
                             } else {
@@ -402,11 +446,12 @@ private fun LibraryHub(
                 dataCenter = dataCenter,
                 query = query.trim(),
                 entries = searchEntries,
-                vocabSearching = vocabSearching,
+                vocabSearching = vocabSearching || sentenceSearching,
                 selectedIndex = selectedIndex,
                 onOpenKanji = openKanji,
                 onOpenVocab = openVocab,
                 onOpenDeck = openDeck,
+                onOpenSentence = openSentence,
                 onOpenFullSearch = {
                     navigationState.navigate(MainDestination.SearchEngine)
                 },
@@ -483,9 +528,46 @@ private fun LibraryHub(
                 surfaceColors = surfaceColors
             )
 
+            LibraryMode.Exams -> ExamWorkspace(
+                controller = statisticsController,
+                scope = scope
+            )
+
+            LibraryMode.Sentences -> SentencesBrowse(
+                navigationState = navigationState,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Grammar -> GrammarBrowse(
+                navigationState = navigationState,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Courses -> CoursesBrowse(
+                navigationState = navigationState,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Kaiteyo -> KaiteyoLibraryMode(
+                navigationState = navigationState,
+                dataCenter = dataCenter,
+                appDataRepository = appDataRepository,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
             LibraryMode.Favorites -> FavoritesList(
                 navigationState = navigationState,
                 dataCenter = dataCenter,
+                accent = accent,
+                surfaceColors = surfaceColors
+            )
+
+            LibraryMode.Media -> MediaReferencesList(
+                navigationState = navigationState,
                 accent = accent,
                 surfaceColors = surfaceColors
             )
@@ -507,6 +589,7 @@ private fun UnifiedSearchResults(
     onOpenKanji: (String) -> Unit,
     onOpenVocab: (JapaneseWord) -> Unit,
     onOpenDeck: (UnifiedDeck) -> Unit,
+    onOpenSentence: (SentenceKnowledge) -> Unit,
     onOpenFullSearch: () -> Unit,
     onSuggestionClick: (String) -> Unit,
     onClear: () -> Unit,
@@ -587,6 +670,13 @@ private fun UnifiedSearchResults(
                             word = entry.word,
                             selected = selected,
                             onClick = { onOpenVocab(entry.word) },
+                            accent = accent,
+                            surfaceColors = surfaceColors
+                        )
+                        is SearchEntry.Sentence -> SentenceRow(
+                            sentence = entry.sentence,
+                            selected = selected,
+                            onClick = { onOpenSentence(entry.sentence) },
                             accent = accent,
                             surfaceColors = surfaceColors
                         )
@@ -677,7 +767,7 @@ private fun LibraryList(
     unifiedDecks: List<UnifiedDeck>,
     totalNew: Int,
     totalDue: Int,
-    decksState: LibraryDecksState?,
+    decksState: StudyDecksSnapshot?,
     accent: KaiteyoAccentScheme,
     surfaceColors: SurfaceColors
 ) {
@@ -690,7 +780,7 @@ private fun LibraryList(
             ContinueStudyingCard(
                 totalNew = totalNew,
                 totalDue = totalDue,
-                onStudy = { startStudy(navigationState, decksState) },
+                onStudy = { resumeStudy(navigationState, decksState) },
                 onCreateLetterDeck = {
                     navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
                 },
@@ -705,10 +795,10 @@ private fun LibraryList(
         item(key = "stats") {
             StatRow(
                 items = listOf(
-                    StatData("Decks", unifiedDecks.size),
-                    StatData("Kanji", dataCenter.cards.size),
-                    StatData("Favorites", dataCenter.favorites.value.size),
-                    StatData("Reviews", dataCenter.totalReviews.value.toInt())
+                    StatData("Decks", unifiedDecks.size, androidx.compose.ui.graphics.Color(0xFF7BC8FF)),
+                    StatData("Kanji", dataCenter.cards.size, androidx.compose.ui.graphics.Color(0xFFB4F88C)),
+                    StatData("Favorites", dataCenter.favorites.value.size, androidx.compose.ui.graphics.Color(0xFFFFB300)),
+                    StatData("Reviews", dataCenter.totalReviews.value.toInt(), androidx.compose.ui.graphics.Color(0xFFA78BFA))
                 ),
                 accent = accent,
                 surfaceColors = surfaceColors
@@ -767,6 +857,20 @@ private fun LibraryList(
     }
 }
 
+private enum class DeckSort(val label: String) {
+    Recent("Recent"),
+    Name("Name"),
+    MostDue("Most due"),
+    MostNew("Most new")
+}
+
+private fun List<UnifiedDeck>.sortedByDeckSort(sort: DeckSort): List<UnifiedDeck> = when (sort) {
+    DeckSort.Recent -> sortedWith(compareByDescending<UnifiedDeck> { it.lastReview }.thenBy { it.title })
+    DeckSort.Name -> sortedBy { it.title.lowercase() }
+    DeckSort.MostDue -> sortedWith(compareByDescending<UnifiedDeck> { it.dueCount }.thenBy { it.title })
+    DeckSort.MostNew -> sortedWith(compareByDescending<UnifiedDeck> { it.newCount }.thenBy { it.title })
+}
+
 @Composable
 private fun DecksList(
     navigationState: MainNavigationState,
@@ -776,6 +880,10 @@ private fun DecksList(
     accent: KaiteyoAccentScheme,
     surfaceColors: SurfaceColors
 ) {
+    var deckSort by remember { mutableStateOf(DeckSort.Recent) }
+    var sortMenuOpen by remember { mutableStateOf(false) }
+    val sortedDecks = remember(unifiedDecks, deckSort) { unifiedDecks.sortedByDeckSort(deckSort) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
@@ -797,6 +905,33 @@ private fun DecksList(
                         fontSize = 12.sp
                     )
                 }
+                Box {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(accent.primary.copy(alpha = 0.1f))
+                            .clickable { sortMenuOpen = true }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Sort, null, tint = accent.primary, modifier = Modifier.size(15.dp))
+                        Text(deckSort.label, color = accent.primary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    }
+                    DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                        DeckSort.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label, fontSize = 13.sp) },
+                                onClick = { deckSort = option; sortMenuOpen = false },
+                                leadingIcon = {
+                                    if (option == deckSort) {
+                                        Icon(Icons.Outlined.Check, null, tint = accent.primary, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
                 TextButton(onClick = {
                     navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
                 }) {
@@ -810,7 +945,7 @@ private fun DecksList(
             }
         }
 
-        if (unifiedDecks.isEmpty()) {
+        if (sortedDecks.isEmpty()) {
             item(key = "decks-empty") {
                 EmptyDecksCard(
                     onCreateLetterDeck = {
@@ -824,10 +959,10 @@ private fun DecksList(
                 )
             }
         } else {
-            items(unifiedDecks, key = { "deck-${it.category}-${it.deckId}" }) { deck ->
-                DeckRow(
-                    deck = deck,
-                    onClick = {
+            item(key = "decks-grid") {
+                DeckCardGrid(
+                    decks = sortedDecks,
+                    onClick = { deck ->
                         val configuration = when (deck.category) {
                             DeckCategory.Letters -> DeckDetailsScreenConfiguration.LetterDeck(deck.deckId)
                             DeckCategory.Vocabulary -> DeckDetailsScreenConfiguration.VocabDeck(deck.deckId)
@@ -836,6 +971,138 @@ private fun DecksList(
                     },
                     accent = accent,
                     surfaceColors = surfaceColors
+                )
+            }
+        }
+    }
+}
+
+// ============================================
+// Deck card grid — the Library's deck presentation
+// ============================================
+
+@Composable
+private fun DeckCardGrid(
+    decks: List<UnifiedDeck>,
+    onClick: (UnifiedDeck) -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        decks.chunked(2).forEach { rowDecks ->
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                rowDecks.forEach { deck ->
+                    DeckCard(
+                        deck = deck,
+                        onClick = { onClick(deck) },
+                        accent = accent,
+                        surfaceColors = surfaceColors,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (rowDecks.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeckCard(
+    deck: UnifiedDeck,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        if (hovered) surfaceColors.surfaceInteractive else surfaceColors.surface
+    )
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(background)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .hoverable(interactionSource)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accent.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (deck.category == DeckCategory.Letters) "字" else "語",
+                    fontSize = 18.sp
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = deck.title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = surfaceColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = deck.categoryName(),
+                    fontSize = 11.sp,
+                    color = surfaceColors.textMuted
+                )
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            KaiteyoProgressRing(
+                progress = deck.studiedFraction,
+                size = 46.dp,
+                strokeWidth = 5.dp,
+                color = accent.primary
+            ) {
+                Text(
+                    text = "${(deck.studiedFraction * 100).roundToInt()}%",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = surfaceColors.textPrimary
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (deck.newCount > 0 || deck.dueCount > 0) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (deck.newCount > 0) {
+                            KaiteyoCountBadge(deck.newCount, accent.primary)
+                        }
+                        if (deck.dueCount > 0) {
+                            KaiteyoCountBadge(deck.dueCount, androidx.compose.ui.graphics.Color(0xFFE53935))
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "Up to date",
+                        fontSize = 11.sp,
+                        color = surfaceColors.textMuted
+                    )
+                }
+                Text(
+                    text = if (deck.newCount + deck.dueCount > 0)
+                        "${deck.newCount + deck.dueCount} cards ready today"
+                    else "All caught up today",
+                    fontSize = 10.sp,
+                    color = surfaceColors.textMuted
                 )
             }
         }
@@ -1422,7 +1689,7 @@ private fun DueList(
     unifiedDecks: List<UnifiedDeck>,
     totalNew: Int,
     totalDue: Int,
-    decksState: LibraryDecksState?,
+    decksState: StudyDecksSnapshot?,
     accent: KaiteyoAccentScheme,
     surfaceColors: SurfaceColors
 ) {
@@ -1446,7 +1713,7 @@ private fun DueList(
                 ContinueStudyingCard(
                     totalNew = totalNew,
                     totalDue = totalDue,
-                    onStudy = { startStudy(navigationState, decksState) },
+                    onStudy = { resumeStudy(navigationState, decksState) },
                     onCreateLetterDeck = {
                         navigationState.navigate(MainDestination.DeckPicker(DeckPickerScreenConfiguration.Letters))
                     },
@@ -1843,6 +2110,60 @@ private fun KanjiRow(
 }
 
 @Composable
+private fun SentenceRow(
+    sentence: SentenceKnowledge,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        when {
+            selected -> accent.primary.copy(alpha = 0.16f)
+            hovered -> surfaceColors.surfaceInteractive
+            else -> surfaceColors.surface
+        }
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .hoverable(interactionSource)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = sentence.text,
+                color = surfaceColors.textPrimary,
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = sentence.translation.ifBlank { "No translation in the bundled corpus" },
+                color = surfaceColors.textMuted,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = surfaceColors.textMuted,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+@Composable
 private fun VocabRow(
     word: JapaneseWord,
     selected: Boolean = false,
@@ -1902,18 +2223,14 @@ private fun VocabRow(
 // Legacy pieces preserved from the original hub
 // ============================================
 
-private fun LetterSrsDeck.totalNew(): Int = progressMap.values.sumOf { it.dailyNew.size }
-private fun LetterSrsDeck.totalDue(): Int = progressMap.values.sumOf { it.dailyDue.size }
-private fun VocabSrsDeck.totalNew(): Int = progressMap.values.sumOf { it.dailyNew.size }
-private fun VocabSrsDeck.totalDue(): Int = progressMap.values.sumOf { it.dailyDue.size }
-
 private fun LetterSrsDeck.toUnified(category: DeckCategory) = UnifiedDeck(
     deckId = id,
     title = title,
     category = category,
     lastReview = lastReview,
     newCount = totalNew(),
-    dueCount = totalDue()
+    dueCount = totalDue(),
+    totalCount = items.size
 )
 
 private fun VocabSrsDeck.toUnified(category: DeckCategory) = UnifiedDeck(
@@ -1922,103 +2239,9 @@ private fun VocabSrsDeck.toUnified(category: DeckCategory) = UnifiedDeck(
     category = category,
     lastReview = lastReview,
     newCount = totalNew(),
-    dueCount = totalDue()
+    dueCount = totalDue(),
+    totalCount = items.size
 )
-
-private fun startStudy(
-    navigationState: MainNavigationState,
-    decksState: LibraryDecksState?
-) {
-    if (decksState == null) return
-
-    val letters = decksState.letters
-    val vocab = decksState.vocab
-
-    if (letters.decks.isNotEmpty()) {
-        val cards = buildLetterCards(letters, LetterPracticeType.Writing)
-        if (cards.isNotEmpty()) {
-            navigationState.navigate(
-                MainDestination.LetterPractice(
-                    LetterPracticeScreenConfiguration(
-                        cards = cards,
-                        practiceType = ScreenLetterPracticeType.Writing
-                    )
-                )
-            )
-            return
-        }
-        val readingCards = buildLetterCards(letters, LetterPracticeType.Reading)
-        if (readingCards.isNotEmpty()) {
-            navigationState.navigate(
-                MainDestination.LetterPractice(
-                    LetterPracticeScreenConfiguration(
-                        cards = readingCards,
-                        practiceType = ScreenLetterPracticeType.Reading
-                    )
-                )
-            )
-            return
-        }
-    }
-
-    if (vocab.decks.isNotEmpty()) {
-        val cards = buildVocabCards(vocab, VocabPracticeType.Flashcard)
-        if (cards.isNotEmpty()) {
-            navigationState.navigate(
-                MainDestination.VocabPractice(
-                    VocabPracticeScreenConfiguration(
-                        cards = cards,
-                        practiceType = ScreenVocabPracticeType.Flashcard
-                    )
-                )
-            )
-        }
-    }
-}
-
-private fun buildLetterCards(
-    decksData: LetterSrsDecksData,
-    practiceType: LetterPracticeType
-): List<LetterPracticeScreenConfiguration.Card> {
-    if (decksData.decks.isEmpty()) return emptyList()
-    val dailyNew = mutableMapOf<String, Long>()
-    val dailyDue = mutableMapOf<String, Long>()
-    decksData.decks.forEach { deck ->
-        val progress = deck.progressMap.getValue(practiceType)
-        progress.dailyNew.forEach { dailyNew[it] = deck.id }
-        progress.dailyDue.forEach { dailyDue[it] = deck.id }
-    }
-    val leftover = decksData.dailyProgress.leftoversByPracticeTypeMap.getValue(practiceType)
-    val newCards = dailyNew.toList().take(leftover.new).map { (letter, deckId) ->
-        LetterPracticeScreenConfiguration.Card(letter, deckId)
-    }
-    val dueCards = dailyDue.toList().take(leftover.due).map { (letter, deckId) ->
-        LetterPracticeScreenConfiguration.Card(letter, deckId)
-    }
-    return newCards + dueCards
-}
-
-private fun buildVocabCards(
-    decksData: VocabSrsDecksData,
-    practiceType: VocabPracticeType
-): List<VocabPracticeScreenConfiguration.Card> {
-    if (decksData.decks.isEmpty()) return emptyList()
-    val dailyNew = mutableMapOf<Long, Long>()
-    val dailyDue = mutableMapOf<Long, Long>()
-    decksData.decks.forEach { deck ->
-        val progress = deck.progressMap.getValue(practiceType)
-        progress.dailyNew.forEach { dailyNew[it] = deck.id }
-        progress.dailyDue.forEach { dailyDue[it] = deck.id }
-    }
-    val leftover = decksData.dailyProgress.leftoversByPracticeTypeMap.getValue(practiceType)
-    val newCards = dailyNew.toList().take(leftover.new).map { (cardId, deckId) ->
-        VocabPracticeScreenConfiguration.Card(cardId, deckId)
-    }
-    val dueCards = dailyDue.toList().take(leftover.due).map { (cardId, deckId) ->
-        VocabPracticeScreenConfiguration.Card(cardId, deckId)
-    }
-    return newCards + dueCards
-}
 
 @Composable
 private fun ContinueStudyingCard(
@@ -2040,8 +2263,12 @@ private fun ContinueStudyingCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(
-                if (hovered) accent.primary.copy(alpha = 0.14f)
-                else accent.primary.copy(alpha = 0.1f)
+                Brush.verticalGradient(
+                    colors = listOf(
+                        if (hovered) accent.primary.copy(alpha = 0.2f) else accent.primary.copy(alpha = 0.15f),
+                        accent.primary.copy(alpha = 0.05f)
+                    )
+                )
             )
             .clickable(interactionSource = interactionSource, indication = null, onClick = onStudy)
             .hoverable(interactionSource)
@@ -2244,6 +2471,23 @@ private fun DeckRow(
                 color = surfaceColors.textMuted,
                 fontSize = 11.sp
             )
+            Spacer(Modifier.height(6.dp))
+            // Real progress: share of cards no longer "new" (introduced).
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(surfaceColors.surfaceInteractive)
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(deck.studiedFraction.coerceIn(0f, 1f))
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(accent.primary)
+                )
+            }
         }
         if (deck.newCount > 0 || deck.dueCount > 0) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -2349,7 +2593,11 @@ private fun CollectionsSection(
     }
 }
 
-private data class StatData(val label: String, val value: Int)
+private data class StatData(
+    val label: String,
+    val value: Int,
+    val color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFB4F88C)
+)
 
 @Composable
 private fun StatRow(
@@ -2370,9 +2618,16 @@ private fun StatRow(
                     .padding(vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(item.color)
+                )
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = item.value.toString(),
-                    color = accent.primary,
+                    color = item.color,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -2387,13 +2642,138 @@ private fun StatRow(
     }
 }
 
+// ============================================
+// Media references — real "found in your media" content (spec §28, §29)
+// ============================================
+
+/**
+ * Every Japanese text occurrence the user recorded in media (bookmarks /
+ * mined subtitle cues), newest first. Tapping a single-kanji reference opens
+ * the kanji entry; longer text opens the interactive sentence view. Only
+ * real recorded references are shown — nothing is synthesized.
+ */
+@Composable
+private fun MediaReferencesList(
+    navigationState: MainNavigationState,
+    accent: KaiteyoAccentScheme,
+    surfaceColors: SurfaceColors
+) {
+    val store = koinInject<MediaReferenceStore>()
+    val references by produceState(initialValue = emptyList<MediaReference>()) {
+        value = store.load().references
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item(key = "media-header") {
+            Text(
+                text = "Media",
+                color = surfaceColors.textPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (references.isEmpty()) {
+            item(key = "media-empty") {
+                KaiteyoEmptyState(
+                    icon = "🎬",
+                    title = "No media references yet",
+                    message = "Bookmark or mine Japanese text in the Media Centre and it will appear here."
+                )
+            }
+            return@LazyColumn
+        }
+
+        item(key = "media-count") {
+            Text(
+                text = "${references.size} reference${if (references.size == 1) "" else "s"} from your media",
+                color = surfaceColors.textMuted,
+                fontSize = 12.sp
+            )
+        }
+
+        items(references.size, key = { "media-${it}-${references[it].timestampMs}" }) { index ->
+            val reference = references[index]
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(surfaceColors.surface)
+                    .clickable {
+                        if (reference.text.length == 1) {
+                            navigationState.navigate(MainDestination.KanjiEntry(reference.text))
+                        } else {
+                            // Honest entry: the recorded text with no invented
+                            // translation — the sentence view renders tokens.
+                            navigationState.navigate(MainDestination.SentenceEntry(reference.text, ""))
+                        }
+                    }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(accent.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (reference.text.length == 1) reference.text else "文",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accent.primary
+                    )
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = reference.text,
+                        color = surfaceColors.textPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = reference.title,
+                        color = surfaceColors.textMuted,
+                        fontSize = 12.sp
+                    )
+                }
+                Text(
+                    text = mediaReferenceKindLabel(reference),
+                    color = surfaceColors.textMuted,
+                    fontSize = 11.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun mediaReferenceKindLabel(reference: MediaReference): String = when (reference.kind) {
+    MediaReferenceKind.Mined -> "Mined"
+    MediaReferenceKind.Bookmark -> "Bookmark"
+    MediaReferenceKind.Subtitle -> "Cue"
+}
+
 @Composable
 private fun SectionTitle(title: String, accent: KaiteyoAccentScheme, surfaceColors: SurfaceColors) {
-    Text(
-        text = title,
-        color = accent.primary,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Medium,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(top = 8.dp)
-    )
+    ) {
+        Box(Modifier.size(6.dp).clip(CircleShape).background(accent.primary))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = title,
+            color = accent.primary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
 }

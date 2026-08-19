@@ -19,6 +19,18 @@ import ua.syt0r.kanji.core.feedback.FeedbackManager
 import ua.syt0r.kanji.core.feedback.FeedbackUserDataProvider
 import ua.syt0r.kanji.core.japanese.CharacterClassifier
 import ua.syt0r.kanji.core.japanese.DefaultCharacterClassifier
+import ua.syt0r.kanji.core.knowledge.DatasetProvenanceRegistry
+import ua.syt0r.kanji.core.knowledge.KeywordRegistry
+import ua.syt0r.kanji.core.knowledge.KnowledgeGraphRepository
+import ua.syt0r.kanji.core.knowledge.KnowledgeRepository
+import ua.syt0r.kanji.core.knowledge.KnowledgeSearchEngine
+import ua.syt0r.kanji.core.knowledge.NodeTraversal
+import ua.syt0r.kanji.core.knowledge.LearnerProfileStore
+import ua.syt0r.kanji.core.knowledge.LibraryCatalog
+import ua.syt0r.kanji.core.knowledge.SentenceAnalyzer
+import ua.syt0r.kanji.core.knowledge.WordSegmenter
+import ua.syt0r.kanji.core.knowledge.home.HomeCommandCenterStore
+import ua.syt0r.kanji.core.knowledge.cards.KanjiCardLayoutStore
 import ua.syt0r.kanji.core.srs.applySrsDefinitions
 import ua.syt0r.kanji.core.sync.addSyncDefinitions
 import ua.syt0r.kanji.core.theme_manager.ThemeManager
@@ -104,6 +116,35 @@ val coreModule = module {
     }
 
     single<CharacterClassifier> { DefaultCharacterClassifier(appDataRepository = get()) }
+
+    // ---- Kaiteyo knowledge core (dictionary domain, graph, search) ----
+    single<KnowledgeRepository> { KnowledgeRepository(appData = get()) }
+    single { KnowledgeGraphRepository(knowledge = get(), mediaReferences = get()) }
+    single { NodeTraversal(knowledge = get(), graphRepository = get()) }
+    single { KnowledgeSearchEngine(knowledge = get()) }
+    single { KanjiCardLayoutStore(preferences = get()) }
+    single { ua.syt0r.kanji.core.knowledge.cards.WordCardLayoutStore(preferences = get()) }
+    single { ua.syt0r.kanji.core.knowledge.cards.SentenceCardLayoutStore(preferences = get()) }
+    single { ua.syt0r.kanji.core.knowledge.cards.GrammarCardLayoutStore(preferences = get()) }
+    single { ua.syt0r.kanji.core.knowledge.cards.CollectionCardLayoutStore(preferences = get()) }
+    single { LearnerProfileStore(preferences = get()) }
+    single { ua.syt0r.kanji.core.knowledge.level.DisplayOverridesStore(preferences = get()) }
+    single { SentenceAnalyzer(repository = get()) }
+    single { WordSegmenter(knowledge = get()) }
+    single { ua.syt0r.kanji.core.knowledge.StudyStatusProvider(cards = get()) }
+    single { LibraryCatalog(knowledge = get()) }
+    single { HomeCommandCenterStore(preferences = get()) }
+    single { ua.syt0r.kanji.core.knowledge.media.MediaReferenceStore(preferences = get()) }
+    // Keyword + dataset provenance registries (KT-DATA-002/003): the data
+    // layer populates these on load; UIs read them to show "where does this
+    // data come from?" without fabricating sources.
+    single { KeywordRegistry() }
+    single { DatasetProvenanceRegistry() }
+    // Node layer (ADR-0013, code part): the typed registries are enums
+    // (NodeType / RelationshipType) — pure vocabulary, no storage, no DI
+    // needed. Consumers reference them directly; storage is deferred to the
+    // ADR's incremental implementation.
+    single { ua.syt0r.kanji.core.knowledge.nodes.NodeRegistryFacade() }
 
     single<Json> { Json.Default }
 

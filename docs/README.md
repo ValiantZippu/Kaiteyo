@@ -72,6 +72,7 @@ docs/
 │   ├── statistics.md              Statistics & event model
 │   ├── exams.md                   Exam system spec
 │   ├── media.md                   Media, playback & subtitle engine
+│   ├── WORLD_SYSTEM.md            World runtime, chunks, terrain, NPCs, trains (implemented)
 │   ├── mining.md                  Mining workflow spec
 │   ├── integrations.md            Integrations spec
 │   ├── browser.md                 Embedded browser architecture (planned)

@@ -417,6 +417,7 @@ private fun GeneralSection(navSettings: NavigationSettingsState, formFactor: For
             checked = settings.animationsEnabled,
             onChange = { value -> navSettings.update { it.copy(animationsEnabled = value) } }
         )
+        // Page debug info is now controlled from Settings > Debug > Show panel name.
         if (settings.animationsEnabled) {
             SliderRow(
                 label = "Animation duration",

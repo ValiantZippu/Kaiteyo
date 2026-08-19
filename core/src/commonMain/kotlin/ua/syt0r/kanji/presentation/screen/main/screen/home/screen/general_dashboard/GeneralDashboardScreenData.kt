@@ -100,8 +100,15 @@ data class DashboardDeckSummary(
     val category: DashboardDeckCategory,
     val lastReview: Instant?,
     val newCount: Int,
-    val dueCount: Int
-)
+    val dueCount: Int,
+    /** Total unique cards in the deck (for the progress bar). */
+    val totalCount: Int = 0,
+    /** Unique cards that are past "new" (done or due) — the studied fraction. */
+    val studiedCount: Int = 0
+) {
+    val progressFraction: Float
+        get() = if (totalCount == 0) 0f else studiedCount.toFloat() / totalCount
+}
 
 data class GeneralDashboardStats(
     val currentStreak: Int = 0,
@@ -131,6 +138,20 @@ data class GeneralDashboardStats(
         }
 
 }
+
+/**
+ * One explained "study this next" pick, computed by the recommendation
+ * engine from REAL data: the user's actual FSRS study state per kanji plus
+ * the kanji's corpus frequency rank. The reason is a human-readable
+ * sentence built from those facts — never a fabricated score.
+ */
+data class DashboardRecommendation(
+    val character: String,
+    val keyword: String?,
+    val reason: String,
+    /** Sortable urgency: higher = recommended sooner. */
+    val urgency: Int
+)
 
 enum class SocialButton(
     val url: String,

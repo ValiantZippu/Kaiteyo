@@ -46,6 +46,7 @@ import ua.syt0r.kanji.core.stroke_evaluator.StrokeEvaluation
 import ua.syt0r.kanji.core.stroke_evaluator.StrokeSequenceEvaluation
 import ua.syt0r.kanji.core.stroke_evaluator.StrokeSequenceIssueType
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.extraColorScheme
 import ua.syt0r.kanji.presentation.common.ui.kanji.AnimatedStroke
 import ua.syt0r.kanji.presentation.common.ui.kanji.Kanji
@@ -176,6 +177,7 @@ private fun SequenceIssueChips(
     val uniqueTypes = issues.map { it.type }.distinct()
     if (uniqueTypes.isEmpty()) return
 
+    val accent = LocalKaiteyoAccent.current
     Column(
         modifier = modifier.padding(top = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -196,12 +198,12 @@ private fun SequenceIssueChips(
             Box(
                 modifier = Modifier
                     .clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f))
+                    .background(accent.primary.copy(alpha = 0.12f))
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = if (count > 1) "$label ×$count" else label,
-                    color = MaterialTheme.colorScheme.error,
+                    color = accent.primary,
                     style = MaterialTheme.typography.labelMedium
                 )
             }
@@ -209,12 +211,13 @@ private fun SequenceIssueChips(
     }
 }
 
-/** Stroke color used for rejected strokes: tertiary for near-misses, error otherwise. */
+/** Stroke color used for rejected strokes: accent secondary for near-misses, accent primary otherwise. */
 @Composable
 private fun StrokeEvaluation?.feedbackStrokeColor(): Color {
+    val accent = LocalKaiteyoAccent.current
     return when (this?.classification) {
-        StrokeClassification.AlmostCorrect -> MaterialTheme.colorScheme.tertiary
-        else -> MaterialTheme.colorScheme.error
+        StrokeClassification.AlmostCorrect -> accent.secondary
+        else -> accent.primary
     }
 }
 
@@ -349,11 +352,12 @@ fun HintStroke(
 
     }
 
+    val hintColor = LocalKaiteyoAccent.current.primary
     stroke.value?.let {
         AnimatedStroke(
             stroke = it,
             modifier = Modifier.fillMaxSize(),
-            strokeColor = MaterialTheme.colorScheme.error,
+            strokeColor = hintColor,
             drawProgress = { strokeDrawProgress.value },
             strokeAlpha = { strokeAlpha.value }
         )
@@ -417,6 +421,7 @@ private fun BoxScope.StrokeFeedbackPill(
 
     val result = feedback.value ?: return
     val percent = result.evaluation?.metrics?.accuracyPercent()
+    val accent = LocalKaiteyoAccent.current
     val (label, color) = when (result) {
         is StrokeProcessingResult.Correct -> {
             resolveString { commonPractice.writingStrokeCorrect } to
@@ -427,10 +432,10 @@ private fun BoxScope.StrokeFeedbackPill(
             val almost = result.evaluation?.classification == StrokeClassification.AlmostCorrect
             if (almost) {
                 resolveString { commonPractice.writingStrokeAlmost } to
-                    MaterialTheme.colorScheme.tertiary
+                    accent.secondary
             } else {
                 resolveString { commonPractice.writingStrokeIncorrect } to
-                    MaterialTheme.colorScheme.error
+                    accent.primary
             }
         }
     }

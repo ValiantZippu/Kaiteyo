@@ -81,6 +81,7 @@ import ua.syt0r.kanji.desktop.engine.learning.ExamQuestionType
 import ua.syt0r.kanji.desktop.engine.learning.ExamResult
 import ua.syt0r.kanji.desktop.engine.learning.ExamType
 import ua.syt0r.kanji.desktop.engine.learning.StudyVsExamGap
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 
 // ============================================
 // EXAM VIEW
@@ -101,10 +102,12 @@ import ua.syt0r.kanji.desktop.engine.learning.StudyVsExamGap
 //                   weakest measured areas
 // ============================================
 
-private enum class ExamTab(val label: String) {
-    Take("Take exam"),
-    History("Results"),
-    Analytics("Analytics")
+private enum class ExamTab(val labelKey: () -> String) {
+    Take({ resolveSuiteString { tabTakeExam } }),
+    History({ resolveSuiteString { tabResults } }),
+    Analytics({ resolveSuiteString { tabAnalytics } });
+
+    val label: String get() = labelKey()
 }
 
 @Composable
@@ -113,6 +116,18 @@ fun ExamView(state: AppState) {
     var tab by remember { mutableStateOf(ExamTab.Take) }
     var activeDraft by remember { mutableStateOf<ExamDraft?>(null) }
     var lastResult by remember { mutableStateOf<ExamResult?>(null) }
+
+    // The command palette may stage a generated draft for immediate start
+    // ("Start weekly assessment", "Start mistakes review") — consume it here
+    // so the quick-start lands in the Take tab exactly like a manual start.
+    LaunchedEffect(state.pendingExamDraft) {
+        state.pendingExamDraft?.let { draft ->
+            activeDraft = draft
+            lastResult = null
+            tab = ExamTab.Take
+            state.pendingExamDraft = null
+        }
+    }
 
     Column(Modifier.fillMaxSize().padding(DsSpacing.Xl), verticalArrangement = Arrangement.spacedBy(DsSpacing.Lg)) {
         DsTabRow(
@@ -153,7 +168,7 @@ fun ExamView(state: AppState) {
                             lastResult = null
                             activeDraft = null
                             state.toastHost.show(
-                                "Not enough content to regenerate this exam",
+                                resolveSuiteString { noMatchesForExam },
                                 kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning
                             )
                         }
@@ -190,8 +205,8 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
     if (learning.isEmpty) {
         DsCard {
             DsEmptyState(
-                title = "Nothing to test yet",
-                message = "Exams are generated from real learning content. Study in the Library or Review first, then return here.",
+                title = resolveSuiteString { examNoContentTitle },
+                message = resolveSuiteString { examNoContentMessage },
                 icon = Icons.Default.School
             )
         }
@@ -209,7 +224,7 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
             jlpt = level
         )
         if (draft == null) {
-            state.toastHost.show("No content matches this exam configuration", kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
+            state.toastHost.show(resolveSuiteString { noMatchesForExam }, kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
         } else {
             onStart(draft)
         }
@@ -220,7 +235,7 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
 
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                DsSectionHeader(title = "Exam setup", subtitle = "Questions are generated from your real learning state")
+                DsSectionHeader(title = resolveSuiteString { examSetupTitle }, subtitle = "Questions are generated from your real learning state")
                 ExamTypeSelect(type) { type = it }
 
                 if (simulation) {
@@ -242,7 +257,7 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
                     }
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                        Text("Questions", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
+                        Text(resolveSuiteString { questionsLabel }, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
                         Slider(
                             value = questionCount.toFloat(),
                             onValueChange = { questionCount = it.toInt() },
@@ -253,7 +268,7 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
                         Text("$questionCount", color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(36.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                        Text("Time limit", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
+                        Text(resolveSuiteString { timeLimitLabel }, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
                         Slider(
                             value = timeLimit.toFloat(),
                             onValueChange = { timeLimit = it.toInt() },
@@ -261,34 +276,34 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
                             steps = 11,
                             modifier = Modifier.weight(1f)
                         )
-                        Text(if (timeLimit == 0) "none" else "${timeLimit}m", color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(36.dp))
+                        Text(if (timeLimit == 0) resolveSuiteString { noneLabel } else "${timeLimit}m", color = sc.textPrimary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(36.dp))
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                    Text("Scope", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
+                    Text(resolveSuiteString { scopeLabel }, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
                     if (deckOptions.isNotEmpty()) {
                         DsSelect(
                             selected = deckId,
                             options = listOf("") + deckOptions.map { it.id },
                             onSelected = { deckId = it },
-                            labelOf = { id -> if (id.isBlank()) "All decks" else (deckOptions.firstOrNull { it.id == id }?.name ?: id) },
+                            labelOf = { id -> if (id.isBlank()) resolveSuiteString { allDecks } else (deckOptions.firstOrNull { it.id == id }?.name ?: id) },
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                    Text("JLPT band", color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
+                    Text(resolveSuiteString { jlptBandLabel }, color = sc.textSecondary, fontSize = DsType.Body, modifier = Modifier.width(100.dp))
                     DsSelect(
                         selected = jlpt,
                         options = listOf<Int?>(null, 5, 4, 3, 2, 1),
                         onSelected = { jlpt = it },
-                        labelOf = { level -> if (level == null) "Any level" else "N$level" },
+                        labelOf = { level -> if (level == null) resolveSuiteString { anyLevel } else "N$level" },
                         modifier = Modifier.weight(1f)
                     )
                 }
                 Spacer(Modifier.height(DsSpacing.Sm))
                 DsButton(
-                    text = if (simulation) "Start JLPT simulation" else "Start exam",
+                    text = if (simulation) resolveSuiteString { startJlptSimulation } else resolveSuiteString { startExamButton },
                     icon = Icons.Default.PlayArrow,
                     onClick = {
                         val draft = learning.exams.generate(
@@ -299,7 +314,7 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
                             timeLimitMs = if (simulation) 0 else timeLimit * 60_000L
                         )
                         if (draft == null) {
-                            state.toastHost.show("No content matches this exam configuration", kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
+                            state.toastHost.show(resolveSuiteString { noMatchesForExam }, kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
                         } else {
                             onStart(draft)
                         }
@@ -310,16 +325,16 @@ private fun ExamConfigScreen(state: AppState, onStart: (ExamDraft) -> Unit) {
 
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                DsSectionHeader(title = "Quick exams", subtitle = "One click, generated from real state")
+                DsSectionHeader(title = resolveSuiteString { quickExams }, subtitle = "One click, generated from real state")
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    DsButton(text = "Weekly assessment", kind = DsButtonKind.Secondary, onClick = {
+                    DsButton(text = resolveSuiteString { weeklyAssessmentLabel }, kind = DsButtonKind.Secondary, onClick = {
                         val draft = learning.exams.generateWeekly()
-                        if (draft == null) state.toastHost.show("Nothing studied this week yet", kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
+                        if (draft == null) state.toastHost.show(resolveSuiteString { nothingStudiedThisWeek }, kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
                         else onStart(draft)
                     })
-                    DsButton(text = "Mistakes review", kind = DsButtonKind.Secondary, onClick = {
+                    DsButton(text = resolveSuiteString { mistakesReviewLabel }, kind = DsButtonKind.Secondary, onClick = {
                         val draft = learning.exams.generate(ExamType.Mistakes, questionCount = 15)
-                        if (draft == null) state.toastHost.show("No mistakes recorded yet", kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
+                        if (draft == null) state.toastHost.show(resolveSuiteString { noMistakesRecorded }, kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
                         else onStart(draft)
                     })
                 }
@@ -850,8 +865,8 @@ private fun ExamResultScreen(
                 }
                 Spacer(Modifier.height(DsSpacing.Md))
                 Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-                    DsButton(text = "Take again", icon = Icons.Default.Refresh, kind = DsButtonKind.Secondary, onClick = onRetake)
-                    DsButton(text = "Done", onClick = onDone)
+                    DsButton(text = resolveSuiteString { takeAgain }, icon = Icons.Default.Refresh, kind = DsButtonKind.Secondary, onClick = onRetake)
+                    DsButton(text = resolveSuiteString { doneButton }, onClick = onDone)
                 }
             }
         }

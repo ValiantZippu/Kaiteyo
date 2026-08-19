@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.info.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,8 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -30,11 +29,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.info.use_case.DeckMembership
 import ua.syt0r.kanji.presentation.screen.main.screen.info.use_case.ItemLearningState
@@ -148,37 +150,77 @@ fun LearningStatusSection(
         }
 
         if (actions.isNotEmpty()) {
+            // Kaiteyo-style action buttons: elevated surface + accent text
+            // instead of full neon-green Material buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 actions.take(3).forEach { action ->
-                    Button(
+                    StudyActionButton(
+                        label = action.label,
                         onClick = action.onClick,
-                        contentPadding = ButtonDefaults.ContentPadding,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text(action.label, style = MaterialTheme.typography.labelSmall)
-                    }
+                    )
                 }
             }
             if (actions.size > 3) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     actions.drop(3).forEach { action ->
-                        Button(
+                        StudyActionButton(
+                            label = action.label,
                             onClick = action.onClick,
-                            contentPadding = ButtonDefaults.ContentPadding,
                             modifier = Modifier.weight(1f)
-                        ) {
-                            Text(action.label, style = MaterialTheme.typography.labelSmall)
-                        }
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StudyActionButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (hovered) accent.primary.copy(alpha = 0.14f)
+                else surfaceColors.surfaceInteractive.copy(alpha = 0.5f)
+            )
+            .border(
+                1.dp,
+                if (hovered) accent.primary.copy(alpha = 0.4f)
+                else surfaceColors.surfaceInteractive.copy(alpha = 0.7f),
+                RoundedCornerShape(10.dp)
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .hoverable(interactionSource)
+            .padding(vertical = 9.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (hovered) accent.primary else surfaceColors.textSecondary,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

@@ -53,6 +53,7 @@ interface PreferencesContract {
 
         val vocabDashboardPracticeType: SuspendedProperty<PreferencesVocabPracticeType>
         val vocabDashboardSortByTime: SuspendedProperty<Boolean>
+        val vocabNoteTypeId: SuspendedProperty<String>
 
         val dailyResetTime: SuspendedProperty<LocalTime>
 
@@ -68,11 +69,16 @@ interface PreferencesContract {
         val navAccentIndex: SuspendedProperty<Int>
         val navSettingsJson: SuspendedProperty<String>
         val themeSettingsJson: SuspendedProperty<String>
+        val debugSettingsJson: SuspendedProperty<String>
+        val learnerProfileJson: SuspendedProperty<String>
+        val romajiOverrideJson: SuspendedProperty<String>
 
         // Kaiteyo features (serialized JSON held in string properties)
         val reviewSettingsJson: SuspendedProperty<String>
         val backupConfigJson: SuspendedProperty<String>
         val savedSearchesJson: SuspendedProperty<String>
+        val homeCommandCenterJson: SuspendedProperty<String>
+        val mediaReferencesJson: SuspendedProperty<String>
         val deckFavoritesJson: SuspendedProperty<String>
         val browserColumnsJson: SuspendedProperty<String>
         val shortcutBindingsJson: SuspendedProperty<String>
@@ -81,6 +87,11 @@ interface PreferencesContract {
         val browserLastQuery: SuspendedProperty<String>
         val statisticsGoalsJson: SuspendedProperty<String>
         val statisticsGoalHistoryJson: SuspendedProperty<String>
+        val kanjiCardLayoutJson: SuspendedProperty<String>
+        val wordCardLayoutJson: SuspendedProperty<String>
+        val sentenceCardLayoutJson: SuspendedProperty<String>
+        val grammarCardLayoutJson: SuspendedProperty<String>
+        val collectionCardLayoutJson: SuspendedProperty<String>
 
         // Kaiteyo World (game) progress
         val gameProgressJson: SuspendedProperty<String>
@@ -117,7 +128,7 @@ enum class PreferencesNewCardsOrder { First, Last, Mixed }
 enum class PreferencesLetterPracticeType { Writing, Reading }
 enum class PreferencesLetterSortOption { AddOrder, Frequency, Name, ReviewTime }
 enum class PreferencesDeckDetailsLetterLayout { Character, Groups }
-enum class PreferencesTheme { System, Light, Dark, Amoled }
+enum class PreferencesTheme { System, Light, Dark, Amoled, Sepia, Cream, Paper, Midnight }
 enum class PreferencesLetterPracticeWritingInputMode { Stroke, Character }
 enum class PreferencesWritingStrictness { Normal, Hard, Exam }
 enum class PreferencesVocabPracticeType { Flashcard, ReadingPicker, Writing }

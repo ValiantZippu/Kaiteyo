@@ -360,7 +360,14 @@ private fun ReviewPreviewCard(
 
             Spacer(Modifier.height(12.dp))
 
-            // Simulated buttons
+            // Simulated buttons — a static preview of the review layout with
+            // the current settings; the real buttons work during review.
+            Text(
+                text = "Simulated preview — the real buttons work during review",
+                fontSize = 11.sp,
+                color = surfaceColors.textMuted,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -380,7 +387,8 @@ private fun ReviewPreviewCard(
                         else -> accent.primary
                     }
                     Button(
-                        onClick = {},
+                        // Static preview — intentionally non-interactive.
+                        onClick = { /* preview only */ },
                         modifier = Modifier.weight(1f).height(36.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = btnColor),
                         shape = RoundedCornerShape(8.dp),

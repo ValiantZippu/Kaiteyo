@@ -40,6 +40,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
+
 import ua.syt0r.kanji.desktop.designsystem.DsCard
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsSelect
@@ -56,6 +57,7 @@ import ua.syt0r.kanji.desktop.designsystem.newColor
 import ua.syt0r.kanji.desktop.designsystem.successColor
 import ua.syt0r.kanji.desktop.designsystem.warningColor
 import ua.syt0r.kanji.desktop.designsystem.surfaceColors
+import ua.syt0r.kanji.desktop.engine.l10n.resolveSuiteString
 import ua.syt0r.kanji.desktop.engine.stats.AnalyticsEngine
 import ua.syt0r.kanji.desktop.engine.stats.BreakdownEngine
 import ua.syt0r.kanji.desktop.engine.stats.CardInsightEngine
@@ -162,35 +164,35 @@ fun StatsView(state: AppState) {
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
             DsStatTile(
-                label = "Reviews",
+                label = resolveSuiteString { reviewsLabel },
                 value = current.reviews.toString(),
                 modifier = Modifier.weight(1f),
                 delta = deltaText(current.reviews, previous?.reviews),
                 deltaPositive = current.reviews >= (previous?.reviews ?: 0)
             )
             DsStatTile(
-                label = "New cards",
+                label = resolveSuiteString { newCardsLabel },
                 value = current.newCards.toString(),
                 modifier = Modifier.weight(1f),
                 delta = deltaText(current.newCards, previous?.newCards),
                 deltaPositive = current.newCards >= (previous?.newCards ?: 0)
             )
             DsStatTile(
-                label = "Forgotten",
+                label = resolveSuiteString { forgottenLabel },
                 value = current.forgotten.toString(),
                 modifier = Modifier.weight(1f),
                 delta = deltaText(current.forgotten, previous?.forgotten),
                 deltaPositive = current.forgotten <= (previous?.forgotten ?: 0)
             )
             DsStatTile(
-                label = "Accuracy",
+                label = resolveSuiteString { accuracyLabel },
                 value = "${(current.accuracy * 100).toInt()}%",
                 modifier = Modifier.weight(1f),
                 delta = deltaText(current.accuracy, previous?.accuracy),
                 deltaPositive = current.accuracy >= (previous?.accuracy ?: 0f)
             )
             DsStatTile(
-                label = "Retention (7d)",
+                label = resolveSuiteString { retention7dLabel },
                 value = "${(retention * 100).toInt()}%",
                 modifier = Modifier.weight(1f)
             )
@@ -207,12 +209,12 @@ fun StatsView(state: AppState) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
         ) {
-            DsStatTile("Study streak", "${StreakEngine.currentStudyStreak(summaries, today)}d", Modifier.weight(1f))
-            DsStatTile("Learning streak", "${StreakEngine.currentLearningStreak(summaries, today)}d", Modifier.weight(1f))
-            DsStatTile("Review streak", "${StreakEngine.currentReviewStreak(summaries, today)}d", Modifier.weight(1f))
-            DsStatTile("Best streak", "${StreakEngine.bestStudyStreak(summaries)}d", Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { studyStreakLabel }, "${StreakEngine.currentStudyStreak(summaries, today)}d", Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { learningStreakLabel }, "${StreakEngine.currentLearningStreak(summaries, today)}d", Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { reviewStreakLabel }, "${StreakEngine.currentReviewStreak(summaries, today)}d", Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { bestStreakLabel }, "${StreakEngine.bestStudyStreak(summaries)}d", Modifier.weight(1f))
             DsStatTile("Avg / review", avgPerReview(current), Modifier.weight(1f))
-            DsStatTile("Learning speed", "%.1f".format(current.learningSpeed) + "/day", Modifier.weight(1f))
+            DsStatTile(resolveSuiteString { learningSpeedLabel }, "%.1f".format(current.learningSpeed) + "/day", Modifier.weight(1f))
         }
 
         // UNIFIED LEARNING OVERVIEW — every number here is derived from the
@@ -238,36 +240,36 @@ fun StatsView(state: AppState) {
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
                 DsSectionHeader(
-                    title = "Learning Overview",
-                    subtitle = "Due, streaks, goals, writing, mistakes and coverage — from real review events"
+                    title = resolveSuiteString { learningOverviewTitle },
+                    subtitle = resolveSuiteString { learningOverviewSubtitle }
                 )
                 Spacer(Modifier.height(DsSpacing.Lg))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                    DsStatTile("Due now", learning.dueToday().toString(), Modifier.weight(1f))
-                    DsStatTile("Streak", "${streaks.current}d", Modifier.weight(1f))
-                    DsStatTile("Longest", "${streaks.longest}d", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { dueNowLabel }, learning.dueToday().toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { streakLabel }, "${streaks.current}d", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { longestLabel }, "${streaks.longest}d", Modifier.weight(1f))
                     DsStatTile("Study time (all)", formatDuration(learnAll.studyTimeMs.milliseconds), Modifier.weight(1f))
-                    DsStatTile("Writing attempts", learnAll.writingAttempts.toString(), Modifier.weight(1f))
-                    DsStatTile("Writing accuracy", "${(learnAll.writingAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { writingAttemptsLabel }, learnAll.writingAttempts.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { writingAccuracyLabel }, "${(learnAll.writingAccuracy * 100).toInt()}%", Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(DsSpacing.Md))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                    DsStatTile("Reviews today", learnToday.reviews.toString(), Modifier.weight(1f))
-                    DsStatTile("Accuracy today", "${(learnToday.accuracy * 100).toInt()}%", Modifier.weight(1f))
-                    DsStatTile("Kanji studied", charProgress.uniqueKanjiStudied.toString(), Modifier.weight(1f))
-                    DsStatTile("Kanji established", charProgress.uniqueKanjiEstablished.toString(), Modifier.weight(1f))
-                    DsStatTile("Vocabulary", charProgress.uniqueVocabulary.toString(), Modifier.weight(1f))
-                    DsStatTile("Vocab established", charProgress.uniqueVocabularyEstablished.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { reviewsTodayLabel }, learnToday.reviews.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { accuracyTodayLabel }, "${(learnToday.accuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { kanjiStudiedLabel }, charProgress.uniqueKanjiStudied.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { kanjiEstablishedLabel }, charProgress.uniqueKanjiEstablished.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { vocabularyLabel }, charProgress.uniqueVocabulary.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { vocabEstablishedLabel }, charProgress.uniqueVocabularyEstablished.toString(), Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(DsSpacing.Md))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                    DsStatTile("Kana studied", kanaNotes.size.toString(), Modifier.weight(1f))
-                    DsStatTile("Kana established", kanaEstablished.toString(), Modifier.weight(1f))
-                    DsStatTile("Kana writing accuracy", kanaWritingAccuracyLabel(learning), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { kanaStudiedLabel }, kanaNotes.size.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { kanaEstablishedLabel }, kanaEstablished.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { kanaWritingAccuracyLabel }, kanaWritingAccuracyLabel(learning), Modifier.weight(1f))
                 }
 
                 Spacer(Modifier.height(DsSpacing.Lg))
-                Text("Daily goals", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Text(resolveSuiteString { dailyGoalsLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(DsSpacing.Sm))
                 goals.take(3).forEach { gp ->
                     Column(Modifier.padding(vertical = DsSpacing.Sm)) {
@@ -282,15 +284,15 @@ fun StatsView(state: AppState) {
 
                 Spacer(Modifier.height(DsSpacing.Lg))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xl)) {
-                    MediaStatPill("Again reviews", mistakes.againEvents.toString())
-                    MediaStatPill("Writing mistakes", mistakes.writingMistakes.toString())
-                    MediaStatPill("Exam mistakes", mistakes.examMistakes.toString())
-                    MediaStatPill("Lapsed cards", mistakes.lapsedCards.toString())
+                    MediaStatPill(resolveSuiteString { againReviewsLabel }, mistakes.againEvents.toString())
+                    MediaStatPill(resolveSuiteString { writingMistakesLabel }, mistakes.writingMistakes.toString())
+                    MediaStatPill(resolveSuiteString { examMistakesLabel }, mistakes.examMistakes.toString())
+                    MediaStatPill(resolveSuiteString { lapsedCardsLabel }, mistakes.lapsedCards.toString())
                 }
 
                 if (weakKanji.isNotEmpty()) {
                     Spacer(Modifier.height(DsSpacing.Lg))
-                    Text("Weakest writing", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Text(resolveSuiteString { weakestWritingLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(DsSpacing.Sm))
                     weakKanji.forEach { row ->
                         Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
@@ -348,11 +350,11 @@ fun StatsView(state: AppState) {
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
                 DsSectionHeader(
-                    title = "Knowledge Profile",
-                    subtitle = "Study-based estimate from real stages and events — not a certification",
+                    title = resolveSuiteString { knowledgeProfileTitle },
+                    subtitle = resolveSuiteString { knowledgeProfileSubtitle },
                     action = {
                         DsBadge(
-                            text = "Confidence: ${knowledge.confidence}",
+                            text = "${resolveSuiteString { confidenceLabel }}: ${knowledge.confidence}",
                             tint = when (knowledge.confidence) {
                                 "High" -> successColor()
                                 "Medium" -> warningColor()
@@ -364,7 +366,7 @@ fun StatsView(state: AppState) {
                 Spacer(Modifier.height(DsSpacing.Lg))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Overall estimated coverage",
+                        text = resolveSuiteString { overallCoverageLabel },
                         color = sc.textSecondary,
                         fontSize = DsType.Body,
                         fontWeight = FontWeight.SemiBold,
@@ -431,7 +433,7 @@ fun StatsView(state: AppState) {
                 }
 
                 Spacer(Modifier.height(DsSpacing.Lg))
-                Text("Theoretical JLPT coverage", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                Text(resolveSuiteString { theoreticalJlptLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                 Text(
                     "Cumulative study-based coverage against approximate reference band sizes — a readiness estimate, not an official score.",
                     color = sc.textMuted,
@@ -458,7 +460,7 @@ fun StatsView(state: AppState) {
 
                 if (knowledge.frequency.isNotEmpty()) {
                     Spacer(Modifier.height(DsSpacing.Lg))
-                    Text("Vocabulary frequency coverage", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Text(resolveSuiteString { vocabFrequencyCoverageLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                     Text(
                         "Words you have established within each frequency band (from corpus-linked vocabulary in your pool).",
                         color = sc.textMuted,
@@ -488,8 +490,8 @@ fun StatsView(state: AppState) {
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
                 DsSectionHeader(
-                    title = "Writing History",
-                    subtitle = "Real stroke evaluations per attempt — shape, direction and order mistakes",
+                    title = resolveSuiteString { writingHistoryTitle },
+                    subtitle = resolveSuiteString { writingHistorySubtitle },
                     action = {
                         Text(
                             text = "${learnAll.writingAttempts} attempts total",
@@ -554,7 +556,7 @@ fun StatsView(state: AppState) {
 
                     if (writingCharacters.isNotEmpty()) {
                         Spacer(Modifier.height(DsSpacing.Lg))
-                        Text("Accuracy trend by character", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                        Text(resolveSuiteString { accuracyTrendByCharLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(DsSpacing.Sm))
                         writingCharacters.forEach { char ->
                             val trend = learning.writingAccuracyTrend(char, 30)
@@ -600,26 +602,26 @@ fun StatsView(state: AppState) {
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
                 DsSectionHeader(
-                    title = "Exam Analytics",
-                    subtitle = "Study vs exam performance — recognition vs production, from real exam results",
+                    title = resolveSuiteString { examAnalyticsTitle },
+                    subtitle = resolveSuiteString { examAnalyticsSubtitle },
                     action = {
                         DsBadge(text = "${examAggregates.count} exams · ${examAggregates.totalQuestions} questions")
                     }
                 )
                 Spacer(Modifier.height(DsSpacing.Lg))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-                    DsStatTile("Exams taken", examAggregates.count.toString(), Modifier.weight(1f))
-                    DsStatTile("Average score", "${examAggregates.averageScore}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { examsTakenLabel }, examAggregates.count.toString(), Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { averageScoreLabel }, "${examAggregates.averageScore}%", Modifier.weight(1f))
                     DsStatTile("Best / worst", "${examAggregates.bestScore}% / ${examAggregates.worstScore}%", Modifier.weight(1f))
-                    DsStatTile("Study accuracy", "${(gap.studyAccuracy * 100).toInt()}%", Modifier.weight(1f))
-                    DsStatTile("Exam recognition", "${(gap.examRecognitionAccuracy * 100).toInt()}%", Modifier.weight(1f))
-                    DsStatTile("Exam production", "${(gap.examProductionAccuracy * 100).toInt()}%", Modifier.weight(1f))
-                    DsStatTile("Exam writing", "${(gap.examWritingAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { studyAccuracyLabel }, "${(gap.studyAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { examRecognitionLabel }, "${(gap.examRecognitionAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { examProductionLabel }, "${(gap.examProductionAccuracy * 100).toInt()}%", Modifier.weight(1f))
+                    DsStatTile(resolveSuiteString { examWritingLabel }, "${(gap.examWritingAccuracy * 100).toInt()}%", Modifier.weight(1f))
                 }
 
                 if (examByType.isNotEmpty()) {
                     Spacer(Modifier.height(DsSpacing.Lg))
-                    Text("Accuracy by exam type", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Text(resolveSuiteString { accuracyByExamTypeLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(DsSpacing.Sm))
                     examByType.toList().sortedBy { it.second }.forEach { (type, acc) ->
                         Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
@@ -641,7 +643,7 @@ fun StatsView(state: AppState) {
 
                 if (examTrend.isNotEmpty()) {
                     Spacer(Modifier.height(DsSpacing.Lg))
-                    Text("Score trend", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Text(resolveSuiteString { scoreTrendLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(DsSpacing.Sm))
                     val maxTrend = (examTrend.maxOfOrNull { it.second } ?: 100).coerceAtLeast(1)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
@@ -663,7 +665,7 @@ fun StatsView(state: AppState) {
 
                 if (examHistory.isNotEmpty()) {
                     Spacer(Modifier.height(DsSpacing.Lg))
-                    Text("Recent exams", color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
+                    Text(resolveSuiteString { recentExamsLabel }, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(DsSpacing.Sm))
                     examHistory.take(6).forEach { exam ->
                         Row(Modifier.fillMaxWidth().padding(vertical = DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {

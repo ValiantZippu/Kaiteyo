@@ -16,10 +16,11 @@ import ua.syt0r.kanji.desktop.model.ReviewRating
 // ============================================
 
 class LearningEngine(
-    private val store: LearningStore = LearningStore()
+    private val store: LearningStore = LearningStore(),
+    eventLog: ua.syt0r.kanji.desktop.engine.events.EventLog? = null
 ) {
     val study = StudyEngine(store)
-    val exams = ExamEngine(store)
+    val exams = ExamEngine(store, eventLog)
     val mistakes = MistakeEngine(store)
     val stats = StatisticsRepository
     val goals = GoalsRepository

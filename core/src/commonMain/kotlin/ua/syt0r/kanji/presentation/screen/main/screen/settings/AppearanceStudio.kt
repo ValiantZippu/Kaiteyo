@@ -214,7 +214,10 @@ private fun applyBaseMode(
         BaseMode.Oled -> themeManager.changeTheme(PreferencesTheme.Amoled)
         BaseMode.Dark -> themeManager.changeTheme(PreferencesTheme.Dark)
         BaseMode.Light -> themeManager.changeTheme(PreferencesTheme.Light)
-        BaseMode.Sepia -> themeState.baseMode = BaseMode.Sepia
+        BaseMode.Sepia -> themeManager.changeTheme(PreferencesTheme.Sepia)
+        BaseMode.Cream -> themeManager.changeTheme(PreferencesTheme.Cream)
+        BaseMode.Paper -> themeManager.changeTheme(PreferencesTheme.Paper)
+        BaseMode.Midnight -> themeManager.changeTheme(PreferencesTheme.Midnight)
     }
 }
 

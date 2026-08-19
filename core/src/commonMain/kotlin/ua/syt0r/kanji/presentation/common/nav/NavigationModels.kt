@@ -282,7 +282,13 @@ data class NavigationSettings(
     val launchpad: LaunchpadSettings = LaunchpadSettings(),
     val phone: PhoneNavigationSettings = PhoneNavigationSettings(),
     val sidebar: SidebarSettings = SidebarSettings(),
-    val accessibility: AccessibilitySettings = AccessibilitySettings()
+    val accessibility: AccessibilitySettings = AccessibilitySettings(),
+    /**
+     * Show a small overlay with the current screen name (and its analytics
+     * code) in the top-right corner. Off by default; enabled from Navigation
+     * settings when reporting bugs so the reporter can name the exact screen.
+     */
+    val showPageName: Boolean = false
 ) {
     /** Duration honoring the animations toggle and reduced-motion accessibility. */
     fun effectiveDurationMs(animations: Boolean): Int =

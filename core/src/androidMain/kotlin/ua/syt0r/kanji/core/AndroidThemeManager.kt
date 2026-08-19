@@ -19,8 +19,10 @@ class AndroidThemeManager(
     private fun PreferencesTheme.toUIMode(): Int {
         return when (this) {
             PreferencesTheme.System -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            PreferencesTheme.Light -> AppCompatDelegate.MODE_NIGHT_NO
-            PreferencesTheme.Dark, PreferencesTheme.Amoled -> AppCompatDelegate.MODE_NIGHT_YES
+            PreferencesTheme.Light, PreferencesTheme.Sepia,
+            PreferencesTheme.Cream, PreferencesTheme.Paper -> AppCompatDelegate.MODE_NIGHT_NO
+            PreferencesTheme.Dark, PreferencesTheme.Amoled,
+            PreferencesTheme.Midnight -> AppCompatDelegate.MODE_NIGHT_YES
         }
     }
 

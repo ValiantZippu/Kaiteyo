@@ -53,8 +53,10 @@ open class ThemeManager(
         @Composable
         get() = when (currentTheme.value) {
             PreferencesTheme.System -> isSystemInDarkTheme()
-            PreferencesTheme.Light -> false
-            PreferencesTheme.Dark, PreferencesTheme.Amoled -> true
+            PreferencesTheme.Light, PreferencesTheme.Sepia,
+            PreferencesTheme.Cream, PreferencesTheme.Paper -> false
+            PreferencesTheme.Dark, PreferencesTheme.Amoled,
+            PreferencesTheme.Midnight -> true
         }
 
     val isAmoledTheme: Boolean

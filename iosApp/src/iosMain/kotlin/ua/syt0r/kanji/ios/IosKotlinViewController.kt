@@ -34,8 +34,10 @@ private fun UpdateTheme() {
         snapshotFlow { themeManager.currentTheme.value }.collect {
             val style = when (it) {
                 PreferencesTheme.System -> UIUserInterfaceStyle.UIUserInterfaceStyleUnspecified
-                PreferencesTheme.Light -> UIUserInterfaceStyle.UIUserInterfaceStyleLight
-                PreferencesTheme.Dark -> UIUserInterfaceStyle.UIUserInterfaceStyleDark
+                PreferencesTheme.Light, PreferencesTheme.Sepia,
+                PreferencesTheme.Cream, PreferencesTheme.Paper -> UIUserInterfaceStyle.UIUserInterfaceStyleLight
+                PreferencesTheme.Dark, PreferencesTheme.Amoled,
+                PreferencesTheme.Midnight -> UIUserInterfaceStyle.UIUserInterfaceStyleDark
             }
             controller.overrideUserInterfaceStyle = style
             controller.setNeedsStatusBarAppearanceUpdate()

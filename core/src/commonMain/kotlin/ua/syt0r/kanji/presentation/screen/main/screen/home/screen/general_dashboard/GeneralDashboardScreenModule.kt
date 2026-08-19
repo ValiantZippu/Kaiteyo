@@ -14,7 +14,9 @@ val generalDashboardScreenModule = module {
             preferencesRepository = get(),
             reviewHistoryRepository = get(),
             timeUtils = get(),
-            dataCenter = get()
+            dataCenter = get(),
+            srsCardRepository = get(),
+            knowledgeRepository = get()
         )
     }
 

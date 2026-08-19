@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.presentation.screen.main.screen.info
 
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import io.ktor.http.URLProtocol
 import io.ktor.http.appendPathSegments
 import io.ktor.http.buildUrl
@@ -26,6 +27,8 @@ interface InfoScreenContract {
 
     interface ViewModel {
         val state: State<ScreenState>
+        val playingReading: State<String?> get() = mutableStateOf(null)
+        fun speakReading(reading: String) {}
     }
 
     sealed interface ScreenState {

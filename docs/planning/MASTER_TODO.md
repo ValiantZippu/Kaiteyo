@@ -32,7 +32,7 @@ Gate for everything else: the one-product decision (ADR-0017).
 | ID | Title | Status | Pri | Deps | Acceptance |
 |---|---|---|---|---|---|
 | KT-INFRA-001 | Decide one product (core app vs suite) and record ADR-0017 | 🔬 | 🔴 | — | ADR-0017 `ACCEPTED`; losing copy marked DEPRECATED; duplication map (PRODUCT_AUDIT §6) down to zero live rows |
-| KT-INFRA-002 | Remove dead shadows: `LearningPowerHub`, `SyncSettingsUI`, dead backup-manager path | 📋 | 🔴 | KT-INFRA-001 | Zero `onClick = { }` in reachable UI; PRODUCT_AUDIT §5.2 items gone; regression tests pass |
+| KT-INFRA-002 | Remove dead shadows: `LearningPowerHub`, `SyncSettingsUI`, dead backup-manager path | ✅ | — | KT-INFRA-001 | **Removed** — `LearningPowerHub.kt`, `SyncSettingsUI.kt` and the dead `BackupSystemExt` BackupManager path no longer exist in the tree (verified 2026-08-18 by grep; only docs referenced them). Zero `onClick = { }` in reachable UI (repeat sweep tracked as KT-UI-002) |
 | KT-INFRA-003 | Remove suite demo-data seeding; empty first-run state | 📋 | 🟡 | KT-INFRA-001 | First launch shows empty state, never fabricated cards; no-fake-data rule satisfied |
 | KT-INFRA-004 | Fix ADR index duplicate rows (0013–0015) | ✅ | 🟢 | — | `decisions/README.md` lists each ADR once |
 | KT-INFRA-005 | Keep the status taxonomy enforced in docs (CURRENT_STATE.md) | 🚧 | 🟢 | — | No undocumented status claims survive the §87 audit |
@@ -42,7 +42,7 @@ Gate for everything else: the one-product decision (ADR-0017).
 | ID | Title | Status | Pri | Deps | Acceptance |
 |---|---|---|---|---|---|
 | KT-CORE-001 | Home screen polish per MASTER §41 (no useless buttons; glanceable progress) | 🚧 | 🟡 | — | UX flow in `nodes/UX_FLOWS.md` passes; no dead controls |
-| KT-CORE-002 | Archived-deck filtering + restore section | 📋 | 🟡 | — | `is_archived` decks hidden from main lists; "Archived" section restores them |
+| KT-CORE-002 | Archived-deck filtering + restore section | ✅ | — | — | **Implemented** — both dashboards partition `is_archived` decks out of the main lists and render an expandable `ArchivedSectionHeader` with restore actions (`LettersDashboardScreenUI`/`VocabDashboardScreenUI`); archive/restore persist via the repositories (verified 2026-08-18) |
 | KT-CORE-003 | Mobile navigation snap (top/bottom) consistent with desktop | 📋 | 🟡 | — | NavShell snap works in portrait/landscape on phone |
 | KT-CORE-004 | Sync indicator / sponsor button in shell chrome | 📋 | 🟡 | — | Visible on all form factors |
 | KT-CORE-005 | Settings Center cleanup (route all appearance options through categories) | 📋 | 🟡 | — | No randomly placed appearance options remain |
@@ -54,7 +54,7 @@ Gate for everything else: the one-product decision (ADR-0017).
 | ID | Title | Status | Pri | Deps | Acceptance |
 |---|---|---|---|---|---|
 | KT-DB-001 | Two SQLDelight DBs + DataStore (existing) — maintain | ✅ | — | — | — |
-| KT-DB-002 | Node-layer storage decision per ADR-0013 (tables vs read-model) | 🔬 | 🔴 | KT-INFRA-001 | ADR-0013 `ACCEPTED` with storage design; `NODE_DATA_MODEL.md` verified against chosen approach |
+| KT-DB-002 | Node-layer storage decision per ADR-0013 (tables vs read-model) | ✅ | 🔴 | KT-INFRA-001 | ADR-0013 `ACCEPTED` with storage design (**read-model over existing DBs — no new tables, no schema change**); registries as code (`NodeTypeRegistry`/`RelationshipRegistry`), unit-tested |
 | KT-DB-003 | Event log table (target) — `event_log` per `EVENT_CATALOG.md` | 🔬 | 🟡 | KT-DB-002 | Schema + migration; ingestion from study/media events |
 | KT-DB-004 | Consolidate suite JSON stores onto the unified data layer | 📋 | 🟡 | KT-INFRA-001 | One SRS, one deck model, one stats source of truth (PRODUCT_AUDIT §6) |
 | KT-DB-005 | Consolidate the two jdata implementations (kjd vs suite engine/jdata) | 📋 | 🟡 | — | One pipeline; ADR-0007 updated |
@@ -66,7 +66,7 @@ Gate for everything else: the one-product decision (ADR-0017).
 |---|---|---|---|---|---|
 | KT-DICT-001 | Bundled AppDataDatabase + radical/word/sentence search (existing) | ✅ | — | — | — |
 | KT-DICT-002 | Suite dictionary engines reachable from the product | 🔬 | 🔴 | KT-INFRA-001 | Dictionary popup + import work inside the shipped app |
-| KT-DICT-003 | Node-anchored dictionary + traversal chips (NODE §81) | 🔬 | 🟡 | KT-DB-002 | 食べる → 食 → 食事 → … traversal works |
+| KT-DICT-003 | Node-anchored dictionary + traversal chips (NODE §81) | ✅ | 🟡 | KT-DB-002 | `NodeTraversal` walks 食べる → 食 → 食事 → … via typed one-hop chips + multi-hop `walk()` over real queries (kanji/word/radical/grammar seeds) |
 | KT-DICT-004 | Search pipeline per STANDARDS §187 (normalize→tokenize→rank→filter) | 📋 | 🟢 | — | No brute-force scans; FTS/trigram/prefix indexes |
 | KT-DICT-005 | Grammar/pitch/example surfaces over kjd data | 🔍 | 🟢 | KT-DATA-001 | Screens exist for grammar entries once dataset adopted |
 
@@ -388,6 +388,7 @@ Gate for everything else: the one-product decision (ADR-0017).
 ## Related
 
 - [`TODO.md`](TODO.md) — operational short-list (priority-ordered)
+- [`OVERHAUL_BACKLOG.md`](OVERHAUL_BACKLOG.md) — spec-derived overhaul backlog (nav shell, themes, debug tooling, cards, level profiles, universal search, knowledge graph, sentences, media/world follow-ups)
 - [`COMPLETED.md`](COMPLETED.md) — shipped work
 - [`CURRENT_ISSUES.md`](CURRENT_ISSUES.md) — bug tracker
 - [`../product/PRODUCT.md`](../product/PRODUCT.md) — MASTER §6, §81

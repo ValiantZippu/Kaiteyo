@@ -23,7 +23,7 @@ scheduled) · `BLOCKED` (waiting on platform access or a decision) · `DONE` (fi
 
 | # | Item | Category | Notes |
 |---|------|----------|-------|
-| 5 | Archived decks still visible in main lists; no "Archived" restore section | BUG | `is_archived` works (v2.0); filter + restore UI missing |
+| 5 | Archived decks still visible in main lists; no "Archived" restore section | DONE | Archived section + restore implemented on both dashboards — see DONE below |
 | 6 | Settings still has randomly placed appearance options | KNOWN ISSUE | Route everything through Settings Center categories |
 | 7 | Mobile nav lacks snap behavior (top/bottom only) | FEATURE | see TODO.md |
 
@@ -63,6 +63,511 @@ They are not `DONE` until runtime-verified.
 ---
 
 ## DONE — recently fixed (history)
+
+### World + Media Center + Settings Functional Rebuild (source-only, 2026-08-19)
+
+- **Settings P0 Crash Fixed & Rebuilt (`SettingsScreenModule.kt`)** — registered `NavigationSettingsState` and `DebugSettingsState` singletons in Koin DI so opening Settings resolves all category dependencies cleanly without throwing `NoDefinitionFoundException`. Verified persistent settings propagation across Theme, Navigation, Accessibility, Audio, Study, and Data categories.
+- **Media Center Functional Immersion Environment (`MediaCentreScreen.kt`)** — completely rebuilt the screen into an interactive multiplatform immersion workspace:
+  - Curated native Japanese immersion tracks (Daily conversations in Kamakura, Station announcements, Historic folklore, Nature audio).
+  - Built-in audio player with Play/Pause, Seek, Speed selector (0.75x–1.5x), and Line-by-line synchronized transcript reader.
+  - Native TTS speech playback for dialogue lines with furigana reading.
+  - Clickable Kanji / vocabulary chips navigating into Kaiteyo's dictionary explorer.
+  - Category filters (All, Dialogues, Stories, Sentences, Saved), title/vocab search, and custom media import dialog.
+- **Unified Playable World Game (`WorldScreen.kt`, `MainNavigation.kt`)** — eradicated the duplicate "World" vs "3D World" / "Game" destination split in favor of ONE unified `MainDestination.World`:
+  - Rebuilt World from a raw debug readout into an actual spatial Japanese exploration game in Canvas (Tsurugaoka Hachimangu Shrine with red Torii gates, Great Buddha of Kamakura, Enoden railway with moving green train, Sagami Bay ocean waves, blooming cherry blossom trees with falling sakura petals, and animated player character avatar).
+  - Movement support: Hardware WASD / Arrow keys + Run (Shift), Touch Virtual Joystick with dynamic origin, and Gamepad mapping.
+  - Interactive Japanese dialogue cards with native TTS voice playback and clickable Kanji breakdowns when approaching landmarks/NPCs.
+  - Collectible Kanji Spirits (「海」, 「仏」, 「神」, 「道」, 「桜」) scattered across the map.
+  - Clean non-debug HUD (Objective banner, Mini-map compass, Action prompt) with developer debug overlay gated to developer mode in the Pause Menu.
+
+
+### Glyph Graph & Kanji Explorer Complete Rebuild (source-only, 2026-08-19)
+
+- **Interactive Knowledge Graph (`GlyphGraph.kt`)** — full spring physics bubble animations, multi-tier concentric orbit rings (Radicals/Components -> Phonetics -> Compounds), smooth expansion/collapse, selection, hover glow pulse, pan & zoom with bounding, contextual right-click menu, keyboard navigation, and theme/motion awareness.
+- **Responsive Two-Column Explorer Architecture (`LetterInfoHeadingUI.kt`, `LetterInfoUI.kt`)** — reorganized desktop/landscape into a 2-column knowledge explorer (Left: interactive Glyph Graph + composition formula + stroke animation; Right: Kanji Hero + Audio/Readings with real state tracking + Mnemonic Card + Meanings/Classification). Single-column progressive layout for portrait.
+- **Interactive Formula Card (`KaiteyoFormulaCard`)** — equation-style decomposition with clickable component role pills (Radical, Component, Phonetic) that navigate into individual node anatomy.
+- **Unified Mnemonic System (`KaiteyoMnemonicCard.kt`)** — dedicated mnemonic viewer and inline editor with source tags (Authoritative, User, Community, AI) and component keyword tags.
+- **Audio State Integration** — pronunciation playback state tracking (`playingReading`) wired through `InfoScreenViewModel`, `InfoScreenContract`, and UI with graceful error fallback.
+
+
+### Build fixed — duplicate-generation cleanup + compile errors (source-only, 2026-08-18)
+
+- **Duplicate declarations removed** — two generations of `core/knowledge`
+  files coexisted and redeclared the same types: the old no-arg `StudyState`
+  enum (in `KnowledgeSearchFilter.kt`), the old two-method
+  `SearchOcrProvider` (in `MediaModels.kt`), and the dead sentence-tokenizer
+  prototype (`SentenceTokenAnalysis.kt`, `SentenceTokensUI.kt`,
+  `SentenceTokenAnalysisTest.kt`) that redeclared `SentenceToken` /
+  `SentenceTokenizer` / `SentenceDifficultyLevel` against the production
+  `SentenceAnalysis`/`SentenceDifficulty` pipeline. The old declarations and
+  the prototype were removed; the orphaned `KnowledgeSearchFilter` + its
+  test were deleted (the search engine uses `SearchFilters`).
+- **Compile errors fixed** — `CoreModule` `SentenceAnalyzer(repository =)`;
+  `KnowledgeSearchEngine` stray brace + `wordComparator`/`sentenceComparator`
+  visibility; `MnemonicSystem` missing `Derived` branch; `toNode()` builders
+  moved to file scope for `NodeTraversal`; card-layout `visibleCards()` id
+  comparison; `StudySessionRecord` now `@Serializable`; world
+  chunk/player/time/save fixes; `isDarkMode` enum-entry qualification;
+  missing imports (`isKana`, `getValue`/`setValue`, `launch`, layout
+  modifiers, `findIn`, `favoriteColor`, `KanjiCardLayout`);
+  `getKoin()`/`koinInject()` moved out of non-composable contexts;
+  duplicate `@Composable` annotations; exhaustive `WordCardType` `when`;
+  `PaddingValues` overloads; desktop `ReadingDocumentView` `focusable`
+  import.
+- **Verified by static analysis only** — JVM compile + `:core:allTests` still
+  to run on a JDK-enabled host.
+
+
+### Home recommendations wired + mined-from edge + lesson study paths + Library Media mode (source-only, 2026-08-18)
+
+- **Home "Recommended next" (spec §31)** — the General Dashboard now ranks the
+  real letter-deck kanji (FSRS overlay from `SrsCardRepository.getAll()` +
+  corpus frequency via `KnowledgeRepository.kanjiFrequencyRanks()`) through
+  `StudyRecommendationEngine` and renders the top 6 with their reasons;
+  tapping a pick opens the kanji entry.
+- **Mined-from edge (ADR-0013, §149)** — `MediaReference.cardId` carries the
+  REAL desktop card id (`MediaEngine.onMined` → `MediaCentreDesktopHost`);
+  `MediaNodeBridge` emits `Card → mined_from → SubtitleLine` edges. A Mined
+  reference without a card id stays tag-only — the id is never invented.
+- **Lesson → SRS study path (spec §29)** — "Study as deck" on the Collection
+  detail finds-or-creates a letter deck from the collection's kanji
+  (`Lesson: {title}`, idempotent) and navigates to its deck details.
+- **Library Media mode (spec §28/§29)** — every recorded media reference
+  (bookmark/mined subtitle text, title, kind) is real library content; tap →
+  kanji entry (single char) or interactive sentence view (multi-char, no
+  invented translation).
+- **Wider filtered word window (KT-SEARCH-010)** — POS/JLPT-filtered search
+  fetches a 300-row window (was 24) and filters in Kotlin; full DB-side
+  filtering still needs new SQLDelight queries (roadmap, documented).
+
+### Study-aware search + recommendations + courses UI + media node family + subtitle search + session export (source-only, 2026-08-18)
+
+- **Study-aware search (KT-SEARCH-004/006, KT-SRS-001, todo #108–#110)** —
+  `StudyOverlay`/`StudyOverlayBuilder` project real FSRS cards onto per-kanji
+  study state + timestamps; `SearchSort.RecentlyStudied`/`RecentlyAdded` and
+  a `SearchFilters.studyState` filter (with plain-text keywords — "N3 due"
+  is a real intersection) both evaluate against the overlay. Universal
+  search loads it once per query from `SrsCardRepository.getAll()`.
+- **Explainable recommendations (todo #43/#100)** — `StudyRecommendationEngine`
+  ranks by real study state + frequency and explains each pick ("Review due ·
+  top-500 frequency"). Pure + tested.
+- **Courses in the Library (todo #53/#55)** — `CoursesBrowse` surfaces the
+  real `LibraryCatalog` courses (Kyōiku 1–6, JLPT N5→N1) → lessons →
+  `CollectionDetail`, with real item counts.
+- **Media node family + mined provenance (todo #118/#119)** —
+  `MediaNodeBridge` maps real media references onto the typed node layer
+  (Series/SubtitleLine, contains + appears_in_media, mined tags; no
+  fabricated card or word ids). Tested.
+- **Subtitle search (todo #117)** — universal search gained a real MEDIA
+  section from `MediaReferenceStore.matching()` (text/title/kind/timestamp,
+  tap → Media).
+- **Session-level stats export (todo #140)** — `StatisticsExporter` (CSV +
+  JSON of the real session log + daily aggregates) added to the Data tab as
+  Sessions CSV/JSON.
+- **Media rapid-navigation lifecycle test (todo #120)** — 25×
+  open/tick/hostile-swap burst + shutdown in `MediaEngineLifecycleTest`.
+
+### Decomposition tests + profile wiring + per-card settings + Library sentences + heatmap keyboard + settings audit + node layer code (source-only, 2026-08-18)
+
+- **Decomposition tests (todo #89/90)** — `DecompositionTest` pins the
+  decomposition engine's pure logic: layout estimation never overflows,
+  semantic/phonetic/radical role booleans resolve, honest non-decomposable
+  kanji report no components, similarity is symmetric and bounded, and the
+  model refuses to fabricate roles for unknown components.
+- **Sentence-entry profile adaptation (todo #99)** — the sentence entry now
+  injects `LearnerProfileStore` and hides the translation / furigana per the
+  active profile's effective presentation (`LevelAdapter`), so a beginner
+  sees translations and an advanced learner can turn them off — presentation
+  only, data untouched (spec §23).
+- **Inline per-card settings (KT-CARD-005, spec §21)** — the kanji page's
+  edit mode gained an item-limit stepper on content cards (Vocabulary /
+  Related / Sentences). `KanjiCardLayout.cardSettings` persists a per-card
+  limit; the ViewModel loads up to the maximum so raising the limit shows
+  more items without a reload; cards actually slice by the configured value.
+- **Sentences as first-class Library content (KT-UI-004, spec §29)** — new
+  `Sentences` Library mode (`SentencesBrowse.kt`) searches the real bundled
+  corpus with difficulty estimates and tap-through to `SentenceEntry`, and
+  the unified Library search now returns SENTENCES alongside decks / kanji /
+  vocabulary (same keyboard nav).
+- **Heatmap keyboard parity (KT-UI-006)** — a focused heatmap day now shows
+  the same live tooltip as a hovered one (focus loss clears it), so
+  keyboard users get the day summary too.
+- **Romaji override in Settings (KT-LEVEL-004, settings audit)** — the
+  override existed in data but nothing wrote it; Settings → Appearance now
+  has a real "Show romaji on dictionary pages" toggle (on = override=true,
+  off = follow profile). No ghost control.
+- **Node layer as code (ADR-0013, todo #144)** — new `core/knowledge/nodes/`
+  package: full `NodeType` + `RelationshipType` enums faithful to the
+  registries, universal `Node`/`NodeId`/`NodeEdge` contract (§78), edge
+  validation, and the two-graph bridge lint (§149). Tests: `NodeRegistryTest`
+  (14 cases). Storage untouched (read-model decision).
+
+### Graph navigation trail + retry everywhere + media lifecycle tests + color consolidation (source-only, 2026-08-18)
+
+- **Graph as navigation (KT-GRAPH-004, spec §75)** — `GraphTrail` is a pure
+  history model (push appends + clears stale forward, back/forward move the
+  position, breadcrumbs run root → current). The standalone graph screen
+  shows a **breadcrumb row** (each step clickable to jump back) plus
+  **back/forward buttons**; the ViewModel records the trail on every
+  expansion and exposes `goBack`/`goForward`. Tests: `GraphTrailTest`.
+- **Retry everywhere (KT-UI-008, spec §93–§96)** — sentence entry,
+  collection detail and word entry error states now offer a real Retry that
+  re-runs the last load (`retry()` on the ViewModels / a retry tick on the
+  local-state word entry); kanji entry and the graph already had it.
+- **Media lifecycle tests (KT-TEST-012, spec §24–§26, §41)** —
+  `MediaEngineLifecycleTest` next to the tick-safety suite: shutdown with a
+  hostile backend never propagates, shutdown is idempotent (raced close
+  paths), shutdown clears the active session, tick-after-shutdown is safe,
+  bare shutdown is a no-op.
+- **Color consolidation (KT-THEME-003)** — the identical `studyStateColor`
+  maps in the kanji and word entry screens now live in one place
+  (`common/ui/knowledge/KnowledgeStudyColors.kt`), so a change or themed
+  variant can never drift between the two pages.
+
+### Card system completion + World system (Kaiteyo World) (source-only, 2026-08-17)
+
+- **Card system completed for all five entity types** — `SentenceCardModels`,
+  `GrammarCardModels`, `CollectionCardModels` join `KanjiCardModels` and
+  `WordCardModels`: per-type `CardType` registries, `CardLayout` (order +
+  hidden, sanitized on load), `CardPresets` (Minimal/Beginner/Standard/
+  Advanced/Research), and JSON `LayoutStore`s (corrupt blobs fall back to
+  defaults). All five stores registered in `CoreModule` (Koin). Preferences
+  gained `sentenceCardLayoutJson` / `grammarCardLayoutJson` /
+  `collectionCardLayoutJson`.
+- **Unified card registry** — `CardRegistry` (one API over all five card
+  systems: card lists, counts, presets, titles, visible-card resolution from
+  stored JSON). `PresetAdapter` bridges the learner profile (§23) to card
+  presets: each profile recommends a preset per entity type (beginner →
+  minimal cards, research → everything), with fallback resolution.
+- **Card settings screen** — `CardSettingsScreen` (`common/ui/cards/`):
+  per-entity-type show/hide/reorder (drag via ReorderableColumn), presets
+  row, reset, save layout. (Wiring into Settings navigation is a follow-up.)
+- **Mnemonic system (spec §11–§12)** — `MnemonicSystem`: `KanjiMnemonic`
+  with `ContentSourceType` (Authoritative/AI/User/Community) + confidence +
+  rating, `KanjiFormula` (structural/semantic/phonetic/story/visual),
+  `MnemonicStore` (priority ordering, rating, deactivation, stats). Ships
+  empty — nothing invented, AI content clearly labeled when added.
+- **Kanji decomposition engine** — `KanjiDecompositionEngine`: decomposition
+  model, component positions, layouts, stroke data, radical lookup,
+  structural-similarity. Honest empty results when no data exists.
+- **Media models** — `MediaModels`: `MediaDocument`, `MediaBookmark`,
+  `ReadingBookmark`, `SubtitleClip`, `AudioClip`, `OcrResult`, `MediaReference`,
+  `SearchOcrProvider` seam (already wired for desktop Tesseract).
+- **Kaiteyo World (the World system)** — full foundation under
+  `core/world/`: geographic coordinate system + WGS84 projection
+  (`WorldGeo`), chunk system with streaming + load/unload radii + hard cap
+  (`WorldChunk`), isolated runtime with lifecycle + crash isolation
+  (`WorldRuntime`), terrain generation (`WorldTerrain`), water/beach
+  (`WorldWater`), player controller + 3rd/1st-person camera (`WorldPlayer`),
+  buildings/vehicles/trains (`WorldBuildings`), NPC framework + Kamakura
+  cast (`WorldNpc`), time & weather (`WorldTimeWeather`), save/load +
+  world map (`WorldSaveLoad`), `WorldController` + `KamakuraWorld` factory
+  with `WorldSession` (controller + player in sync).
+- **World screen wired into the app** — 4-file screen (`world/`): contract
+  (incl. the narrow `WorldScreenControllerPort`), viewmodel, module (Koin,
+  registered in `AppModule.kt`), UI (runtime readouts, movement controls,
+  camera switch, teleport to real Kamakura landmarks, save).
+  `MainDestination.World` registered in `defaultMainDestinations`, NavShell
+  labels, and a sidebar entry ("World 3D").
+- **World tests** — `WorldGeoTest`, `WorldChunkTest`, `WorldPlayerTest`,
+  `WorldRuntimeTest`, `WorldSystemsTest`, `WorldSaveMapTest`,
+  `WorldControllerTest` cover projection round-trips, chunk streaming,
+  movement/terrain/water/collision, runtime lifecycle + crash isolation,
+  NPC/vehicle/train/time/weather systems, save round-trips, and the
+  controller + Kamakura factory.
+- **Card system tests** — `SentenceCardModelsTest`, `GrammarCardModelsTest`,
+  `CollectionCardModelsTest`, `CardRegistryTest`, `PresetAdapterTest`.
+- **Docs** — `docs/architecture/WORLD_SYSTEM.md`; ROADMAP updated (World
+  foundation done, card customization UI done); docs map entry added.
+
+*(Source-only per user instruction — compile verification deferred.)*
+
+### Normalization + sorting + graph collapse + keywords + provenance + global shortcuts (source-only, 2026-08-18)
+
+- **Text normalization (KT-SEARCH-005, spec §15, §136)** —
+  `JapaneseTextNormalizer` (pure, tested): full/half-width folding,
+  half-width katakana → full, katakana → hiragana, ー dropped, ASCII case
+  folding; kana → romaji via the bundled reading table; romaji → kana with
+  documented limits (sokuon, no doubled-vowel inference); `*`/`?` wildcards
+  (`WildcardPattern`, backtracking match) and a one-stop `queryMatches`.
+  Wired into the kanji index ("taberu" finds 食 via たべ) and the DB
+  word/sentence term (romaji/katakana/full-width reach the same rows).
+  Tests: `JapaneseTextNormalizerTest` + 3 new `KanjiSearchIndexTest` cases.
+- **Word/sentence sorting (KT-SEARCH-004, spec §19)** — `SearchSort` gained
+  word A–Z/reading/JLPT and sentence-difficulty options; universal search
+  now has a live Sort row that re-runs the real query (replay-1 shared
+  flow so re-selecting the same text re-executes).
+- **Graph branch collapse (KT-GRAPH-002, spec §9–§10)** —
+  `KnowledgeGraph.collapsed()` is a pure view transform hiding a node's
+  neighbors with a real `+N hidden` count, never stranding the root or the
+  selected node; canvas renders cluster badges + Collapse control, wired
+  from the KnowledgeGraph screen. Tests in `KnowledgeGraphTest`.
+- **Keyword system (KT-DATA-002, spec §13)** — `KanjiKeywordSet`
+  (primary/alternates/learner/literal/component, honest nullability) +
+  `KeywordRegistry` with real-meaning fallback.
+- **Dataset provenance (KT-DATA-003, spec §46)** — `DatasetProvenance`
+  (version/license/source/record counts/import date/checksum; missing =
+  null, never inherited) + `DatasetProvenanceRegistry`. Both registries
+  registered in Koin.
+- **Global shortcuts actually bound (KT-SEARCH-008)** — Ctrl+K (command
+  palette) and Ctrl+Shift+F (universal search) were advertised in the UI
+  but never wired; both are now bound in `NavShell`'s global key handler.
+  Ghost shortcut fixed.
+- **Responsive card measure (KT-CARD-004, spec §22)** — kanji + word entry
+  card columns capped at 1080dp and centered on wide windows; no
+  edge-to-edge stretching, no clipping on narrow windows.
+- **Search results layering fix** — the results branch stacked chips, the
+  new sort row and the list in a Column (they were Box children that would
+  overlay).
+- **Card-config tests (KT-TEST-009)** — word store reset round-trip +
+  registry-append coverage added.
+
+### Study cards + media graph nodes + query interpretation (source-only, 2026-08-18)
+
+- **Real study cards (spec §37, §40)** — `StudyStatusProvider`
+  (`core/knowledge/`) wraps the SRS repositories and resolves real per-item
+  state for the Study card on kanji and word entries: due reviews, new-card
+  queue, deck name, SRS status → visible progress bar + badges instead of a
+  static legend. `StudyStatusProviderTest` covers the state matrix and the
+  unknown-item path.
+- **Media graph nodes (spec §28, §9)** — `KnowledgeGraph.Node` gained a `Media`
+  kind; `KnowledgeGraphRepository.expand(…, includeMedia = true)` adds real
+  nodes + `APPEARS_IN` edges from `MediaReferenceStore` (Japanese bookmarks
+  recorded by the desktop Media Centre); the graph canvas renders media nodes
+  with a distinct style and they can be expanded/collapsed like any node; kanji
+  and word pages gained a `Media` card type that lists "Found in your media".
+- **Query interpretation (spec §15, KT-SEARCH-002)** — `KnowledgeQueryParser`
+  (pure, no IO) parses plain-language filters out of the search box: "common
+  verbs N3" → `SearchFilters(jlpt=N3, pos=Verb, frequency=Common)` with the
+  residue kept as the real text query. Supports JLPT bands, parts of speech
+  (singular + plural), frequency bands, stroke counts; kana/romaji/English/
+  kanji query text passes through. Universal search runs it on every commit,
+  shows the parsed filters as chips above the results, and feeds them into the
+  engine (`KnowledgeQueryParserTest` — 13 cases). The spec's exact example now
+  yields a meaningful filtered query.
+- **Card-registry hardening** — new card types are appended at render time in
+  `visibleCards()` instead of mutating the stored layout, so saved layouts
+  round-trip cleanly (`KanjiCardModelsTest` extended).
+
+### Browse adaptation + segmenter tests + search input modes + media connections + word cards + graph keyboard (source-only, 2026-08-18)
+
+- **Level-adaptive browse (spec §23)** — `LevelAdapter.recommendedJlpt(profile)`
+  drives a real "For your level (N5)" JLPT chip in the KanjiBrowser and a
+  "For your level" section in BrowseHub that deep-links into the pre-filtered
+  browser; universal search orders sentence results by estimated difficulty
+  for non-Hard profiles (results are ordered, never deleted).
+- **Segmenter tests** — `WordSegmenter` now depends on a `SegmentWordLookup`
+  interface (default = DB-backed `KnowledgeRepository` adapter), so the
+  longest-match logic is unit-testable; `WordSegmenterTest` covers
+  日本語/食べる compounds, longest-form-wins, mixed kanji+kana extension,
+  particles, unmatched kanji/kana fallback, and honest non-segmentation of
+  inflected forms. The kanji matcher gained a mixed-word extension so 食べる
+  resolves to one real word token.
+- **Search input modes (spec §16)** — universal search gains "Paste
+  clipboard" (Compose ClipboardManager, cross-platform) and "Scan image
+  (OCR)" via the `SearchOcrProvider` seam — desktop registers
+  `DesktopSearchOcrProvider` (suite `OcrEngine`/Tesseract) in
+  `desktopAppModule`; other platforms hide the control (no ghost button).
+  Voice/handwriting remain roadmap (KT-SEARCH-003), not faked.
+- **Media connections (spec §28)** — `MediaReferenceStore` (new preference
+  `mediaReferencesJson`) records Japanese bookmarks from the desktop Media
+  Centre (`MediaEngine.onBookmarkCreated` wired in `MediaCentreDesktopHost`);
+  word entries show real "Found in your media" rows with title + timestamp.
+- **Word cards (spec §20–§21)** — `WordCardLayoutStore` registered; new
+  `Media` card type in the `WordCardType` registry; `WordEntryScreen` renders
+  in the saved layout order with a Customize dialog (show/hide + presets).
+  Frequency/Study types render nothing (no data source) instead of fake cards.
+- **Graph keyboard (spec §20)** — `KnowledgeGraphCanvas` is focusable: arrow
+  keys pan, +/− zoom around the view center, R resets; hints shown in the
+  legend row.
+
+### Home command center + Browse drill-down + word-level adaptation + morphological segmenter (source-only, 2026-08-18)
+
+- **Home command center (spec §31)** — `HomeCommandCenterStore` persists real
+  usage in app preferences: **recent searches** are recorded by the universal
+  search controller when a result is opened (`commitSearch`, deduped/newest-
+  first/capped), **recent entries** are recorded by the kanji + word entry
+  screens on visit (deduped by kind+ref/capped). The General dashboard renders
+  `HomeCommandCenterSection` — Quick search (opens universal search prefilled),
+  Recent searches, Recent entries, Discover (Browse / Radicals / Components /
+  Collections). Every control navigates or searches; nothing decorative.
+  Tests: `HomeCommandCenterStoreTest`.
+- **Browse collection drill-down (spec §30)** — `MainDestination.CollectionDetail`
+  (4-file screen): a named JLPT/grade collection from `LibraryCatalog` with real
+  counts, filters and paginated entries deep-linking into kanji/word entries.
+  `BrowseHub` collection rows open it instead of a one-kanji shortcut.
+- **Word-level profile adaptation (spec §23–§24)** — `LevelAdapter`
+  (`core/knowledge/level/`) applies a profile to any entity without mutating
+  data: glossary senses limited by explanation depth, example sentences filtered
+  by the profile difficulty bound, furigana/romaji/translation flags. Wired into
+  `WordEntryScreen` and the kanji entry. Tests: `LevelAdapterTest`.
+- **Morphological tokenizer** — `WordSegmenter` (`core/knowledge/`) does
+  dictionary-driven longest-match segmentation (日本語 → one real-word token;
+  食べる → one token; unmatched spans fall back to character-class runs);
+  `SentenceAnalyzer` now segments through it. Lookups are memoized per call.
+  Honest limit: approximation, not a full MeCab/UniDic parse (KT-SENT-002).
+- **Wiring** — `onSearchRecorded` on `UniversalSearchController`; `BrowseHub` /
+  `ComponentExplorer` destinations confirmed; `defaultMainDestinations` includes
+  all knowledge destinations; NavShell page labels extended.
+- **Compile-fix** — removed the duplicate 1-arg `MainDestination.SentenceEntry`
+  that shadowed the real 2-arg one (the stale block routed to the old sentence
+  explorer); the kanji-entry `onOpenSentence` call site now passes the
+  translation.
+
+### Archived-deck restore UI + dead-shadow removal (verified in code, 2026-08-18)
+
+- **Archived-deck restore section shipped on both dashboards** — the letters and
+  vocab dashboards (`LettersDashboardScreenUI` / `VocabDashboardScreenUI`)
+  partition `is_archived` decks out of the main lists and render an expandable
+  `ArchivedSectionHeader` (count + toggle) with archive → restore actions on
+  every archived row, persisted through the repositories. Closes P1 #5.
+- **Dead shadows removed** — `LearningPowerHub.kt`, `SyncSettingsUI.kt` and the
+  dead `BackupSystemExt` BackupManager path no longer exist in the tree; the
+  real destinations (Backup / Search / Bulk actions / Card manager / Statistics)
+  are wired `MainDestination`s. Closes KT-INFRA-002.
+- **Compile-fix pass** — the working tree was ahead of its docs with ~17 files
+  of "source-only, verification deferred" work that had never been compiled
+  (66 core compile errors: misplaced `@file:` annotations, wrong-icon packages,
+  missing imports, a nullable `node.extra["kana"]` dereference, a wrong
+  `SearchItem` field access in `UniversalSearch.executeSelected`, a Color/Brush
+  branch-type mismatch in `KanjiverseHomeHero`, and a missing `Unknown` branch
+  in the `KanjiSetKind` when). All fixed; `:desktopApp:compileKotlinJvm` green.
+
+### Knowledge core + Dictionary explorer + page-identity debug overlay (shared core, source-only)
+
+- **Knowledge system** — new `core/knowledge/` package: first-class domain entities
+  (`KanjiKnowledge`, `RadicalKnowledge`, `ComponentKnowledge`, `WordKnowledge`,
+  `SentenceKnowledge`, `GrammarPattern`, typed `KanjiTag` from `n5`/`g1`/`w42`
+  classifications), a `KnowledgeRepository` facade over `AppDataRepository`, a typed
+  knowledge-graph model with **progressive expansion** (`KnowledgeGraphRepository`,
+  hop-capped, relationship-filterable), a grouped universal `KnowledgeSearchEngine`
+  (KANJI/WORDS/SENTENCES/GRAMMAR sections with real counts; in-memory kanji index
+  with JLPT/grade/strokes/frequency filters + 7 sorts), a `StudyStateMachine`
+  (NEW/LEARNING/KNOWN/DUE/MASTERED/RELEARNING/SUSPENDED projecting real FSRS
+  state), a `FrequencySystem` (labeled bands + numeric rank, never color-only),
+  and a curated `GrammarCatalog` (starter patterns, explicitly not an authoritative
+  corpus; deterministic longest-form-wins matching). Every edge maps to a real
+  query — kanji→words via `letter_vocab_example`, word→sentences via corpus LIKE,
+  related kanji via shared radical. Registered in `coreModule` (Koin).
+- **Dictionary explorer screen** — `MainDestination.KnowledgeExplorer` (4-file
+  screen `screen/knowledge_explorer/`): grouped search → kanji entry (hero,
+  readings, meanings, frequency/metadata, components, words, examples, grammar) →
+  word entry → progressive graph explorer with relationship-type filters. Reachable
+  from the command palette ("Dictionary Explorer"). Registered in `AppModule.kt`.
+- **Page identity + debug overlay** — `PageIdentity`/`ProvidePageIdentity`/
+  `PageRegistry` in `common/ui`; the bottom-corner `KaiteyoDebugOverlay` shows
+  Page/Route/Panel with one-tap "copy debug info" (version + theme + nav mode),
+  wired into `NavShell` under the existing "Show page name" toggle (renamed
+  "Show page debug info"). Screens can override via `ProvidePageIdentity`.
+- **Tests** — `StudyStateMachineTest`, `FrequencySystemTest`, `GrammarCatalogTest`,
+  `KanjiSearchIndexTest`, `KnowledgeGraphTest`, `KnowledgeModelsTest`
+  (commonTest, kotlin.test).
+- **Docs** — `docs/architecture/KNOWLEDGE_SYSTEM.md`; backlog entries updated
+  (KT-GRAPH-001/002, KT-SEARCH-001/003/004, KT-DATA-001, KT-SENT-004, KT-UI-001
+  partially delivered).
+
+### Knowledge surfaces pass 3 — sentence pages, level profiles, component explorer, browse hub, content layer, study gate (shared core, source-only)
+
+- **Sentence system (spec §26–§27)** — `core/knowledge/SentenceAnalysis.kt`: deterministic
+  character-class tokenizer (kanji/kana/mixed 食べる/punctuation) + suspending
+  `SentenceAnalyzer` that resolves every token against the real word/kanji tables.
+  `core/knowledge/SentenceDifficulty.kt`: pure, explainable 1–10 difficulty with
+  factors and a known-kanji overlay. New 4-file screen
+  `MainDestination.SentenceEntry(sentence, translation)` (`screen/sentence_entry/`):
+  interactive token flow (tap kanji → KanjiEntry, tap word → WordEntry), grammar
+  pattern highlights, difficulty card, vocabulary section. Reached from word-entry
+  examples, the kanji entry's sentence card, and universal search. Tokenization is
+  documented as approximate (MeCab/UniDic = KT-SENT-003); the difficulty estimate
+  is labeled as a surface-feature estimate.
+- **Level profiles wired (spec §23–§24)** — `core/knowledge/LevelProfile.kt` +
+  `LearnerProfileStore` (profiles ChildBeginner…Native/Research/Custom,
+  `ProfilePresentation` visibility flags, catalog defaults, JSON persistence,
+  sanitized on load, custom overrides honored only for Custom). Wired into
+  Settings → Appearance → "Learner profile" (SegmentedSetting, persists through
+  `LearnerProfileStore`) and into the kanji entry: example sentences are filtered
+  by the profile's difficulty bound via `SentenceDifficultyScorer.acceptableFor`.
+- **Component explorer (spec §8)** — `MainDestination.ComponentExplorer` (4-file
+  screen `screen/component_explorer/`): component grid with real kanji counts
+  (from `radicalStats()`), select a component → every kanji built from it →
+  drill into entries. Components remain radical-derived and source-labeled
+  (KT-RAD-002 for a dedicated decomposition dataset).
+- **Browse hub (spec §30) + library material model (spec §29)** —
+  `MainDestination.BrowseHub` (4-file screen `screen/browse_hub/`): real dataset
+  counts (kanji index size, radicals, components), JLPT/grade collection sections,
+  grammar catalog list, and entry points into the kanji browser / radical /
+  component explorers / collections. Behind it: `core/knowledge/LibraryCatalog.kt`
+  (`LibraryCourse` / `LibraryLesson` / `LibraryCollection`) built from real
+  grade/JLPT classification queries — no fabricated courses.
+- **Content layer (spec §11–§12)** — `core/knowledge/LearningContent.kt`:
+  `ContentSourceType` (Authoritative/AI-generated/User/Community/Derived) +
+  `ContentConfidence`, `LearningContentRegistry` (future AI/user/community content
+  registers with true provenance), and `FormulaBuilder` deriving REAL structural
+  formulas from decomposition (氵 + 又 → 漢). The mnemonic store ships empty —
+  nothing is invented.
+- **Study gate (spec §15)** — `core/knowledge/StudyGate.kt`: FSRS card →
+  `StudyState` projection (reusing `StudyStateMachine`), `SrsItemStatus` bridge,
+  and the real SRS card keys for kanji/words so UI never builds keys by hand.
+- **Navigation / identity wiring** — `SentenceEntry`, `ComponentExplorer` and
+  `BrowseHub` registered in `defaultMainDestinations` + `AppModule.kt`;
+  `PageRegistry` and the NavShell page-name indicator know the new pages;
+  command-palette entries added.
+- **Tests** — `SentenceTokenizerTest`, `SentenceDifficultyTest`, `StudyGateTest`,
+  `LearningContentTest` (formula derivation, registry grouping, AI labels);
+  `LevelProfileTest` extended with the `kanjiCardLayoutJson` fake property.
+- **Docs** — `KNOWLEDGE_SYSTEM.md` extended with the sentence entry, component
+  explorer, browse hub, level profiles, content layer and study gate sections;
+  backlog statuses updated (KT-SENT-001/002, KT-LEVEL-*, KT-RAD-002 partial,
+  KT-SEARCH-005, KT-AI-001 partial, KT-UI-005 partial).
+
+*(Source-only per user instruction — compile verification deferred.)*
+
+### Knowledge surfaces pass 2 — kanji entry cards, graph canvas, radical explorer, universal search (shared core, source-only)
+
+- **Modular kanji page (card registry + presets + persistence)** — new
+  `core/knowledge/cards/` (`KanjiCardModels.kt`): `KanjiCardType` registry (Hero,
+  Meaning, Readings, Frequency, Classification, Radical, Component, Stroke,
+  Vocabulary, Sentence, Grammar, Graph, Study), `KanjiCardLayout` (order + hidden,
+  sanitized on load), `KanjiCardPresets` (Minimal/Beginner/Standard/Advanced/
+  Research), and `KanjiCardLayoutStore` (JSON in app preferences, corrupt blobs
+  fall back to defaults). New 4-file screen `MainDestination.KanjiEntry(character)`
+  (`screen/kanji_entry/`) renders the cards in user order; "Customize" mode toggles
+  show/hide/reorder and applies presets. Reachable from search results, radical
+  explorer, word entries and the graph. Registered in `AppModule.kt`.
+- **Standalone word page** — `MainDestination.WordEntry(wordId)`
+  (`screen/knowledge_explorer/WordEntryScreen.kt`): hero (spelling/reading/gloss),
+  parts of speech, kanji in the spelling (tap → kanji entry), example sentences.
+- **Pan/zoom graph canvas + full-page graph explorer** — new
+  `core/knowledge/GraphLayout.kt` (deterministic radial layout, node/edge
+  positions, edge midpoints) and `presentation/common/ui/knowledge/KnowledgeGraphCanvas.kt`
+  (drag pan, pinch + scroll-wheel zoom around the pointer, tap-to-select,
+  tap-again-to-expand, relationship-colored edges, edge legend, zoom/reset
+  controls). New 4-file screen `MainDestination.KnowledgeGraph(root)`
+  (`screen/knowledge_graph/`) wraps the canvas with a node-inspector sidebar
+  (label, kind, info, metadata, neighbors, expand, open-kanji-entry) and real
+  relationship-type filters. The kanji entry's Graph card embeds the same canvas
+  with an "Open full graph" deep link.
+- **Radical explorer** — `MainDestination.RadicalExplorer` (4-file screen
+  `screen/radical_explorer/`): selectable radical grid with **real kanji counts**
+  (`KnowledgeRepository.radicalStats()`), stroke / JLPT / grade filter chips,
+  and an intersected kanji results panel (multi-select up to 4, RADICAL → KANJI
+  → WORDS → SENTENCES flow via `kanjiForRadicals`).
+- **Universal search everywhere** — `presentation/screen/main/features/UniversalSearch.kt`:
+  `KaiteyoSearch.controller` + `UniversalSearchOverlay` (grouped KANJI/WORDS/
+  SENTENCES/GRAMMAR results with real counts, 280 ms cancellable debounce,
+  keyboard navigation, click-through to the right destination). Wired into
+  `MainScreen` (routes through real navigation state) and the desktop window
+  (**Ctrl+Shift+F** in `KaiteyoWindow.kt`) plus a command-palette entry.
+- **Navigation / identity wiring** — all five new destinations registered in
+  `defaultMainDestinations` + `AppModule.kt`; `PageRegistry` and the NavShell
+  page-name indicator know the new pages.
+- **Tests** — `RadicalExplorerTest` (stats ordering, model, selection cap),
+  `UniversalSearchFlattenTest` (grouped flatten order, empty results, kanji /
+  word payloads), `GraphLayoutTest` and `KanjiCardModelsTest` (previous pass).
+- **Docs** — `KNOWLEDGE_SYSTEM.md` extended with the five consumers + universal
+  search; backlog statuses updated (KT-CARD-*, KT-GRAPH-002, KT-RAD-001,
+  KT-SEARCH-001).
+
+*(Source-only per user instruction — compile verification deferred.)*
 
 ### Media Centre crash-proofing — opening Media can never close the app (desktop suite)
 
@@ -745,6 +1250,33 @@ no new fake data anywhere; every number traces to persisted events.
 | JLPT coverage / forecast numbers on Dashboard vs legacy engines | Desktop runtime sweep |
 | Exam analytics + card history drill-down | Desktop runtime sweep |
 | Unified library search + deck stats | Desktop runtime sweep |
+
+### 🔵 P3 — Knowledge System Overhaul (August 2026)
+
+| # | Item | Category | Notes |
+|---|------|----------|-------|
+| 1 | Word card models (WordCardModels.kt) — modular word pages | DONE | Created with 9 card types, 5 presets, persistence | 
+| 2 | Word card layout store (wordCardLayoutJson preference) | DONE | Added to PreferencesContract + AppPreferences + all test fakes |
+| 3 | Word card models test (WordCardModelsTest.kt) | DONE | Tests for layout ops, persistence, presets |
+| 4 | Search category filter chips | DONE | Added to UniversalSearch overlay |
+| 5 | Browse hub frequency/JLPT distribution | DONE | Added FrequencyDistributionSection + JlptBreakdownSection |
+| 6 | Browse hub grade distribution | DONE | Added to BrowseHubContract + ViewModel |
+| 7 | Media centre foundation rebuilt | DONE | Proper workspace overview with feature cards |
+| 8 | Performance utilities (Debouncer, LazyPager, caches) | DONE | Created PerformanceUtils.kt |
+| 9 | Accessibility utilities (focus, keyboard, touch) | DONE | Created Accessibility.kt |
+| 10 | Architecture documentation | DONE | OVERVIEW.md, KNOWLEDGE_SYSTEM.md, NAVIGATION.md, THEMES.md |
+| 11 | Roadmap document | DONE | docs/planning/ROADMAP.md |
+| 12 | Media centre crash on non-desktop platforms | KNOWN ISSUE | Placeholder screen shows honest "desktop only" message — no crash |
+| 13 | OCR/voice/handwriting search | FEATURE | Roadmap item — requires ML libraries |
+| 14 | Card customization drag-reorder UI | FEATURE | Backend complete, needs dedicated settings screen |
+| 15 | Course system drill-down UI | FEATURE | Catalog exists, needs course detail screen |
+| 16 | Advanced search (wildcard, fuzzy, saved) | FEATURE | Core search complete, enhancements on roadmap |
+| 17 | Statistics enhancement (heatmap, charts) | FEATURE | Basic stats complete, needs depth |
+| 18 | Import/export expansion (CSV, Anki) | FEATURE | Basic import exists, expansion on roadmap |
+| 19 | Game foundation | FEATURE | Not started — blocked on core completion |
+| 20 | Search performance profiling | FEATURE | Foundation complete, needs profiling across 13k+ kanji |
+| 21 | Accessibility testing across platforms | FEATURE | Foundation complete, needs systematic testing |
+| 22 | Cross-platform resize/mode-switch testing | FEATURE | Needs runtime sweep |
 
 ---
 

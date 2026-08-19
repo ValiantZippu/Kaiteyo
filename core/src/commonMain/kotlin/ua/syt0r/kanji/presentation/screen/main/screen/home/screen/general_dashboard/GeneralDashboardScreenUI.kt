@@ -3,11 +3,8 @@ package ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashb
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
@@ -19,14 +16,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,18 +32,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.LinearProgressIndicator as MaterialLinearProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.ImportExport
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material.icons.outlined.Edit
@@ -58,6 +48,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
@@ -67,6 +58,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -79,11 +71,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -94,38 +85,21 @@ import ua.syt0r.kanji.core.srs.LetterPracticeType
 import ua.syt0r.kanji.core.srs.VocabPracticeType
 import ua.syt0r.kanji.dialog_apply
 import ua.syt0r.kanji.dialog_cancel
-import ua.syt0r.kanji.general_dashboard_action_browse_cards
-import ua.syt0r.kanji.general_dashboard_action_import_export
-import ua.syt0r.kanji.general_dashboard_action_search
-import ua.syt0r.kanji.general_dashboard_action_statistics
 import ua.syt0r.kanji.general_dashboard_activity
 import ua.syt0r.kanji.general_dashboard_activity_less
 import ua.syt0r.kanji.general_dashboard_activity_more
-import ua.syt0r.kanji.general_dashboard_collections
-import ua.syt0r.kanji.general_dashboard_continue_studying
-import ua.syt0r.kanji.general_dashboard_continue_studying_subtitle
-import ua.syt0r.kanji.general_dashboard_header_reviews
-import ua.syt0r.kanji.general_dashboard_header_streak_current
-import ua.syt0r.kanji.general_dashboard_header_streak_longest
-import ua.syt0r.kanji.general_dashboard_header_total_reviews
+import kotlinx.coroutines.delay
 import ua.syt0r.kanji.general_dashboard_no_recent_activity
 import ua.syt0r.kanji.general_dashboard_no_recent_decks
-import ua.syt0r.kanji.general_dashboard_quick_actions
 import ua.syt0r.kanji.general_dashboard_recent_activity
 import ua.syt0r.kanji.general_dashboard_recent_decks
 import ua.syt0r.kanji.general_dashboard_see_all
-import ua.syt0r.kanji.general_dashboard_study_now
 import ua.syt0r.kanji.general_dashboard_study_target_daily_limit
 import ua.syt0r.kanji.general_dashboard_study_target_edit
 import ua.syt0r.kanji.general_dashboard_study_target_empty
 import ua.syt0r.kanji.general_dashboard_study_target_no_decks
 import ua.syt0r.kanji.general_dashboard_study_target_nothing_left
 import ua.syt0r.kanji.general_dashboard_study_target_title
-import ua.syt0r.kanji.general_dashboard_text_analysis
-import ua.syt0r.kanji.general_dashboard_today_progress
-import ua.syt0r.kanji.general_dashboard_tutorial
-import ua.syt0r.kanji.general_dashboard_weekly_summary
-import ua.syt0r.kanji.general_dashboard_your_decks
 import ua.syt0r.kanji.presentation.common.AppDropdownMenu
 import ua.syt0r.kanji.presentation.common.AppDropdownMenuItem
 import ua.syt0r.kanji.presentation.common.AppListItem
@@ -136,6 +110,7 @@ import ua.syt0r.kanji.presentation.common.ScreenVocabPracticeType
 import ua.syt0r.kanji.presentation.common.copyCentered
 import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.snapSizeTransform
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
@@ -143,6 +118,12 @@ import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
 import ua.syt0r.kanji.presentation.common.ui.isWideContentLayout
 import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.HeatmapDayData
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.HeatmapDisplayMode
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.StudyHeatmap
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.TimeProgressCompact
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.TimeProgressGroup
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.calculateTimeProgress
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoActivity
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoActivityType
@@ -155,6 +136,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.practice_vocab.data.VocabP
 import ua.syt0r.kanji.srs_status_due
 import ua.syt0r.kanji.srs_status_new
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.Month
@@ -166,6 +148,25 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+
+// ============================================================
+// HOME DASHBOARD — complete rewrite
+//
+// Architecture:
+//   ┌─────────────────────────────────────────────────┐
+//   │ HEADER: greeting + KPIs + search CTA            │
+//   ├───────────────────┬─────────────────────────────┤
+//   │ TODAY: continue   │ TIME: 5-bar progress        │
+//   │ studying hero     │ year/month/week/day/hour     │
+//   ├───────────────────┴─────────────────────────────┤
+//   │ HEATMAP: shared canonical component              │
+//   ├───────────────────┬─────────────────────────────┤
+//   │ STUDY TARGETS     │ RECENT DECKS + ACTIVITY      │
+//   └───────────────────┴─────────────────────────────┘
+//
+// Desktop: two-column sections side by side
+// Phone: single column stacked
+// ============================================================
 
 @Composable
 fun GeneralDashboardScreenUI(
@@ -181,13 +182,34 @@ fun GeneralDashboardScreenUI(
     navigateToStatistics: () -> Unit,
     navigateToImportExport: () -> Unit,
     navigateToCollections: () -> Unit,
+    navigateToDictionary: () -> Unit,
+    navigateToRadicals: () -> Unit,
+    navigateToKanjiBrowser: () -> Unit,
+    navigateToSentences: () -> Unit,
+    navigateToLearnerProfile: () -> Unit,
     textAnalysisClick: () -> Unit,
+    onOpenKanji: (String) -> Unit = {},
+    onOpenWord: (Long) -> Unit = {},
+    onOpenBrowse: () -> Unit = {},
+    onOpenRadicals: () -> Unit = navigateToRadicals,
+    onOpenComponents: () -> Unit = {},
+    navigateToLibrary: () -> Unit = {},
+    onOpenDay: (kotlinx.datetime.LocalDate) -> Unit = {},
     retryLoad: () -> Unit
 ) {
 
     var showTutorialDialog by remember { mutableStateOf(false) }
     if (showTutorialDialog) {
         TutorialDialog { showTutorialDialog = false }
+    }
+
+    // Live time progress — updates every minute
+    var timeProgress by remember { mutableStateOf(calculateTimeProgress()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            timeProgress = calculateTimeProgress()
+            delay(60_000L) // Update every minute
+        }
     }
 
     ScreenLayout(state, onRetry = retryLoad) { screenState, snackbarHostState, isWide ->
@@ -201,75 +223,132 @@ fun GeneralDashboardScreenUI(
             )
         }
 
-        DashboardHeader(screenState)
-
-        ScreenDivider()
-
-        if (isWide) {
-            // Desktop: hero card and weekly summary sit side by side so the
-            // dashboard reads as a command center instead of a phone column.
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                ContinueStudyingCard(
-                    screenState = screenState,
-                    navigateToLetterPractice = navigateToLetterPractice,
-                    navigateToVocabPractice = navigateToVocabPractice,
-                    notifyNothingLeftToStudy = coroutineScope.launchOnInvoke {
-                        val message = getString(Res.string.general_dashboard_study_target_nothing_left)
-                        snackbarHostState.showSnackbar(message, withDismissAction = true)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-                WeeklySummaryCard(
-                    stats = screenState.stats,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        } else {
-            ContinueStudyingCard(
-                screenState = screenState,
-                navigateToLetterPractice = navigateToLetterPractice,
-                navigateToVocabPractice = navigateToVocabPractice,
-                notifyNothingLeftToStudy = coroutineScope.launchOnInvoke {
-                    val message = getString(Res.string.general_dashboard_study_target_nothing_left)
-                    snackbarHostState.showSnackbar(message, withDismissAction = true)
-                },
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-
-            ScreenDivider()
-
-            WeeklySummaryCard(
-                stats = screenState.stats,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-        }
-
-        ScreenDivider()
-
-        StudyTargets(
+        // ── HEADER: greeting + KPIs + search ──────────────────
+        DashboardHeader(
             state = screenState,
-            showEditDialog = { showStudyTargetsEditDialog = true },
-            navigateToDailyLimitConfiguration = navigateToDailyLimitConfiguration,
-            navigateToCreateLetterDeck = navigateToCreateLetterDeck,
-            navigateToCreateVocabDeck = navigateToCreateVocabDeck,
-            navigateToLetterPractice = navigateToLetterPractice,
-            navigateToVocabPractice = navigateToVocabPractice,
-            notifyNothingLeftToStudy = coroutineScope.launchOnInvoke {
-                val message = getString(Res.string.general_dashboard_study_target_nothing_left)
-                snackbarHostState.showSnackbar(message, withDismissAction = true)
-            }
+            onSearchClick = navigateToSearch
         )
 
         ScreenDivider()
 
         if (isWide) {
+            // ── DESKTOP: two-column primary area ───────────────
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                // LEFT: Continue studying + study targets
+                Column(
+                    modifier = Modifier.weight(1.2f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ContinueStudyingCard(
+                        screenState = screenState,
+                        navigateToLetterPractice = navigateToLetterPractice,
+                        navigateToVocabPractice = navigateToVocabPractice,
+                        navigateToLibrary = navigateToLibrary
+                    )
+
+                    StudyTargets(
+                        state = screenState,
+                        showEditDialog = { showStudyTargetsEditDialog = true },
+                        navigateToDailyLimitConfiguration = navigateToDailyLimitConfiguration,
+                        navigateToCreateLetterDeck = navigateToCreateLetterDeck,
+                        navigateToCreateVocabDeck = navigateToCreateVocabDeck,
+                        navigateToLetterPractice = navigateToLetterPractice,
+                        navigateToVocabPractice = navigateToVocabPractice,
+                        notifyNothingLeftToStudy = coroutineScope.launchOnInvoke {
+                            val message = getString(Res.string.general_dashboard_study_target_nothing_left)
+                            snackbarHostState.showSnackbar(message, withDismissAction = true)
+                        }
+                    )
+                }
+
+                // RIGHT: Time progress + heatmap
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Time progress visualization
+                    TimeProgressGroup(
+                        state = timeProgress,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Shared heatmap
+                    val heatmapData = remember(screenState) {
+                        screenState.stats.heatmapSummary.map {
+                            HeatmapDayData(date = it.date, count = it.count)
+                        }
+                    }
+                    StudyHeatmap(
+                        activityData = heatmapData,
+                        displayMode = HeatmapDisplayMode.Compact,
+                        onDayClick = onOpenDay,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        } else {
+            // ── PHONE: single column ───────────────────────────
+            // Time progress (compact)
+            TimeProgressCompact(
+                state = timeProgress,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            ScreenDivider()
+
+            // Continue studying
+            ContinueStudyingCard(
+                screenState = screenState,
+                navigateToLetterPractice = navigateToLetterPractice,
+                navigateToVocabPractice = navigateToVocabPractice,
+                navigateToLibrary = navigateToLibrary,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            ScreenDivider()
+
+            // Heatmap
+            val heatmapData = remember(screenState) {
+                screenState.stats.heatmapSummary.map {
+                    HeatmapDayData(date = it.date, count = it.count)
+                }
+            }
+            StudyHeatmap(
+                activityData = heatmapData,
+                displayMode = HeatmapDisplayMode.Compact,
+                onDayClick = onOpenDay,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            ScreenDivider()
+
+            // Study targets
+            StudyTargets(
+                state = screenState,
+                showEditDialog = { showStudyTargetsEditDialog = true },
+                navigateToDailyLimitConfiguration = navigateToDailyLimitConfiguration,
+                navigateToCreateLetterDeck = navigateToCreateLetterDeck,
+                navigateToCreateVocabDeck = navigateToCreateVocabDeck,
+                navigateToLetterPractice = navigateToLetterPractice,
+                navigateToVocabPractice = navigateToVocabPractice,
+                notifyNothingLeftToStudy = coroutineScope.launchOnInvoke {
+                    val message = getString(Res.string.general_dashboard_study_target_nothing_left)
+                    snackbarHostState.showSnackbar(message, withDismissAction = true)
+                }
+            )
+
+            ScreenDivider()
+        }
+
+        // ── BOTTOM: recent decks + activity (always full width) ─
+        if (isWide) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top
             ) {
                 RecentDecksSection(
@@ -277,6 +356,7 @@ fun GeneralDashboardScreenUI(
                     navigateToDeckDetails = navigateToDeckDetails,
                     createLetterDeck = navigateToCreateLetterDeck,
                     createVocabDeck = navigateToCreateVocabDeck,
+                    seeAll = navigateToCardBrowser,
                     modifier = Modifier.weight(1f)
                 )
                 RecentActivitySection(
@@ -290,6 +370,7 @@ fun GeneralDashboardScreenUI(
                 navigateToDeckDetails = navigateToDeckDetails,
                 createLetterDeck = navigateToCreateLetterDeck,
                 createVocabDeck = navigateToCreateVocabDeck,
+                seeAll = navigateToCardBrowser,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -300,41 +381,12 @@ fun GeneralDashboardScreenUI(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
-
-        ScreenDivider()
-
-        QuickActionsSection(
-            navigateToSearch = navigateToSearch,
-            navigateToCardBrowser = navigateToCardBrowser,
-            navigateToStatistics = navigateToStatistics,
-            navigateToImportExport = navigateToImportExport,
-            textAnalysisClick = textAnalysisClick
-        )
-
-        ScreenDivider()
-
-        CollectionsSection(
-            collections = screenState.collections,
-            allDecks = screenState.allDecks,
-            onCollectionClick = navigateToCollections,
-            onDeckClick = navigateToDeckDetails
-        )
-
-        ScreenDivider()
-
-        AppListItem(
-            onClick = { showTutorialDialog = true },
-            headlineContent = { Text(stringResource(Res.string.general_dashboard_tutorial)) },
-            trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }
-        )
-
     }
-
 }
 
 @Composable
 private fun ScreenDivider() {
-    HorizontalDivider(Modifier.padding(horizontal = 10.dp, vertical = 8.dp))
+    HorizontalDivider(Modifier.padding(horizontal = 12.dp, vertical = 2.dp))
 }
 
 @Composable
@@ -403,301 +455,124 @@ private fun StudyTargetsEditDialog(
 }
 
 // ============================================================
-// HEADER
+// HEADER — compact greeting + KPIs + queue progress
 // ============================================================
 
 @Composable
 private fun DashboardHeader(
-    state: ScreenState.Loaded
+    state: ScreenState.Loaded,
+    onSearchClick: () -> Unit
 ) {
 
-    fun Int.numberOrDash(): String = if (this == 0) "-" else toString()
+    val surfaceColors = LocalSurfaceColors.current
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = 20.dp,
-                vertical = 4.dp
-            )
+            .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(AppListItemDefaults.ExtraPaddings)
     ) {
-        // Glance stats — the essentials only. Everything else lives in the
-        // study targets and statistics screens.
-        Row(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            HeaderStatItem(
-                title = stringResource(Res.string.general_dashboard_header_streak_current),
-                text = state.stats.currentStreak.numberOrDash(),
-                icon = Icons.Default.LocalFireDepartment,
-                modifier = Modifier.weight(1f)
-            )
-            HeaderStatItem(
-                title = stringResource(Res.string.general_dashboard_header_reviews),
-                text = state.stats.reviewsToday.numberOrDash(),
-                icon = Icons.Default.Schedule,
-                modifier = Modifier.weight(1f)
-            )
-            HeaderStatItem(
-                title = stringResource(Res.string.general_dashboard_header_total_reviews),
-                text = state.stats.totalReviews.toString(),
-                icon = Icons.Default.BarChart,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        ActivityHeatmap(
+        // Greeting hero
+        KaiteyoDashboardHero(
             stats = state.stats,
-            modifier = Modifier.fillMaxWidth()
+            onSearchClick = onSearchClick,
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
-    }
-}
 
-/**
- * GitHub / Anki-heatmap-style activity grid for the last 12 weeks. Each
- * column is a week (Mon–Sun, oldest on the left), each row a day. Cells use
- * the same discrete level ramp as the yearly statistics heatmap, so Home and
- * Stats always read the same way.
- */
-@Composable
-private fun ActivityHeatmap(
-    stats: GeneralDashboardStats,
-    modifier: Modifier = Modifier
-) {
-
-    val surfaceColors = LocalSurfaceColors.current
-    val primary = MaterialTheme.colorScheme.primary
-    val days = stats.heatmapSummary
-    val maxCount = days.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
-    val today = Clock.System.now()
-        .toLocalDateTime(TimeZone.currentSystemDefault()).date
-
-    val cellSize = 13.dp
-    val cellGap = 3.dp
-    val monthRowHeight = 16.dp
-    val shape = RoundedCornerShape(3.dp)
-
-    Column(
-        modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .background(surfaceColors.surface)
-            .padding(horizontal = 14.dp, vertical = 12.dp)
-    ) {
-
+        // Queue progress bar
+        val queueTotal = state.stats.reviewedToday + state.stats.leftoverToday
+        val queueFraction = if (queueTotal == 0) 0f
+        else state.stats.reviewedToday.toFloat() / queueTotal
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(surfaceColors.surface)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(Res.string.general_dashboard_activity),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = stringResource(Res.string.general_dashboard_activity_less),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.width(4.dp))
-            // Level 0 (empty) + the four intensity levels — same ramp as Stats.
-            Box(
-                Modifier
-                    .padding(horizontal = 1.dp)
-                    .size(8.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(surfaceColors.textMuted.copy(alpha = 0.10f))
-            )
-            HeatmapLevelAlphas.forEach { alpha ->
-                Box(
-                    Modifier
-                        .padding(horizontal = 1.dp)
-                        .size(8.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(primary.copy(alpha = alpha))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "TODAY'S QUEUE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (queueTotal == 0) "Nothing queued — add a deck to get started"
+                    else "${state.stats.reviewedToday} reviewed · ${state.stats.leftoverToday} left",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.width(4.dp))
-            Text(
-                text = stringResource(Res.string.general_dashboard_activity_more),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        if (days.isEmpty()) {
-            Text(
-                text = stringResource(Res.string.general_dashboard_no_recent_activity),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            return@Column
-        }
-
-        // Pad the consecutive-day window so it starts on a Monday: the columns
-        // become real Mon–Sun weeks and the gutter + month labels line up
-        // truthfully with the cells.
-        val weeks = remember(days) { alignToWeeks(days) }
-
-        Row(verticalAlignment = Alignment.Top) {
-            // Weekday gutter — Mon / Wed / Fri, pushed below the month labels
-            // so the rows align with the cells.
-            Column(
+            Spacer(Modifier.width(12.dp))
+            Box(
                 Modifier
-                    .width(26.dp)
-                    .padding(top = monthRowHeight + 4.dp),
-                verticalArrangement = Arrangement.spacedBy(cellGap)
+                    .width(110.dp)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                (0 until 7).forEach { dow ->
-                    val label = when (dow) {
-                        1 -> "Mon"
-                        3 -> "Wed"
-                        5 -> "Fri"
-                        else -> ""
-                    }
-                    Text(
-                        label,
-                        fontSize = 9.sp,
-                        color = surfaceColors.textMuted,
-                        modifier = Modifier
-                            .width(26.dp)
-                            .height(cellSize),
-                        maxLines = 1
-                    )
-                }
+                Box(
+                    Modifier
+                        .fillMaxWidth(queueFraction.coerceIn(0f, 1f))
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                )
             }
-            Spacer(Modifier.width(6.dp))
-            Column {
-                // Month labels at the week column where each month starts
-                // (its day 1), falling back to the week's first date.
-                Row {
-                    var prevMonth: Int? = null
-                    weeks.forEach { week ->
-                        val labelMonth = week.firstOrNull { it?.date?.dayOfMonth == 1 }?.date?.monthNumber
-                            ?: week.firstOrNull()?.date?.monthNumber
-                        val label = if (labelMonth != null && labelMonth != prevMonth) {
-                            Month.entries[labelMonth - 1].name.take(3)
-                        } else {
-                            ""
-                        }
-                        if (labelMonth != null) prevMonth = labelMonth
-                        Text(
-                            label,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = surfaceColors.textMuted,
-                            modifier = Modifier
-                                .width(cellSize)
-                                .height(monthRowHeight),
-                            maxLines = 1
-                        )
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(cellGap)) {
-                    weeks.forEach { week ->
-                        Column(verticalArrangement = Arrangement.spacedBy(cellGap)) {
-                            week.forEach { day ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(cellSize)
-                                        .clip(shape)
-                                        .background(
-                                            when {
-                                                day == null -> Color.Transparent
-                                                else -> dashboardHeatmapColor(
-                                                    count = day.count,
-                                                    maxCount = maxCount,
-                                                    isToday = day.date == today,
-                                                    surfaceColors = surfaceColors,
-                                                    primary = primary
-                                                )
-                                            }
-                                        )
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "${(queueFraction * 100).roundToInt()}%",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
 
-/** Pad the consecutive-day window so it starts on Monday; chunk into weeks. */
-private fun alignToWeeks(days: List<DashboardDaySummary>): List<List<DashboardDaySummary?>> {
-    if (days.isEmpty()) return emptyList()
-    val pad = days.first().date.dayOfWeek.isoDayNumber - 1
-    val padded: List<DashboardDaySummary?> = List<DashboardDaySummary?>(pad) { null } + days
-    return padded.chunked(7)
-}
-
-/**
- * Discrete 5-level ramp — level 0 is the neutral empty cell; today renders
- * at full accent so it stands out. Mirrors the yearly statistics heatmap.
- */
-private fun dashboardHeatmapColor(
-    count: Int,
-    maxCount: Int,
-    isToday: Boolean,
-    surfaceColors: SurfaceColors,
-    primary: Color
-): Color {
-    if (count <= 0) return surfaceColors.textMuted.copy(alpha = 0.10f)
-    if (isToday) return primary
-    if (maxCount <= 0) return primary.copy(alpha = HeatmapLevelAlphas[0])
-    val ratio = count.toFloat() / maxCount
-    val index = when {
-        ratio <= 0.25f -> 0
-        ratio <= 0.5f -> 1
-        ratio <= 0.75f -> 2
-        else -> 3
-    }
-    return primary.copy(alpha = HeatmapLevelAlphas[index])
-}
-
-/** Discrete accent level alphas — shared look with the statistics heatmap. */
-private val HeatmapLevelAlphas = floatArrayOf(0.28f, 0.48f, 0.72f, 1f)
+// ============================================================
+// SECTION HEADER
+// ============================================================
 
 @Composable
-private fun HeaderStatItem(
-    title: String,
+private fun SectionHeader(
     text: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
 ) {
-    val surfaceColors = LocalSurfaceColors.current
-    Column(
+    Row(
         modifier = modifier
-            .height(IntrinsicSize.Max)
-            .clip(MaterialTheme.shapes.medium)
-            .background(surfaceColors.surface)
-            .padding(horizontal = 6.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
-        )
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+        }
         Text(
             text = text,
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold
         )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-            maxLines = 2
-        )
+        Spacer(Modifier.weight(1f))
+        trailing?.invoke()
     }
 }
 
@@ -710,11 +585,10 @@ private fun ContinueStudyingCard(
     screenState: ScreenState.Loaded,
     navigateToLetterPractice: (MainDestination.LetterPractice) -> Unit,
     navigateToVocabPractice: (MainDestination.VocabPractice) -> Unit,
-    notifyNothingLeftToStudy: () -> Unit,
+    navigateToLibrary: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
-    val surfaceColors = LocalSurfaceColors.current
     val enabledTargets = screenState.studyTargets.value.filter { it.enabled }
     val totalNew = enabledTargets.sumOf {
         (it.progress as? StudyTargetProgress.WithDecks)?.options?.newCards?.size ?: 0
@@ -722,8 +596,6 @@ private fun ContinueStudyingCard(
     val totalDue = enabledTargets.sumOf {
         (it.progress as? StudyTargetProgress.WithDecks)?.options?.dueCards?.size ?: 0
     }
-    val totalReady = totalNew + totalDue
-    val doneFraction = screenState.stats.todayProgressFraction
 
     val bestTarget = enabledTargets
         .mapNotNull { target ->
@@ -732,244 +604,37 @@ private fun ContinueStudyingCard(
         }
         .maxByOrNull { it.second }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            )
-            .clickable {
-                if (totalReady == 0) {
-                    notifyNothingLeftToStudy()
-                } else {
-                    bestTarget?.let { (target, _) ->
-                        val cards = (target.progress as StudyTargetProgress.WithDecks).options.combinedCards
-                        when (val practiceType = target.studyTarget.practiceType) {
-                            is LetterPracticeType -> {
-                                val configuration = LetterPracticeScreenConfiguration(
-                                    cards = cards as List<LetterPracticeScreenConfiguration.Card>,
-                                    practiceType = ScreenLetterPracticeType.from(practiceType)
-                                )
-                                navigateToLetterPractice(MainDestination.LetterPractice(configuration))
-                            }
-
-                            is VocabPracticeType -> {
-                                val configuration = VocabPracticeScreenConfiguration(
-                                    cards = cards as List<VocabPracticeScreenConfiguration.Card>,
-                                    practiceType = ScreenVocabPracticeType.from(practiceType)
-                                )
-                                navigateToVocabPractice(MainDestination.VocabPractice(configuration))
-                            }
-                        }
-                    }
+    val onContinue: () -> Unit = {
+        bestTarget?.let { (target, _) ->
+            val cards = (target.progress as StudyTargetProgress.WithDecks).options.combinedCards
+            when (val practiceType = target.studyTarget.practiceType) {
+                is LetterPracticeType -> {
+                    val configuration = LetterPracticeScreenConfiguration(
+                        cards = cards as List<LetterPracticeScreenConfiguration.Card>,
+                        practiceType = ScreenLetterPracticeType.from(practiceType)
+                    )
+                    navigateToLetterPractice(MainDestination.LetterPractice(configuration))
                 }
-            }
-            .padding(20.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
 
-        Column(Modifier.weight(1f)) {
-
-            Text(
-                text = stringResource(Res.string.general_dashboard_continue_studying),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = if (totalReady == 0) {
-                    stringResource(Res.string.general_dashboard_study_target_nothing_left)
-                } else {
-                    stringResource(Res.string.general_dashboard_continue_studying_subtitle, totalReady)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (totalReady > 0) {
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StudyCountPill(
-                        text = stringResource(Res.string.srs_status_new),
-                        count = totalNew,
-                        color = MaterialTheme.colorScheme.tertiary
+                is VocabPracticeType -> {
+                    val configuration = VocabPracticeScreenConfiguration(
+                        cards = cards as List<VocabPracticeScreenConfiguration.Card>,
+                        practiceType = ScreenVocabPracticeType.from(practiceType)
                     )
-                    StudyCountPill(
-                        text = stringResource(Res.string.srs_status_due),
-                        count = totalDue,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    navigateToVocabPractice(MainDestination.VocabPractice(configuration))
                 }
             }
         }
-
-        Spacer(Modifier.width(12.dp))
-
-        Box(
-            modifier = Modifier.size(72.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val trackColor = MaterialTheme.colorScheme.surfaceVariant
-            val progressColor = MaterialTheme.colorScheme.primary
-            Canvas(Modifier.fillMaxSize()) {
-                val strokeWidth = 8.dp.toPx()
-                drawArc(
-                    color = trackColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(strokeWidth)
-                )
-                drawArc(
-                    color = progressColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f * doneFraction,
-                    useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        strokeWidth,
-                        cap = StrokeCap.Round
-                    )
-                )
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = (doneFraction * 100).roundToInt().toString() + "%",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(Res.string.general_dashboard_today_progress),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
     }
-}
 
-@Composable
-private fun StudyCountPill(text: String, count: Int, color: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(color.copy(alpha = 0.15f))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(color))
-        Text(
-            text = "$count $text",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-// ============================================================
-// WEEKLY SUMMARY
-// ============================================================
-
-@Composable
-private fun WeeklySummaryCard(
-    stats: GeneralDashboardStats,
-    modifier: Modifier = Modifier
-) {
-
-    val surfaceColors = LocalSurfaceColors.current
-    val maxCount = stats.weeklySummary.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
-
-    Column(
+    KaiteyoStudyHeroCard(
+        stats = screenState.stats,
+        newCount = totalNew,
+        dueCount = totalDue,
+        onContinue = onContinue,
+        onNothingLeft = navigateToLibrary,
         modifier = modifier
-            .fillMaxWidth()
-    ) {
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = stringResource(Res.string.general_dashboard_weekly_summary),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = stringResource(Res.string.general_dashboard_header_reviews),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            stats.weeklySummary.forEach { day ->
-                WeeklyBar(day, maxCount, Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun WeeklyBar(
-    day: DashboardDaySummary,
-    maxCount: Int,
-    modifier: Modifier = Modifier
-) {
-    val fraction = if (maxCount == 0) 0f else day.count.toFloat() / maxCount
-    val barHeight by animateDpAsState(
-        targetValue = (fraction * 56).dp,
-        label = "weeklyBar"
     )
-    val isToday = day.date == Clock.System.now()
-        .toLocalDateTime(TimeZone.currentSystemDefault()).date
-
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = day.count.toString(),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (day.count > 0) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(4.dp))
-        Box(
-            modifier = Modifier
-                .width(14.dp)
-                .height(56.dp)
-                .clip(RoundedCornerShape(7.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(14.dp)
-                    .height(barHeight)
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(
-                        if (isToday) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                    )
-            )
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = day.date.dayOfWeek.name.first().toString(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
 }
 
 // ============================================================
@@ -1044,23 +709,49 @@ private fun StudyTargets(
         val displayList = state.studyTargets.value.filter { it.enabled }
 
         if (displayList.isEmpty()) {
-            AppListItem(
-                onClick = showEditDialog,
-                headlineContent = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(LocalSurfaceColors.current.surface)
+                    .clickable(onClick = showEditDialog)
+                    .padding(horizontal = 14.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.OutlinedSchool,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Set up study targets",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
                     Text(
                         text = stringResource(Res.string.general_dashboard_study_target_empty),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         } else {
             displayList.forEach {
                 StudyTargetItem(
@@ -1114,86 +805,109 @@ fun StudyTargetItem(
 
     val studyTarget = studyTargetState.studyTarget
     val studyProgress = studyTargetState.progress
+    val surfaceColors = LocalSurfaceColors.current
+    val noDecks = studyProgress is StudyTargetProgress.NoDecks
 
-    AppListItem(
-        onClick = {
-            when (studyProgress) {
-                StudyTargetProgress.NoDecks -> createDeck()
-                is StudyTargetProgress.WithDecks -> {
-                    startPractice(studyProgress.options.combinedCards)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(surfaceColors.surface)
+            .clickable {
+                when (studyProgress) {
+                    StudyTargetProgress.NoDecks -> createDeck()
+                    is StudyTargetProgress.WithDecks -> {
+                        startPractice(studyProgress.options.combinedCards)
+                    }
                 }
             }
-        },
-        headlineContent = {
-            Text(
-                stringResource(studyTarget.categoryTitle) + "・" + stringResource(studyTarget.typeTitleRes)
-            )
-        },
-        trailingContent = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                contentDescription = null
-            )
-        },
-        supportingContent = {
-            if (studyProgress is StudyTargetProgress.NoDecks) {
-                Text(stringResource(Res.string.general_dashboard_study_target_no_decks))
-                return@AppListItem
-            }
-
-            studyProgress as StudyTargetProgress.WithDecks
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingTiny)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
             ) {
+                Icon(
+                    imageVector = Icons.Outlined.OutlinedSchool,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(studyTarget.categoryTitle) + "・" + stringResource(studyTarget.typeTitleRes),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = when {
+                        noDecks -> stringResource(Res.string.general_dashboard_study_target_no_decks)
+                        else -> {
+                            val progress = studyProgress as StudyTargetProgress.WithDecks
+                            "${progress.options.newCards.size} new · ${progress.options.dueCards.size} due"
+                        }
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
-                FlowRow(
+        if (studyProgress is StudyTargetProgress.WithDecks) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ClickableStudyRow(
+                    imageVector = Icons.Outlined.OutlinedSchool,
+                    title = stringResource(Res.string.srs_status_new),
+                    count = studyProgress.options.newCards.size,
+                    onClick = { startPractice(studyProgress.options.newCards) }
+                )
+
+                ClickableStudyRow(
+                    imageVector = Icons.Outlined.OutlinedSchedule,
+                    title = stringResource(Res.string.srs_status_due),
+                    count = studyProgress.options.dueCards.size,
+                    onClick = { startPractice(studyProgress.options.dueCards) }
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMid)
+            ) {
+                MaterialLinearProgressIndicator(
+                    progress = studyProgress.totalProgress,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(-Dimens.SpacingMid)
-                ) {
+                        .weight(1f)
+                        .height(6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                    strokeCap = StrokeCap.Round
+                )
 
-                    ClickableStudyRow(
-                        imageVector = Icons.Outlined.OutlinedSchool,
-                        title = stringResource(Res.string.srs_status_new),
-                        count = studyProgress.options.newCards.size,
-                        onClick = { startPractice(studyProgress.options.newCards) }
-                    )
-
-                    ClickableStudyRow(
-                        imageVector = Icons.Outlined.OutlinedSchedule,
-                        title = stringResource(Res.string.srs_status_due),
-                        count = studyProgress.options.dueCards.size,
-                        onClick = { startPractice(studyProgress.options.dueCards) }
-                    )
-
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMid)
-                ) {
-
-                    LinearProgressIndicator(
-                        progress = studyProgress.totalProgress,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(6.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
-                        strokeCap = StrokeCap.Round
-                    )
-
-                    Text(
-                        text = studyProgress.totalProgress.times(100).roundToInt().toString() + "%",
-                        style = LocalTextStyle.current.copyCentered()
-                    )
-
-                }
+                Text(
+                    text = (studyProgress.totalProgress * 100).roundToInt().toString() + "%",
+                    style = LocalTextStyle.current.copyCentered()
+                )
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -1251,6 +965,7 @@ private fun RecentDecksSection(
     navigateToDeckDetails: (DashboardDeckSummary) -> Unit,
     createLetterDeck: () -> Unit,
     createVocabDeck: () -> Unit,
+    seeAll: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -1259,11 +974,12 @@ private fun RecentDecksSection(
             .fillMaxWidth()
     ) {
 
-        Text(
+        SectionHeader(
             text = stringResource(Res.string.general_dashboard_recent_decks),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 8.dp, bottom = 6.dp)
+            icon = Icons.Default.Description,
+            trailing = {
+                TextButton(onClick = seeAll) { Text(stringResource(Res.string.general_dashboard_see_all)) }
+            }
         )
 
         if (decks.isEmpty()) {
@@ -1347,10 +1063,33 @@ private fun DashboardDeckRow(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = deck.lastReview?.let { formatRelativeTime(it) } ?: "—",
+                text = deck.lastReview?.let { formatRelativeTime(it) } ?: "Never studied",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (deck.totalCount > 0) {
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.85f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LinearProgressIndicator(
+                        progress = { deck.progressFraction },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "${(deck.progressFraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
 
         if (deck.newCount > 0 || deck.dueCount > 0) {
@@ -1409,11 +1148,9 @@ private fun RecentActivitySection(
             .fillMaxWidth()
     ) {
 
-        Text(
+        SectionHeader(
             text = stringResource(Res.string.general_dashboard_recent_activity),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 8.dp, bottom = 6.dp)
+            icon = Icons.Default.History
         )
 
         if (activity.isEmpty()) {
@@ -1493,252 +1230,6 @@ private fun formatRelativeTime(instant: Instant): String {
     }
 }
 
-// ============================================================
-// QUICK ACTIONS
-// ============================================================
-
-@Composable
-private fun QuickActionsSection(
-    navigateToSearch: () -> Unit,
-    navigateToCardBrowser: () -> Unit,
-    navigateToStatistics: () -> Unit,
-    navigateToImportExport: () -> Unit,
-    textAnalysisClick: () -> Unit
-) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-
-        Text(
-            text = stringResource(Res.string.general_dashboard_quick_actions),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            QuickActionCard(
-                icon = Icons.Default.Search,
-                label = stringResource(Res.string.general_dashboard_action_search),
-                onClick = navigateToSearch,
-                modifier = Modifier.weight(1f)
-            )
-
-            QuickActionCard(
-                icon = Icons.Default.History,
-                label = stringResource(Res.string.general_dashboard_action_browse_cards),
-                onClick = navigateToCardBrowser,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            QuickActionCard(
-                icon = Icons.Default.BarChart,
-                label = stringResource(Res.string.general_dashboard_action_statistics),
-                onClick = navigateToStatistics,
-                modifier = Modifier.weight(1f)
-            )
-
-            QuickActionCard(
-                icon = Icons.Default.ImportExport,
-                label = stringResource(Res.string.general_dashboard_action_import_export),
-                onClick = navigateToImportExport,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        QuickActionCard(
-            icon = Icons.Default.School,
-            label = stringResource(Res.string.general_dashboard_text_analysis),
-            onClick = textAnalysisClick,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun QuickActionCard(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-
-    val surfaceColors = LocalSurfaceColors.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    val backgroundColor by animateColorAsState(
-        if (isHovered) surfaceColors.surfaceInteractive else surfaceColors.surface
-    )
-
-    Row(
-        modifier = modifier
-            .clip(MaterialTheme.shapes.large)
-            .background(backgroundColor)
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .hoverable(interactionSource)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1
-        )
-    }
-}
-
-// ============================================================
-// COLLECTIONS
-// ============================================================
-
-@Composable
-private fun CollectionsSection(
-    collections: List<ua.syt0r.kanji.presentation.screen.main.features.KaiteyoCollection>,
-    allDecks: List<DashboardDeckSummary>,
-    onCollectionClick: () -> Unit,
-    onDeckClick: (DashboardDeckSummary) -> Unit
-) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-
-        Text(
-            text = stringResource(Res.string.general_dashboard_collections),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
-        )
-
-        if (collections.isEmpty() && allDecks.isEmpty()) {
-            Text(
-                text = stringResource(Res.string.general_dashboard_no_recent_decks),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-            return
-        }
-
-        // Premade collections bundled with the app.
-        if (collections.isNotEmpty()) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                collections.take(4).forEach { collection ->
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .clickable(onClick = onCollectionClick)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(collection.icon, style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            text = collection.name,
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1
-                        )
-                        Text(
-                            text = collection.cardIds.size.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-        }
-
-        // All of the user's decks — premade or custom — as a glance list.
-        if (allDecks.isNotEmpty()) {
-            Text(
-                text = stringResource(Res.string.general_dashboard_your_decks),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 8.dp, bottom = 6.dp)
-            )
-            allDecks.forEach { deck ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable { onDeckClick(deck) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = if (deck.category == DashboardDeckCategory.Letters)
-                            Icons.Default.School else Icons.Default.Description,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = deck.title,
-                        style = MaterialTheme.typography.labelMedium,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (deck.newCount > 0) {
-                        Text(
-                            text = deck.newCount.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
-                    if (deck.dueCount > 0) {
-                        Text(
-                            text = deck.dueCount.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun ScreenLayout(
     state: State<ScreenState>,
@@ -1747,8 +1238,6 @@ private fun ScreenLayout(
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // True when the window can host side-by-side dashboard sections.
     val isWide = isWideContentLayout()
 
     Box {
@@ -1769,10 +1258,6 @@ private fun ScreenLayout(
                     )
                 }
 
-                // Desktop expands the dashboard to use the available width
-                // (paired sections handled by the caller); phone keeps the
-                // classic single column. Centered so wide windows don't pin
-                // the dashboard to the left edge.
                 is ScreenState.Loaded -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.TopCenter

@@ -567,6 +567,8 @@ interface SettingsCenterStrings {
     val newCardsMixed: String
 
     // Study
+    val learnerProfile: String
+    val learnerProfileDescription: String
     val shuffle: String
     val shuffleDescription: String
     val newCardsOrder: String
@@ -621,6 +623,10 @@ interface SettingsStrings {
     val themeLight: String
     val themeDark: String
     val themeAmoled: String
+    val themeSepia: String
+    val themeCream: String
+    val themePaper: String
+    val themeMidnight: String
 
     val reminderTitle: String
     val reminderEnabled: String

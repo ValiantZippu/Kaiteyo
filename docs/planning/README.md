@@ -26,6 +26,7 @@ Every item tracked in planning files is labeled with **one** category:
 | [`PRODUCT_AUDIT.md`](PRODUCT_AUDIT.md) | Whole-repo product audit — what is real, duplicated, dead or fake | RESEARCH, TECHNICAL DEBT, decision records |
 | [`ENGINEERING_AUDIT.md`](ENGINEERING_AUDIT.md) | Engineering audit & agent handoff — §376 deliverables (architecture map, dependency map, implementation order, risks, starting files) | decision records, handoff |
 | [`CURRENT_STATE.md`](CURRENT_STATE.md) | Per-subsystem status matrix — what exists, where, known problems, risks (MASTER §5) | status matrix, RESEARCH, TECHNICAL DEBT |
+| [`OVERHAUL_BACKLOG.md`](OVERHAUL_BACKLOG.md) | Spec-derived overhaul backlog — maps the four product directives (core intelligence, UI/UX audit, media, world) onto the repo; new KT-NAV/THEME/DEBUG/CARD/LEVEL/SEARCH/GRAPH/RAD/SENT/DATA/AI/UI/DOC/TEST work packages | TODO, FEATURE, RESEARCH, TECHNICAL DEBT, BLOCKED |
 | [`MASTER_TODO.md`](MASTER_TODO.md) | Hierarchical project inventory — work packages P0–P39, KT-* task IDs (MASTER §6, §81) | TODO, FEATURE, RESEARCH, TECHNICAL DEBT, BLOCKED |
 | [`TODO.md`](TODO.md) | Operational task list, priority-ordered (short-list over `MASTER_TODO.md`) | TODO, FEATURE, RESEARCH, TECHNICAL DEBT, BLOCKED |
 | [`CURRENT_ISSUES.md`](CURRENT_ISSUES.md) | Living issue tracker | BUG, KNOWN ISSUE, BLOCKED, DONE (recently fixed) |
