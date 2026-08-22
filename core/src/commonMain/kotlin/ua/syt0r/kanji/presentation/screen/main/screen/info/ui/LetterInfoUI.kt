@@ -23,8 +23,7 @@ import ua.syt0r.kanji.presentation.common.collectAsState
 import ua.syt0r.kanji.presentation.common.trackList
 import ua.syt0r.kanji.presentation.common.ui.LocalOrientation
 import ua.syt0r.kanji.presentation.common.ui.Orientation
-import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoReadingsVocabCard
-import ua.syt0r.kanji.presentation.common.ui.kaiteyo.ReadingVocabGroup
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoReadingsCard
 import ua.syt0r.kanji.presentation.dialog.SaveWordDialog
 import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenContract
 import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
@@ -111,6 +110,7 @@ private fun KanjiInfoLayout(
         }
 
     val vocab = letterData.vocab.collectAsState()
+    val sentences = letterData.sentences.collectAsState()
 
     LazyColumn(
         state = listState,
@@ -129,27 +129,19 @@ private fun KanjiInfoLayout(
                     { LearningStatusSection(state = learningState, actions = learningActions) }
                 } else null,
                 readingsVocabContent = {
-                    KaiteyoReadingsVocabCard(
-                        groups = buildList {
-                            if (letterData.on.isNotEmpty()) {
-                                add(ReadingVocabGroup(label = "On'yomi", readings = letterData.on))
-                            }
-                            if (letterData.kun.isNotEmpty()) {
-                                add(ReadingVocabGroup(label = "Kun'yomi", readings = letterData.kun))
-                            }
-                            add(
-                                ReadingVocabGroup(
-                                    label = "Other words",
-                                    readings = emptyList(),
-                                    isFallback = true
-                                )
-                            )
-                        },
-                        vocab = vocab,
-                        onWordClick = onWordClick,
-                        onFuriganaClick = onFuriganaClick,
+                    KaiteyoReadingsCard(
+                        character = letterData.character,
+                        on = letterData.on,
+                        kun = letterData.kun,
+                        vocab = vocab.list,
+                        sentences = sentences.list,
+                        totalVocab = vocab.total,
                         onPlayReading = onPlayReading,
                         isPlayingReading = isPlayingReading,
+                        onWordClick = onWordClick,
+                        onFuriganaClick = onFuriganaClick,
+                        canLoadMoreVocab = vocab.canLoadMore,
+                        onLoadMoreVocab = { vocab.loadMore() },
                         sentenceProvider = sentenceProvider
                     )
                 }

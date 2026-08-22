@@ -211,9 +211,12 @@ fun LetterInfoKanjiHeading(
                     readingsVocabContent()
                 } else {
                     KaiteyoReadingsCard(
+                        character = data.character,
                         on = data.on,
                         kun = data.kun,
                         vocab = data.vocab.list.value,
+                        sentences = data.sentences.list.value,
+                        totalVocab = data.vocab.total,
                         onPlayReading = onPlayReading,
                         isPlayingReading = isPlayingReading,
                         onWordClick = onWordClick
@@ -304,9 +307,12 @@ fun LetterInfoKanjiHeading(
                 readingsVocabContent()
             } else {
                 KaiteyoReadingsCard(
+                    character = data.character,
                     on = data.on,
                     kun = data.kun,
                     vocab = data.vocab.list.value,
+                    sentences = data.sentences.list.value,
+                    totalVocab = data.vocab.total,
                     onPlayReading = onPlayReading,
                     isPlayingReading = isPlayingReading,
                     onWordClick = onWordClick
