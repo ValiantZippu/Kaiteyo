@@ -473,10 +473,14 @@ fun AppTheme(
     val animatedSurface =
         surface.withThemeTransition(animateThemeTransition, themeFadeDuration)
 
+    val semanticColors = (if (isDark) KaiteyoSemanticColorsDark else KaiteyoSemanticColorsLight)
+        .withThemeTransition(animateThemeTransition, themeFadeDuration)
+
     CompositionLocalProvider(
         LocalKaiteyoAccent provides animatedAccent,
         LocalBaseMode provides baseMode,
         LocalSurfaceColors provides animatedSurface,
+        LocalKaiteyoSemanticColors provides semanticColors,
         LocalAnimationConfig provides animationConfig,
         LocalRadiusConfig provides radiusConfig,
         LocalGlowConfig provides glowConfig,
@@ -648,6 +652,64 @@ private fun SurfaceColors.withThemeTransition(enabled: Boolean, duration: Int): 
         kanjiSuspended = animateColorAsState(kanjiSuspended, animationSpec = spec, label = "surfaceKanjiSuspended").value
     )
 }
+
+/** Same morphing treatment for semantic color tokens. */
+@Composable
+private fun KaiteyoSemanticColors.withThemeTransition(enabled: Boolean, duration: Int): KaiteyoSemanticColors {
+    if (!enabled) return this
+    val spec = tween<Color>(duration)
+    @Composable fun anim(c: Color, label: String) = animateColorAsState(c, animationSpec = spec, label = label).value
+    return KaiteyoSemanticColors(
+        reviewAgain = anim(reviewAgain, "semReviewAgain"),
+        reviewHard = anim(reviewHard, "semReviewHard"),
+        reviewGood = anim(reviewGood, "semReviewGood"),
+        reviewEasy = anim(reviewEasy, "semReviewEasy"),
+        cardNew = anim(cardNew, "semCardNew"),
+        cardLearning = anim(cardLearning, "semCardLearning"),
+        cardYoung = anim(cardYoung, "semCardYoung"),
+        cardMature = anim(cardMature, "semCardMature"),
+        cardRelearning = anim(cardRelearning, "semCardRelearning"),
+        cardSuspended = anim(cardSuspended, "semCardSuspended"),
+        cardBuried = anim(cardBuried, "semCardBuried"),
+        cardArchived = anim(cardArchived, "semCardArchived"),
+        success = anim(success, "semSuccess"),
+        warning = anim(warning, "semWarning"),
+        error = anim(error, "semError"),
+        info = anim(info, "semInfo"),
+        favorite = anim(favorite, "semFavorite"),
+        due = anim(due, "semDue"),
+        new = anim(new, "semNew"),
+        suspended = anim(suspended, "semSuspended"),
+        muted = anim(muted, "semMuted"),
+        flagRed = anim(flagRed, "semFlagRed"),
+        flagOrange = anim(flagOrange, "semFlagOrange"),
+        flagYellow = anim(flagYellow, "semFlagYellow"),
+        flagGreen = anim(flagGreen, "semFlagGreen"),
+        flagBlue = anim(flagBlue, "semFlagBlue"),
+        flagPurple = anim(flagPurple, "semFlagPurple"),
+        activityReview = anim(activityReview, "semActReview"),
+        activityReviewFailed = anim(activityReviewFailed, "semActReviewFailed"),
+        activityEdit = anim(activityEdit, "semActEdit"),
+        activityImport = anim(activityImport, "semActImport"),
+        activityExport = anim(activityExport, "semActExport"),
+        activityTag = anim(activityTag, "semActTag"),
+        activityFlag = anim(activityFlag, "semActFlag"),
+        activityNote = anim(activityNote, "semActNote"),
+        activityStudy = anim(activityStudy, "semActStudy"),
+        activitySystem = anim(activitySystem, "semActSystem"),
+        difficultyEasy = anim(difficultyEasy, "semDiffEasy"),
+        difficultyMedium = anim(difficultyMedium, "semDiffMedium"),
+        difficultyHard = anim(difficultyHard, "semDiffHard"),
+        dayColor = anim(dayColor, "semDayColor"),
+        nightColor = anim(nightColor, "semNightColor"),
+        automaticBackup = anim(automaticBackup, "semAutoBackup"),
+        favoriteStar = anim(favoriteStar, "semFavStar")
+    )
+}
+
+/** Convenience accessor for semantic color tokens from composables. */
+val kaiteyoSemantic: KaiteyoSemanticColors
+    @Composable get() = LocalKaiteyoSemanticColors.current
 
 /**
  * Luminance-adaptive study-state color accessor. Returns the kanji study-state

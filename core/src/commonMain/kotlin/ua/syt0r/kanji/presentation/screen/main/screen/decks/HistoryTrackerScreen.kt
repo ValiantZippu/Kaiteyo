@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -258,7 +259,7 @@ fun HistoryFullScreen(
                         showClearConfirm = false
                         showUndoResult = "History cleared"
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B6B))
+                    colors = ButtonDefaults.buttonColors(containerColor = LocalKaiteyoSemanticColors.current.error)
                 ) { Text("Clear All") }
             },
             dismissButton = {
@@ -303,8 +304,9 @@ private fun HistoryStatsBar(
     ) {
         HistoryStat("Total", "$totalEntries", Icons.Default.History, surfaceColors.textPrimary, surfaceColors)
         HistoryStat("Today", "$todayEntries", Icons.Default.Today, accent.primary, surfaceColors)
-        HistoryStat("Undoable", "$undoableCount", Icons.Default.Undo, Color(0xFFC2FC8B), surfaceColors)
-        HistoryStat("Types", "$uniqueTypes", Icons.Default.Category, Color(0xFFA78BFA), surfaceColors)
+        val sem = LocalKaiteyoSemanticColors.current
+        HistoryStat("Undoable", "$undoableCount", Icons.Default.Undo, sem.success, surfaceColors)
+        HistoryStat("Types", "$uniqueTypes", Icons.Default.Category, sem.new, surfaceColors)
     }
 }
 
@@ -531,23 +533,27 @@ private fun DetailRow(label: String, value: String, surfaceColors: SurfaceColors
     }
 }
 
-private fun entryTypeColor(type: HistoryEntryType): Color = when (type) {
-    HistoryEntryType.Review -> Color(0xFF7BC8FF)
-    HistoryEntryType.Import -> Color(0xFFC2FC8B)
-    HistoryEntryType.Export -> Color(0xFFFEAB57)
-    HistoryEntryType.Edit -> Color(0xFFA78BFA)
-    HistoryEntryType.Delete -> Color(0xFFFF6B6B)
-    HistoryEntryType.Restore -> Color(0xFFFFD93D)
-    HistoryEntryType.BulkOperation -> Color(0xFFA78BFA)
-    HistoryEntryType.TagChange -> Color(0xFFA78BFA)
-    HistoryEntryType.FlagChange -> Color(0xFFFF6B6B)
-    HistoryEntryType.DeckChange -> Color(0xFFFEAB57)
-    HistoryEntryType.NoteChange -> Color(0xFF7BC8FF)
-    HistoryEntryType.StatusChange -> Color(0xFFFFD93D)
-    HistoryEntryType.ScheduleChange -> Color(0xFFC2FC8B)
-    HistoryEntryType.BackupCreated -> Color(0xFFB0B0B0)
-    HistoryEntryType.BackupRestored -> Color(0xFFB0B0B0)
-    HistoryEntryType.PluginAction -> Color(0xFF7BC8FF)
+@Composable
+private fun entryTypeColor(type: HistoryEntryType): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when (type) {
+        HistoryEntryType.Review -> sem.info
+        HistoryEntryType.Import -> sem.success
+        HistoryEntryType.Export -> sem.warning
+        HistoryEntryType.Edit -> sem.new
+        HistoryEntryType.Delete -> sem.error
+        HistoryEntryType.Restore -> sem.favorite
+        HistoryEntryType.BulkOperation -> sem.new
+        HistoryEntryType.TagChange -> sem.new
+        HistoryEntryType.FlagChange -> sem.error
+        HistoryEntryType.DeckChange -> sem.warning
+        HistoryEntryType.NoteChange -> sem.info
+        HistoryEntryType.StatusChange -> sem.favorite
+        HistoryEntryType.ScheduleChange -> sem.success
+        HistoryEntryType.BackupCreated -> sem.suspended
+        HistoryEntryType.BackupRestored -> sem.suspended
+        HistoryEntryType.PluginAction -> sem.info
+    }
 }
 
 private fun entryTypeIcon(type: HistoryEntryType): ImageVector = when (type) {

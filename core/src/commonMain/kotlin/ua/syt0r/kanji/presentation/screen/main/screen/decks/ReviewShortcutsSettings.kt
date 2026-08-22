@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -379,11 +380,12 @@ private fun ReviewPreviewCard(
                 if (!settings.hideEasy) buttons.add("Easy")
 
                 buttons.forEach { label ->
+                    val sem = LocalKaiteyoSemanticColors.current
                     val btnColor = when (label) {
-                        "Again" -> Color(0xFFFF6B6B)
-                        "Hard" -> Color(0xFFFEAB57)
-                        "Good" -> Color(0xFFC2FC8B)
-                        "Easy" -> Color(0xFF7BC8FF)
+                        "Again" -> sem.reviewAgain
+                        "Hard" -> sem.reviewHard
+                        "Good" -> sem.reviewGood
+                        "Easy" -> sem.reviewEasy
                         else -> accent.primary
                     }
                     Button(
@@ -768,6 +770,7 @@ private fun ShortcutRow(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onRecord).padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -782,7 +785,7 @@ private fun ShortcutRow(
 
         // Conflict warning
         if (hasConflict) {
-            Icon(Icons.Default.Warning, "Conflict", Modifier.size(16.dp), tint = Color(0xFFFFD93D))
+            Icon(Icons.Default.Warning, "Conflict", Modifier.size(16.dp), tint = sem.favorite)
             Spacer(Modifier.width(4.dp))
         }
 
@@ -790,12 +793,12 @@ private fun ShortcutRow(
         if (shortcut.primaryKey?.isDefined == true && shortcut.isEnabled) {
             Box(
                 modifier = Modifier.clip(RoundedCornerShape(6.dp))
-                    .background(if (hasConflict) Color(0xFFFFD93D).copy(alpha = 0.15f) else accent.primary.copy(alpha = 0.1f))
+                    .background(if (hasConflict) sem.favorite.copy(alpha = 0.15f) else accent.primary.copy(alpha = 0.1f))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(shortcut.primaryKey!!.displayText, fontSize = 11.sp,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    color = if (hasConflict) Color(0xFFFFD93D) else accent.primary)
+                    color = if (hasConflict) sem.favorite else accent.primary)
             }
         } else {
             Text("—", fontSize = 12.sp, color = surfaceColors.textMuted, modifier = Modifier.padding(horizontal = 8.dp))

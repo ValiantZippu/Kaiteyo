@@ -65,10 +65,12 @@ import ua.syt0r.kanji.presentation.common.ui.kaiteyo.GlyphNode
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.GlyphNodeType
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoCompoundsCard
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoFormulaCard
-import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoKanjiHero
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoStrokeOrderCard
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoMeaningsTagsCard
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoMnemonicCard
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoReadingsCard
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoCard
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.KaiteyoSentenceRow
 import ua.syt0r.kanji.presentation.common.ui.kanji.AnimatedKanji
 import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiBackground
 import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
@@ -78,8 +80,8 @@ import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
 //
 // Responsive Architecture:
 //   · Desktop / Landscape: 2-column layout
-//       Left: Interactive Glyph Graph + Formula Decomposition + Stroke Anim
-//       Right: Kanji Hero + Audio/Readings + Mnemonic + Meanings
+//       Left: Interactive Glyph Graph + Stroke Order Card + Decomposition + Meanings
+//       Right: Audio/Readings + Mnemonic + Sentences
 //   · Portrait: Fluid single-column progressive hierarchy
 // ============================================================
 
@@ -127,8 +129,8 @@ fun LetterInfoKanjiHeading(
     onSaveUserNote: ((String) -> Unit)? = null,
     onWordClick: ((ua.syt0r.kanji.core.app_data.data.JapaneseWord) -> Unit)? = null
 ) {
-    val clipboardManager = LocalClipboardManager.current
     val isLandscape = LocalOrientation.current == Orientation.Landscape
+    val surfaceColors = LocalSurfaceColors.current
 
     // Build connected components for the Glyph Graph
     val glyphComponents = remember(data.radicalsSectionData.radicals, data.phonetics) {
@@ -151,13 +153,14 @@ fun LetterInfoKanjiHeading(
 
     if (isLandscape) {
         // ── Landscape / Desktop Two-Column Layout ───────────
+        // Kanjiverse architecture: Graph → Formula → Identity → Readings
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Left Column: Interactive Graph & Structural Formula
+            // Left Column: Glyph Graph & Stroke Order (top priority)
             Column(
                 modifier = Modifier.weight(1.1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -172,26 +175,33 @@ fun LetterInfoKanjiHeading(
                     modifier = Modifier.fillMaxWidth().height(290.dp)
                 )
 
-                // Composition Formula Card
+                // Stroke Order Card (replaces static kanji hero — shows kanji with animation)
+                KaiteyoStrokeOrderCard(
+                    strokes = data.strokes,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Hierarchical Formula
                 KaiteyoFormulaCard(
                     character = data.character,
                     radicals = data.radicalsSectionData.radicals,
-                    onRadicalClick = onRadicalClick
+                    onRadicalClick = onRadicalClick,
+                    glyphNodes = glyphComponents
+                )
+
+                // Meanings & Tags
+                KaiteyoMeaningsTagsCard(
+                    data = data,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            // Right Column: Identity, Readings, Audio, Mnemonics
+            // Right Column: Identity, Readings, Mnemonics
             Column(
                 modifier = Modifier.weight(0.9f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                KaiteyoKanjiHero(
-                    data = data,
-                    onCopy = {
-                        clipboardManager.setText(AnnotatedString(data.character))
-                    }
-                )
-
+                // Readings with audio
                 KaiteyoReadingsCard(
                     on = data.on,
                     kun = data.kun,
@@ -201,6 +211,7 @@ fun LetterInfoKanjiHeading(
                     onWordClick = onWordClick
                 )
 
+                // Mnemonics
                 KaiteyoMnemonicCard(
                     character = data.character,
                     mnemonics = data.mnemonics,
@@ -209,26 +220,41 @@ fun LetterInfoKanjiHeading(
                     onComponentClick = onRadicalClick
                 )
 
-                KaiteyoMeaningsTagsCard(data = data)
+                // Sentences
+                val sentences = data.sentences.list.value
+                if (sentences.isNotEmpty()) {
+                    KaiteyoCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        header = "Sentences",
+                        subtitle = "Example sentences"
+                    ) {
+                        sentences.take(3).forEach { sentence ->
+                            KaiteyoSentenceRow(
+                                sentence = sentence,
+                                onFuriganaClick = onRadicalClick
+                            )
+                        }
+                        if (sentences.size > 3) {
+                            Text(
+                                text = "+${sentences.size - 3} more...",
+                                fontSize = 11.sp,
+                                color = surfaceColors.textMuted
+                            )
+                        }
+                    }
+                }
             }
         }
     } else {
-        // ── Portrait Single-Column Progressive Layout ────────
+        // ── Portrait Single-Column Layout ───────────────────
+        // Kanjiverse architecture: Graph → Formula → Hero → Readings
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Kanji Hero
-            KaiteyoKanjiHero(
-                data = data,
-                onCopy = {
-                    clipboardManager.setText(AnnotatedString(data.character))
-                }
-            )
-
-            // Interactive Glyph Graph
+            // 1. Interactive Glyph Graph (top priority)
             AnimatedGlyphGraph(
                 rootCharacter = data.character,
                 rootMeaning = data.meanings.joinToString(", ").ifEmpty { "Kanji" },
@@ -238,14 +264,27 @@ fun LetterInfoKanjiHeading(
                 modifier = Modifier.fillMaxWidth().height(250.dp)
             )
 
-            // Composition Formula
+            // 2. Stroke Order Card (replaces static kanji hero — shows kanji with animation)
+            KaiteyoStrokeOrderCard(
+                strokes = data.strokes,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // 3. Hierarchical Formula
             KaiteyoFormulaCard(
                 character = data.character,
                 radicals = data.radicalsSectionData.radicals,
-                onRadicalClick = onRadicalClick
+                onRadicalClick = onRadicalClick,
+                glyphNodes = glyphComponents
             )
 
-            // Readings with TTS audio playback
+            // 4. Meanings & Tags
+            KaiteyoMeaningsTagsCard(
+                data = data,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // 5. Readings with audio
             KaiteyoReadingsCard(
                 on = data.on,
                 kun = data.kun,
@@ -255,7 +294,7 @@ fun LetterInfoKanjiHeading(
                 onWordClick = onWordClick
             )
 
-            // Mnemonic Card
+            // 6. Mnemonics
             KaiteyoMnemonicCard(
                 character = data.character,
                 mnemonics = data.mnemonics,
@@ -264,10 +303,7 @@ fun LetterInfoKanjiHeading(
                 onComponentClick = onRadicalClick
             )
 
-            // Meanings & Tags
-            KaiteyoMeaningsTagsCard(data = data)
-
-            // Compounds Card
+            // 7. Compounds
             val compounds = remember(data) {
                 data.vocab.list.value.groupBy { word ->
                     val reading = word.reading.kanjiReading ?: word.reading.kanaReading
@@ -282,6 +318,31 @@ fun LetterInfoKanjiHeading(
                     onWordClick = { word -> onWordClick?.invoke(word) },
                     onBookmarkClick = null
                 )
+            }
+
+            // 8. Sentences
+            val sentences = data.sentences.list.value
+            if (sentences.isNotEmpty()) {
+                KaiteyoCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    header = "Sentences",
+                    subtitle = "Example sentences using this kanji"
+                ) {
+                    sentences.take(5).forEach { sentence ->
+                        KaiteyoSentenceRow(
+                            sentence = sentence,
+                            onFuriganaClick = onRadicalClick
+                        )
+                    }
+                    if (sentences.size > 5) {
+                        Text(
+                            text = "+${sentences.size - 5} more sentences...",
+                            fontSize = 11.sp,
+                            color = surfaceColors.textMuted,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }

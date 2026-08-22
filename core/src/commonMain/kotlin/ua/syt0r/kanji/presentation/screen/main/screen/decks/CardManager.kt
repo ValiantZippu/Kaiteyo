@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.koinInject
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
@@ -708,11 +709,12 @@ private fun StudyActionsBar(onAction: (StudyAction) -> Unit) {
             .padding(6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
+        val sem = LocalKaiteyoSemanticColors.current
         val primaryActions = listOf(
-            StudyAction.Again to Color(0xFFFF6B6B),
-            StudyAction.Hard to Color(0xFFFEAB57),
+            StudyAction.Again to sem.reviewAgain,
+            StudyAction.Hard to sem.reviewHard,
             StudyAction.Good to accent.primary,
-            StudyAction.Easy to Color(0xFFC2FC8B)
+            StudyAction.Easy to sem.reviewEasy
         )
         primaryActions.forEach { (action, color) ->
             Button(
@@ -963,8 +965,8 @@ private fun AnkiCardRow(
 ) {
     val bgColor = when {
         isSelected -> accent.primary.copy(alpha = 0.06f)
-        card.isSuspended -> Color(0xFFFF6B6B).copy(alpha = 0.04f)
-        card.isBuried -> Color(0xFFB0B0B0).copy(alpha = 0.04f)
+        card.isSuspended -> LocalKaiteyoSemanticColors.current.error.copy(alpha = 0.04f)
+        card.isBuried -> LocalKaiteyoSemanticColors.current.cardSuspended.copy(alpha = 0.04f)
         else -> Color.Transparent
     }
     val flagColor = if (card.flag != CardFlagType.None) {
@@ -1036,7 +1038,7 @@ private fun AnkiCardRow(
         Text(
             if (card.interval > 0) "${card.interval}d" else "New",
             modifier = Modifier.weight(0.08f),
-            color = if (card.interval == 0) Color(0xFF7BC8FF) else surfaceColors.textSecondary,
+            color = if (card.interval == 0) LocalKaiteyoSemanticColors.current.info else surfaceColors.textSecondary,
             fontSize = 12.sp,
             fontWeight = if (card.interval == 0) FontWeight.Medium else FontWeight.Normal,
             maxLines = 1
@@ -1047,9 +1049,9 @@ private fun AnkiCardRow(
             "${(card.ease * 100).toInt()}%",
             modifier = Modifier.weight(0.08f),
             color = when {
-                card.ease >= 2.5f -> Color(0xFFC2FC8B)
-                card.ease >= 1.5f -> Color(0xFFFEAB57)
-                else -> Color(0xFFFF6B6B)
+                card.ease >= 2.5f -> LocalKaiteyoSemanticColors.current.success
+                card.ease >= 1.5f -> LocalKaiteyoSemanticColors.current.warning
+                else -> LocalKaiteyoSemanticColors.current.error
             },
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
@@ -1128,16 +1130,18 @@ private fun AnkiCardRow(
 
 @Composable
 fun StatusBadge(status: CardStatus) {
-    val (bgColor, textColor) = when (status) {
-        CardStatus.New -> Color(0xFF7BC8FF) to Color(0xFF1A3A5C)
-        CardStatus.Learning -> Color(0xFFFF6B6B) to Color(0xFF5C1A1A)
-        CardStatus.Young -> Color(0xFFFEAB57) to Color(0xFF5C3A1A)
-        CardStatus.Mature -> Color(0xFFC2FC8B) to Color(0xFF2A5C1A)
-        CardStatus.Relearning -> Color(0xFFFF6B6B) to Color(0xFF5C1A1A)
-        CardStatus.Suspended -> Color(0xFFB0B0B0) to Color(0xFF3A3A3A)
-        CardStatus.Buried -> Color(0xFF8B8B8B) to Color(0xFF3A3A3A)
-        CardStatus.Archived -> Color(0xFF6B6B6B) to Color(0xFF2A2A2A)
+    val sem = LocalKaiteyoSemanticColors.current
+    val bgColor = when (status) {
+        CardStatus.New -> sem.cardNew
+        CardStatus.Learning -> sem.cardLearning
+        CardStatus.Young -> sem.cardYoung
+        CardStatus.Mature -> sem.cardMature
+        CardStatus.Relearning -> sem.cardRelearning
+        CardStatus.Suspended -> sem.cardSuspended
+        CardStatus.Buried -> sem.cardBuried
+        CardStatus.Archived -> sem.cardArchived
     }
+    val textColor = Color(0xFF1A1A1A)
     Box(
         modifier = Modifier.clip(RoundedCornerShape(4.dp))
             .background(bgColor.copy(alpha = 0.2f))

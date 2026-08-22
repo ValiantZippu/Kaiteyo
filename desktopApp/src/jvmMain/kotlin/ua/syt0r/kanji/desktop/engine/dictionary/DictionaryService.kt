@@ -9,6 +9,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import ua.syt0r.kanji.desktop.data.demoKanji
 import ua.syt0r.kanji.desktop.engine.history.ActivityCategory
+import ua.syt0r.kanji.desktop.engine.nlp.JapaneseNlpEngine
 import ua.syt0r.kanji.desktop.engine.search.SearchPipeline
 import ua.syt0r.kanji.desktop.engine.search.TrigramIndex
 import ua.syt0r.kanji.desktop.appstate.AppState
@@ -58,7 +59,20 @@ class DictionaryService(val repository: DictionaryRepository) {
     // ------------------------------------------------------------
 
     fun lookup(query: String, mode: SearchMode = SearchMode.All): List<DictionaryResultGroup> {
-        val groups = repository.lookupGrouped(query, mode)
+        var groups = repository.lookupGrouped(query, mode)
+        // NLP-enhanced: if the query is Japanese text with few results,
+        // try morphological analysis to extract content words and search those too.
+        if (groups.isEmpty() && JapaneseNlpEngine.isJapanese(query)) {
+            val morphemes = JapaneseNlpEngine.contentWords(query)
+            for (m in morphemes) {
+                if (m.surface != query) {
+                    val extra = repository.lookupGrouped(m.baseForm.ifBlank { m.surface }, mode)
+                    groups = groups + extra.filter { eg ->
+                        groups.none { it.dictionary.id == eg.dictionary.id }
+                    }
+                }
+            }
+        }
         if (query.isNotBlank()) recordSearch(query)
         return groups
     }
@@ -106,8 +120,19 @@ class DictionaryService(val repository: DictionaryRepository) {
     }
 
     fun lookupFlat(query: String, mode: SearchMode = SearchMode.All): List<DictionaryMatch> {
+        var results = repository.lookup(query, mode)
+        // NLP fallback: try base forms of content words if no results
+        if (results.isEmpty() && JapaneseNlpEngine.isJapanese(query)) {
+            val morphemes = JapaneseNlpEngine.contentWords(query)
+            for (m in morphemes) {
+                if (m.surface != query) {
+                    val extra = repository.lookup(m.baseForm.ifBlank { m.surface }, mode)
+                    results = (results + extra).distinctBy { it.entry.headword }
+                }
+            }
+        }
         if (query.isNotBlank()) recordSearch(query)
-        return repository.lookup(query, mode)
+        return results
     }
 
     fun recordSearch(query: String) {
@@ -152,6 +177,36 @@ class DictionaryService(val repository: DictionaryRepository) {
     // ------------------------------------------------------------
 
     fun importFile(file: File, state: AppState): Result<InstalledDictionary> = runCatching {
+        // Try YomitanImporter v2 first for enhanced parsing (structured content,
+        // frequency bands, pitch accent, kanji metadata, tag banks).
+        val yomitanResult = runCatching { YomitanImporter.import(file) }.getOrNull()
+        if (yomitanResult != null && yomitanResult.entries.isNotEmpty()) {
+            val dict = repository.install(
+                InstalledDictionary(
+                    id = yomitanResult.dictionaryId,
+                    name = yomitanResult.name,
+                    revision = yomitanResult.revision,
+                    format = yomitanResult.format,
+                    enabled = true,
+                    priority = repository.installedDictionaries().size,
+                    tags = yomitanResult.tagDefinitions.map { it.name }
+                ),
+                yomitanResult.entries
+            )
+            val extras = buildString {
+                if (yomitanResult.kanjiEntries.isNotEmpty()) append(", ${yomitanResult.kanjiEntries.size} kanji")
+                if (yomitanResult.frequencyEntries.isNotEmpty()) append(", ${yomitanResult.frequencyEntries.size} frequency")
+                if (yomitanResult.pitchAccentEntries.isNotEmpty()) append(", ${yomitanResult.pitchAccentEntries.size} pitch accent")
+                if (yomitanResult.structuredContentCount > 0) append(", ${yomitanResult.structuredContentCount} structured content")
+            }
+            state.activityLog.record(
+                ActivityCategory.Study,
+                "Installed dictionary \"${dict.name}\" with ${dict.entryCount} entries$extras"
+            )
+            return@runCatching dict
+        }
+
+        // Fallback to the original DictionaryImporter for simpler formats
         val bundle = DictionaryImporter.import(file)
         if (bundle.entries.isEmpty()) {
             error("No entries could be parsed from ${file.name}. Check that the file is a Yomitan-compatible export.")

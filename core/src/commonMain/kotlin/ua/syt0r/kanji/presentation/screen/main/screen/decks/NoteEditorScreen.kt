@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -369,7 +370,7 @@ private fun NotePreview(
                 line.startsWith("[") -> {
                     val text = line.substringAfter("[").substringBefore("]")
                     val url = line.substringAfter("(").substringBefore(")")
-                    Text(text, fontSize = 13.sp, color = androidx.compose.ui.graphics.Color(0xFF7BC8FF),
+                    Text(text, fontSize = 13.sp, color = LocalKaiteyoSemanticColors.current.info,
                         textDecoration = TextDecoration.Underline)
                 }
                 line.isBlank() -> Spacer(Modifier.height(4.dp))

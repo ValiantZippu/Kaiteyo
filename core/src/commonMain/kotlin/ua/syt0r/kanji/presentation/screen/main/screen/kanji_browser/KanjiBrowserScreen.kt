@@ -82,6 +82,7 @@ import ua.syt0r.kanji.core.knowledge.LearnerProfileStore
 import ua.syt0r.kanji.core.knowledge.StudyState
 import ua.syt0r.kanji.core.knowledge.level.LevelAdapter
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.favoriteColor
 import ua.syt0r.kanji.presentation.common.theme.frequencyColorFor
@@ -1354,10 +1355,10 @@ private fun KanjiListRow(
                     Box(Modifier.size(7.dp).clip(CircleShape).background(flag.colorFromHex()))
                 }
                 if (card.isFavorite) {
-                    Icon(Icons.Default.Favorite, null, tint = Color(0xFFFF6B9D), modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.Favorite, null, tint = LocalKaiteyoSemanticColors.current.favorite, modifier = Modifier.size(12.dp))
                 }
                 if (learned) {
-                    Icon(Icons.Default.Done, null, tint = Color(0xFFC2FC8B), modifier = Modifier.size(13.dp))
+                    Icon(Icons.Default.Done, null, tint = LocalKaiteyoSemanticColors.current.success, modifier = Modifier.size(13.dp))
                 }
                 if (difficult) {
                     Text("⚠", fontSize = 11.sp)
@@ -1483,7 +1484,7 @@ fun KanjiDetailDialog(
                             Icon(
                                 if (card.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = "Favorite",
-                                tint = if (card.isFavorite) Color(0xFFFF6B9D) else surfaceColors.textMuted
+                                tint = if (card.isFavorite) LocalKaiteyoSemanticColors.current.favorite else surfaceColors.textMuted
                             )
                         }
                         IconButton(onClick = onDismiss) {
@@ -1528,7 +1529,7 @@ fun KanjiDetailDialog(
                             InfoChip("Learned", accent, surfaceColors)
                         }
                         if (dataCenter.isDifficult(cardId)) {
-                            InfoChip("Difficult", Color(0xFFFF6B6B), surfaceColors)
+                            InfoChip("Difficult", LocalKaiteyoSemanticColors.current.error, surfaceColors)
                         }
                         card.flag.takeIf { it != CardFlagType.None }?.let { flag ->
                             InfoChip("Flagged ${flag.displayName}", flag.colorFromHex(), surfaceColors)
@@ -1609,8 +1610,8 @@ fun KanjiDetailDialog(
                             onClick = { scope.launch { dataCenter.resetProgress(listOf(cardId)) } },
                             modifier = Modifier.weight(1f),
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF6B6B).copy(alpha = 0.15f),
-                                contentColor = Color(0xFFFF6B6B)
+                                containerColor = LocalKaiteyoSemanticColors.current.error.copy(alpha = 0.15f),
+                                contentColor = LocalKaiteyoSemanticColors.current.error
                             )
                         ) {
                             Text("Reset progress")

@@ -220,11 +220,11 @@ fun TimeProgressGroup(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(surfaceColors.surface)
-            .border(1.dp, surfaceColors.surfaceInteractive.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .border(1.dp, surfaceColors.surfaceInteractive.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         // Header
         Row(
@@ -265,12 +265,15 @@ fun TimeProgressGroup(
             }
         }
 
-        // Year bar (largest, most important context)
+        // All bars use consistent height for clean, uniform look
+        val barHeight = 10.dp
+
+        // Year bar
         TimeProgressBar(
             progress = state.year,
             accent = accent.primary,
             surfaceColors = surfaceColors,
-            barHeight = 14.dp,
+            barHeight = barHeight,
             showMarker = true
         )
 
@@ -279,7 +282,7 @@ fun TimeProgressGroup(
             progress = state.month,
             accent = accent.primary,
             surfaceColors = surfaceColors,
-            barHeight = 10.dp,
+            barHeight = barHeight,
             showMarker = true
         )
 
@@ -288,7 +291,7 @@ fun TimeProgressGroup(
             progress = state.week,
             accent = accent.primary,
             surfaceColors = surfaceColors,
-            barHeight = 8.dp,
+            barHeight = barHeight,
             showMarker = true
         )
 
@@ -297,7 +300,7 @@ fun TimeProgressGroup(
             progress = state.day,
             accent = accent.primary,
             surfaceColors = surfaceColors,
-            barHeight = 8.dp,
+            barHeight = barHeight,
             showMarker = true
         )
 
@@ -306,7 +309,7 @@ fun TimeProgressGroup(
             progress = state.hour,
             accent = accent.primary,
             surfaceColors = surfaceColors,
-            barHeight = 6.dp,
+            barHeight = barHeight,
             showMarker = true
         )
 
@@ -375,7 +378,7 @@ private fun TimeProgressBar(
         modifier = modifier
             .fillMaxWidth()
             .hoverable(interactionSource),
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // Label + remaining text
         Row(
@@ -384,15 +387,16 @@ private fun TimeProgressBar(
         ) {
             Text(
                 text = progress.label,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.8.sp,
-                color = surfaceColors.textMuted
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
+                color = surfaceColors.textSecondary
             )
             Spacer(Modifier.weight(1f))
             Text(
                 text = progress.remainingLabel,
-                fontSize = 8.sp,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
                 color = if (hovered) accent else surfaceColors.textMuted
             )
         }
@@ -428,21 +432,27 @@ private fun DrawScope.drawTimeBar(
     val barHeight = size.height
     val cornerRadius = CornerRadius(barHeight / 2, barHeight / 2)
 
-    // Background track
+    // Background track with subtle gradient
     drawRoundRect(
-        color = surfaceColors.surfaceInteractive.copy(alpha = 0.3f),
+        brush = Brush.horizontalGradient(
+            colors = listOf(
+                surfaceColors.surfaceInteractive.copy(alpha = 0.2f),
+                surfaceColors.surfaceInteractive.copy(alpha = 0.35f)
+            )
+        ),
         size = Size(barWidth, barHeight),
         cornerRadius = cornerRadius
     )
 
-    // Elapsed fill with gradient
+    // Elapsed fill with rich gradient
     if (fraction > 0f) {
         val fillWidth = barWidth * fraction
         drawRoundRect(
             brush = Brush.horizontalGradient(
                 colors = listOf(
-                    accent.copy(alpha = 0.4f),
-                    accent.copy(alpha = if (hovered) 0.9f else 0.7f)
+                    accent.copy(alpha = 0.5f),
+                    accent.copy(alpha = 0.8f),
+                    accent.copy(alpha = if (hovered) 1f else 0.9f)
                 ),
                 startX = 0f,
                 endX = fillWidth
@@ -457,17 +467,17 @@ private fun DrawScope.drawTimeBar(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        accent.copy(alpha = 0.5f),
+                        accent.copy(alpha = 0.6f),
                         Color.Transparent
                     ),
                     center = Offset(markerX, barHeight / 2),
-                    radius = barHeight * 1.5f
+                    radius = barHeight * 2f
                 ),
-                radius = barHeight * 1.5f,
+                radius = barHeight * 2f,
                 center = Offset(markerX, barHeight / 2)
             )
 
-            // Marker line
+            // Marker line (bright)
             drawLine(
                 color = accent,
                 start = Offset(markerX, 0f),
@@ -477,17 +487,15 @@ private fun DrawScope.drawTimeBar(
         }
     }
 
-    // Remaining: subtle dashed pattern
+    // Remaining: visible dashed pattern
     if (fraction < 1f) {
         val remainingStart = barWidth * fraction
-        val remainingWidth = barWidth - remainingStart
-        // Small dots in remaining area
-        val dotRadius = 1.dp.toPx()
-        val dotSpacing = 4.dp.toPx()
-        var x = remainingStart + dotSpacing
-        while (x < barWidth) {
+        val dotRadius = 1.2.dp.toPx()
+        val dotSpacing = 5.dp.toPx()
+        var x = remainingStart + dotSpacing / 2
+        while (x < barWidth - dotRadius) {
             drawCircle(
-                color = surfaceColors.textMuted.copy(alpha = 0.15f),
+                color = surfaceColors.textMuted.copy(alpha = 0.25f),
                 radius = dotRadius,
                 center = Offset(x, barHeight / 2)
             )

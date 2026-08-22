@@ -23,6 +23,7 @@ pluginManagement {
         id("com.codingfeline.buildkonfig") version "0.13.3"
         id("app.cash.sqldelight") version "2.0.2"
         id("com.mikepenz.aboutlibraries.plugin") version "12.0.0"
+        id("io.gitlab.arturbosch.detekt") version "1.23.7"
     }
 }
 

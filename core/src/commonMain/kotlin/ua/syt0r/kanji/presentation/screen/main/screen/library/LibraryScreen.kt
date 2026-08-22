@@ -95,6 +95,7 @@ import ua.syt0r.kanji.presentation.common.ui.KaiteyoEmptyState
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoProgressRing
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
@@ -793,12 +794,13 @@ private fun LibraryList(
         }
 
         item(key = "stats") {
+            val sem = LocalKaiteyoSemanticColors.current
             StatRow(
                 items = listOf(
-                    StatData("Decks", unifiedDecks.size, androidx.compose.ui.graphics.Color(0xFF7BC8FF)),
-                    StatData("Kanji", dataCenter.cards.size, androidx.compose.ui.graphics.Color(0xFFB4F88C)),
-                    StatData("Favorites", dataCenter.favorites.value.size, androidx.compose.ui.graphics.Color(0xFFFFB300)),
-                    StatData("Reviews", dataCenter.totalReviews.value.toInt(), androidx.compose.ui.graphics.Color(0xFFA78BFA))
+                    StatData("Decks", unifiedDecks.size, sem.info),
+                    StatData("Kanji", dataCenter.cards.size, sem.success),
+                    StatData("Favorites", dataCenter.favorites.value.size, sem.favoriteStar),
+                    StatData("Reviews", dataCenter.totalReviews.value.toInt(), sem.new)
                 ),
                 accent = accent,
                 surfaceColors = surfaceColors
@@ -1087,7 +1089,7 @@ private fun DeckCard(
                             KaiteyoCountBadge(deck.newCount, accent.primary)
                         }
                         if (deck.dueCount > 0) {
-                            KaiteyoCountBadge(deck.dueCount, androidx.compose.ui.graphics.Color(0xFFE53935))
+                            KaiteyoCountBadge(deck.dueCount, LocalKaiteyoSemanticColors.current.error)
                         }
                     }
                 } else {
@@ -2097,7 +2099,7 @@ private fun KanjiRow(
                 Box(Modifier.size(8.dp).clip(CircleShape).background(flag.colorFromHex()))
             }
             if (card.isFavorite) {
-                Text("★", color = androidx.compose.ui.graphics.Color(0xFFFFB300), fontSize = 14.sp)
+                Text("★", color = LocalKaiteyoSemanticColors.current.favoriteStar, fontSize = 14.sp)
             }
         }
         Icon(
@@ -2327,7 +2329,7 @@ private fun ContinueStudyingCard(
                 CountChip(
                     label = "Due",
                     count = totalDue,
-                    color = androidx.compose.ui.graphics.Color(0xFFE53935),
+                    color = LocalKaiteyoSemanticColors.current.error,
                     surfaceColors = surfaceColors
                 )
                 Spacer(Modifier.weight(1f))
@@ -2495,7 +2497,7 @@ private fun DeckRow(
                     MiniCountBadge(deck.newCount, accent.primary)
                 }
                 if (deck.dueCount > 0) {
-                    MiniCountBadge(deck.dueCount, androidx.compose.ui.graphics.Color(0xFFE53935))
+                    MiniCountBadge(deck.dueCount, LocalKaiteyoSemanticColors.current.error)
                 }
             }
         } else {
@@ -2596,7 +2598,7 @@ private fun CollectionsSection(
 private data class StatData(
     val label: String,
     val value: Int,
-    val color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFB4F88C)
+    val color: androidx.compose.ui.graphics.Color = ua.syt0r.kanji.presentation.common.theme.semanticSuccess
 )
 
 @Composable

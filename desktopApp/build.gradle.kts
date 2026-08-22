@@ -39,12 +39,22 @@ kotlin {
                 // compatible with Kaiteyo's GPL-3.0 license. The app degrades
                 // gracefully when VLC is not installed.
                 implementation(libs.vlcj)
+                // Sentry (JVM) — error tracking + performance monitoring
+                implementation(libs.sentry.core)
+                // Tess4J — Tesseract OCR via JNI (optional, graceful fallback)
+                implementation(libs.tess4j)
+                // Kuromoji — Japanese morphological analyzer (IPAdic)
+                implementation(libs.kuromoji.ipadic)
+                // Coil 3 — image loading with caching
+                implementation(libs.coil.compose)
             }
         }
 
         jvmTest {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.turbine)
+                implementation(libs.mockk)
             }
         }
 

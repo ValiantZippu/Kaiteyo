@@ -6,6 +6,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,7 +39,12 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.ViewCarousel
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material.icons.outlined.Edit
@@ -73,6 +79,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
@@ -80,6 +87,7 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableColumn
 import ua.syt0r.kanji.Res
+import androidx.compose.material.icons.filled.Search
 import ua.syt0r.kanji.core.launchOnInvoke
 import ua.syt0r.kanji.core.srs.LetterPracticeType
 import ua.syt0r.kanji.core.srs.VocabPracticeType
@@ -111,6 +119,7 @@ import ua.syt0r.kanji.presentation.common.copyCentered
 import ua.syt0r.kanji.presentation.common.theme.Dimens
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.snapSizeTransform
 import ua.syt0r.kanji.presentation.common.ui.FancyLoading
@@ -120,6 +129,8 @@ import ua.syt0r.kanji.presentation.common.ui.isWideContentLayout
 import ua.syt0r.kanji.presentation.common.ui.rememberAdaptiveContentMaxWidth
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.HeatmapDayData
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.HeatmapDisplayMode
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.StudyCalendar
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.StudyCalendarState
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.StudyHeatmap
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.TimeProgressCompact
 import ua.syt0r.kanji.presentation.common.ui.kaiteyo.TimeProgressGroup
@@ -127,6 +138,7 @@ import ua.syt0r.kanji.presentation.common.ui.kaiteyo.calculateTimeProgress
 import ua.syt0r.kanji.presentation.screen.main.MainDestination
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoActivity
 import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoActivityType
+import ua.syt0r.kanji.presentation.screen.main.screen.home.HomeCommandCenterSection
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.GeneralDashboardScreenContract.ScreenState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.dashboard_common.DashboardErrorState
 import ua.syt0r.kanji.presentation.screen.main.screen.home.screen.general_dashboard.ui.TutorialDialog
@@ -212,6 +224,9 @@ fun GeneralDashboardScreenUI(
         }
     }
 
+    // Study calendar state
+    var calendarState by remember { mutableStateOf(StudyCalendarState.calculate()) }
+
     ScreenLayout(state, onRetry = retryLoad) { screenState, snackbarHostState, isWide ->
 
         val coroutineScope = rememberCoroutineScope()
@@ -229,19 +244,28 @@ fun GeneralDashboardScreenUI(
             onSearchClick = navigateToSearch
         )
 
-        ScreenDivider()
+        // ── COMMAND CENTER: recent searches + entries + discover ──
+        HomeCommandCenterSection(
+            onOpenKanji = onOpenKanji,
+            onOpenWord = onOpenWord,
+            onOpenBrowse = onOpenBrowse,
+            onOpenRadicals = onOpenRadicals,
+            onOpenComponents = onOpenComponents,
+            onOpenCollections = navigateToCollections,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
 
         if (isWide) {
             // ── DESKTOP: two-column primary area ───────────────
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top
             ) {
                 // LEFT: Continue studying + study targets
                 Column(
                     modifier = Modifier.weight(1.2f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     ContinueStudyingCard(
                         screenState = screenState,
@@ -265,10 +289,10 @@ fun GeneralDashboardScreenUI(
                     )
                 }
 
-                // RIGHT: Time progress + heatmap
+                // RIGHT: Time progress + Calendar + Heatmap
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     // Time progress visualization
                     TimeProgressGroup(
@@ -276,7 +300,15 @@ fun GeneralDashboardScreenUI(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Shared heatmap
+                    // Study calendar
+                    StudyCalendar(
+                        state = calendarState,
+                        onMonthChange = { /* Update month */ },
+                        onDayClick = onOpenDay,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Activity heatmap (must have both calendar and heatmap)
                     val heatmapData = remember(screenState) {
                         screenState.stats.heatmapSummary.map {
                             HeatmapDayData(date = it.date, count = it.count)
@@ -295,10 +327,8 @@ fun GeneralDashboardScreenUI(
             // Time progress (compact)
             TimeProgressCompact(
                 state = timeProgress,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
-
-            ScreenDivider()
 
             // Continue studying
             ContinueStudyingCard(
@@ -306,25 +336,34 @@ fun GeneralDashboardScreenUI(
                 navigateToLetterPractice = navigateToLetterPractice,
                 navigateToVocabPractice = navigateToVocabPractice,
                 navigateToLibrary = navigateToLibrary,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            ScreenDivider()
-
-            // Heatmap
-            val heatmapData = remember(screenState) {
-                screenState.stats.heatmapSummary.map {
-                    HeatmapDayData(date = it.date, count = it.count)
+            // Heatmap + Calendar combined
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val heatmapData = remember(screenState) {
+                    screenState.stats.heatmapSummary.map {
+                        HeatmapDayData(date = it.date, count = it.count)
+                    }
                 }
+                StudyHeatmap(
+                    activityData = heatmapData,
+                    displayMode = HeatmapDisplayMode.Compact,
+                    onDayClick = onOpenDay,
+                    modifier = Modifier.weight(1f)
+                )
             }
-            StudyHeatmap(
-                activityData = heatmapData,
-                displayMode = HeatmapDisplayMode.Compact,
-                onDayClick = onOpenDay,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
 
-            ScreenDivider()
+            // Study calendar (full width)
+            StudyCalendar(
+                state = calendarState,
+                onMonthChange = { /* Update month */ },
+                onDayClick = onOpenDay,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
 
             // Study targets
             StudyTargets(
@@ -343,6 +382,18 @@ fun GeneralDashboardScreenUI(
 
             ScreenDivider()
         }
+
+        // ── DISCOVER: quick-access tool tiles ──────────────────
+        DiscoverSection(
+            navigateToDictionary = navigateToDictionary,
+            navigateToRadicals = navigateToRadicals,
+            navigateToKanjiBrowser = navigateToKanjiBrowser,
+            navigateToSentences = navigateToSentences,
+            navigateToLearnerProfile = navigateToLearnerProfile,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        ScreenDivider()
 
         // ── BOTTOM: recent decks + activity (always full width) ─
         if (isWide) {
@@ -469,65 +520,57 @@ private fun DashboardHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp)
-            .padding(AppListItemDefaults.ExtraPaddings)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
-        // Greeting hero
+        // Greeting hero (compact)
         KaiteyoDashboardHero(
             stats = state.stats,
             onSearchClick = onSearchClick,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
 
-        // Queue progress bar
+        // Queue progress bar (only show if there are items)
         val queueTotal = state.stats.reviewedToday + state.stats.leftoverToday
-        val queueFraction = if (queueTotal == 0) 0f
-        else state.stats.reviewedToday.toFloat() / queueTotal
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
-                .background(surfaceColors.surface)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = "TODAY'S QUEUE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = if (queueTotal == 0) "Nothing queued — add a deck to get started"
-                    else "${state.stats.reviewedToday} reviewed · ${state.stats.leftoverToday} left",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Box(
-                Modifier
-                    .width(110.dp)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+        if (queueTotal > 0) {
+            val queueFraction = state.stats.reviewedToday.toFloat() / queueTotal
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(surfaceColors.surface)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text(
+                    text = "${state.stats.reviewedToday}/${queueTotal}",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = surfaceColors.textPrimary
+                )
+                Spacer(Modifier.width(8.dp))
                 Box(
                     Modifier
-                        .fillMaxWidth(queueFraction.coerceIn(0f, 1f))
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(MaterialTheme.colorScheme.primary)
+                        .weight(1f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(surfaceColors.surfaceInteractive.copy(alpha = 0.3f))
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(queueFraction.coerceIn(0f, 1f))
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(surfaceColors.kanjiKnown)
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "${(queueFraction * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = surfaceColors.kanjiKnown
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "${(queueFraction * 100).roundToInt()}%",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
         }
     }
 }
@@ -1094,17 +1137,18 @@ private fun DashboardDeckRow(
 
         if (deck.newCount > 0 || deck.dueCount > 0) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                val sem = LocalKaiteyoSemanticColors.current
                 if (deck.newCount > 0) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
+                            .background(sem.new.copy(alpha = 0.15f))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = deck.newCount.toString(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = sem.new
                         )
                     }
                 }
@@ -1112,13 +1156,13 @@ private fun DashboardDeckRow(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
+                            .background(sem.error.copy(alpha = 0.15f))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = deck.dueCount.toString(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
+                            color = sem.error
                         )
                     }
                 }
@@ -1202,17 +1246,21 @@ private fun RecentActivitySection(
     }
 }
 
-private fun activityTypeColor(type: KaiteyoActivityType): Color = when (type) {
-    KaiteyoActivityType.Review -> Color(0xFF4CAF50)
-    KaiteyoActivityType.ReviewFailed -> Color(0xFFF44336)
-    KaiteyoActivityType.Edit -> Color(0xFF2196F3)
-    KaiteyoActivityType.Import -> Color(0xFF9C27B0)
-    KaiteyoActivityType.Export -> Color(0xFF009688)
-    KaiteyoActivityType.Tag -> Color(0xFFFF9800)
-    KaiteyoActivityType.Flag -> Color(0xFFFF5722)
-    KaiteyoActivityType.Note -> Color(0xFF3F51B5)
-    KaiteyoActivityType.Study -> Color(0xFF00BCD4)
-    KaiteyoActivityType.System -> Color(0xFF9E9E9E)
+@Composable
+private fun activityTypeColor(type: KaiteyoActivityType): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when (type) {
+        KaiteyoActivityType.Review -> sem.activityReview
+        KaiteyoActivityType.ReviewFailed -> sem.activityReviewFailed
+        KaiteyoActivityType.Edit -> sem.activityEdit
+        KaiteyoActivityType.Import -> sem.activityImport
+        KaiteyoActivityType.Export -> sem.activityExport
+        KaiteyoActivityType.Tag -> sem.activityTag
+        KaiteyoActivityType.Flag -> sem.activityFlag
+        KaiteyoActivityType.Note -> sem.activityNote
+        KaiteyoActivityType.Study -> sem.activityStudy
+        KaiteyoActivityType.System -> sem.activitySystem
+    }
 }
 
 private fun formatRelativeTime(instant: Instant): String {
@@ -1304,4 +1352,148 @@ private fun ScreenLayout(
 
     }
 
+}
+
+// ============================================================
+// DISCOVER — quick-access tiles to exploration tools
+// ============================================================
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DiscoverSection(
+    navigateToDictionary: () -> Unit,
+    navigateToRadicals: () -> Unit,
+    navigateToKanjiBrowser: () -> Unit,
+    navigateToSentences: () -> Unit,
+    navigateToLearnerProfile: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val sem = LocalKaiteyoSemanticColors.current
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = "Discover",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = surfaceColors.textPrimary,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+        )
+
+        // Two-column grid of discover tiles
+        val tiles = listOf(
+            DiscoverTileData(
+                title = "Dictionary",
+                description = "Search kanji, words, sentences and grammar",
+                icon = Icons.Filled.Search,
+                color = accent.primary,
+                onClick = navigateToDictionary
+            ),
+            DiscoverTileData(
+                title = "Radicals",
+                description = "Browse kanji by radical \u2014 stroke, JLPT and grade filters",
+                icon = Icons.Outlined.AutoStories,
+                color = sem.success,
+                onClick = navigateToRadicals
+            ),
+            DiscoverTileData(
+                title = "Kanji Browser",
+                description = "Filter the full kanji set by JLPT, grade and frequency",
+                icon = Icons.Filled.School,
+                color = sem.info,
+                onClick = navigateToKanjiBrowser
+            ),
+            DiscoverTileData(
+                title = "Sentences",
+                description = "Read and analyze corpus sentences token by token",
+                icon = Icons.Filled.Translate,
+                color = sem.favorite,
+                onClick = navigateToSentences
+            ),
+            DiscoverTileData(
+                title = "Learner Profile",
+                description = "Adapt kanji, word and sentence pages to your level",
+                icon = Icons.Outlined.Person,
+                color = sem.warning,
+                onClick = navigateToLearnerProfile
+            )
+        )
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            for (tile in tiles) {
+                DiscoverTile(
+                    data = tile,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+private data class DiscoverTileData(
+    val title: String,
+    val description: String,
+    val icon: ImageVector,
+    val color: Color,
+    val onClick: () -> Unit
+)
+
+@Composable
+private fun DiscoverTile(
+    data: DiscoverTileData,
+    modifier: Modifier = Modifier
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    val bgColor by animateColorAsState(
+        targetValue = if (isHovered) data.color.copy(alpha = 0.1f) else surfaceColors.surface,
+        label = "discoverTileBg"
+    )
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(bgColor)
+            .border(
+                width = 1.dp,
+                color = if (isHovered) data.color.copy(alpha = 0.3f) else surfaceColors.border,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .hoverable(interactionSource)
+            .clickable { data.onClick() }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = data.icon,
+                contentDescription = null,
+                tint = data.color,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = data.title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = surfaceColors.textPrimary
+            )
+        }
+        Text(
+            text = data.description,
+            style = MaterialTheme.typography.labelSmall,
+            color = surfaceColors.textMuted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }

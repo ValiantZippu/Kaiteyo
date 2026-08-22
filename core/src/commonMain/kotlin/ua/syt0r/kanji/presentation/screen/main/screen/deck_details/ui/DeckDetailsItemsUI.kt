@@ -50,6 +50,7 @@ import ua.syt0r.kanji.presentation.common.ExtraSpacer
 import ua.syt0r.kanji.presentation.common.rememberCollapsibleContainerState
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.studyColorFor
@@ -136,9 +137,10 @@ fun DeckDetailsItemsUI(
             Spacer(Modifier.width(12.dp))
             StatusPill("New", newCount, accent.primary, surfaceColors)
             Spacer(Modifier.width(6.dp))
-            StatusPill("Review", reviewCount, Color(0xFF7BC8FF), surfaceColors)
+            val sem = LocalKaiteyoSemanticColors.current
+            StatusPill("Review", reviewCount, sem.info, surfaceColors)
             Spacer(Modifier.width(6.dp))
-            StatusPill("Done", doneCount, Color(0xFFC2FC8B), surfaceColors)
+            StatusPill("Done", doneCount, sem.success, surfaceColors)
         }
 
         LazyVerticalGrid(
@@ -189,10 +191,11 @@ private fun KanjiGridTile(
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
+    val sem = LocalKaiteyoSemanticColors.current
     val statusColor = when (srsStatus) {
         SrsItemStatus.New -> accent.primary
-        SrsItemStatus.Review -> Color(0xFF7BC8FF)
-        SrsItemStatus.Done -> Color(0xFFC2FC8B)
+        SrsItemStatus.Review -> sem.info
+        SrsItemStatus.Done -> sem.success
     }
 
     val bg by animateColorAsState(
@@ -289,7 +292,7 @@ private fun KanjiGridTile(
             Text(
                 text = "${summary.lapses} lapses",
                 fontSize = 7.sp,
-                color = Color(0xFFFF6B6B),
+                color = LocalKaiteyoSemanticColors.current.error,
                 maxLines = 1
             )
         }

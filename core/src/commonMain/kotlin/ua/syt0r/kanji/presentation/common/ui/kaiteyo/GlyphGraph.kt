@@ -641,22 +641,22 @@ private fun InteractiveGlyphBubble(
 
     val nodeColor = when {
         isRoot -> accent
-        node.isRadical -> accent.copy(alpha = 0.20f)
-        node.isPhonetic -> secondaryAccent.copy(alpha = 0.22f)
-        else -> surfaceColors.surfaceInteractive
+        node.isRadical -> accent.copy(alpha = 0.35f)
+        node.isPhonetic -> secondaryAccent.copy(alpha = 0.35f)
+        else -> surfaceColors.surfaceInteractive.copy(alpha = 0.8f)
     }
 
     val borderColor = when {
         isRoot -> accent
         isSelected -> accent
-        node.isRadical -> accent.copy(alpha = 0.65f)
-        node.isPhonetic -> secondaryAccent.copy(alpha = 0.70f)
-        else -> surfaceColors.surfaceInteractive.copy(alpha = 0.75f)
+        node.isRadical -> accent.copy(alpha = 0.85f)
+        node.isPhonetic -> secondaryAccent.copy(alpha = 0.85f)
+        else -> surfaceColors.surfaceInteractive
     }
 
     val textColor = when {
         isRoot -> surfaceColors.textInverse
-        else -> surfaceColors.textPrimary
+        else -> Color.White
     }
 
     Box(
@@ -714,16 +714,16 @@ private fun InteractiveGlyphBubble(
         ) {
             Text(
                 text = node.character,
-                fontSize = if (isRoot) (radius * 0.75f).sp else (radius * 0.8f).sp,
+                fontSize = if (isRoot) (radius * 0.72f).sp else (radius * 0.78f).sp,
                 fontWeight = FontWeight.Bold,
                 color = textColor,
                 textAlign = TextAlign.Center
             )
-            if (radius >= 22f && node.meaning.isNotBlank()) {
+            if (radius >= 20f && node.meaning.isNotBlank()) {
                 Text(
-                    text = node.meaning.take(12),
-                    fontSize = (radius * 0.28f).coerceIn(8f, 11f).sp,
-                    color = if (isRoot) textColor.copy(alpha = 0.85f) else surfaceColors.textMuted,
+                    text = node.meaning.take(14),
+                    fontSize = (radius * 0.30f).coerceIn(9f, 13f).sp,
+                    color = textColor.copy(alpha = 0.8f),
                     maxLines = 1,
                     textAlign = TextAlign.Center
                 )

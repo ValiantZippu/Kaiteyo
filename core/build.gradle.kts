@@ -61,6 +61,8 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.turbine)
+                implementation(libs.mockk)
             }
         }
         val androidMain by getting {
@@ -83,6 +85,11 @@ kotlin {
                 api(libs.core.ktx)
                 api(libs.appcompat)
                 implementation(libs.media3.exoplayer)
+
+                // Sentry (Android)
+                implementation(libs.sentry.android)
+                // Lottie animations (Android)
+                implementation(libs.lottie.compose)
             }
         }
         val jvmMain by getting {

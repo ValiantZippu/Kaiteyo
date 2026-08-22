@@ -70,6 +70,7 @@ import ua.syt0r.kanji.core.statistics.LearningGoal
 import ua.syt0r.kanji.core.statistics.StudySessionRecord
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -417,30 +418,31 @@ private fun OverviewTab(
         // ── Knowledge — how you answer, and how well you know it ──
         item {
             val grade = controller.gradeDistribution
+            val sem = LocalKaiteyoSemanticColors.current
             val gradeSlices = listOf(
-                DonutSliceData("Again", grade.again.toFloat(), Color(0xFFFF6B6B)),
-                DonutSliceData("Hard", grade.hard.toFloat(), Color(0xFFFFD93D)),
-                DonutSliceData("Good", grade.good.toFloat(), Color(0xFFC2FC8B)),
-                DonutSliceData("Easy", grade.easy.toFloat(), Color(0xFF7BC8FF))
+                DonutSliceData("Again", grade.again.toFloat(), sem.reviewAgain),
+                DonutSliceData("Hard", grade.hard.toFloat(), sem.reviewHard),
+                DonutSliceData("Good", grade.good.toFloat(), sem.reviewGood),
+                DonutSliceData("Easy", grade.easy.toFloat(), sem.reviewEasy)
             )
             val gradeTotal = gradeSlices.fold(0f) { acc, slice -> acc + slice.value }
 
             val kanji = controller.kanjiKnowledge
             val kanjiSlices = listOf(
-                DonutSliceData("Learning", kanji.learning.toFloat(), Color(0xFF7BC8FF)),
-                DonutSliceData("Relearning", kanji.relearning.toFloat(), Color(0xFFFF6B6B)),
-                DonutSliceData("Mature", kanji.mature.toFloat(), Color(0xFFC2FC8B)),
-                DonutSliceData("Mastered", kanji.mastered.toFloat(), Color(0xFFA78BFA)),
+                DonutSliceData("Learning", kanji.learning.toFloat(), sem.cardLearning),
+                DonutSliceData("Relearning", kanji.relearning.toFloat(), sem.cardRelearning),
+                DonutSliceData("Mature", kanji.mature.toFloat(), sem.cardMature),
+                DonutSliceData("Mastered", kanji.mastered.toFloat(), sem.new),
                 DonutSliceData("Suspended", kanji.suspended.toFloat(), surfaceColors.textMuted.copy(alpha = 0.4f))
             )
             val kanjiTotal = kanjiSlices.fold(0f) { acc, slice -> acc + slice.value }
 
             val vocab = controller.vocabKnowledge
             val vocabSlices = listOf(
-                DonutSliceData("Learning", vocab.learning.toFloat(), Color(0xFF7BC8FF)),
-                DonutSliceData("Relearning", vocab.relearning.toFloat(), Color(0xFFFF6B6B)),
-                DonutSliceData("Mature", vocab.mature.toFloat(), Color(0xFFC2FC8B)),
-                DonutSliceData("Mastered", vocab.mastered.toFloat(), Color(0xFFA78BFA)),
+                DonutSliceData("Learning", vocab.learning.toFloat(), sem.cardLearning),
+                DonutSliceData("Relearning", vocab.relearning.toFloat(), sem.cardRelearning),
+                DonutSliceData("Mature", vocab.mature.toFloat(), sem.cardMature),
+                DonutSliceData("Mastered", vocab.mastered.toFloat(), sem.new),
                 DonutSliceData("Suspended", vocab.suspended.toFloat(), surfaceColors.textMuted.copy(alpha = 0.4f))
             )
             val vocabTotal = vocabSlices.fold(0f) { acc, slice -> acc + slice.value }
@@ -590,6 +592,7 @@ private fun DashboardNumbersCard(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     var pane by remember { mutableStateOf(0) }
     SectionCard(
         title = "Dashboard",
@@ -626,52 +629,52 @@ private fun DashboardNumbersCard(
             0 -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("Reviews", today.reviews.toString(), "${today.cardsStudied} cards", accent.primary, Modifier.weight(1f))
-                    StatCard("Study time", formatMinutes(today.studyTime.inWholeMinutes), "${today.sessions} sessions", Color(0xFF7BC8FF), Modifier.weight(1f))
-                    StatCard("Accuracy", "${(today.accuracy * 100).roundToInt()}%", "${today.lapses} lapses", Color(0xFFC2FC8B), Modifier.weight(1f))
+                    StatCard("Study time", formatMinutes(today.studyTime.inWholeMinutes), "${today.sessions} sessions", sem.info, Modifier.weight(1f))
+                    StatCard("Accuracy", "${(today.accuracy * 100).roundToInt()}%", "${today.lapses} lapses", sem.success, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    StatCard("New items", today.newCards.toString(), "${today.reviewCards} reviews", Color(0xFFA78BFA), Modifier.weight(1f))
-                    StatCard("Writing", today.writingAttempts.toString(), "${today.writingCorrect} correct", Color(0xFFFFD93D), Modifier.weight(1f))
+                    StatCard("New items", today.newCards.toString(), "${today.reviewCards} reviews", sem.new, Modifier.weight(1f))
+                    StatCard("Writing", today.writingAttempts.toString(), "${today.writingCorrect} correct", sem.favorite, Modifier.weight(1f))
                     StatCard("Exams", today.examsTaken.toString(),
                         if (today.examScoreCount > 0) "avg ${today.averageExamScore.roundToInt()}%" else "none today",
-                        Color(0xFFFF6B6B), Modifier.weight(1f))
+                        sem.error, Modifier.weight(1f))
                 }
             }
             1 -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("Total reviews", overview.totalReviews.toString(), formatDurationShort(overview.totalStudyTime), accent.primary, Modifier.weight(1f))
                     StatCard("Retention", "${(overview.retention.accuracy * 100).roundToInt()}%",
-                        "overall accuracy", Color(0xFFC2FC8B), Modifier.weight(1f))
+                        "overall accuracy", sem.success, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    StatCard("Current streak", "${overview.currentStreak}d", "longest ${overview.longestStreak}d", Color(0xFFFFD93D), Modifier.weight(1f))
+                    StatCard("Current streak", "${overview.currentStreak}d", "longest ${overview.longestStreak}d", sem.favorite, Modifier.weight(1f))
                     StatCard("Cards in library", overview.cards.total.toString(),
-                        "${overview.cards.mature} mature · ${overview.cards.due} due", Color(0xFF7BC8FF), Modifier.weight(1f))
+                        "${overview.cards.mature} mature · ${overview.cards.due} due", sem.info, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    StatCard("New", overview.cards.new.toString(), "to learn", Color(0xFFC2FC8B), Modifier.weight(1f))
-                    StatCard("Learning", overview.cards.learning.toString(), "${overview.cards.young} young", Color(0xFFA78BFA), Modifier.weight(1f))
-                    StatCard("Mature", overview.cards.mature.toString(), "${overview.cards.averageIntervalDays}d avg interval", Color(0xFFFEAB57), Modifier.weight(1f))
+                    StatCard("New", overview.cards.new.toString(), "to learn", sem.success, Modifier.weight(1f))
+                    StatCard("Learning", overview.cards.learning.toString(), "${overview.cards.young} young", sem.new, Modifier.weight(1f))
+                    StatCard("Mature", overview.cards.mature.toString(), "${overview.cards.averageIntervalDays}d avg interval", sem.warning, Modifier.weight(1f))
                 }
             }
             else -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("Reviews / day", VelocityLabel(controller.velocity.reviewsPerDay), "this window", accent.primary, Modifier.weight(1f))
-                    StatCard("New / week", VelocityLabel(controller.velocity.newItemsPerWeek), "introduced", Color(0xFFC2FC8B), Modifier.weight(1f))
-                    StatCard("Study h / week", VelocityLabel(controller.velocity.studyHoursPerWeek), "time invested", Color(0xFF7BC8FF), Modifier.weight(1f))
+                    StatCard("New / week", VelocityLabel(controller.velocity.newItemsPerWeek), "introduced", sem.success, Modifier.weight(1f))
+                    StatCard("Study h / week", VelocityLabel(controller.velocity.studyHoursPerWeek), "time invested", sem.info, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    StatCard("Writing / week", VelocityLabel(controller.velocity.writingAttemptsPerWeek), "attempts", Color(0xFFFFD93D), Modifier.weight(1f))
-                    StatCard("Exams / month", VelocityLabel(controller.velocity.examsPerMonth), "completed", Color(0xFFA78BFA), Modifier.weight(1f))
+                    StatCard("Writing / week", VelocityLabel(controller.velocity.writingAttemptsPerWeek), "attempts", sem.favorite, Modifier.weight(1f))
+                    StatCard("Exams / month", VelocityLabel(controller.velocity.examsPerMonth), "completed", sem.new, Modifier.weight(1f))
                     StatCard(
                         "Exam trend",
                         controller.velocity.examScoreDelta?.let { "${if (it >= 0) "+" else ""}${it.roundToInt()} pts" } ?: "—",
                         if (controller.velocity.examScoreDelta != null) "score change" else "need 4+ exams",
-                        Color(0xFFFF6B6B),
+                        sem.error,
                         Modifier.weight(1f)
                     )
                 }
@@ -702,6 +705,7 @@ private fun InsightsCard(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     var pane by remember { mutableStateOf(0) }
     val panes = buildList {
         add("Forecast" to (forecast.isNotEmpty()))
@@ -760,7 +764,7 @@ private fun InsightsCard(
                         fraction = progress.fraction,
                         detail = "${progress.current} / ${progress.target}" +
                             if (progress.completed) " ✓" else "",
-                        color = if (progress.completed) Color(0xFFC2FC8B) else accent.primary
+                        color = if (progress.completed) sem.success else accent.primary
                     )
                 }
             }
@@ -1025,6 +1029,7 @@ private fun String.capitalizeFirst(): String =
 /** One card practiced on a day: content, mode, and per-mode accuracy. */
 @Composable
 private fun DayItemPracticeRow(item: DayItemPractice) {
+    val sem = LocalKaiteyoSemanticColors.current
     val surfaceColors = LocalSurfaceColors.current
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -1055,12 +1060,12 @@ private fun DayItemPracticeRow(item: DayItemPractice) {
         Box(
             Modifier.width(54.dp).height(6.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(if (item.accuracy >= 0.7f) Color(0xFFC2FC8B).copy(alpha = 0.3f) else Color(0xFFFF6B6B).copy(alpha = 0.3f))
+                .background(if (item.accuracy >= 0.7f) sem.success.copy(alpha = 0.3f) else sem.error.copy(alpha = 0.3f))
         ) {
             Box(
                 Modifier.fillMaxWidth(item.accuracy.coerceIn(0.01f, 1f)).height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(if (item.accuracy >= 0.7f) Color(0xFFC2FC8B) else Color(0xFFFF6B6B))
+                    .background(if (item.accuracy >= 0.7f) sem.success else sem.error)
             )
         }
         Spacer(Modifier.width(6.dp))
@@ -1081,6 +1086,7 @@ private fun DayReportPanel(
     day: DailyActivity,
     onBack: () -> Unit
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val scope = rememberCoroutineScope()
@@ -1114,22 +1120,22 @@ private fun DayReportPanel(
         SectionCard("Daily breakdown") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 StatCard("Reviews", day.reviews.toString(), "${day.cardsStudied} cards", accent.primary, Modifier.weight(1f))
-                StatCard("New", day.newCards.toString(), "introduced", Color(0xFFC2FC8B), Modifier.weight(1f))
-                StatCard("Mistakes", (day.incorrect + mistakes).toString(), "wrong answers", Color(0xFFFF6B6B), Modifier.weight(1f))
+                StatCard("New", day.newCards.toString(), "introduced", sem.success, Modifier.weight(1f))
+                StatCard("Mistakes", (day.incorrect + mistakes).toString(), "wrong answers", sem.error, Modifier.weight(1f))
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                StatCard("Kanji", day.kanjiReviews.toString(), "reviews", Color(0xFF7BC8FF), Modifier.weight(1f))
-                StatCard("Vocab", day.vocabReviews.toString(), "reviews", Color(0xFFA78BFA), Modifier.weight(1f))
-                StatCard("Study time", formatMinutes(day.studyTime.inWholeMinutes), "${day.sessions} sessions", Color(0xFFFFD93D), Modifier.weight(1f))
+                StatCard("Kanji", day.kanjiReviews.toString(), "reviews", sem.info, Modifier.weight(1f))
+                StatCard("Vocab", day.vocabReviews.toString(), "reviews", sem.new, Modifier.weight(1f))
+                StatCard("Study time", formatMinutes(day.studyTime.inWholeMinutes), "${day.sessions} sessions", sem.favorite, Modifier.weight(1f))
             }
             if (day.writingAttempts > 0 || day.examsTaken > 0) {
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    StatCard("Writing", day.writingAttempts.toString(), "${day.writingCorrect} correct", Color(0xFFFEAB57), Modifier.weight(1f))
+                    StatCard("Writing", day.writingAttempts.toString(), "${day.writingCorrect} correct", sem.warning, Modifier.weight(1f))
                     StatCard("Exams", day.examsTaken.toString(),
                         if (day.examScoreCount > 0) "avg ${day.averageExamScore.roundToInt()}%" else "none",
-                        Color(0xFFFF6B6B), Modifier.weight(1f))
+                        sem.error, Modifier.weight(1f))
                 }
             }
         }
@@ -1221,6 +1227,7 @@ private fun DayReportPanel(
 
 @Composable
 private fun KnowledgeTab(controller: StatisticsController, scope: CoroutineScope) {
+    val sem = LocalKaiteyoSemanticColors.current
     val surfaceColors = LocalSurfaceColors.current
     var skillMatrix by remember { mutableStateOf<List<ua.syt0r.kanji.core.statistics.SkillMatrixRow>>(emptyList()) }
     LaunchedEffect(Unit) { skillMatrix = controller.skillMatrix() }
@@ -1261,7 +1268,7 @@ private fun KnowledgeTab(controller: StatisticsController, scope: CoroutineScope
                             Text(
                                 value?.let { it.toPercentString() } ?: "—",
                                 fontSize = 12.sp,
-                                color = value?.let { Color(0xFFC2FC8B) } ?: surfaceColors.textMuted,
+                                color = value?.let { sem.success } ?: surfaceColors.textMuted,
                                 modifier = Modifier.weight(1f),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
@@ -1310,6 +1317,7 @@ private fun KnowledgeSection(
     knowledge: ContentTypeKnowledge,
     writingTop: List<ua.syt0r.kanji.core.statistics.WritingCharacterStats>
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     SectionCard(
@@ -1317,15 +1325,15 @@ private fun KnowledgeSection(
         subtitle = "${knowledge.studied} studied · ${knowledge.learned} learned · ${knowledge.mature} mature · ${knowledge.mastered} mastered"
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            StatCard("Learning", knowledge.learning.toString(), "in progress", Color(0xFF7BC8FF), Modifier.weight(1f))
-            StatCard("Relearning", knowledge.relearning.toString(), "forgotten", Color(0xFFFF6B6B), Modifier.weight(1f))
-            StatCard("Weak", knowledge.weak.toString(), "3+ lapses", Color(0xFFFFD93D), Modifier.weight(1f))
+            StatCard("Learning", knowledge.learning.toString(), "in progress", sem.info, Modifier.weight(1f))
+            StatCard("Relearning", knowledge.relearning.toString(), "forgotten", sem.error, Modifier.weight(1f))
+            StatCard("Weak", knowledge.weak.toString(), "3+ lapses", sem.favorite, Modifier.weight(1f))
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             StatCard("Suspended", knowledge.suspended.toString(), "hidden", surfaceColors.textMuted, Modifier.weight(1f))
             if (title == "Kanji") {
-                StatCard("Writing-verified", knowledge.writingVerified.toString(), "${knowledge.recognitionOnly} recognition only", Color(0xFFFEAB57), Modifier.weight(1f))
+                StatCard("Writing-verified", knowledge.writingVerified.toString(), "${knowledge.recognitionOnly} recognition only", sem.warning, Modifier.weight(1f))
             } else {
                 StatCard("Avg accuracy", "—", "per skill above", accent.primary, Modifier.weight(1f))
             }
@@ -1394,12 +1402,16 @@ private fun KnowledgeSection(
     }
 }
 
-private fun jlptColor(level: Int): Color = when (level) {
-    5 -> Color(0xFFC2FC8B)
-    4 -> Color(0xFF7BC8FF)
-    3 -> Color(0xFFA78BFA)
-    2 -> Color(0xFFFEAB57)
-    else -> Color(0xFFFF6B6B)
+@Composable
+private fun jlptColor(level: Int): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when (level) {
+        5 -> sem.reviewGood
+        4 -> sem.info
+        3 -> sem.new
+        2 -> sem.reviewHard
+        else -> sem.reviewAgain
+    }
 }
 
 // ============================================================
@@ -1408,6 +1420,7 @@ private fun jlptColor(level: Int): Color = when (level) {
 
 @Composable
 private fun RetentionTab(controller: StatisticsController) {
+    val sem = LocalKaiteyoSemanticColors.current
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val grade = controller.gradeDistribution
@@ -1423,10 +1436,10 @@ private fun RetentionTab(controller: StatisticsController) {
                 subtitle = "Real review grades — Again / Hard / Good / Easy"
             ) {
                 val max = maxOf(grade.again, grade.hard, grade.good, grade.easy, 1L)
-                LabeledBarRow("Again", grade.again.toInt(), max.toInt(), Color(0xFFFF6B6B))
-                LabeledBarRow("Hard", grade.hard.toInt(), max.toInt(), Color(0xFFFFD93D))
-                LabeledBarRow("Good", grade.good.toInt(), max.toInt(), Color(0xFFC2FC8B))
-                LabeledBarRow("Easy", grade.easy.toInt(), max.toInt(), Color(0xFF7BC8FF))
+                LabeledBarRow("Again", grade.again.toInt(), max.toInt(), sem.reviewAgain)
+                LabeledBarRow("Hard", grade.hard.toInt(), max.toInt(), sem.reviewHard)
+                LabeledBarRow("Good", grade.good.toInt(), max.toInt(), sem.reviewGood)
+                LabeledBarRow("Easy", grade.easy.toInt(), max.toInt(), sem.reviewEasy)
             }
         }
 
@@ -1454,7 +1467,7 @@ private fun RetentionTab(controller: StatisticsController) {
                 ) {
                     val max = controller.intervalBuckets.maxOfOrNull { it.count }?.coerceAtLeast(1L) ?: 1L
                     controller.intervalBuckets.forEach { bucket ->
-                        LabeledBarRow(bucket.label, bucket.count.toInt(), max.toInt(), Color(0xFF7BC8FF))
+                        LabeledBarRow(bucket.label, bucket.count.toInt(), max.toInt(), sem.info)
                     }
                 }
             }
@@ -1495,7 +1508,7 @@ private fun RetentionTab(controller: StatisticsController) {
                             category.replace("_", " ").capitalizeFirst(),
                             count.toInt(),
                             max.toInt(),
-                            Color(0xFFA78BFA)
+                            sem.new
                         )
                     }
                 }
@@ -1510,6 +1523,7 @@ private fun RetentionTab(controller: StatisticsController) {
 
 @Composable
 private fun ExamsTab(controller: StatisticsController, scope: CoroutineScope) {
+    val sem = LocalKaiteyoSemanticColors.current
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     var showConfig by remember { mutableStateOf(false) }
@@ -1527,12 +1541,12 @@ private fun ExamsTab(controller: StatisticsController, scope: CoroutineScope) {
             ) {
                 Row(Modifier.fillMaxWidth()) {
                     StatCard("Completed", stats.completed.toString(), "exams", accent.primary, Modifier.weight(1f))
-                    StatCard("Avg score", "${stats.averageScore.roundToInt()}", "of ${controller.exams.firstOrNull()?.questionCount ?: 20}", Color(0xFFC2FC8B), Modifier.weight(1f))
+                    StatCard("Avg score", "${stats.averageScore.roundToInt()}", "of ${controller.exams.firstOrNull()?.questionCount ?: 20}", sem.success, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    StatCard("Best", stats.highestScore.toString(), "score", Color(0xFF7BC8FF), Modifier.weight(1f))
-                    StatCard("Avg accuracy", "${(stats.averageAccuracy * 100).roundToInt()}%", "correct answers", Color(0xFFA78BFA), Modifier.weight(1f))
+                    StatCard("Best", stats.highestScore.toString(), "score", sem.info, Modifier.weight(1f))
+                    StatCard("Avg accuracy", "${(stats.averageAccuracy * 100).roundToInt()}%", "correct answers", sem.new, Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = { showConfig = true }, modifier = Modifier.fillMaxWidth()) {
@@ -1587,12 +1601,12 @@ private fun ExamsTab(controller: StatisticsController, scope: CoroutineScope) {
                                     Text(
                                         "${exam.score}/${exam.questionCount} · ${(exam.accuracy * 100).roundToInt()}%",
                                         fontSize = 12.sp,
-                                        color = if (exam.accuracy >= 0.7f) Color(0xFFC2FC8B) else Color(0xFFFF6B6B),
+                                        color = if (exam.accuracy >= 0.7f) sem.success else sem.error,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
                                 ua.syt0r.kanji.core.statistics.ExamStatus.InProgress -> {
-                                    Text("in progress", fontSize = 11.sp, color = Color(0xFFFFD93D))
+                                    Text("in progress", fontSize = 11.sp, color = sem.favorite)
                                 }
                                 else -> Text("abandoned", fontSize = 11.sp, color = surfaceColors.textMuted)
                             }
@@ -1881,7 +1895,7 @@ private fun GoalsSection(controller: StatisticsController, scope: CoroutineScope
                     label = goal.label + if (goal.period == GoalPeriod.Weekly) " (weekly)" else "",
                     fraction = p?.fraction ?: 0f,
                     detail = "${p?.current ?: 0} / ${goal.target}",
-                    color = if (p?.completed == true) Color(0xFFC2FC8B) else LocalKaiteyoAccent.current.primary
+                    color = if (p?.completed == true) LocalKaiteyoSemanticColors.current.success else LocalKaiteyoAccent.current.primary
                 )
             }
         }

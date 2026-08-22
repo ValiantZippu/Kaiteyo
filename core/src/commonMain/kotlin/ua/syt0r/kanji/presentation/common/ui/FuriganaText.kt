@@ -1,11 +1,15 @@
 package ua.syt0r.kanji.presentation.common.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -13,6 +17,8 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,8 +30,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import ua.syt0r.kanji.core.app_data.data.FuriganaString
 import ua.syt0r.kanji.presentation.common.copyCentered
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import kotlin.math.max
 
 
@@ -192,8 +201,23 @@ private fun ClickableInlineFurigana(
     annotationTextStyle: TextStyle,
     onCLick: (text: String) -> Unit
 ) {
+    val accent = LocalKaiteyoAccent.current
+    val surfaceColors = LocalSurfaceColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+
+    val hoverBg = if (hovered) accent.primary.copy(alpha = 0.15f) else Color.Transparent
+    val hoverColor = if (hovered) accent.primary else contentTextStyle.color
+
     Column(
-        modifier = Modifier.fillMaxSize().clickable { onCLick(text) },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(hoverBg, RoundedCornerShape(4.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { onCLick(text) }
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -204,7 +228,9 @@ private fun ClickableInlineFurigana(
         )
         Text(
             text = text,
-            style = contentTextStyle
+            style = contentTextStyle.copy(
+                color = hoverColor ?: contentTextStyle.color
+            )
         )
     }
 }

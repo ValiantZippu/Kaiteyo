@@ -47,6 +47,7 @@ import ua.syt0r.kanji.core.transfer.pickImportFile
 import ua.syt0r.kanji.core.transfer.readLastImportFile
 import ua.syt0r.kanji.core.transfer.saveExportFile
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.getMultiplatformViewModel
 
@@ -273,14 +274,15 @@ private fun ImportTab(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     PreviewStat("${preview.total} total", surfaceColors.textSecondary)
                     PreviewStat("${preview.valid} valid", accent.primary)
-                    PreviewStat("${preview.invalid} invalid", Color(0xFFFF6B6B))
-                    PreviewStat("${preview.duplicates} duplicates", Color(0xFFFEAB57))
+                    val sem = LocalKaiteyoSemanticColors.current
+                    PreviewStat("${preview.invalid} invalid", sem.error)
+                    PreviewStat("${preview.duplicates} duplicates", sem.warning)
                 }
                 if (preview.issues.isNotEmpty()) {
                     preview.issues.take(6).forEach { issue ->
                         Text(
                             "[${issue.severity}] ${issue.message}",
-                            color = if (issue.severity.name == "Error") Color(0xFFFF6B6B) else surfaceColors.textMuted,
+                            color = if (issue.severity.name == "Error") LocalKaiteyoSemanticColors.current.error else surfaceColors.textMuted,
                             fontSize = 11.sp
                         )
                     }
@@ -511,7 +513,7 @@ private fun StatusLine(state: ImportExportContract.ScreenState.Loading) {
 private fun ErrorLine(state: ImportExportContract.ScreenState.Error, onDismiss: () -> Unit) {
     val accent = LocalKaiteyoAccent.current
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("⚠ ${state.message}", color = Color(0xFFFF6B6B), fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text("⚠ ${state.message}", color = LocalKaiteyoSemanticColors.current.error, fontSize = 12.sp, modifier = Modifier.weight(1f))
         Box(
             modifier = Modifier.clip(CircleShape).clickable(onClick = onDismiss).padding(horizontal = 8.dp, vertical = 2.dp)
         ) { Text("Dismiss", color = accent.primary, fontSize = 12.sp) }
@@ -522,7 +524,7 @@ private fun ErrorLine(state: ImportExportContract.ScreenState.Error, onDismiss: 
 private fun SuccessLine(state: ImportExportContract.ScreenState.Success, onDismiss: () -> Unit) {
     val accent = LocalKaiteyoAccent.current
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("✓ ${state.message}", color = Color(0xFFC2FC8B), fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text("✓ ${state.message}", color = LocalKaiteyoSemanticColors.current.success, fontSize = 12.sp, modifier = Modifier.weight(1f))
         Box(
             modifier = Modifier.clip(CircleShape).clickable(onClick = onDismiss).padding(horizontal = 8.dp, vertical = 2.dp)
         ) { Text("OK", color = accent.primary, fontSize = 12.sp) }
