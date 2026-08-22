@@ -32,6 +32,7 @@ import ua.syt0r.kanji.desktop.engine.updates.kjd.KJD_PATCH_FEED_BASE_URL
 import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseLocator
 import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseUpdater
 import ua.syt0r.kanji.desktop.engine.updates.kjd.kjdUpdatesDataDir
+import ua.syt0r.kanji.desktop.engine.monitoring.SentryBridge
 import ua.syt0r.kanji.di.appModules
 import ua.syt0r.kanji.presentation.KaiteyoApp
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
@@ -98,6 +99,16 @@ private val captureStates = setOf("shell", "menu", "launchpad", "strip")
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 fun main(args: Array<String>) = application {
 
+    // Initialize Sentry error tracking early so uncaught exceptions are
+    // captured from the very first line. No-op if the Sentry SDK isn't on
+    // the classpath (graceful degradation — the app works identically).
+    runCatching {
+        SentryBridge.init(
+            dsn = System.getenv("SENTRY_DSN") ?: "",
+            environment = if (args.contains("--debug")) "development" else "production"
+        )
+    }
+
     val koinModuleList = appModules.plus(desktopAppModule)
     startKoin { loadKoinModules(koinModuleList) }
 
@@ -152,11 +163,12 @@ fun main(args: Array<String>) = application {
         undecorated = true
     ) {
         // KJD language database: quietly download + apply data patches to the
-        // bundled database at startup (never blocks the UI; failures surface
+        // bundled database at startup (Sentry breadcrumb for debugging) (never blocks the UI; failures surface
         // via the updater's state, and the applied-state file makes re-runs
         // skip work). The desktop suite additionally mirrors the result into
         // Settings via its own hook.
         LaunchedEffect(Unit) {
+            SentryBridge.addBreadcrumb("KJD database update check starting", "startup")
             org.koin.core.context.GlobalContext.get()
                 .get<KjdDatabaseUpdater>()
                 .checkOnStartup("stable")

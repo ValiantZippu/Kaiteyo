@@ -45,6 +45,68 @@ All notable changes to Kaiteyo are documented here. Format follows
   dictionary" opens the Dictionary scoped to the card's headword.
 
 ### Added
+- **Library integrations — bulk adoption**:
+  - **Kuromoji** (IPAdic) — Japanese morphological analysis engine with full POS tagging,
+    reading assignment, and deinflection hints; integrated via `JapaneseNlpEngine` with a
+    regex-based fallback tokenizer when Kuromoji isn't on the classpath.
+  - **Turbine** — Flow testing library added to commonTest and jvmTest for StateFlow
+    emission assertions; test examples added for NLP engine, Handlebars templates, and
+    EPUB reader.
+  - **Tesseract OCR (Tess4J)** — desktop OCR backend via JNI reflection with graceful
+    fallback when Tess4J isn't on the classpath; integrated into `OcrEngine` with
+    image, clipboard, and screen-capture sources.
+  - **ML Kit OCR stub** — Android OCR provider interface with composite fallback to
+    Tesseract on desktop; ready for Google ML Kit `TextRecognition` integration.
+  - **EPUB parser** — pure-JVM EPUB 2/3 reader (`EpubReader`) that extracts OPF manifest,
+    spine order, and converts XHTML content documents to `ReadingBlock`s; supports
+    headings, paragraphs, lists, quotes, and code blocks.
+  - **Handlebars template engine** — lightweight Mustache/Handlebars-inspired renderer
+    for dictionary card layouts; supports variables, conditionals, loops, partials,
+    and HTML escaping; includes Yomitan-style front/back/full card templates.
+  - **Yomitan importer v2** — full-featured Yomitan v2/v3 dictionary importer with
+    structured content parsing, frequency bands (VeryCommon→VeryRare), pitch accent
+    data, kanji metadata (readings, meanings, JLPT, grade, radicals), tag banks,
+    and multi-format support (ZIP, folder, index.json, single JSON).
+  - **FSRS-rs native bridge** — stub for future Rust-based FSRS implementation via
+    JNI; currently delegates to the pure-Kotlin FSRS-5 scheduler; ready for hot-swap
+    when card pools exceed 100k.
+  - **Sentry integration** — error tracking and performance monitoring bridge with
+    reflection-based SDK loading; captures exceptions, messages, breadcrumbs, and
+    spans; no-op fallback when Sentry SDK isn't on the classpath.
+  - **Coil 3 image loading** — unified image loading across platforms with LRU cache,
+    resize, and format conversion; desktop uses Java ImageIO with optional Coil 3
+    backend; Android uses Coil 3 natively.
+  - **Lottie animations** — animation engine with Lottie Compose and Rive stubs;
+    celebration and skeleton animation presets; graceful fallback to static placeholders.
+  - **Detekt static analysis** — configuration at `config/detekt/detekt.yml` with
+    Kaiteyo-tuned thresholds (120-char lines, 25-complexity methods, 40-functions per
+    file); plugin registered in settings.gradle.kts.
+  - **EPUB reading** — EPUB files now open in the Reading Environment via `EpubReader`,
+    which extracts OPF metadata, spine order, and converts XHTML content to
+    `ReadingBlock`s; chapter headings are preserved as navigation anchors.
+  - **NLP-enhanced dictionary search** — when a Japanese query returns no results,
+    `DictionaryService` now uses `JapaneseNlpEngine` to extract content words and
+    search their base forms, catching conjugated verbs and adjectives.
+  - **Sentry error tracking** — `SentryBridge` initializes at startup in `Main.kt`
+    (reads `SENTRY_DSN` env var); breadcrumbs are added at key flow points
+    (KJD update check); no-op when DSN is empty or SDK is absent.
+
+### Changed
+- **Theme — semantic color token system (`KaiteyoSemanticColors`)**: all
+  hardcoded `Color(0xFF...)` values across the UI are now centralized into a
+  single `KaiteyoSemanticColors` data class with 40+ tokens (review actions,
+  card status, semantic indicators, card flags, activity types, difficulty
+  tiers, day/night, favorites). Dark and light variants adapt to the base
+  mode, and all tokens animate smoothly during theme transitions via
+  `withThemeTransition`. Components read `LocalKaiteyoSemanticColors.current`
+  instead of hardcoding hex values — changing accent or base mode now
+  recolors everything consistently. Migrated: home dashboard, statistics,
+  card browser, bulk actions, history tracker, card manager, deck details,
+  deck browser, import/export, backups, kanji browser, review shortcuts,
+  LibraryScreen, AnkiOpsFull, NoteEditorScreen, and more — zero hardcoded
+  `Color(0xFF...)` remaining in all migrated screens.
+
+### Added
 - **Kaiteyo Game — second region, stories, save slots & controller support**:
   - **Kamakura (鎌倉) is now playable** — the Sea Line train actually travels
     between Hamanaka and Kamakura (region switch rebuilds tiles, camera

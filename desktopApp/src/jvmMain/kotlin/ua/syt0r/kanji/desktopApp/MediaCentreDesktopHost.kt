@@ -47,6 +47,7 @@ import ua.syt0r.kanji.core.knowledge.media.MediaReferenceStore
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.ui.media.MediaView
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.screen.media.DefaultMediaCentreContent
 import ua.syt0r.kanji.presentation.screen.main.screen.media.MediaCentreContent
 
 // ============================================
@@ -84,12 +85,14 @@ object DesktopMediaCentreContent : MediaCentreContent {
         val mediaReferenceStore = koinInject<MediaReferenceStore>()
 
         if (state == null) {
-            MediaInitError(
-                reason = stateResult.exceptionOrNull()?.message?.takeIf { it.isNotBlank() }
-                    ?: "The media engine could not start.",
-                onRetry = { attempt++ },
-                onClose = onClose
-            )
+            // Fall back to the core multiplatform Media Centre instead of showing
+            // a blank error screen — the user always sees a working media experience.
+            Box(Modifier.fillMaxSize().background(surfaceColors().background)) {
+                DefaultMediaCentreContent.Content(
+                    navigationState = navigationState,
+                    onClose = onClose
+                )
+            }
             return
         }
 

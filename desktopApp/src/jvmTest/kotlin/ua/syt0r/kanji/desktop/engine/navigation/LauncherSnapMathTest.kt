@@ -65,6 +65,30 @@ class LauncherSnapMathTest {
     }
 
     @Test
+    fun safeMarginOffsetsAnchorsFromWindowEdges() {
+        val marginLayout = layout.copy(safeMargin = 16f)
+        // Left anchors are offset by the margin from x=0.
+        assertEquals(16f, LauncherSnapMath.anchorPosition(LauncherSnapPoint.LeftCenter, marginLayout).x)
+        assertEquals(16f, LauncherSnapMath.anchorPosition(LauncherSnapPoint.TopLeft, marginLayout).x)
+        // Right anchors are inset from the right edge by the margin.
+        assertEquals(
+            marginLayout.windowWidth - marginLayout.bubbleSize - 16f,
+            LauncherSnapMath.anchorPosition(LauncherSnapPoint.RightCenter, marginLayout).x
+        )
+        assertEquals(
+            marginLayout.windowWidth - marginLayout.bubbleSize - 16f,
+            LauncherSnapMath.anchorPosition(LauncherSnapPoint.TopRight, marginLayout).x
+        )
+    }
+
+    @Test
+    fun safeMarginOverridesEdgeInsetWhenLarger() {
+        val mixedLayout = layout.copy(edgeInset = 4f, safeMargin = 20f)
+        // TopY should be max(edgeInset, safeMargin) = 20.
+        assertEquals(20f, LauncherSnapMath.anchorPosition(LauncherSnapPoint.TopCenter, mixedLayout).y)
+    }
+
+    @Test
     fun cornerAnchorsCollapseToIdenticalPositions() {
         assertEquals(
             LauncherSnapMath.anchorPosition(LauncherSnapPoint.TopLeft, layout),
@@ -166,6 +190,22 @@ class LauncherSnapMathTest {
                 LauncherSnapMath.anchorPosition(snap, layout)
             }, restored, "corrupt input ($x, $y) must re-snap to a valid anchor")
         }
+    }
+
+    @Test
+    fun restoreRespectsSafeMargin() {
+        val marginLayout = layout.copy(safeMargin = 16f)
+        // Stored at (0, 0) — should be clamped to the margin.
+        val restored = LauncherSnapMath.restorePosition(0f, 0f, marginLayout)
+        assertTrue(restored.x >= 16f, "x=${restored.x} must be >= safeMargin")
+        assertTrue(restored.y >= 16f, "y=${restored.y} must be >= safeMargin")
+        // Stored way off-screen — must re-snap to a valid anchor (which is within margin).
+        val far = LauncherSnapMath.restorePosition(0.99f, 0.99f, marginLayout)
+        assertInWindow(far, marginLayout)
+        assertEquals(
+            LauncherSnapMath.anchorPosition(LauncherSnapMath.nearestSnap(far, marginLayout), marginLayout),
+            far
+        )
     }
 
     @Test

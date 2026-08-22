@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 
 // ============================================
@@ -200,8 +201,9 @@ private fun BackupListItem(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val sem = LocalKaiteyoSemanticColors.current
             Icon(if (backup.isAutomatic) Icons.Default.Schedule else Icons.Default.Backup,
-                null, Modifier.size(24.dp), tint = if (backup.isAutomatic) Color(0xFFFEAB57) else MaterialTheme.colorScheme.primary)
+                null, Modifier.size(24.dp), tint = if (backup.isAutomatic) sem.automaticBackup else MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(backup.filename, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 1)
@@ -211,7 +213,7 @@ private fun BackupListItem(
                     Text(backup.createdAt.toString().take(19).replace("T", " "), fontSize = 11.sp, color = surfaceColors.textMuted)
                 }
                 if (backup.isAutomatic) {
-                    Text("Automatic backup", fontSize = 10.sp, color = Color(0xFFFEAB57))
+                    Text("Automatic backup", fontSize = 10.sp, color = sem.automaticBackup)
                 }
                 if (backup.notes.isNotBlank()) {
                     Text(backup.notes, fontSize = 10.sp, color = surfaceColors.textMuted, maxLines = 1)

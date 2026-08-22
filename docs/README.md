@@ -193,7 +193,10 @@ docs/
 │   ├── DESIGN_LANGUAGE.md         UI philosophy, spacing, typography
 │   ├── UI_SYSTEM.md               Component specs, interaction rules
 │   ├── THEME_SYSTEM.md            Theme tokens, built-in themes, custom themes
-│   └── ANIMATION_SYSTEM.md        Animation philosophy, presets, patterns
+│   ├── ANIMATION_SYSTEM.md        Animation philosophy, presets, patterns
+│   └── KAITEYO_EXPRESSIVE.md      **Expressive design system** — theming architecture,
+│                                  UX principles, UI guidelines, full color palettes,
+│                                  semantic tokens, heatmap design language, accessibility
 │
 ├── assets/                        Asset inventory & branding assets
 │   └── ASSETS.md                  Logos, icons, palettes, resource locations
@@ -311,7 +314,16 @@ docs/
 │
 ├── roadmap/                       Vision & roadmap
 │   ├── PROJECT_VISION.md          Mission and philosophy
-│   └── ROADMAP.md                 Milestones and version plan
+│   ├── ROADMAP.md                 Milestones and version plan
+│   ├── FUTURE_FEATURES.md         **Complete feature roadmap** — all planned features
+│   │                              organized by domain (learning, dictionary, desktop,
+│   │                              mobile, game, sync, community) with priority and effort
+│   ├── FUTURE_LIBRARIES.md        **Libraries & dependencies roadmap** — every library
+│   │                              Kaiteyo could adopt, with KMP compatibility and
+│   │                              integration notes (NLP, UI, data, media, testing)
+│   └── YOMITAN_INTEGRATION.md     **Yomitan & dictionary roadmap** — full Yomitan format
+│                                  spec, native dictionary architecture, compatibility
+│                                  matrix, and 5-phase implementation plan
 │
 ├── guides/                        Beginner, setup, and Git guides
 │   ├── README.md                  Guides index

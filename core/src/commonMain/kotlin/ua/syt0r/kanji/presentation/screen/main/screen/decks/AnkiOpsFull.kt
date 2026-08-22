@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -776,8 +777,9 @@ private fun StudyByDialog(
                                     modifier = Modifier.fillMaxWidth().clickable { onStudyByJLPT(level) }.padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    val sem = LocalKaiteyoSemanticColors.current
                                     Text("N$level", fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                                        color = when (level) { 1 -> Color(0xFFFF6B6B); 2 -> Color(0xFFFEAB57); 3 -> Color(0xFFFFD93D); 4 -> Color(0xFFC2FC8B); else -> Color(0xFF7BC8FF) })
+                                        color = when (level) { 1 -> sem.error; 2 -> sem.warning; 3 -> sem.favorite; 4 -> sem.success; else -> sem.info })
                                     Spacer(Modifier.width(8.dp))
                                     Text("JLPT N$level", fontSize = 14.sp, color = surfaceColors.textPrimary)
                                     Spacer(Modifier.weight(1f))

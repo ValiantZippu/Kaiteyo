@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -465,16 +466,7 @@ private fun CardListItem(
             Text(
                 card.status.displayName,
                 fontSize = 11.sp,
-                color = when (card.status) {
-                    CardStatus.New -> Color(0xFF7BC8FF)
-                    CardStatus.Learning -> Color(0xFFFFD93D)
-                    CardStatus.Young -> Color(0xFFC2FC8B)
-                    CardStatus.Mature -> Color(0xFFA78BFA)
-                    CardStatus.Relearning -> Color(0xFFFEAB57)
-                    CardStatus.Suspended -> surfaceColors.textMuted
-                    CardStatus.Buried -> surfaceColors.textMuted
-                    CardStatus.Archived -> Color(0xFFB0B0B0)
-                }
+                color = statusColor(card.status)
             )
             if (card.flag != CardFlagType.None) {
                 Text(
@@ -662,15 +654,19 @@ private fun DeckPickerDialog(
 }
 
 // Helper to convert flag color
-private fun CardFlagType.toColor(): Color = when (this) {
-    CardFlagType.None -> Color.Transparent
-    CardFlagType.Red -> Color(0xFFFF6B6B)
-    CardFlagType.Orange -> Color(0xFFFEAB57)
-    CardFlagType.Yellow -> Color(0xFFFFD93D)
-    CardFlagType.Green -> Color(0xFFC2FC8B)
-    CardFlagType.Blue -> Color(0xFF7BC8FF)
-    CardFlagType.Purple -> Color(0xFFA78BFA)
-    CardFlagType.Gray -> Color(0xFFB0B0B0)
+@Composable
+private fun CardFlagType.toColor(): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when (this) {
+        CardFlagType.None -> Color.Transparent
+        CardFlagType.Red -> sem.flagRed
+        CardFlagType.Orange -> sem.flagOrange
+        CardFlagType.Yellow -> sem.flagYellow
+        CardFlagType.Green -> sem.flagGreen
+        CardFlagType.Blue -> sem.flagBlue
+        CardFlagType.Purple -> sem.flagPurple
+        CardFlagType.Gray -> sem.cardSuspended
+    }
 }
 
 // Helper to convert tag color string to Compose Color
@@ -685,5 +681,20 @@ private fun String.toComposeColor(): Color {
         )
     } catch (e: Exception) {
         Color.Gray
+    }
+}
+
+@Composable
+private fun statusColor(status: CardStatus): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when (status) {
+        CardStatus.New -> sem.cardNew
+        CardStatus.Learning -> sem.cardLearning
+        CardStatus.Young -> sem.cardYoung
+        CardStatus.Mature -> sem.cardMature
+        CardStatus.Relearning -> sem.cardRelearning
+        CardStatus.Suspended -> sem.cardSuspended
+        CardStatus.Buried -> sem.cardBuried
+        CardStatus.Archived -> sem.cardArchived
     }
 }

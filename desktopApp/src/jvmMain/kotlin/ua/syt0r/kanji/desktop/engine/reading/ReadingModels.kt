@@ -14,13 +14,13 @@ import kotlinx.serialization.Serializable
 // persists to ~/.kaiteyo/reading/library.json.
 // ============================================
 
-/** Formats the reading engine can open today (EPUB is planned). */
+/** Formats the reading engine can open today. */
 @Serializable
 enum class ReadingDocumentKind(val label: String) {
     Text("Plain text"),
     Markdown("Markdown"),
     Html("HTML"),
-    Epub("EPUB (planned)")
+    Epub("EPUB")
 }
 
 /** A normalized block inside a document — the atom the reader renders. */

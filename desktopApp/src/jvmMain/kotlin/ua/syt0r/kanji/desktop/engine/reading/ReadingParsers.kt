@@ -4,13 +4,11 @@ import java.io.File
 
 // ============================================
 // KAITEYO READING ENGINE — PARSERS
-// Normalize TXT / Markdown / HTML sources into
-// a flat list of ReadingBlocks the reader can
-// render. Each parser is a pure function from
-// raw text to blocks; parsing is synchronous and
-// cheap enough for typical local documents.
-// EPUB is a recognized-but-unsupported format —
-// opening it returns a clear "planned" error.
+// Normalize TXT / Markdown / HTML / EPUB sources into
+// a flat list of ReadingBlocks the reader can render.
+// Each parser is a pure function from raw text to blocks;
+// parsing is synchronous and cheap enough for typical
+// local documents. EPUB is fully supported via EpubReader.
 // ============================================
 
 object ReadingParsers {
@@ -30,14 +28,15 @@ object ReadingParsers {
      * format is recognized but unsupported (EPUB) or the file is empty.
      */
     fun parse(file: File, content: String): ReadingOpenResult {
+        val kind = detectKind(file.name)
+
+        // EPUB: delegate to EpubReader which parses the ZIP archive directly
+        if (kind == ReadingDocumentKind.Epub) {
+            return parseEpub(file)
+        }
+
         if (content.isBlank()) {
             return ReadingOpenResult(error = "The file is empty.")
-        }
-        val kind = detectKind(file.name)
-        if (kind == ReadingDocumentKind.Epub) {
-            return ReadingOpenResult(
-                error = "EPUB support is planned — export the book as plain text or Markdown for now."
-            )
         }
         val blocks = parseBlocks(content, kind)
         if (blocks.isEmpty()) {
@@ -55,10 +54,47 @@ object ReadingParsers {
         )
     }
 
+    /**
+     * Parse an EPUB file using EpubReader. Flattens all chapters into a
+     * single list of ReadingBlocks (headings + paragraphs + lists), which
+     * the reader can render with chapter headings as section separators.
+     */
+    private fun parseEpub(file: File): ReadingOpenResult {
+        return runCatching {
+            val book = EpubReader.parse(file)
+            if (book.totalBlocks == 0) {
+                return ReadingOpenResult(error = "No readable content found in EPUB.")
+            }
+            // Flatten all chapters into a single block list, inserting
+            // chapter titles as Heading blocks for navigation.
+            val blocks = mutableListOf<ReadingBlock>()
+            for (chapter in book.chapters) {
+                if (chapter.title.isNotBlank()) {
+                    blocks.add(ReadingBlock(blocks.size, ReadingBlockKind.Heading, chapter.title))
+                }
+                for (block in chapter.blocks) {
+                    blocks.add(block.copy(index = blocks.size))
+                }
+            }
+            ReadingOpenResult(
+                document = ReadingDocument(
+                    id = stableDocumentId(file),
+                    title = book.metadata.title.ifBlank { documentTitle(file.name) },
+                    sourcePath = file.absolutePath,
+                    kind = ReadingDocumentKind.Epub,
+                    sizeBytes = file.length(),
+                    blockCount = blocks.size
+                )
+            )
+        }.getOrElse { e ->
+            ReadingOpenResult(error = "Failed to parse EPUB: ${e.message}")
+        }
+    }
+
     /** Parse raw text without a file (used by tests / clipboard import). */
     fun parseText(title: String, content: String, kind: ReadingDocumentKind = ReadingDocumentKind.Text): ReadingOpenResult {
         if (content.isBlank()) return ReadingOpenResult(error = "The text is empty.")
-        if (kind == ReadingDocumentKind.Epub) return ReadingOpenResult(error = "EPUB support is planned.")
+        if (kind == ReadingDocumentKind.Epub) return ReadingOpenResult(error = "EPUB requires a file path — use parse(file, content) instead.")
         val blocks = parseBlocks(content, kind)
         if (blocks.isEmpty()) return ReadingOpenResult(error = "No readable content found.")
         return ReadingOpenResult(
@@ -74,7 +110,7 @@ object ReadingParsers {
 
     /** Parse content into blocks for a given kind (the reader consumes this). */
     fun parseBlocks(content: String, kind: ReadingDocumentKind): List<ReadingBlock> = when (kind) {
-        ReadingDocumentKind.Epub -> emptyList()
+        ReadingDocumentKind.Epub -> emptyList() // Handled by parseEpub(); never reached here
         ReadingDocumentKind.Markdown -> parseMarkdown(content)
         ReadingDocumentKind.Html -> parseHtml(content)
         ReadingDocumentKind.Text -> parsePlainText(content)

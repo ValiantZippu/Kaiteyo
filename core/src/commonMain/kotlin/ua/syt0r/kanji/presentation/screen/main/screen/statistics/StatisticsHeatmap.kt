@@ -80,6 +80,7 @@ import ua.syt0r.kanji.core.statistics.DailyActivity
 import ua.syt0r.kanji.core.statistics.HeatmapYear
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import kotlin.math.roundToInt
@@ -185,7 +186,7 @@ fun StatisticsHeatmap(
                 AnimatedCount(heatmap.totalReviews.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), accent.primary)
                 Text(" reviews", fontSize = 11.sp, color = surfaceColors.textMuted)
                 Text("  ·  ", fontSize = 11.sp, color = surfaceColors.textMuted)
-                AnimatedCount(heatmap.currentStreak, Color(0xFFFFD93D))
+                AnimatedCount(heatmap.currentStreak, LocalKaiteyoSemanticColors.current.favorite)
                 Text("-day streak", fontSize = 11.sp, color = surfaceColors.textMuted)
             }
         }
@@ -512,6 +513,7 @@ private fun HoveredDayTooltip(
 private fun FloatingDayTooltip(day: DailyActivity, modifier: Modifier = Modifier) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
+    val sem = LocalKaiteyoSemanticColors.current
 
     Column(
         modifier
@@ -533,22 +535,22 @@ private fun FloatingDayTooltip(day: DailyActivity, modifier: Modifier = Modifier
                 "${(day.accuracy * 100).roundToInt()}%",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (day.accuracy >= 0.7f) Color(0xFFC2FC8B) else Color(0xFFFF6B6B)
+                color = if (day.accuracy >= 0.7f) sem.success else sem.error
             )
         }
         Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TooltipChip("${day.reviews}", "reviews", accent.primary)
-            TooltipChip(minutesLabel(day.studyTime.inWholeMinutes), "time", Color(0xFF7BC8FF))
-            TooltipChip("${day.newCards}", "new", Color(0xFFA78BFA))
+            TooltipChip(minutesLabel(day.studyTime.inWholeMinutes), "time", sem.info)
+            TooltipChip("${day.newCards}", "new", sem.new)
         }
         if (day.kanjiReviews > 0 || day.vocabReviews > 0 || day.writingAttempts > 0 || day.examsTaken > 0) {
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (day.kanjiReviews > 0) TooltipChip("${day.kanjiReviews}", "kanji", Color(0xFFC2FC8B))
-                if (day.vocabReviews > 0) TooltipChip("${day.vocabReviews}", "vocab", Color(0xFFFFD93D))
-                if (day.writingAttempts > 0) TooltipChip("${day.writingAttempts}", "writing", Color(0xFFFEAB57))
-                if (day.examsTaken > 0) TooltipChip("${day.examsTaken}", "exams", Color(0xFFFF6B6B))
+                if (day.kanjiReviews > 0) TooltipChip("${day.kanjiReviews}", "kanji", sem.success)
+                if (day.vocabReviews > 0) TooltipChip("${day.vocabReviews}", "vocab", sem.favorite)
+                if (day.writingAttempts > 0) TooltipChip("${day.writingAttempts}", "writing", sem.warning)
+                if (day.examsTaken > 0) TooltipChip("${day.examsTaken}", "exams", sem.error)
             }
         }
         Spacer(Modifier.height(6.dp))

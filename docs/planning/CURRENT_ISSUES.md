@@ -17,7 +17,7 @@ scheduled) · `BLOCKED` (waiting on platform access or a decision) · `DONE` (fi
 | 1 | Animation stutter during hover / theme switching / window move — target 60 FPS | KNOWN ISSUE | partially addressed by the window-system rebuild (native drag already 1:1; dock no longer animates during resize); remaining polish pass |
 | 2 | Resize glitches — panels jump, spacing changes, animations break on resize | BUG | addressed in the window-system rebuild (work-area-clamped resize, dock snaps during resize, breakpoint hysteresis + crossfade); needs a runtime sweep |
 | 3 | Hover animations inconsistent across components | KNOWN ISSUE | Some animate, some don't |
-| 4 | Inconsistent spacing / alignment / corner-radius strategy | KNOWN ISSUE | 4dp grid not uniformly followed |
+| 4 | Inconsistent spacing / alignment / corner-radius strategy | KNOWN ISSUE | 4dp grid not uniformly followed; **color dimension resolved** — `KaiteyoSemanticColors` centralizes all semantic hex values with theme-aware dark/light variants |
 
 ### 🟡 P1
 
@@ -64,6 +64,21 @@ They are not `DONE` until runtime-verified.
 ---
 
 ## DONE — recently fixed (history)
+
+### Semantic color token system — `KaiteyoSemanticColors` (source-only, 2026-08-20)
+
+- **Theme: centralized semantic color tokens (`KaiteyoSemanticColors`)** — all hardcoded `Color(0xFF...)` values across the UI are now centralized into a single `KaiteyoSemanticColors` data class with 40+ theme-aware tokens. Two variants (`Dark`/`Light`) adapt to the base mode; all tokens animate smoothly during theme transitions via `withThemeTransition`. Components read `LocalKaiteyoSemanticColors.current` instead of hardcoding hex values — changing accent or base mode now recolors everything consistently.
+- **Tokens organized by domain**:
+  - Review actions: `reviewAgain`/`reviewHard`/`reviewGood`/`reviewEasy`
+  - Card status: `cardNew`/`cardLearning`/`cardYoung`/`cardMature`/`cardRelearning`/`cardSuspended`/`cardBuried`/`cardArchived`
+  - Semantic indicators: `success`/`warning`/`error`/`info`/`favorite`/`due`/`new`/`suspended`/`muted`
+  - Card flags: `flagRed`/`flagOrange`/`flagYellow`/`flagGreen`/`flagBlue`/`flagPurple`
+  - Activity types: `activityReview`/`activityEdit`/`activityImport`/etc.
+  - Difficulty tiers, day/night, favorites, automatic backup
+- **Files migrated**: GeneralDashboardScreenUI, StatisticsScreen, CardBrowserFull, BulkActionsScreen, HistoryTrackerScreen, CardManager, DeckDetailsItemsUI, DeckBrowserFull, ImportExportSystem, BackupSystemExt, KanjiBrowserScreen, ReviewShortcutsSettings, and more.
+- **Architecture**: `Color.kt` defines the data class + two theme variants; `Theme.kt` provides `LocalKaiteyoSemanticColors` composition local wired into `AppTheme` with animation support; `kaiteyoSemantic` convenience accessor.
+- **All files migrated** — LibraryScreen, AnkiOpsFull, NoteEditorScreen completed (MediaCentreScreen and SettingsComponents already used theme-aware accent/Material colors). Zero hardcoded `Color(0xFF...)` remaining in migrated screens.
+- Closes the "Inconsistent color usage" gap between the heatmap-inspired design language and the rest of the UI.
 
 ### World + Media Center + Settings Functional Rebuild (source-only, 2026-08-19)
 

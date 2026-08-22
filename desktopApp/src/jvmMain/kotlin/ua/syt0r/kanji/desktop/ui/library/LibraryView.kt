@@ -35,7 +35,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.BarChart
@@ -92,7 +95,15 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import kotlin.math.roundToInt
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
@@ -145,6 +156,9 @@ import ua.syt0r.kanji.desktop.model.LibrarySuggestion
 import ua.syt0r.kanji.desktop.model.StudyMode
 import ua.syt0r.kanji.desktop.model.StudyModeProgress
 import ua.syt0r.kanji.desktop.model.ToastKind
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.HeatmapDayData
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.HeatmapDisplayMode
+import ua.syt0r.kanji.presentation.common.ui.kaiteyo.StudyHeatmap
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -1237,6 +1251,11 @@ private fun DeckCard(
                 if (stats.anyDue > 0) DsBadge(text = "${stats.anyDue} due", tint = dueColor())
                 if (stats.anyNew > 0) DsBadge(text = "${stats.anyNew} new", tint = infoColor())
                 DsBadge(text = "${stats.total} cards", tint = sc.textMuted)
+                Spacer(Modifier.weight(1f))
+                // Mini heatmap showing last 4 weeks of study activity
+                if (!isFolder) {
+                    DeckMiniHeatmap(state = state, deckId = deck.id)
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -2602,45 +2621,319 @@ private fun DeckStudySettingsDialog(state: AppState, deck: DeckDef, onDismiss: (
 @Composable
 private fun UnifiedDeckStatsSection(state: AppState) {
     val sc = surfaceColors()
+    val ac = accent()
+    val now = Clock.System.now()
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val deckIds = remember(state.learning.revision) {
         state.learning.cards.map { it.deckId }.distinct().sorted()
     }
-    DsCard {
-        Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Unified deck stats", color = sc.textPrimary, fontSize = DsType.BodyLarge, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        text = "${deckIds.size} deck(s) · ${state.learning.cards.size} cards in the learning store",
-                        color = sc.textMuted,
-                        fontSize = DsType.Caption
-                    )
-                }
-                DsBadge(text = "real SRS state", tint = successColor())
-            }
-            if (deckIds.isEmpty()) {
-                Text(
-                    "No unified cards yet — reviews and imports populate this automatically.",
-                    color = sc.textMuted,
-                    fontSize = DsType.Body
-                )
-            } else {
-                deckIds.take(12).forEach { deckId ->
-                    val totals = state.learning.deckTotals(deckId)
-                    val deckName = state.library.deck(deckId)?.name ?: deckId
-                    Column(Modifier.padding(vertical = DsSpacing.Xs)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text(deckName, color = sc.textSecondary, fontSize = DsType.Body, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                            DeckMiniCount("new", totals.new, newColor())
-                            DeckMiniCount("learning", totals.learning, infoColor())
-                            DeckMiniCount("review", totals.review, successColor())
-                            DeckMiniCount("due", totals.due, dueColor())
-                            DeckMiniCount("suspended", totals.suspended, sc.textMuted)
+
+    // ── Heatmap data from study summaries ──
+    val heatmapData = remember(state.summaries) {
+        state.summaries.map { s ->
+            val date = kotlinx.datetime.LocalDate.parse(s.day)
+            HeatmapDayData(date = date, count = s.newCount + s.reviewCount)
+        }
+    }
+
+    // ── Stats ──
+    val totalCards = state.cards.size
+    val dueToday = state.dueCount(now)
+    val mastered = state.masteredCount()
+    val totalReviews = state.totalReviews()
+    val studyTime = state.totalStudyTime()
+    val streakDays = remember(state.summaries) {
+        var streak = 0
+        var checkDate = today
+        while (true) {
+            val summary = state.summaries.firstOrNull { it.day == checkDate.toString() }
+            if (summary != null && (summary.newCount + summary.reviewCount) > 0) {
+                streak++
+                checkDate = checkDate.minus(1, kotlinx.datetime.DateTimeUnit.DAY)
+            } else break
+        }
+        streak
+    }
+    val masteryPct = if (totalCards == 0) 0f else mastered.toFloat() / totalCards
+
+    // ── Recent activity ──
+    val recentActivity = remember(state.activityLog.entries) {
+        state.activityLog.entries.take(8)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+    ) {
+        // ── Stats row ──
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            LibraryStatCard(
+                icon = Icons.Default.School,
+                label = "Total cards",
+                value = "$totalCards",
+                tint = ac.primary
+            )
+            LibraryStatCard(
+                icon = Icons.Default.Schedule,
+                label = "Due today",
+                value = "$dueToday",
+                tint = dueColor()
+            )
+            LibraryStatCard(
+                icon = Icons.Default.Star,
+                label = "Mastered",
+                value = "$mastered",
+                tint = successColor(),
+                subtitle = "${(masteryPct * 100).toInt()}%"
+            )
+            LibraryStatCard(
+                icon = Icons.Default.LocalFireDepartment,
+                label = "Streak",
+                value = "$streakDays days",
+                tint = Color(0xFFFFB300)
+            )
+            LibraryStatCard(
+                icon = Icons.Default.AccessTime,
+                label = "Study time",
+                value = state.formatDuration(studyTime),
+                tint = infoColor()
+            )
+            LibraryStatCard(
+                icon = Icons.Default.Refresh,
+                label = "Reviews",
+                value = "$totalReviews",
+                tint = ac.secondary
+            )
+        }
+
+        // ── Heatmap ──
+        StudyHeatmap(
+            activityData = heatmapData,
+            displayMode = HeatmapDisplayMode.Expanded,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // ── Activity feed + deck summary side by side ──
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
+        ) {
+            // Activity feed
+            DsCard(modifier = Modifier.weight(1f)) {
+                Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.History, null, tint = ac.primary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(DsSpacing.Sm))
+                        Text(
+                            "Recent Activity",
+                            color = sc.textPrimary,
+                            fontSize = DsType.BodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    if (recentActivity.isEmpty()) {
+                        Text(
+                            "No activity yet — start studying to see your progress here.",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    } else {
+                        recentActivity.forEach { entry ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+                            ) {
+                                val categoryIcon = when (entry.category) {
+                                    ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Review -> Icons.Default.Refresh
+                                    ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Import -> Icons.Default.FileDownload
+                                    ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Deck -> Icons.Default.Folder
+                                    ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Study -> Icons.Default.School
+                                    ua.syt0r.kanji.desktop.engine.history.ActivityCategory.Export -> Icons.Default.ContentCopy
+                                    else -> Icons.Default.History
+                                }
+                                Icon(
+                                    categoryIcon, null,
+                                    tint = sc.textMuted,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        text = entry.summary,
+                                        color = sc.textSecondary,
+                                        fontSize = DsType.Caption,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Text(
+                                    text = formatRelativeTime(entry.timestamp),
+                                    color = sc.textMuted,
+                                    fontSize = DsType.Caption
+                                )
+                            }
                         }
-                        DsProgressBar(
-                            fraction = if (totals.total == 0) 0f else (totals.new + totals.learning).toFloat() / totals.total,
-                            modifier = Modifier.padding(top = 2.dp),
-                            color = accent().primary
+                    }
+                }
+            }
+
+            // Deck summary
+            DsCard(modifier = Modifier.weight(1f)) {
+                Column(Modifier.padding(DsSpacing.Lg), verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.BarChart, null, tint = ac.secondary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(DsSpacing.Sm))
+                        Text(
+                            "Deck Summary",
+                            color = sc.textPrimary,
+                            fontSize = DsType.BodyLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    if (deckIds.isEmpty()) {
+                        Text(
+                            "No decks yet — create one to start.",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    } else {
+                        deckIds.take(8).forEach { deckId ->
+                            val totals = state.learning.deckTotals(deckId)
+                            val deckName = state.library.deck(deckId)?.name ?: deckId
+                            Column(Modifier.padding(vertical = DsSpacing.Xs)) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(deckName, color = sc.textSecondary, fontSize = DsType.Caption, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                                    DeckMiniCount("new", totals.new, newColor())
+                                    DeckMiniCount("due", totals.due, dueColor())
+                                    DeckMiniCount("review", totals.review, successColor())
+                                }
+                                DsProgressBar(
+                                    fraction = if (totals.total == 0) 0f else (totals.review.toFloat() / totals.total).coerceIn(0f, 1f),
+                                    modifier = Modifier.padding(top = 2.dp),
+                                    color = successColor()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryStatCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    tint: Color,
+    subtitle: String? = null
+) {
+    val sc = surfaceColors()
+    DsCard(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(DsSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+            Text(
+                text = value,
+                color = sc.textPrimary,
+                fontSize = DsType.Heading,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = label,
+                color = sc.textMuted,
+                fontSize = DsType.Caption
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    color = tint,
+                    fontSize = DsType.Caption,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+private fun formatRelativeTime(timestamp: kotlinx.datetime.Instant): String {
+    val now = Clock.System.now()
+    val diff = now - timestamp
+    val minutes = diff.inWholeMinutes
+    val hours = diff.inWholeHours
+    val days = diff.inWholeDays
+    return when {
+        minutes < 1 -> "now"
+        minutes < 60 -> "${minutes}m ago"
+        hours < 24 -> "${hours}h ago"
+        days < 7 -> "${days}d ago"
+        else -> "${days / 7}w ago"
+    }
+}
+
+/** Build a 7×4 mini heatmap (last 4 weeks) for a specific deck. */
+@Composable
+private fun DeckMiniHeatmap(
+    state: AppState,
+    deckId: String,
+    modifier: Modifier = Modifier
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
+    // Collect review counts per day for this deck's cards
+    val deckCards = remember(state.library.revision, state.cards.size) {
+        val deck = state.library.deck(deckId) ?: return@remember emptyList()
+        state.library.cardsIn(deck, state.cards.toList()).map { it.id }.toSet()
+    }
+
+    val heatmapData = remember(state.reviewLog.size, deckCards) {
+        if (deckCards.isEmpty()) return@remember emptyList()
+        state.reviewLog
+            .filter { it.cardId in deckCards }
+            .groupBy { it.reviewedAt.toLocalDateTime(TimeZone.currentSystemDefault()).date }
+            .map { (date, entries) -> HeatmapDayData(date = date, count = entries.size) }
+    }
+
+    if (heatmapData.isEmpty()) return
+
+    val countByDate = remember(heatmapData) { heatmapData.associate { it.date to it.count } }
+    val maxCount = countByDate.values.maxOrNull()?.coerceAtLeast(1) ?: 1
+    val cellSize = 6.dp
+    val cellGap = 1.5.dp
+    val shape = RoundedCornerShape(1.5.dp)
+
+    // Last 28 days (4 weeks)
+    val startDate = today.minus(27, DateTimeUnit.DAY)
+    val startOffset = startDate.dayOfWeek.isoDayNumber - 1
+
+    Column(modifier = modifier) {
+        Row(horizontalArrangement = Arrangement.spacedBy(cellGap)) {
+            for (week in 0 until 4) {
+                Column(verticalArrangement = Arrangement.spacedBy(cellGap)) {
+                    for (dow in 0 until 7) {
+                        val dayNum = week * 7 + dow - startOffset
+                        val date = if (dayNum in 0..27) {
+                            startDate.plus(dayNum.toLong(), DateTimeUnit.DAY)
+                        } else null
+                        val count = date?.let { countByDate[it] } ?: 0
+                        val alpha = if (count <= 0) 0.06f
+                        else (0.15f + 0.85f * (count.toFloat() / maxCount)).coerceAtMost(1f)
+
+                        Box(
+                            modifier = Modifier
+                                .size(cellSize)
+                                .clip(shape)
+                                .background(ac.primary.copy(alpha = if (date != null && date == today) 1f else alpha))
                         )
                     }
                 }

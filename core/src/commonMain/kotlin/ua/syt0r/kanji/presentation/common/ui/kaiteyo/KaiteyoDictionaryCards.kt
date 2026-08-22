@@ -26,15 +26,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +59,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -71,10 +74,10 @@ import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
+import androidx.compose.material.icons.filled.PlayArrow
 import ua.syt0r.kanji.presentation.common.ui.ClickableFuriganaText
 import ua.syt0r.kanji.presentation.common.ui.FuriganaText
 import ua.syt0r.kanji.presentation.common.ui.kanji.Kanji
-import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiBackground
 import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiRadicalDetails
 import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
 import ua.syt0r.kanji.presentation.screen.main.screen.info.VocabInfoData
@@ -84,7 +87,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.info.VocabInfoData
 //
 // Every word / kanji / sentence screen is assembled from these
 // cards so the whole dictionary feels like one living reference:
-//   · rounded section cards with gradient backgrounds + glow
+//   · rounded section cards
 //   · frequency + part-of-speech badges
 //   · type-first heroes (furigana above the writing)
 //   · JMdict-style numbered senses
@@ -103,8 +106,8 @@ internal fun SurfaceColors.kaiteyoElevated(): Color =
 
 // ── Section card — the fundamental container ─────────────────
 //
-// Kaiteyo identity: gradient surface background, subtle glow border,
-// inner highlight, hover accent bloom. NOT generic Material.
+// Clean, minimal card: surface background + subtle border.
+// No gradients, no glow, no drawBehind animation.
 
 @Composable
 fun KaiteyoCard(
@@ -118,83 +121,15 @@ fun KaiteyoCard(
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
 
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-
-    val baseModifier = modifier
+    val cardModifier = modifier
         .clip(KaiteyoCardShape)
-        .drawBehind {
-            // 1) Gradient surface background — subtle accent tint, not flat
-            drawRoundRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        accent.primary.copy(alpha = 0.04f),
-                        accent.secondary.copy(alpha = 0.02f),
-                        surfaceColors.surface
-                    ),
-                    startY = 0f,
-                    endY = size.height
-                ),
-                cornerRadius = CornerRadius(16.dp.toPx()),
-                size = size
-            )
-
-            // 2) Gradient border — accent sweep at low alpha
-            val borderAlpha = if (hovered) 0.35f else 0.15f
-            drawRoundRect(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        accent.primary.copy(alpha = borderAlpha),
-                        accent.secondary.copy(alpha = borderAlpha * 0.6f),
-                        accent.primary.copy(alpha = borderAlpha * 0.4f)
-                    ),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width, size.height)
-                ),
-                cornerRadius = CornerRadius(16.dp.toPx()),
-                style = Stroke(width = 1.dp.toPx())
-            )
-
-            // 3) Inner top-edge highlight — premium depth
-            drawRoundRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = if (hovered) 0.06f else 0.03f),
-                        Color.Transparent
-                    ),
-                    startY = 0f,
-                    endY = size.height * 0.3f
-                ),
-                cornerRadius = CornerRadius(16.dp.toPx()),
-                size = size
-            )
-
-            // 4) Hover glow bloom — accent radiates from center
-            if (hovered) {
-                drawRoundRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            accent.primary.copy(alpha = 0.06f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width / 2f, size.height / 2f),
-                        radius = size.maxDimension * 0.6f
-                    ),
-                    cornerRadius = CornerRadius(16.dp.toPx()),
-                    size = size
-                )
-            }
-        }
-
-    val clickModifier = if (onClick != null) {
-        baseModifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onClick
+        .background(surfaceColors.surface)
+        .then(
+            if (onClick != null) Modifier.clickable(onClick = onClick)
+            else Modifier
         )
-    } else baseModifier
 
-    Column(modifier = clickModifier) {
+    Column(modifier = cardModifier) {
         if (header != null || subtitle != null) {
             KaiteyoCardHeader(
                 title = header,
@@ -619,26 +554,44 @@ fun KaiteyoKanjiPills(
     }
 }
 
+enum class PillType { Radical, Phonetic, Component }
+
 @Composable
 fun KaiteyoKanjiPill(
     character: String,
     meaning: String? = null,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pillType: PillType = PillType.Component
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
 
+    val (bgColor, borderColor, typeLabel) = when (pillType) {
+        PillType.Radical -> Triple(
+            accent.primary.copy(alpha = if (hovered) 0.22f else 0.12f),
+            accent.primary.copy(alpha = 0.40f),
+            ""
+        )
+        PillType.Phonetic -> Triple(
+            accent.secondary.copy(alpha = if (hovered) 0.22f else 0.12f),
+            accent.secondary.copy(alpha = 0.40f),
+            ""
+        )
+        PillType.Component -> Triple(
+            surfaceColors.surfaceInteractive.copy(alpha = if (hovered) 0.7f else 0.45f),
+            surfaceColors.surfaceInteractive.copy(alpha = 0.6f),
+            ""
+        )
+    }
+
     Row(
         modifier = modifier
             .clip(KaiteyoPillShape)
-            .background(
-                if (hovered) accent.primary.copy(alpha = 0.20f)
-                else accent.primary.copy(alpha = 0.10f)
-            )
-            .border(1.dp, accent.primary.copy(alpha = 0.25f), KaiteyoPillShape)
+            .background(bgColor)
+            .border(1.dp, borderColor, KaiteyoPillShape)
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -858,14 +811,12 @@ private fun ReadingPill(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        if (isPlaying) {
-            Icon(
-                imageVector = Icons.Default.MoreVert, // TODO: use proper play icon
-                contentDescription = null,
-                tint = accent.primary,
-                modifier = Modifier.size(12.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = null,
+            tint = if (isPlaying) accent.primary else textColor.copy(alpha = 0.5f),
+            modifier = Modifier.size(12.dp)
+        )
         Text(
             text = text,
             fontSize = 13.sp,
@@ -941,28 +892,106 @@ fun KaiteyoMeaningsTagsCard(
     modifier: Modifier = Modifier
 ) {
     val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val strokeCount = data.strokes.size
+    val radicalCount = data.radicalsSectionData.radicals.size
+    val hasPhonetics = data.phonetics.isNotEmpty()
 
     KaiteyoCard(
         modifier = modifier,
-        header = "Meanings",
+        header = "Meanings & Tags",
         subtitle = data.meanings.joinToString(", ")
     ) {
+        // Main meaning text
+        Text(
+            text = data.meanings.joinToString(", "),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = surfaceColors.textPrimary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Tags flow
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            data.meanings.forEach { meaning ->
+            // Jōyō badge (if has grade)
+            data.grade?.let {
                 KaiteyoBadge(
-                    text = meaning,
+                    text = "Jōyō",
+                    containerColor = accent.primary.copy(alpha = 0.14f),
+                    contentColor = accent.primary
+                )
+            }
+
+            // Compound badge (if multiple components)
+            if (radicalCount > 1) {
+                KaiteyoBadge(
+                    text = "Compound",
+                    containerColor = accent.secondary.copy(alpha = 0.14f),
+                    contentColor = accent.secondary
+                )
+            }
+
+            // Phono-semantic badge
+            if (hasPhonetics) {
+                KaiteyoBadge(
+                    text = "Phono-semantic",
+                    containerColor = Color(0xFF3A3157),
+                    contentColor = accent.secondary
+                )
+            }
+
+            // Radical badge
+            data.radicalsSectionData.radicals.firstOrNull()?.let { radical ->
+                KaiteyoBadge(
+                    text = "Radical: ${radical.value}",
                     containerColor = surfaceColors.surfaceInteractive.copy(alpha = 0.45f),
                     contentColor = surfaceColors.textPrimary
                 )
             }
+
+            // Phonetic badge
+            data.phonetics.firstOrNull()?.let { phonetic ->
+                KaiteyoBadge(
+                    text = "Phonetic: $phonetic",
+                    containerColor = surfaceColors.surfaceInteractive.copy(alpha = 0.45f),
+                    contentColor = surfaceColors.textPrimary
+                )
+            }
+
+            // Stroke count
+            KaiteyoBadge(
+                text = "$strokeCount strokes",
+                containerColor = surfaceColors.surfaceInteractive.copy(alpha = 0.45f),
+                contentColor = surfaceColors.textPrimary
+            )
+
+            // Grade
+            data.grade?.let { grade ->
+                KaiteyoBadge(
+                    text = "Grade: $grade",
+                    containerColor = surfaceColors.surfaceInteractive.copy(alpha = 0.45f),
+                    contentColor = surfaceColors.textPrimary
+                )
+            }
+
+            // JLPT
             data.jlptLevel?.let { jlpt ->
                 KaiteyoBadge(
-                    text = "JLPT N$jlpt",
-                    containerColor = LocalKaiteyoAccent.current.primary.copy(alpha = 0.14f),
-                    contentColor = LocalKaiteyoAccent.current.primary
+                    text = "JLPT: N$jlpt",
+                    containerColor = accent.primary.copy(alpha = 0.14f),
+                    contentColor = accent.primary
+                )
+            }
+
+            // Frequency (as Kanken proxy)
+            data.frequency?.let { freq ->
+                KaiteyoBadge(
+                    text = "Freq: $freq",
+                    containerColor = surfaceColors.surfaceInteractive.copy(alpha = 0.45f),
+                    contentColor = surfaceColors.textPrimary
                 )
             }
         }
@@ -977,26 +1006,73 @@ fun KaiteyoFormulaCard(
     character: String,
     radicals: List<ua.syt0r.kanji.presentation.common.ui.kanji.KanjiRadicalDetails>,
     onRadicalClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    glyphNodes: List<GlyphNode> = emptyList()
 ) {
     val accent = LocalKaiteyoAccent.current
     val surfaceColors = LocalSurfaceColors.current
 
+    // Build lookup: character -> GlyphNodeType from the graph
+    val nodeTypeMap = glyphNodes.associateBy({ it.character }, { it.type })
+
     KaiteyoCard(
         modifier = modifier,
         header = "Decomposition",
-        subtitle = "Components that compose this kanji"
+        subtitle = "How this kanji is built"
     ) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            radicals.forEach { radical ->
-                KaiteyoKanjiPill(
-                    character = radical.value,
-                    meaning = radical.meanings.firstOrNull(),
-                    onClick = { onRadicalClick(radical.value) }
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            radicals.forEachIndexed { index, radical ->
+                val nodeType = nodeTypeMap[radical.value]
+                val pillType = when (nodeType) {
+                    GlyphNodeType.Radical -> PillType.Radical
+                    GlyphNodeType.Phonetic -> PillType.Phonetic
+                    else -> if (index == 0) PillType.Radical else PillType.Component
+                }
+                val meaning = radical.meanings.firstOrNull() ?: "component"
+
+                // Each line: [Character] Meaning = [sub-components] or +
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Main character pill
+                    KaiteyoKanjiPill(
+                        character = radical.value,
+                        meaning = meaning,
+                        onClick = { onRadicalClick(radical.value) },
+                        pillType = pillType
+                    )
+
+                    // Equals sign for first component
+                    if (index == 0) {
+                        Text(
+                            text = "=",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = surfaceColors.textMuted
+                        )
+                    } else {
+                        // Plus sign for additional components
+                        Text(
+                            text = "+",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = surfaceColors.textMuted
+                        )
+                    }
+
+                    // Sub-components (if any)
+                    val strokeCount = radical.strokeIndicies.count()
+                    if (strokeCount > 1) {
+                        repeat(strokeCount - 1) {
+                            Text(
+                                text = "+",
+                                fontSize = 14.sp,
+                                color = surfaceColors.textMuted
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1049,7 +1125,8 @@ fun KaiteyoVocabRow(
     word: JapaneseWord,
     onClick: () -> Unit,
     onBookmarkClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onKanjiClick: ((String) -> Unit)? = null
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
@@ -1057,9 +1134,8 @@ fun KaiteyoVocabRow(
     val hovered by interactionSource.collectIsHoveredAsState()
 
     val reading = word.reading
-    val displayText = reading.kanjiReading ?: reading.kanaReading
 
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
@@ -1068,24 +1144,48 @@ fun KaiteyoVocabRow(
                 else Color.Transparent
             )
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(
-            text = displayText,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = surfaceColors.textPrimary
-        )
-        Text(
-            text = word.glossary.joinToString(", ").take(40),
-            fontSize = 12.sp,
-            color = surfaceColors.textSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
+        // Furigana above the kanji
+        if (reading.furigana != null) {
+            FuriganaText(
+                furiganaString = reading.furigana,
+                color = surfaceColors.textMuted,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp),
+                annotationTextStyle = androidx.compose.ui.text.TextStyle(fontSize = 8.sp, color = surfaceColors.textMuted),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Kanji with individual click support
+            if (onKanjiClick != null && reading.furigana != null) {
+                ClickableFuriganaText(
+                    furiganaString = reading.furigana,
+                    onClick = onKanjiClick,
+                    modifier = Modifier.weight(0.4f)
+                )
+            } else {
+                val kanjiText = reading.kanjiReading ?: reading.kanaReading
+                Text(
+                    text = kanjiText,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = surfaceColors.textPrimary,
+                    modifier = Modifier.weight(0.4f)
+                )
+            }
+            Text(
+                text = word.glossary.joinToString(", ").take(50),
+                fontSize = 12.sp,
+                color = surfaceColors.textSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(0.6f)
+            )
+        }
     }
 }
 
@@ -1146,121 +1246,4 @@ fun KaiteyoFuriganaClickable(
     )
 }
 
-// ── Kanji hero — the big character display card ─────────────
 
-@Composable
-fun KaiteyoKanjiHero(
-    data: LetterInfoData.Kanji,
-    onCopy: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val surfaceColors = LocalSurfaceColors.current
-    val accent = LocalKaiteyoAccent.current
-
-    KaiteyoCard(modifier = modifier, contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 20.dp)) {
-        // Type badge
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            KaiteyoBadge(
-                text = "漢字",
-                containerColor = accent.primary.copy(alpha = 0.14f),
-                contentColor = accent.primary
-            )
-            data.jlptLevel?.let { jlpt ->
-                KaiteyoBadge(
-                    text = "JLPT N${jlpt}",
-                    containerColor = accent.secondary.copy(alpha = 0.14f),
-                    contentColor = accent.secondary
-                )
-            }
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // Stroke order — static display with all strokes visible
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            KanjiBackground(Modifier.fillMaxSize())
-            Kanji(
-                strokes = data.strokes,
-                modifier = Modifier.size(100.dp)
-            )
-        }
-
-        Spacer(Modifier.height(4.dp))
-
-        Text(
-            text = "${data.strokes.size} strokes",
-            fontSize = 11.sp,
-            color = surfaceColors.textMuted,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        // Meanings
-        Text(
-            text = data.meanings.joinToString(", "),
-            fontSize = 14.sp,
-            color = surfaceColors.textSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        // Readings preview
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            if (data.on.isNotEmpty()) {
-                Text(
-                    text = data.on.joinToString(" "),
-                    fontSize = 13.sp,
-                    color = accent.secondary,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            if (data.on.isNotEmpty() && data.kun.isNotEmpty()) {
-                Text(
-                    text = "·",
-                    fontSize = 13.sp,
-                    color = surfaceColors.textMuted
-                )
-            }
-            if (data.kun.isNotEmpty()) {
-                Text(
-                    text = data.kun.joinToString(" "),
-                    fontSize = 13.sp,
-                    color = accent.primary,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            KaiteyoActionButton(
-                label = "📋 Copy",
-                onClick = onCopy,
-                container = accent.primary.copy(alpha = 0.14f),
-                content = accent.primary,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}

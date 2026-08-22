@@ -1,0 +1,60 @@
+# Detekt configuration for Kaiteyo
+# Docs: https://detekt.github.io/detekt/configurations.html
+
+buildIssues:
+  maxIssueCount: 0
+
+complexity:
+  LongMethod:
+    threshold: 120
+  LongParameterList:
+    functionThreshold: 12
+    constructorThreshold: 14
+  ComplexMethod:
+    threshold: 25
+  LargeClass:
+    thresholdInFiles: 800
+    thresholdInClasses: 600
+  TooManyFunctions:
+    thresholdInFiles: 40
+    thresholdInClasses: 50
+  NestedBlockMagic:
+    threshold: 6
+
+style:
+  MaxLineLength:
+    maxLineLength: 120
+    allowBackslashForLineBreak: true
+  WildcardImport:
+    active: false
+  MagicNumber:
+    active: false
+  ReturnCount:
+    max: 4
+  ForbiddenComment:
+    active: false
+  UnusedPrivateMember:
+    active: true
+  MandatoryBracesIfStatements:
+    active: true
+  MandatoryBracesLoops:
+    active: true
+
+naming:
+  FunctionNaming:
+    pattern: '[A-Za-z][A-Za-z0-9]*'
+  TopLevelPropertyNaming:
+    pattern: '[A-Za-z][A-Za-z0-9_]*'
+  MemberNaming:
+    pattern: '[A-Za-z][A-Za-z0-9_]*'
+
+imports:
+  MaxLineLength:
+    maxLineLength: 200
+
+empty-blocks:
+  EmptyFunctionBlock:
+    ignoreOverridden: true
+    ignoreOverriddenFunctions: true
+  EmptyElseBlock:
+    active: false

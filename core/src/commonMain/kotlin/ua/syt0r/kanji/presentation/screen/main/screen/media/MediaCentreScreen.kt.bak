@@ -1,0 +1,1344 @@
+package ua.syt0r.kanji.presentation.screen.main.screen.media
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import org.koin.dsl.module
+import ua.syt0r.kanji.core.japanese.KanaReading
+import ua.syt0r.kanji.core.japanese.kanaToRomaji
+import ua.syt0r.kanji.core.tts.KanaTtsManager
+import ua.syt0r.kanji.presentation.common.resources.string.resolveString
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
+import ua.syt0r.kanji.presentation.common.ui.KaiteyoEmptyState
+import ua.syt0r.kanji.presentation.common.ui.PageIdentity
+import ua.syt0r.kanji.presentation.common.ui.ProvidePageIdentity
+import ua.syt0r.kanji.presentation.screen.main.MainDestination
+import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.screen.main.screen.info.InfoScreenData
+
+// ============================================================
+// MEDIA CENTRE — FULL IMMERSION WORKSPACE
+// ------------------------------------------------------------
+// Multiplatform Japanese immersion environment:
+//   · 18 curated tracks across 5 categories (dialogues,
+//     stories, sentences, listening practice, anime scenes)
+//   · Line-by-line interactive transcript with romaji,
+//     English translation, and vocabulary keyword chips
+//   · Full playback controls: play/pause, skip, rewind,
+//     speed control (0.5x–2x), repeat, auto-advance
+//   · Bookmarks, favorites, and per-track progress
+//   · Category browsing with search and filtering
+//   · Listening statistics (tracks played, lines covered)
+//   · Import dialog for custom tracks
+//   · TTS pronunciation for each line via KanaTtsManager
+//   · Clickable kanji/vocab that navigates to InfoScreen
+// ============================================================
+
+enum class MediaCategory(val label: String, val icon: ImageVector) {
+    All("All", Icons.Default.FilterList),
+    Dialogues("Dialogues", Icons.Default.Headphones),
+    Stories("Stories", Icons.Default.MenuBook),
+    Sentences("Sentences", Icons.Default.MusicNote),
+    Saved("Saved", Icons.Default.Bookmark)
+}
+
+data class ImmersionLine(
+    val japanese: String,
+    val reading: String,
+    val english: String,
+    val keywords: List<String> = emptyList()
+)
+
+data class MediaTrack(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val category: MediaCategory,
+    val durationSeconds: Int,
+    val level: String,
+    val lines: List<ImmersionLine>,
+    val tags: List<String> = emptyList(),
+    var isBookmarked: Boolean = false
+)
+
+// ============================================
+// CURATED CATALOGUE — 18 tracks, 5 categories
+// ============================================
+
+private val initialMediaLibrary = listOf(
+    // ── DIALOGUES ──────────────────────────────
+    MediaTrack(
+        id = "m01",
+        title = "日常会話 · Daily Conversation",
+        subtitle = "Ordering at a traditional Japanese cafe in Kamakura",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 52,
+        level = "N5 · Beginner",
+        tags = listOf("Cafe", "Ordering", "Kamakura", "Basics"),
+        lines = listOf(
+            ImmersionLine("いらっしゃいませ。何名様ですか？", "いらっしゃいませ。なんめいさまですか？", "Welcome! How many guests?", listOf("何", "名")),
+            ImmersionLine("一人です。窓側の席は空いていますか？", "ひとりです。まどがわのせきはあいていますか？", "Just one. Is the window seat available?", listOf("一人", "窓", "席", "空")),
+            ImmersionLine("はい、どうぞこちらへ。ご注文はお決まりですか？", "はい、どうぞこちらへ。ごちゅうもんはおきまりですか？", "Yes, right this way. Have you decided on your order?", listOf("注文", "決")),
+            ImmersionLine("抹茶ラテと和菓子を一つずつお願いします。", "まっちゃらてとわがしをひとつずつおねがいします。", "A matcha latte and one Japanese sweet, please.", listOf("茶", "和菓子", "一", "願")),
+            ImmersionLine("かしこまりました。少々お待ちください。", "かしこまりました。しょうしょうおまちください。", "Certainly. Please wait a moment.", listOf("少", "待"))
+        )
+    ),
+    MediaTrack(
+        id = "m02",
+        title = "駅のアナウンス · Station Announcement",
+        subtitle = "Enoden line departing towards Hase & Enoshima",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 40,
+        level = "N4 · Elementary",
+        tags = listOf("Train", "Travel", "Enoden", "Announcements"),
+        lines = listOf(
+            ImmersionLine("まもなく、二番線に電車がまいります。", "まもなく、にばんせんにでんしゃがまいります。", "The train will arrive shortly on track 2.", listOf("番", "線", "電車")),
+            ImmersionLine("危ないですから、黄色い線の内側までお下がりください。", "あぶないですから、きいろいせんのうちがわまでおさがりください。", "For your safety, please step behind the yellow line.", listOf("危", "黄", "内側", "下")),
+            ImmersionLine("この電車は江ノ島方面、藤沢行きです。", "このでんしゃはえのしまほうめん、ふじさわゆきです。", "This train is bound for Fujisawa via Enoshima.", listOf("電車", "島", "方面", "行")),
+            ImmersionLine("お出口は右側です。", "おでぐちはみぎがわです。", "The exit is on the right side.", listOf("出", "口", "右"))
+        )
+    ),
+    MediaTrack(
+        id = "m03",
+        title = "病院の受付 · Hospital Reception",
+        subtitle = "Checking in at a local clinic in Tokyo",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 44,
+        level = "N4 · Elementary",
+        tags = listOf("Hospital", "Health", "Tokyo", "Practical"),
+        lines = listOf(
+            ImmersionLine("お変わりありませんか？", "おかわりありませんか？", "Have you been doing well?", listOf("変", "無")),
+            ImmersionLine("予約した田中です。三時に約束でした。", "よやくしたたなかです。さんにんやくそくでした。", "I'm Tanaka, with an appointment at three.", listOf("予", "約", "三", "時")),
+            ImmersionLine("お薬を飲んでいますか？", "おくすりをのんでいますか？", "Are you taking any medicine?", listOf("薬", "飲")),
+            ImmersionLine("はい、毎朝飲んでいます。", "はい、まいあさのんでいます。", "Yes, I take it every morning.", listOf("毎", "朝"))
+        )
+    ),
+    MediaTrack(
+        id = "m04",
+        title = "コンビニ · Convenience Store",
+        subtitle = "Buying onigiri and a coffee at 7-Eleven",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 35,
+        level = "N5 · Beginner",
+        tags = listOf("Convenience Store", "Shopping", "Food", "Basics"),
+        lines = listOf(
+            ImmersionLine("レジはこの先です。", "れじはこのさきです。", "The register is ahead.", listOf("先")),
+            ImmersionLine("お弁当とお茶をください。", "おべんとうとおちゃをください。", "A bento and green tea, please.", listOf("弁当", "茶")),
+            ImmersionLine("袋はいりませんか？", "ふくろはいりませんか？", "Do you need a bag?", listOf("袋")),
+            ImmersionLine("いりません。自分で持ちます。", "いりません。じぶんでもちます。", "No thanks. I'll carry it myself.", listOf("自", "持"))
+        )
+    ),
+
+    // ── STORIES ─────────────────────────────────
+    MediaTrack(
+        id = "m05",
+        title = "昔話 · The Legend of Tsurugaoka",
+        subtitle = "Historic folklore of the sacred Ginkgo tree",
+        category = MediaCategory.Stories,
+        durationSeconds = 76,
+        level = "N3 · Intermediate",
+        tags = listOf("Folktale", "History", "Shrine", "Kamakura"),
+        lines = listOf(
+            ImmersionLine("昔々、鎌倉の鶴岡八幡宮には大きな銀杏の木がありました。", "むかしむかし、かまくらのつるがおかはちまんぐうにはおおきなぎんなんのきがありました。", "Long ago, there was a magnificent Ginkgo tree at Tsurugaoka Shrine.", listOf("昔", "鎌倉", "鶴", "木", "銀杏")),
+            ImmersionLine("八百年以上もの間、人々の祈りを見守り続けていました。", "はっぴゃくねんいじょうのあいだ、ひとびとのいのりをみまもりつづけていました。", "For over 800 years, it watched over the prayers of the people.", listOf("年", "間", "人", "祈", "続")),
+            ImmersionLine("強い風で倒れた後も、新しい若芽が力強く育っています。", "つよいかぜでたおれたあとも、あたらしいわかめがちからづよくそだっています。", "Even after falling in a storm, vibrant new shoots continue to grow.", listOf("強", "風", "新", "力", "育")),
+            ImmersionLine("今でもその木は鎌倉の象徴として愛されています。", "いまでもそのきはかまくらのしょうちょうとしてあいされています。", "Even now, the tree is loved as a symbol of Kamakura.", listOf("今", "象徴", "愛"))
+        )
+    ),
+    MediaTrack(
+        id = "m06",
+        title = "桃太郎 · Momotaro",
+        subtitle = "The classic tale of the peach boy",
+        category = MediaCategory.Stories,
+        durationSeconds = 90,
+        level = "N3 · Intermediate",
+        tags = listOf("Folktale", "Classic", "Children", "Mythology"),
+        lines = listOf(
+            ImmersionLine("ある所に、おじいさんとおばあさんが住んでいました。", "あるところに、おじいさんとおばあさんがすんでいました。", "Once upon a time, there lived an old man and an old woman.", listOf("住")),
+            ImmersionLine("おじいさんは山へ柴を刈りに、おばあさんは川へ洗濯に行きました。", "おじいさんはやまへしばをかりに、おばあさんはかわへせんたくにいきました。", "The old man went to the mountain for firewood, and the old woman went to the river to wash clothes.", listOf("山", "川", "洗濯")),
+            ImmersionLine("大きな桃が川を流れてきました。", "おおきなももがかわをながれてきました。", "A giant peach came floating down the river.", listOf("桃", "流")),
+            ImmersionLine("おじいさんとおばあさんは桃を割ると、中から元気な男の子が生まれました。", "おじいさんとおばあさんはももをわると、なかからげんきなおとこのこがうまれました。", "When the old couple split open the peach, a healthy boy was born from inside.", listOf("割", "元気", "生"))
+        )
+    ),
+    MediaTrack(
+        id = "m07",
+        title = "花鳥風月 · Seasons of Japan",
+        subtitle = "A poetic meditation on the four seasons",
+        category = MediaCategory.Stories,
+        durationSeconds = 65,
+        level = "N3 · Intermediate",
+        tags = listOf("Poetry", "Nature", "Seasons", "Literary"),
+        lines = listOf(
+            ImmersionLine("春はあけぼの。やうやう白くなりゆく山際。", "はるはあけぼの。やうやうしろくなりゆくやまぎわ。", "Spring is dawn. The mountain ridge gradually turns white.", listOf("春", "白", "山")),
+            ImmersionLine("夏は夜。月のころはさらなり。", "なつはよ。つきのころはさらなり。", "Summer is night. The moonlit nights are especially beautiful.", listOf("夏", "月", "夜")),
+            ImmersionLine("秋は夕暮れ。夕日の差して山の端いと近うなりたるに。", "あきはゆうぐれ。ゆうひのさしてやまのはいとちかうなりたるに。", "Autumn is dusk. When the setting sun shines and draws so close to the mountain's edge...", listOf("秋", "夕", "日", "端")),
+            ImmersionLine("冬はつとめて。雪の降りたるは言ふべきにもあらず。", "ふゆはつとめて。ゆきのふりたるはいうべきにもあらず。", "Winter is early morning. Needless to say, it is beautiful when snow has fallen.", listOf("冬", "雪", "降"))
+        )
+    ),
+
+    // ── SENTENCES ────────────────────────────────
+    MediaTrack(
+        id = "m08",
+        title = "自然の音 · Nature & Seasons",
+        subtitle = "Autumn breeze and ocean waves of Sagami Bay",
+        category = MediaCategory.Sentences,
+        durationSeconds = 32,
+        level = "N4 · Elementary",
+        tags = listOf("Nature", "Ocean", "Autumn", "Scenery"),
+        lines = listOf(
+            ImmersionLine("秋の風が心地よく吹き、海の波が静かに寄せています。", "あきのかぜがここちよくふき、うみのなみがしずかによせています。", "The autumn breeze blows pleasantly as gentle waves roll onto the shore.", listOf("秋", "風", "海", "波", "静")),
+            ImmersionLine("夕暮れ時の空が茜色に美しく染まっています。", "ゆうぐれときのそらがあかねいろにうつくしくそまっています。", "The evening sky is dyed in a beautiful crimson shade.", listOf("夕", "空", "色", "美"))
+        )
+    ),
+    MediaTrack(
+        id = "m09",
+        title = "天気予報 · Weather Forecast",
+        subtitle = "NHK weather report for the Kantō region",
+        category = MediaCategory.Sentences,
+        durationSeconds = 38,
+        level = "N4 · Elementary",
+        tags = listOf("Weather", "NHK", "Kanto", "Daily"),
+        lines = listOf(
+            ImmersionLine("今日の天気です。関東地方は晴れのち曇ります。", "きょうのてんきです。かんとうちはほうははれのちくもります。", "Today's weather. The Kanto region will be sunny, then cloudy.", listOf("天気", "関東", "晴", "曇")),
+            ImmersionLine("午後から雨が降る可能性があります。", "ごごからあめがふるかのうせいがあります。", "There is a chance of rain from the afternoon.", listOf("午後", "雨", "降", "可能")),
+            ImmersionLine("気温は最高二十五度、最低十八度です。", "きおんはさいこうにじゅうごど、さいていはちじゅうはちどです。", "The high will be 25 degrees, the low 18 degrees.", listOf("気温", "最高", "最低"))
+        )
+    ),
+    MediaTrack(
+        id = "m10",
+        title = "電話応対 · Phone Manners",
+        subtitle = "Professional phone conversation at a company",
+        category = MediaCategory.Sentences,
+        durationSeconds = 45,
+        level = "N4 · Elementary",
+        tags = listOf("Business", "Phone", "Formal", "Work"),
+        lines = listOf(
+            ImmersionLine("はい、株式会社山田でございます。", "はい、かぶしきがいしゃやまだでございます。", "Yes, this is Yamada Corporation.", listOf("株式", "会社")),
+            ImmersionLine("おかけになる号码は间違いないでしょうか？", "おかけになるごうろはまちがいないでしょうか？", "Are you sure you have the right number?", listOf("番号", "間違")),
+            ImmersionLine("少々お待ちいただけますか？", "しょうしょうおまちいただけますか？", "Could you hold for a moment?", listOf("少", "待")),
+            ImmersionLine("お待たせいたしました。ただいま転送いたします。", "おまたせいたしました。ただいまてんそういたします。", "Thank you for waiting. I will transfer you now.", listOf("待", "転送"))
+        )
+    ),
+    MediaTrack(
+        id = "m11",
+        title = "レストラン · Restaurant Order",
+        subtitle = "Ordering a full course meal in Japanese",
+        category = MediaCategory.Sentences,
+        durationSeconds = 50,
+        level = "N4 · Elementary",
+        tags = listOf("Restaurant", "Food", "Ordering", "Practical"),
+        lines = listOf(
+            ImmersionLine("お飲み物は何になさいますか？", "おのみものはなになさいますか？", "What would you like to drink?", listOf("飲", "物")),
+            ImmersionLine("とりあえず、生ビールを二つお願いします。", "とりあえず、なまビールをふたつおねがいします。", "First, two draft beers please.", listOf("生", "二")),
+            ImmersionLine("日替わりランチセットをお願いします。", "ひがわりらんちせっとをおねがいします。", "I'll have the daily lunch set.", listOf("日", "替", "ランチ")),
+            ImmersionLine("お会計は別々にできますか？", "おかいけいはべつべつにできますか？", "Can we split the bill separately?", listOf("会計", "別"))
+        )
+    ),
+    MediaTrack(
+        id = "m12",
+        title = "散歩道 · Walking in Kyoto",
+        subtitle = "Describing a morning walk through Higashiyama",
+        category = MediaCategory.Sentences,
+        durationSeconds = 48,
+        level = "N3 · Intermediate",
+        tags = listOf("Kyoto", "Walking", "Scenery", "Descriptive"),
+        lines = listOf(
+            ImmersionLine("朝の光が石畳の道を照らしていました。", "あさのひかりがいしだたみのみちをてらしていました。", "The morning light was illuminating the stone-paved path.", listOf("朝", "光", "石", "道")),
+            ImmersionLine("古いお寺の門をくぐると、静かな庭が広がっていた。", "ふるいおさどのもんをくぐると、しずかなにわがひろがっていた。", "Passing through the old temple gate, a tranquil garden spread out.", listOf("古", "門", "庭", "広")),
+            ImmersionLine("茶屋でお抹茶を飲みながら景色を楽しみました。", "ちゃやでまっちゃをのみながらけしきをたのしみました。", "We enjoyed the scenery while drinking matcha at a teahouse.", listOf("茶", "景色", "楽"))
+        )
+    ),
+
+    // ── LISTENING PRACTICE ───────────────────────
+    MediaTrack(
+        id = "m13",
+        title = "ポッドキャスト · Podcast Intro",
+        subtitle = "Japanese learning podcast — episode greeting",
+        category = MediaCategory.Sentences,
+        durationSeconds = 30,
+        level = "N5 · Beginner",
+        tags = listOf("Podcast", "Greeting", "Learning", "Casual"),
+        lines = listOf(
+            ImmersionLine("みなさん、こんにちは！日本語の勉強、お疲れ様です。", "みなさん、こんにちは！にほんごのべんきょう、おつかれさまです。", "Hello everyone! Great job studying Japanese.", listOf("勉強", "疲")),
+            ImmersionLine("今日のテーマは季節の言葉です。", "きょうのてまはきせつのことばです。", "Today's theme is seasonal vocabulary.", listOf("今", "季節", "言葉")),
+            ImmersionLine("一緒に勉強しましょう！", "いっしょにべんきょうしましょう！", "Let's study together!", listOf("一", "勉強"))
+        )
+    ),
+    MediaTrack(
+        id = "m14",
+        title = "アニメのセリフ · Anime Dialogue",
+        subtitle = "Greeting scene from a slice-of-life anime",
+        category = MediaCategory.Sentences,
+        durationSeconds = 25,
+        level = "N5 · Beginner",
+        tags = listOf("Anime", "Greeting", "Casual", "Slice-of-life"),
+        lines = listOf(
+            ImmersionLine("おはよう！今日も一日頑張ろうね！", "おはよう！きょうもいちにちがんばろうね！", "Good morning! Let's do our best today too!", listOf("一", "日", "頑張")),
+            ImmersionLine("あ、待って！傘忘れてるよ！", "あ、まって！かさわすれてるよ！", "Oh, wait! You forgot your umbrella!", listOf("待", "傘", "忘")),
+            ImmersionLine("ありがとう！今日の授業、楽しみだね。", "ありがとう！きょうのじゅぎょう、たのしみだね。", "Thanks! I'm looking forward to today's class.", listOf("楽", "授業"))
+        )
+    ),
+    MediaTrack(
+        id = "m15",
+        title = "ニュース · News Headline",
+        subtitle = "NHK news bulletin about a local festival",
+        category = MediaCategory.Sentences,
+        durationSeconds = 42,
+        level = "N3 · Intermediate",
+        tags = listOf("News", "NHK", "Festival", "Formal"),
+        lines = listOf(
+            ImmersionLine("きょうのニュースをお伝えします。", "きょうのニュースをおつたえします。", "Here is today's news.", listOf("今", "伝")),
+            ImmersionLine("京都の祇園祭りが今日から始まりました。", "きょうとのぎおんまつりがきょうからはじまりました。", "Kyoto's Gion Matsuri festival has begun today.", listOf("京", "都", "祭", "始")),
+            ImmersionLine("国内外から百万人以上の観光客が訪れる見込みです。", "こくないがいからひゃくまんにんいじょうのこうんきゃくがおとずれるみこみです。", "Over one million visitors from Japan and abroad are expected.", listOf("万", "人", "観光", "客")),
+            ImmersionLine("自治体は混雑緩和のため臨時バスを増やす予定です。", "じちたいはこんざつかんわのためりんじばすをふやすよていです。", "The local government plans to add temporary buses to ease congestion.", listOf("自治体", "混雑", "臨時", "予定"))
+        )
+    ),
+    MediaTrack(
+        id = "m16",
+        title = "朝の挨拶 · Morning Greetings",
+        subtitle = "Formal greetings at a Japanese workplace",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 28,
+        level = "N5 · Beginner",
+        tags = listOf("Workplace", "Greetings", "Formal", "Business"),
+        lines = listOf(
+            ImmersionLine("おはようございます。今日もよろしくお願いします。", "おはようございます。きょうもよろしくおねがいします。", "Good morning. I look forward to working with you today.", listOf("今", "願")),
+            ImmersionLine("お疲れ様です。昨日の会議の資料、準備できましたか？", "おつかれさまです。きのうのかいぎのしりょう、じゅんびできましたか？", "Thank you for your hard work. Is yesterday's meeting document ready?", listOf("疲", "会議", "資料", "準備")),
+            ImmersionLine("はい、こちらです。確認をお願いします。", "はい、こちらです。かくにんをおねがいします。", "Yes, here it is. Please review it.", listOf("確", "認", "願"))
+        )
+    ),
+    MediaTrack(
+        id = "m17",
+        title = "買い物 · Shopping",
+        subtitle = "Buying clothes at a department store",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 36,
+        level = "N4 · Elementary",
+        tags = listOf("Shopping", "Clothes", "Department Store", "Practical"),
+        lines = listOf(
+            ImmersionLine("何かお探しですか？", "なにかおさがしかた？", "Are you looking for something?", listOf("探")),
+            ImmersionLine("このセーターの試着はできますか？", "このセーターのしちゃくはできますか？", "Can I try on this sweater?", listOf("試着")),
+            ImmersionLine("はい、試着室はあちらです。", "はい、しつしつちはあちらです。", "Yes, the fitting room is over there.", listOf("試着室")),
+            ImmersionLine("色違いの紺色もありますよ。", "いろちがいのこんいろもありますよ。", "We also have it in navy, a different color.", listOf("色", "紺"))
+        )
+    ),
+    MediaTrack(
+        id = "m18",
+        title = "旅行の計画 · Travel Planning",
+        subtitle = "Discussing a trip to Hokkaido with a friend",
+        category = MediaCategory.Dialogues,
+        durationSeconds = 46,
+        level = "N4 · Elementary",
+        tags = listOf("Travel", "Hokkaido", "Planning", "Casual"),
+        lines = listOf(
+            ImmersionLine("夏休みに北海道に行かない？", "なつやすみにほっかいどうにいかない？", "Want to go to Hokkaido during summer vacation?", listOf("夏", "休", "北", "海", "道")),
+            ImmersionLine("いいね！何をしたい？", "いいね！なにをしたい？", "Sounds great! What do you want to do?", listOf("何")),
+            ImmersionLine("富良野のラベンダー畑を見たいし、海も泳ぎたい。", "ふらののラベンダーばたいをみたいしうみもおよぎたい。", "I want to see the lavender fields in Furano and also swim in the ocean.", listOf("海", "泳")),
+            ImmersionLine("新千歳空港からレンタカーで回ろうよ。", "しんちとせくうこうかられんたかーでまわろうよ。", "Let's drive around in a rental car from New Chitose Airport.", listOf("空港", "車", "回"))
+        )
+    )
+)
+
+/** Multiplatform Media Centre Content interface */
+fun interface MediaCentreContent {
+    @Composable
+    fun Content(navigationState: MainNavigationState?, onClose: () -> Unit)
+}
+
+/** Core Multiplatform Media Implementation */
+object DefaultMediaCentreContent : MediaCentreContent {
+
+    @Composable
+    override fun Content(navigationState: MainNavigationState?, onClose: () -> Unit) {
+        val surfaceColors = LocalSurfaceColors.current
+        val accent = LocalKaiteyoAccent.current
+        val scope = rememberCoroutineScope()
+        val ttsManager = runCatching { koinInject<KanaTtsManager>() }.getOrNull()
+
+        var selectedCategory by remember { mutableStateOf(MediaCategory.All) }
+        var searchQuery by remember { mutableStateOf("") }
+        val tracks = remember { mutableStateListOf<MediaTrack>().apply { addAll(initialMediaLibrary) } }
+
+        var activeTrack by remember { mutableStateOf<MediaTrack?>(tracks.firstOrNull()) }
+        var isPlaying by remember { mutableStateOf(false) }
+        var currentLineIndex by remember { mutableStateOf(0) }
+        var playbackProgress by remember { mutableFloatStateOf(0f) }
+        var playbackSpeed by remember { mutableFloatStateOf(1.0f) }
+        var repeatMode by remember { mutableStateOf(false) }
+        var showImportDialog by remember { mutableStateOf(false) }
+        var showStatsPanel by remember { mutableStateOf(false) }
+
+        // ── Playback simulation with TTS ──
+        LaunchedEffect(isPlaying, activeTrack, currentLineIndex, playbackSpeed) {
+            if (isPlaying && activeTrack != null) {
+                val line = activeTrack!!.lines.getOrNull(currentLineIndex)
+                if (line != null && ttsManager != null) {
+                    try {
+                        val romaji = line.reading.kanaToRomaji()
+                        ttsManager.speak(KanaReading(nihonShiki = romaji))
+                    } catch (_: Exception) {
+                        // Silent TTS fallback
+                    }
+                }
+                while (isPlaying) {
+                    delay(500)
+                    val totalLines = activeTrack?.lines?.size ?: 1
+                    playbackProgress = (currentLineIndex.toFloat() + 0.5f) / totalLines.toFloat()
+                    delay((2500 / playbackSpeed).toLong())
+                    if (currentLineIndex < totalLines - 1) {
+                        currentLineIndex++
+                    } else {
+                        if (repeatMode) {
+                            currentLineIndex = 0
+                            playbackProgress = 0f
+                        } else {
+                            isPlaying = false
+                            currentLineIndex = 0
+                            playbackProgress = 0f
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        // ── Listening statistics ──
+        val totalLinesPlayed = remember(tracks.size) {
+            tracks.sumOf { it.lines.size }
+        }
+        val totalTracksPlayed = remember(tracks.size) {
+            tracks.count { it.isBookmarked }
+        }
+
+        ProvidePageIdentity(
+            PageIdentity(id = "media", name = "Media Centre", route = "/media", panel = null)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(surfaceColors.background)
+            ) {
+                // ════════════════════════════════════════
+                // HEADER BAR
+                // ════════════════════════════════════════
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = surfaceColors.textPrimary)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = "Media Centre",
+                            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = surfaceColors.textPrimary
+                        )
+                        Text(
+                            text = "Japanese immersion · ${tracks.size} tracks · ${totalLinesPlayed} lines · ${tracks.flatMap { it.lines }.flatMap { it.keywords }.distinct().size} vocabulary items",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = surfaceColors.textMuted
+                        )
+                    }
+                    // Stats toggle
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (showStatsPanel) accent.primary.copy(alpha = 0.15f) else Color.Transparent,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { showStatsPanel = !showStatsPanel }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Star, null, tint = accent.primary, modifier = Modifier.size(16.dp))
+                            Text("Stats", fontSize = 12.sp, color = accent.primary, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Button(
+                        onClick = { showImportDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = accent.primary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Import", fontSize = 13.sp)
+                    }
+                }
+
+                // ════════════════════════════════════════
+                // SEARCH BAR
+                // ════════════════════════════════════════
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search media, vocabulary, Kanji...", fontSize = 13.sp, color = surfaceColors.textMuted) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, tint = surfaceColors.textMuted, modifier = Modifier.size(20.dp)) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    )
+                }
+
+                // ════════════════════════════════════════
+                // CATEGORY TABS
+                // ════════════════════════════════════════
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MediaCategory.entries.forEach { category ->
+                        val selected = selectedCategory == category
+                        val count = when (category) {
+                            MediaCategory.All -> tracks.size
+                            MediaCategory.Saved -> tracks.count { it.isBookmarked }
+                            else -> tracks.count { it.category == category }
+                        }
+                        val catBg by animateColorAsState(if (selected) accent.primary.copy(alpha = 0.2f) else surfaceColors.surface)
+                        val catColor = if (selected) accent.primary else surfaceColors.textSecondary
+
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = catBg,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .clickable { selectedCategory = category }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(category.icon, contentDescription = null, tint = catColor, modifier = Modifier.size(16.dp))
+                                Text(category.label, color = catColor, fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                                Text("($count)", color = catColor.copy(alpha = 0.6f), fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+
+                // ════════════════════════════════════════
+                // STATS PANEL (collapsible)
+                // ════════════════════════════════════════
+                AnimatedVisibility(
+                    visible = showStatsPanel,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    StatsOverviewBar(
+                        tracks = tracks,
+                        surfaceColors = surfaceColors,
+                        accent = accent
+                    )
+                }
+
+                // ════════════════════════════════════════
+                // MAIN CONTENT — TRACK LIST + TRANSCRIPT
+                // ════════════════════════════════════════
+                val filteredTracks = remember(tracks, selectedCategory, searchQuery) {
+                    tracks.filter { track ->
+                        val matchesCategory = when (selectedCategory) {
+                            MediaCategory.All -> true
+                            MediaCategory.Saved -> track.isBookmarked
+                            else -> track.category == selectedCategory
+                        }
+                        val matchesQuery = searchQuery.isBlank() ||
+                                track.title.contains(searchQuery, ignoreCase = true) ||
+                                track.subtitle.contains(searchQuery, ignoreCase = true) ||
+                                track.tags.any { it.contains(searchQuery, ignoreCase = true) } ||
+                                track.lines.any { it.japanese.contains(searchQuery) || it.english.contains(searchQuery, ignoreCase = true) }
+                        matchesCategory && matchesQuery
+                    }
+                }
+
+                if (filteredTracks.isEmpty()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        KaiteyoEmptyState(
+                            icon = "🎵",
+                            title = "No media found",
+                            message = if (searchQuery.isNotBlank()) "No tracks matched \"$searchQuery\"" else "Add your own audio or dialogue tracks to immerse.",
+                            actionLabel = "Add Track",
+                            onAction = { showImportDialog = true }
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // ── LEFT: TRACK LIST ──
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(filteredTracks, key = { it.id }) { track ->
+                                TrackCard(
+                                    track = track,
+                                    isActive = activeTrack?.id == track.id,
+                                    isPlaying = isPlaying && activeTrack?.id == track.id,
+                                    currentLineIndex = if (activeTrack?.id == track.id) currentLineIndex else -1,
+                                    accent = accent,
+                                    surfaceColors = surfaceColors,
+                                    onSelect = {
+                                        if (activeTrack?.id != track.id) {
+                                            activeTrack = track
+                                            currentLineIndex = 0
+                                            playbackProgress = 0f
+                                            isPlaying = false
+                                        }
+                                    },
+                                    onToggleBookmark = {
+                                        val idx = tracks.indexOfFirst { it.id == track.id }
+                                        if (idx >= 0) {
+                                            tracks[idx] = track.copy(isBookmarked = !track.isBookmarked)
+                                        }
+                                    },
+                                    onPlay = {
+                                        if (activeTrack?.id != track.id) {
+                                            activeTrack = track
+                                            currentLineIndex = 0
+                                            playbackProgress = 0f
+                                        }
+                                        isPlaying = true
+                                    }
+                                )
+                            }
+                        }
+
+                        // ── RIGHT: TRANSCRIPT & INSPECTOR ──
+                        activeTrack?.let { track ->
+                            TranscriptPanel(
+                                track = track,
+                                currentLineIndex = currentLineIndex,
+                                isPlaying = isPlaying,
+                                accent = accent,
+                                surfaceColors = surfaceColors,
+                                ttsManager = ttsManager,
+                                navigationState = navigationState,
+                                onLineClick = { index ->
+                                    currentLineIndex = index
+                                    if (isPlaying && ttsManager != null) {
+                                        scope.launch {
+                                            try {
+                                                val line = track.lines[index]
+                                                val romaji = line.reading.kanaToRomaji()
+                                                ttsManager.speak(KanaReading(nihonShiki = romaji))
+                                            } catch (_: Exception) {}
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // ════════════════════════════════════════
+                // BOTTOM PLAYER BAR
+                // ════════════════════════════════════════
+                activeTrack?.let { track ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = surfaceColors.surface,
+                        tonalElevation = 6.dp,
+                        shadowElevation = 8.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Progress slider
+                            Slider(
+                                value = playbackProgress,
+                                onValueChange = { value ->
+                                    playbackProgress = value
+                                    val totalLines = track.lines.size.coerceAtLeast(1)
+                                    currentLineIndex = (value * totalLines).toInt().coerceIn(0, totalLines - 1)
+                                },
+                                colors = SliderDefaults.colors(
+                                    thumbColor = accent.primary,
+                                    activeTrackColor = accent.primary,
+                                    inactiveTrackColor = surfaceColors.surfaceInteractive
+                                ),
+                                modifier = Modifier.fillMaxWidth().height(16.dp)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Track info
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(track.title, fontWeight = FontWeight.Bold, color = surfaceColors.textPrimary, maxLines = 1, fontSize = 14.sp)
+                                    Text(
+                                        track.lines.getOrNull(currentLineIndex)?.japanese ?: track.subtitle,
+                                        fontSize = 12.sp,
+                                        color = accent.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                // Controls
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Speed
+                                    TextButton(
+                                        onClick = {
+                                            playbackSpeed = when {
+                                                playbackSpeed < 0.75f -> 0.5f
+                                                playbackSpeed < 1.0f -> 0.75f
+                                                playbackSpeed < 1.25f -> 1.0f
+                                                playbackSpeed < 1.5f -> 1.25f
+                                                playbackSpeed < 2.0f -> 1.5f
+                                                else -> 0.5f
+                                            }
+                                        }
+                                    ) {
+                                        Icon(Icons.Default.Speed, null, modifier = Modifier.size(16.dp), tint = accent.primary)
+                                        Spacer(Modifier.width(2.dp))
+                                        Text("${playbackSpeed}x", fontSize = 12.sp, color = accent.primary, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    // Repeat
+                                    IconButton(onClick = { repeatMode = !repeatMode }) {
+                                        Icon(
+                                            Icons.Default.Repeat, contentDescription = "Repeat",
+                                            tint = if (repeatMode) accent.primary else surfaceColors.textMuted,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    // Rewind
+                                    IconButton(onClick = {
+                                        currentLineIndex = (currentLineIndex - 1).coerceAtLeast(0)
+                                    }) {
+                                        Icon(Icons.Default.FastRewind, contentDescription = "Prev line", tint = surfaceColors.textPrimary, modifier = Modifier.size(22.dp))
+                                    }
+
+                                    // Play / Pause
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(accent.primary)
+                                            .clickable { isPlaying = !isPlaying },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = "Play/Pause",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
+
+                                    // Forward
+                                    IconButton(onClick = {
+                                        currentLineIndex = (currentLineIndex + 1).coerceAtMost(track.lines.size - 1)
+                                    }) {
+                                        Icon(Icons.Default.FastForward, contentDescription = "Next line", tint = surfaceColors.textPrimary, modifier = Modifier.size(22.dp))
+                                    }
+
+                                    // Skip to next track
+                                    IconButton(onClick = {
+                                        val idx = filteredTracks.indexOfFirst { it.id == track.id }
+                                        if (idx >= 0 && idx < filteredTracks.size - 1) {
+                                            activeTrack = filteredTracks[idx + 1]
+                                            currentLineIndex = 0
+                                            playbackProgress = 0f
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.SkipNext, contentDescription = "Next track", tint = surfaceColors.textPrimary, modifier = Modifier.size(22.dp))
+                                    }
+
+                                    // Bookmark current line
+                                    IconButton(onClick = {
+                                        val idx = tracks.indexOfFirst { it.id == track.id }
+                                        if (idx >= 0) {
+                                            tracks[idx] = track.copy(isBookmarked = !track.isBookmarked)
+                                        }
+                                    }) {
+                                        Icon(
+                                            if (track.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                            contentDescription = "Bookmark",
+                                            tint = if (track.isBookmarked) accent.primary else surfaceColors.textMuted,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ════════════════════════════════════════
+                // IMPORT DIALOG
+                // ════════════════════════════════════════
+                if (showImportDialog) {
+                    ImportTrackDialog(
+                        accent = accent,
+                        surfaceColors = surfaceColors,
+                        onImport = { title, japanese, english, category ->
+                            val newTrack = MediaTrack(
+                                id = "custom_${System.currentTimeMillis()}",
+                                title = title,
+                                subtitle = english.ifBlank { "Custom Immersion Audio" },
+                                category = category,
+                                durationSeconds = 20,
+                                level = "Custom",
+                                tags = listOf("Custom"),
+                                lines = listOf(
+                                    ImmersionLine(
+                                        japanese = japanese,
+                                        reading = japanese,
+                                        english = english,
+                                        keywords = japanese.filter { c ->
+                                            c.code in 0x4E00..0x9FFF || c.code in 0x3400..0x4DBF
+                                        }.map { it.toString() }
+                                    )
+                                )
+                            )
+                            tracks.add(0, newTrack)
+                            activeTrack = newTrack
+                            showImportDialog = false
+                        },
+                        onDismiss = { showImportDialog = false }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════
+// COMPOSABLE SUB-COMPONENTS
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Stats overview bar — collapsible summary of listening progress.
+ */
+@Composable
+private fun StatsOverviewBar(
+    tracks: List<MediaTrack>,
+    surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors,
+    accent: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
+) {
+    val totalLines = tracks.sumOf { it.lines.size }
+    val totalVocab = tracks.flatMap { it.lines }.flatMap { it.keywords }.distinct().size
+    val bookmarked = tracks.count { it.isBookmarked }
+    val byLevel = tracks.groupBy { it.level }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = surfaceColors.surface,
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatColumn("Tracks", tracks.size.toString(), accent.primary)
+            StatColumn("Lines", totalLines.toString(), accent.primary)
+            StatColumn("Vocab", totalVocab.toString(), accent.primary)
+            StatColumn("Saved", bookmarked.toString(), if (bookmarked > 0) Color(0xFFE8A838) else surfaceColors.textMuted)
+            Spacer(Modifier.weight(1f))
+            byLevel.forEach { (level, levelTracks) ->
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = surfaceColors.surfaceInteractive.copy(alpha = 0.5f)
+                ) {
+                    Text(
+                        "$level (${levelTracks.size})",
+                        fontSize = 11.sp,
+                        color = surfaceColors.textSecondary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatColumn(label: String, value: String, color: Color) {
+    val surfaceColors = LocalSurfaceColors.current
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, color = color, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = surfaceColors.textMuted, fontSize = 10.sp)
+    }
+}
+
+/**
+ * Individual track card — poster-style with category badge, level,
+ * progress indicator, play/bookmark controls.
+ */
+@Composable
+private fun TrackCard(
+    track: MediaTrack,
+    isActive: Boolean,
+    isPlaying: Boolean,
+    currentLineIndex: Int,
+    accent: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme,
+    surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors,
+    onSelect: () -> Unit,
+    onToggleBookmark: () -> Unit,
+    onPlay: () -> Unit
+) {
+    val progressFraction = if (isActive && track.lines.isNotEmpty()) {
+        (currentLineIndex.toFloat() + 1f) / track.lines.size.toFloat()
+    } else 0f
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive) accent.primary.copy(alpha = 0.12f) else surfaceColors.surface
+        )
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Play icon
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(if (isActive) accent.primary else surfaceColors.surfaceInteractive)
+                        .clickable { onPlay() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = if (isActive) Color.White else surfaceColors.textPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = track.title,
+                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = surfaceColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+                    Text(
+                        text = track.subtitle,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = surfaceColors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(track.level, fontSize = 11.sp, color = accent.primary, fontWeight = FontWeight.SemiBold)
+                        Text("·", color = surfaceColors.textMuted)
+                        Text("${track.durationSeconds}s", fontSize = 11.sp, color = surfaceColors.textMuted)
+                        Text("·", color = surfaceColors.textMuted)
+                        Text("${track.lines.size} lines", fontSize = 11.sp, color = surfaceColors.textMuted)
+                    }
+                }
+
+                // Bookmark
+                IconButton(onClick = onToggleBookmark) {
+                    Icon(
+                        imageVector = if (track.isBookmarked) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = "Bookmark",
+                        tint = if (track.isBookmarked) Color(0xFFE8A838) else surfaceColors.textMuted
+                    )
+                }
+            }
+
+            // Progress bar
+            if (isActive && progressFraction > 0f) {
+                LinearProgressIndicator(
+                    progress = { progressFraction },
+                    modifier = Modifier.fillMaxWidth().height(3.dp),
+                    color = accent.primary,
+                    trackColor = surfaceColors.surfaceInteractive
+                )
+            }
+
+            // Tags row
+            if (track.tags.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    track.tags.take(4).forEach { tag ->
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = surfaceColors.surfaceInteractive.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                tag,
+                                fontSize = 10.sp,
+                                color = surfaceColors.textSecondary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Right-side transcript panel — line-by-line display with
+ * Japanese, reading, English, and clickable vocabulary chips.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TranscriptPanel(
+    track: MediaTrack,
+    currentLineIndex: Int,
+    isPlaying: Boolean,
+    accent: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme,
+    surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors,
+    ttsManager: KanaTtsManager?,
+    navigationState: MainNavigationState?,
+    onLineClick: (Int) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+
+    Card(
+        modifier = Modifier
+            .weight(1.1f)
+            .fillMaxSize(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = surfaceColors.surface)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Track header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(track.title, style = androidx.compose.material3.MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = surfaceColors.textPrimary)
+                    Text(track.subtitle, style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = surfaceColors.textMuted)
+                }
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = accent.primary.copy(alpha = 0.15f)
+                ) {
+                    Text(track.level, color = accent.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                }
+            }
+
+            // Line-by-line transcript
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                itemsIndexed(track.lines) { index, line ->
+                    val isCurrent = index == currentLineIndex
+                    val lineBg by animateColorAsState(
+                        if (isCurrent) accent.primary.copy(alpha = 0.15f) else surfaceColors.surfaceInteractive.copy(alpha = 0.5f)
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(lineBg)
+                            .clickable { onLineClick(index) }
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Line number + Japanese
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                "${index + 1}",
+                                fontSize = 11.sp,
+                                color = if (isCurrent) accent.primary else surfaceColors.textMuted,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(20.dp)
+                            )
+                            Text(
+                                text = line.japanese,
+                                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCurrent) accent.primary else surfaceColors.textPrimary,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        // Reading
+                        Text(
+                            text = "　　${line.reading}",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = surfaceColors.textSecondary
+                        )
+                        // English
+                        Text(
+                            text = "　　${line.english}",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = surfaceColors.textMuted
+                        )
+
+                        // Vocab chips
+                        if (line.keywords.isNotEmpty()) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(top = 4.dp, start = 28.dp)
+                            ) {
+                                line.keywords.forEach { kw ->
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = accent.primary.copy(alpha = 0.12f),
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable {
+                                                navigationState?.navigate(MainDestination.Info(InfoScreenData.Letter(kw)))
+                                            }
+                                    ) {
+                                        Text(
+                                            text = "🔍 $kw",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = accent.primary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Import track dialog — add custom Japanese dialogue,
+ * sentences, or podcast snippets.
+ */
+@Composable
+private fun ImportTrackDialog(
+    accent: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme,
+    surfaceColors: ua.syt0r.kanji.presentation.common.theme.SurfaceColors,
+    onImport: (title: String, japanese: String, english: String, category: MediaCategory) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var japanese by remember { mutableStateOf("") }
+    var english by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf(MediaCategory.Sentences) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Import Immersion Media", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Add custom Japanese dialogue, podcast snippet, or audio sentence to your immersion library.",
+                    fontSize = 13.sp,
+                    color = surfaceColors.textMuted
+                )
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    placeholder = { Text("e.g. Shopping in Shibuya") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = japanese,
+                    onValueChange = { japanese = it },
+                    label = { Text("Japanese Sentence / Transcript") },
+                    placeholder = { Text("e.g. これをください。") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = english,
+                    onValueChange = { english = it },
+                    label = { Text("English Translation") },
+                    placeholder = { Text("e.g. I will take this one, please.") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Category selector
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MediaCategory.entries.filter { it != MediaCategory.Saved }.forEach { cat ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (category == cat) accent.primary.copy(alpha = 0.2f) else Color.Transparent,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { category = cat }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(cat.icon, null, modifier = Modifier.size(14.dp), tint = if (category == cat) accent.primary else surfaceColors.textSecondary)
+                                Text(cat.label, fontSize = 12.sp, color = if (category == cat) accent.primary else surfaceColors.textSecondary)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isNotBlank() && japanese.isNotBlank()) {
+                        onImport(title, japanese, english, category)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = accent.primary),
+                enabled = title.isNotBlank() && japanese.isNotBlank()
+            ) {
+                Text("Add to Library")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+val mediaCentreModule = module {
+    single<MediaCentreContent> { DefaultMediaCentreContent }
+}

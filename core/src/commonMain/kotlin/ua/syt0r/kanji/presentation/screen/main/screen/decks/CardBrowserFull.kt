@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -980,16 +981,7 @@ private fun BrowserCardRow(
                         }
                     }
                     "status" -> Text(card.status.displayName, fontSize = 10.sp,
-                        color = when (card.status) {
-                            CardStatus.New -> Color(0xFF7BC8FF)
-                            CardStatus.Learning -> Color(0xFFFEAB57)
-                            CardStatus.Young -> Color(0xFFC2FC8B)
-                            CardStatus.Mature -> Color(0xFF4CAF50)
-                            CardStatus.Relearning -> Color(0xFFFF6B6B)
-                            CardStatus.Suspended -> surfaceColors.textMuted
-                            CardStatus.Buried -> surfaceColors.textMuted
-                            CardStatus.Archived -> surfaceColors.textMuted
-                        })
+                        color = statusColor(card.status))
                     "stability" -> Text(formatStability(card), fontSize = 11.sp, color = surfaceColors.textPrimary)
                     "difficulty" -> Text(formatDifficulty(card), fontSize = 11.sp, color = difficultyColor(card, surfaceColors, accent))
                     "due" -> Text(
@@ -1003,17 +995,12 @@ private fun BrowserCardRow(
                             CardStatus.Archived -> "Archived"
                         },
                         fontSize = 11.sp,
-                        color = when (card.status) {
-                            CardStatus.New -> Color(0xFF7BC8FF)
-                            CardStatus.Learning, CardStatus.Relearning -> Color(0xFFFEAB57)
-                            CardStatus.Young, CardStatus.Mature -> Color(0xFFC2FC8B)
-                            else -> surfaceColors.textMuted
-                        }
+                        color = statusColor(card.status)
                     )
                     "interval" -> Text(formatInterval(card.interval), fontSize = 11.sp, color = surfaceColors.textPrimary)
                     "ease" -> Text(formatFloat(card.ease, 1), fontSize = 11.sp, color = surfaceColors.textPrimary)
                     "reviews" -> Text("${card.reviewCount}", fontSize = 11.sp, color = surfaceColors.textPrimary)
-                    "lapses" -> Text("${card.lapses}", fontSize = 11.sp, color = if (card.lapses > 0) Color(0xFFFF6B6B) else surfaceColors.textMuted)
+                    "lapses" -> Text("${card.lapses}", fontSize = 11.sp, color = if (card.lapses > 0) LocalKaiteyoSemanticColors.current.error else surfaceColors.textMuted)
                     "created" -> Text(card.createdAt, fontSize = 10.sp, color = surfaceColors.textMuted)
                     "modified" -> Text(card.modifiedAt, fontSize = 10.sp, color = surfaceColors.textMuted)
                     "lastReview" -> Text(card.lastReviewed, fontSize = 10.sp, color = surfaceColors.textMuted)
@@ -2296,16 +2283,20 @@ private fun formatDifficulty(card: KaiteyoCard): String {
     return "${difficulty.roundToInt()}%"
 }
 
+@Composable
 private fun difficultyColor(
     card: KaiteyoCard,
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
-): Color = when {
-    card.reviewCount == 0 -> surfaceColors.textMuted
-    card.lapses > 0 -> Color(0xFFFF6B6B)
-    card.accuracy >= 0.9f -> accent.primary
-    card.accuracy >= 0.7f -> Color(0xFFFEAB57)
-    else -> Color(0xFF7BC8FF)
+): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when {
+        card.reviewCount == 0 -> surfaceColors.textMuted
+        card.lapses > 0 -> sem.error
+        card.accuracy >= 0.9f -> accent.primary
+        card.accuracy >= 0.7f -> sem.warning
+        else -> sem.info
+    }
 }
 
 // ════════════════════════════════════════════
@@ -2535,13 +2526,16 @@ private fun SaveSearchDialog(
 }
 
 @Composable
-private fun statusColor(status: CardStatus): Color = when (status) {
-    CardStatus.New -> Color(0xFF7BC8FF)
-    CardStatus.Learning -> Color(0xFFFFD93D)
-    CardStatus.Young -> Color(0xFFC2FC8B)
-    CardStatus.Mature -> Color(0xFF2ECC71)
-    CardStatus.Relearning -> Color(0xFFFEAB57)
-    CardStatus.Suspended -> Color(0xFFB0B0B0)
-    CardStatus.Buried -> Color(0xFF9B59B6)
-    CardStatus.Archived -> Color(0xFF7F8C8D)
+private fun statusColor(status: CardStatus): Color {
+    val sem = LocalKaiteyoSemanticColors.current
+    return when (status) {
+        CardStatus.New -> sem.cardNew
+        CardStatus.Learning -> sem.cardLearning
+        CardStatus.Young -> sem.cardYoung
+        CardStatus.Mature -> sem.cardMature
+        CardStatus.Relearning -> sem.cardRelearning
+        CardStatus.Suspended -> sem.cardSuspended
+        CardStatus.Buried -> sem.cardBuried
+        CardStatus.Archived -> sem.cardArchived
+    }
 }

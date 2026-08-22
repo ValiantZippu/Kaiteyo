@@ -50,6 +50,7 @@ import kotlinx.serialization.json.Json
 import ua.syt0r.kanji.core.statistics.ExamQuestionRecord
 import ua.syt0r.kanji.core.statistics.GradedExam
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
 import ua.syt0r.kanji.presentation.screen.main.features.StatisticsController
@@ -172,7 +173,7 @@ fun ExamRunnerScreen(
                 Text(
                     "⏱ ${formatClock(remaining)}",
                     fontSize = 12.sp,
-                    color = if (remaining < 30_000) Color(0xFFFF6B6B) else surfaceColors.textSecondary
+                    color = if (remaining < 30_000) LocalKaiteyoSemanticColors.current.error else surfaceColors.textSecondary
                 )
                 Spacer(Modifier.width(10.dp))
             }
@@ -302,7 +303,7 @@ fun ExamRunnerScreen(
                     showQuitConfirm = false
                     scope.launch { controller.abandonExam() }
                     onExit()
-                }) { Text("Quit", color = Color(0xFFFF6B6B)) }
+                }) { Text("Quit", color = LocalKaiteyoSemanticColors.current.error) }
             },
             dismissButton = { TextButton(onClick = { showQuitConfirm = false }) { Text("Keep going") } }
         )
@@ -348,14 +349,14 @@ private fun ExamResultsScreen(
                 title = "Correct",
                 value = "$correct",
                 subtitle = "questions",
-                color = Color(0xFFC2FC8B),
+                color = LocalKaiteyoSemanticColors.current.success,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 title = "Incorrect",
                 value = "$wrong",
                 subtitle = "incl. skipped",
-                color = Color(0xFFFF6B6B),
+                color = LocalKaiteyoSemanticColors.current.error,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -372,7 +373,7 @@ private fun ExamResultsScreen(
                         if (isCorrect) "✓" else "✗",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isCorrect) Color(0xFFC2FC8B) else Color(0xFFFF6B6B)
+                        color = if (isCorrect) LocalKaiteyoSemanticColors.current.success else LocalKaiteyoSemanticColors.current.error
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -387,11 +388,11 @@ private fun ExamResultsScreen(
                     Text(
                         "Your answer: ${q.userAnswer?.ifBlank { "—" } ?: "—"}",
                         fontSize = 12.sp,
-                        color = if (isCorrect) surfaceColors.textSecondary else Color(0xFFFF6B6B)
+                        color = if (isCorrect) surfaceColors.textSecondary else LocalKaiteyoSemanticColors.current.error
                     )
                     if (!isCorrect) {
                         Spacer(Modifier.height(2.dp))
-                        Text("Correct answer: ${q.answer}", fontSize = 12.sp, color = Color(0xFFC2FC8B))
+                        Text("Correct answer: ${q.answer}", fontSize = 12.sp, color = LocalKaiteyoSemanticColors.current.success)
                         if (!q.mistakeCategory.isNullOrBlank() && q.mistakeCategory != "none") {
                             Spacer(Modifier.height(2.dp))
                             Text(

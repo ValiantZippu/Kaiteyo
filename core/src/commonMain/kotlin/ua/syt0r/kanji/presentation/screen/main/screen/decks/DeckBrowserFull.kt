@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
+import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoSemanticColors
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.common.theme.SurfaceColors
 import ua.syt0r.kanji.presentation.common.ui.KaiteyoAlertDialog
@@ -406,7 +407,8 @@ private fun DeckStatsBar(
         Text("$totalNew new", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.weight(1f))
         if (favoriteCount > 0) {
-            Icon(Icons.Default.Star, null, Modifier.size(12.dp), tint = Color(0xFFFFD93D))
+            val sem = LocalKaiteyoSemanticColors.current
+            Icon(Icons.Default.Star, null, Modifier.size(12.dp), tint = sem.favoriteStar)
             Text("$favoriteCount", fontSize = 11.sp, color = surfaceColors.textMuted)
         }
         if (pinnedCount > 0) {
@@ -483,6 +485,7 @@ private fun DeckTreeRow(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     val deck = node.deck
     val hasChildren = node.children.isNotEmpty()
     val isExpanded = deck.id in expandedIds
@@ -533,20 +536,20 @@ private fun DeckTreeRow(
                     .clip(RoundedCornerShape(8.dp))
                     .background(
                         when {
-                            deck.isFavorite -> Color(0xFFFFD93D).copy(alpha = 0.2f)
+                            deck.isFavorite -> sem.favoriteStar.copy(alpha = 0.2f)
                             deck.isVirtual -> accent.primary.copy(alpha = 0.1f)
                             deck.isArchived -> surfaceColors.border.copy(alpha = 0.2f)
-                            deck.isPinned -> Color(0xFFA78BFA).copy(alpha = 0.15f)
+                            deck.isPinned -> sem.new.copy(alpha = 0.15f)
                             else -> surfaceColors.surfaceInteractive
                         }
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    deck.isFavorite -> Icon(Icons.Default.Star, null, Modifier.size(16.dp), tint = Color(0xFFFFD93D))
+                    deck.isFavorite -> Icon(Icons.Default.Star, null, Modifier.size(16.dp), tint = sem.favoriteStar)
                     deck.isVirtual -> Icon(Icons.Default.AutoAwesome, null, Modifier.size(16.dp), tint = accent.primary)
                     deck.isArchived -> Icon(Icons.Default.Archive, null, Modifier.size(16.dp), tint = surfaceColors.textMuted)
-                    deck.isPinned -> Icon(Icons.Default.PushPin, null, Modifier.size(16.dp), tint = Color(0xFFA78BFA))
+                    deck.isPinned -> Icon(Icons.Default.PushPin, null, Modifier.size(16.dp), tint = sem.new)
                     else -> Icon(Icons.Default.Folder, null, Modifier.size(16.dp), tint = surfaceColors.textMuted)
                 }
             }
@@ -673,6 +676,7 @@ private fun DeckListItem(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
@@ -687,11 +691,11 @@ private fun DeckListItem(
     ) {
         Box(
             modifier = Modifier.size(28.dp).clip(RoundedCornerShape(6.dp))
-                .background(if (deck.isFavorite) Color(0xFFFFD93D).copy(alpha = 0.2f) else surfaceColors.surfaceInteractive),
+                .background(if (deck.isFavorite) sem.favoriteStar.copy(alpha = 0.2f) else surfaceColors.surfaceInteractive),
             contentAlignment = Alignment.Center
         ) {
             Icon(if (deck.isFavorite) Icons.Default.Star else Icons.Default.Folder, null,
-                Modifier.size(14.dp), tint = if (deck.isFavorite) Color(0xFFFFD93D) else surfaceColors.textMuted)
+                Modifier.size(14.dp), tint = if (deck.isFavorite) sem.favoriteStar else surfaceColors.textMuted)
         }
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
@@ -736,6 +740,7 @@ private fun DeckCompactItem(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
+    val sem = LocalKaiteyoSemanticColors.current
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = surfaceColors.surfaceElevated),
@@ -747,11 +752,11 @@ private fun DeckCompactItem(
         ) {
             Box(
                 modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp))
-                    .background(if (deck.isFavorite) Color(0xFFFFD93D).copy(alpha = 0.2f) else surfaceColors.surfaceInteractive),
+                    .background(if (deck.isFavorite) sem.favoriteStar.copy(alpha = 0.2f) else surfaceColors.surfaceInteractive),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(if (deck.isFavorite) Icons.Default.Star else Icons.Default.Folder, null,
-                    Modifier.size(18.dp), tint = if (deck.isFavorite) Color(0xFFFFD93D) else surfaceColors.textMuted)
+                    Modifier.size(18.dp), tint = if (deck.isFavorite) sem.favoriteStar else surfaceColors.textMuted)
             }
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
