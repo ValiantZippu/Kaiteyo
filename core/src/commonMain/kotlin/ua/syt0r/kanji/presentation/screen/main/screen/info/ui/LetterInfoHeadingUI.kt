@@ -78,8 +78,8 @@ import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
 //
 // Responsive Architecture:
 //   · Desktop / Landscape: 2-column layout
-//       Left: Interactive Glyph Graph + Formula Decomposition + Stroke Anim
-//       Right: Kanji Hero + Audio/Readings + Mnemonic + Meanings
+//       Left: Glyph Graph + Decomposition Formula + Meanings & Tags
+//       Right: Study Status + Kanji Hero + Readings→Vocab explorer + Mnemonic
 //   · Portrait: Fluid single-column progressive hierarchy
 // ============================================================
 
@@ -125,7 +125,9 @@ fun LetterInfoKanjiHeading(
     isPlayingReading: String? = null,
     userNote: String? = null,
     onSaveUserNote: ((String) -> Unit)? = null,
-    onWordClick: ((ua.syt0r.kanji.core.app_data.data.JapaneseWord) -> Unit)? = null
+    onWordClick: ((ua.syt0r.kanji.core.app_data.data.JapaneseWord) -> Unit)? = null,
+    statusContent: (@Composable () -> Unit)? = null,
+    readingsVocabContent: (@Composable () -> Unit)? = null
 ) {
     val clipboardManager = LocalClipboardManager.current
     val isLandscape = LocalOrientation.current == Orientation.Landscape
@@ -157,7 +159,7 @@ fun LetterInfoKanjiHeading(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Left Column: Interactive Graph & Structural Formula
+            // Left Column: Structure — graph, decomposition, meanings
             Column(
                 modifier = Modifier.weight(1.1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -178,13 +180,18 @@ fun LetterInfoKanjiHeading(
                     radicals = data.radicalsSectionData.radicals,
                     onRadicalClick = onRadicalClick
                 )
+
+                KaiteyoMeaningsTagsCard(data = data)
             }
 
-            // Right Column: Identity, Readings, Audio, Mnemonics
+            // Right Column: Identity & Study — status, hero,
+            // readings → vocab explorer, mnemonics
             Column(
                 modifier = Modifier.weight(0.9f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (statusContent != null) statusContent()
+
                 KaiteyoKanjiHero(
                     data = data,
                     onCopy = {
@@ -192,14 +199,18 @@ fun LetterInfoKanjiHeading(
                     }
                 )
 
-                KaiteyoReadingsCard(
-                    on = data.on,
-                    kun = data.kun,
-                    vocab = data.vocab.list.value,
-                    onPlayReading = onPlayReading,
-                    isPlayingReading = isPlayingReading,
-                    onWordClick = onWordClick
-                )
+                if (readingsVocabContent != null) {
+                    readingsVocabContent()
+                } else {
+                    KaiteyoReadingsCard(
+                        on = data.on,
+                        kun = data.kun,
+                        vocab = data.vocab.list.value,
+                        onPlayReading = onPlayReading,
+                        isPlayingReading = isPlayingReading,
+                        onWordClick = onWordClick
+                    )
+                }
 
                 KaiteyoMnemonicCard(
                     character = data.character,
@@ -209,7 +220,6 @@ fun LetterInfoKanjiHeading(
                     onComponentClick = onRadicalClick
                 )
 
-                KaiteyoMeaningsTagsCard(data = data)
             }
         }
     } else {
@@ -228,6 +238,8 @@ fun LetterInfoKanjiHeading(
                 }
             )
 
+            if (statusContent != null) statusContent()
+
             // Interactive Glyph Graph
             AnimatedGlyphGraph(
                 rootCharacter = data.character,
@@ -245,15 +257,19 @@ fun LetterInfoKanjiHeading(
                 onRadicalClick = onRadicalClick
             )
 
-            // Readings with TTS audio playback
-            KaiteyoReadingsCard(
-                on = data.on,
-                kun = data.kun,
-                vocab = data.vocab.list.value,
-                onPlayReading = onPlayReading,
-                isPlayingReading = isPlayingReading,
-                onWordClick = onWordClick
-            )
+            // Readings → vocabulary explorer with inline sentences
+            if (readingsVocabContent != null) {
+                readingsVocabContent()
+            } else {
+                KaiteyoReadingsCard(
+                    on = data.on,
+                    kun = data.kun,
+                    vocab = data.vocab.list.value,
+                    onPlayReading = onPlayReading,
+                    isPlayingReading = isPlayingReading,
+                    onWordClick = onWordClick
+                )
+            }
 
             // Mnemonic Card
             KaiteyoMnemonicCard(

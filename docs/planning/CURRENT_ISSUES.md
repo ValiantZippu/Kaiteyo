@@ -46,6 +46,7 @@ They are not `DONE` until runtime-verified.
 
 | Item | What's needed |
 |---|---|
+| Kanji details revamp — unified **Readings & Vocabulary explorer** (`KaiteyoReadingsVocabCard` + clean two-column kanji layout; replaces the broken side vocab/sentence panels whose reading matching expanded every reading to the full vocab list) | JVM compile (`:desktopApp:compileKotlinJvm`) on a machine with ≥8 GB RAM — sandbox cgroup (2 GB / 1 CPU) OOM-kills the Gradle/Kotlin daemons mid-build |
 | Core MPP changes (backup unification rewire, 12-file dead-code deletion, `DeckFeaturesHub` import removal, `DeckManager.kt` trim, mock-history fallback removal) | JVM compile (`:core`) + Android build; source-only per user instruction |
 | iOS `.apkg` import/export (`AnkiPackage.ios.kt`, pure-Kotlin ZIP/inflate) | macOS build + simulator/device |
 | iOS file picker/save (`UIDocumentPickerViewController`) | macOS build + device |
