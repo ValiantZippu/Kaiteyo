@@ -81,7 +81,7 @@ import ua.syt0r.kanji.presentation.screen.main.screen.info.LetterInfoData
 // Responsive Architecture:
 //   · Desktop / Landscape: 2-column layout
 //       Left: Interactive Glyph Graph + Stroke Order Card + Decomposition + Meanings
-//       Right: Audio/Readings + Mnemonic + Sentences
+//       Right: Study Status + Readings→Vocab explorer + Mnemonic
 //   · Portrait: Fluid single-column progressive hierarchy
 // ============================================================
 
@@ -127,7 +127,9 @@ fun LetterInfoKanjiHeading(
     isPlayingReading: String? = null,
     userNote: String? = null,
     onSaveUserNote: ((String) -> Unit)? = null,
-    onWordClick: ((ua.syt0r.kanji.core.app_data.data.JapaneseWord) -> Unit)? = null
+    onWordClick: ((ua.syt0r.kanji.core.app_data.data.JapaneseWord) -> Unit)? = null,
+    statusContent: (@Composable () -> Unit)? = null,
+    readingsVocabContent: (@Composable () -> Unit)? = null
 ) {
     val isLandscape = LocalOrientation.current == Orientation.Landscape
     val surfaceColors = LocalSurfaceColors.current
@@ -196,20 +198,30 @@ fun LetterInfoKanjiHeading(
                 )
             }
 
-            // Right Column: Identity, Readings, Mnemonics
+            // Right Column: Identity & Study — status, readings → vocab
+//             explorer (inline sentences), mnemonics
             Column(
                 modifier = Modifier.weight(0.9f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Readings with audio
-                KaiteyoReadingsCard(
-                    on = data.on,
-                    kun = data.kun,
-                    vocab = data.vocab.list.value,
-                    onPlayReading = onPlayReading,
-                    isPlayingReading = isPlayingReading,
-                    onWordClick = onWordClick
-                )
+                if (statusContent != null) statusContent()
+
+                // Readings → vocabulary explorer with inline sentences
+                if (readingsVocabContent != null) {
+                    readingsVocabContent()
+                } else {
+                    KaiteyoReadingsCard(
+                        character = data.character,
+                        on = data.on,
+                        kun = data.kun,
+                        vocab = data.vocab.list.value,
+                        sentences = data.sentences.list.value,
+                        totalVocab = data.vocab.total,
+                        onPlayReading = onPlayReading,
+                        isPlayingReading = isPlayingReading,
+                        onWordClick = onWordClick
+                    )
+                }
 
                 // Mnemonics
                 KaiteyoMnemonicCard(
@@ -220,26 +232,29 @@ fun LetterInfoKanjiHeading(
                     onComponentClick = onRadicalClick
                 )
 
-                // Sentences
-                val sentences = data.sentences.list.value
-                if (sentences.isNotEmpty()) {
-                    KaiteyoCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        header = "Sentences",
-                        subtitle = "Example sentences"
-                    ) {
-                        sentences.take(3).forEach { sentence ->
-                            KaiteyoSentenceRow(
-                                sentence = sentence,
-                                onFuriganaClick = onRadicalClick
-                            )
-                        }
-                        if (sentences.size > 3) {
-                            Text(
-                                text = "+${sentences.size - 3} more...",
-                                fontSize = 11.sp,
-                                color = surfaceColors.textMuted
-                            )
+                // Standalone sentences card — only without the explorer,
+                // which already shows example sentences per word
+                if (readingsVocabContent == null) {
+                    val sentences = data.sentences.list.value
+                    if (sentences.isNotEmpty()) {
+                        KaiteyoCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            header = "Sentences",
+                            subtitle = "Example sentences"
+                        ) {
+                            sentences.take(3).forEach { sentence ->
+                                KaiteyoSentenceRow(
+                                    sentence = sentence,
+                                    onFuriganaClick = onRadicalClick
+                                )
+                            }
+                            if (sentences.size > 3) {
+                                Text(
+                                    text = "+${sentences.size - 3} more...",
+                                    fontSize = 11.sp,
+                                    color = surfaceColors.textMuted
+                                )
+                            }
                         }
                     }
                 }
@@ -270,6 +285,9 @@ fun LetterInfoKanjiHeading(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // Study status (real SRS state for this kanji)
+            if (statusContent != null) statusContent()
+
             // 3. Hierarchical Formula
             KaiteyoFormulaCard(
                 character = data.character,
@@ -284,15 +302,22 @@ fun LetterInfoKanjiHeading(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 5. Readings with audio
-            KaiteyoReadingsCard(
-                on = data.on,
-                kun = data.kun,
-                vocab = data.vocab.list.value,
-                onPlayReading = onPlayReading,
-                isPlayingReading = isPlayingReading,
-                onWordClick = onWordClick
-            )
+            // 5. Readings → vocabulary explorer with inline sentences
+            if (readingsVocabContent != null) {
+                readingsVocabContent()
+            } else {
+                KaiteyoReadingsCard(
+                    character = data.character,
+                    on = data.on,
+                    kun = data.kun,
+                    vocab = data.vocab.list.value,
+                    sentences = data.sentences.list.value,
+                    totalVocab = data.vocab.total,
+                    onPlayReading = onPlayReading,
+                    isPlayingReading = isPlayingReading,
+                    onWordClick = onWordClick
+                )
+            }
 
             // 6. Mnemonics
             KaiteyoMnemonicCard(
@@ -320,27 +345,30 @@ fun LetterInfoKanjiHeading(
                 )
             }
 
-            // 8. Sentences
-            val sentences = data.sentences.list.value
-            if (sentences.isNotEmpty()) {
-                KaiteyoCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    header = "Sentences",
-                    subtitle = "Example sentences using this kanji"
-                ) {
-                    sentences.take(5).forEach { sentence ->
-                        KaiteyoSentenceRow(
-                            sentence = sentence,
-                            onFuriganaClick = onRadicalClick
-                        )
-                    }
-                    if (sentences.size > 5) {
-                        Text(
-                            text = "+${sentences.size - 5} more sentences...",
-                            fontSize = 11.sp,
-                            color = surfaceColors.textMuted,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+            // Standalone sentences card — only without the explorer,
+            // which already shows example sentences per word
+            if (readingsVocabContent == null) {
+                val sentences = data.sentences.list.value
+                if (sentences.isNotEmpty()) {
+                    KaiteyoCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        header = "Sentences",
+                        subtitle = "Example sentences using this kanji"
+                    ) {
+                        sentences.take(5).forEach { sentence ->
+                            KaiteyoSentenceRow(
+                                sentence = sentence,
+                                onFuriganaClick = onRadicalClick
+                            )
+                        }
+                        if (sentences.size > 5) {
+                            Text(
+                                text = "+${sentences.size - 5} more sentences...",
+                                fontSize = 11.sp,
+                                color = surfaceColors.textMuted,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }

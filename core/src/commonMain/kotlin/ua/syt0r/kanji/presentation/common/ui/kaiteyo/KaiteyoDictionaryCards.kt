@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.HorizontalDivider
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -70,6 +72,8 @@ import kotlin.math.sin
 import ua.syt0r.kanji.core.app_data.Sentence
 import ua.syt0r.kanji.core.app_data.data.JapaneseWord
 import ua.syt0r.kanji.core.app_data.data.formattedFurigana
+import ua.syt0r.kanji.core.japanese.isKatakana
+import ua.syt0r.kanji.core.japanese.katakanaToHiragana
 import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
@@ -614,170 +618,509 @@ fun KaiteyoKanjiPill(
     }
 }
 
-// ── Reading rows ────────────────────────────────────────────
+// ── Readings & vocabulary hub ───────────────────────
+//
+// One clean flow instead of separate vocab/sentence panels:
+//   tap a reading → see every word read that way
+//   tap a word   → see that word's example sentences inline
+
+private fun JapaneseWord.wordText(): String =
+    reading.kanjiReading ?: reading.kanaReading
+
+private fun JapaneseWord.wordKana(): String =
+    reading.kanaReading ?: reading.kanjiReading ?: ""
+
+/** Katakana-normalized form of a kana string for reading comparisons. */
+private fun String.toHiragana(): String =
+    map { char -> if (char.isKatakana()) katakanaToHiragana(char) else char }.joinToString("")
+
+/** All comparable stems of a reading: the full reading plus the kanji-only stem. */
+private fun readingStems(reading: String): List<String> {
+    val normalized = reading.replace("・", ".").replace("．", ".")
+    val stems = mutableListOf(normalized.replace(".", ""))
+    if (normalized.contains('.')) stems += normalized.substringBefore('.')
+    return stems.filter { it.isNotBlank() }.map { it.toHiragana() }
+}
+
+private fun JapaneseWord.matchesReading(reading: String): Boolean {
+    val kana = wordKana().toHiragana()
+    if (kana.isEmpty()) return false
+    return readingStems(reading).any { stem -> kana.contains(stem) }
+}
+
+private fun sentencesForWord(word: JapaneseWord, sentences: List<Sentence>): List<Sentence> {
+    val kanji = word.reading.kanjiReading
+    val kana = word.reading.kanaReading
+    return sentences.filter { sentence ->
+        (kanji != null && sentence.value.contains(kanji)) ||
+            (kana != null && sentence.value.contains(kana))
+    }
+}
 
 @Composable
 fun KaiteyoReadingsCard(
+    character: String,
     on: List<String>,
     kun: List<String>,
-    vocab: List<JapaneseWord> = emptyList(),
+    vocab: List<JapaneseWord>,
+    sentences: List<Sentence>,
+    totalVocab: Int,
+    modifier: Modifier = Modifier,
     onPlayReading: ((String) -> Unit)? = null,
     isPlayingReading: String? = null,
     onWordClick: ((JapaneseWord) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onFuriganaClick: (String) -> Unit = {},
+    canLoadMoreVocab: Boolean = false,
+    onLoadMoreVocab: () -> Unit = {},
+    /** Optional repository-backed sentence lookup; falls back to filtering [sentences]. */
+    sentenceProvider: (suspend (JapaneseWord) -> List<Sentence>)? = null
 ) {
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
-    var onExpanded by remember { mutableStateOf(false) }
-    var kunExpanded by remember { mutableStateOf(false) }
+
+    // One open reading group and one open word at a time keeps the page calm
+    var expandedReading by remember { mutableStateOf<String?>(null) }
+    var expandedWord by remember { mutableStateOf<JapaneseWord?>(null) }
+    var expandedWordSentences by remember { mutableStateOf<List<Sentence>?>(null) }
+    var otherExpanded by remember { mutableStateOf(false) }
+
+    // Resolve the open word's example sentences asynchronously
+    LaunchedEffect(expandedWord) {
+        expandedWordSentences = null
+        val word = expandedWord ?: return@LaunchedEffect
+        expandedWordSentences = sentenceProvider?.invoke(word)
+            ?: sentencesForWord(word, sentences)
+    }
+
+    // Group loaded vocab by reading; anything unmatched falls into "other"
+    val grouped = remember(vocab, on, kun) {
+        val matched = mutableSetOf<JapaneseWord>()
+        val onGroups = on.map { reading ->
+            reading to vocab.filter { it.matchesReading(reading) }.also { matched.addAll(it) }
+        }
+        val kunGroups = kun.map { reading ->
+            reading to vocab.filter { it.matchesReading(reading) }.also { matched.addAll(it) }
+        }
+        val other = vocab.filter { it !in matched }
+        Triple(onGroups, kunGroups, other)
+    }
 
     KaiteyoCard(
         modifier = modifier,
-        header = "Readings",
-        subtitle = "On'yomi and Kun'yomi — tap heading to expand vocab"
+        header = "Readings & Vocabulary",
+        subtitle = "Tap a reading to browse its words — tap a word to see sentences"
     ) {
         if (on.isEmpty() && kun.isEmpty()) {
-            Text("No readings available.", fontSize = 12.sp, color = surfaceColors.textMuted)
+            // No readings recorded — fall back to a single flat group
+            ReadingGroupLabel("Vocabulary", accent.secondary)
+            vocab.take(20).forEach { word ->
+                KaiteyoVocabWithSentencesRow(
+                    word = word,
+                    sentences = wordSentences(word, expandedWord, expandedWordSentences, sentences),
+                    expanded = expandedWord == word,
+                    onToggle = {
+                        expandedWord = if (expandedWord == word) null else word
+                    },
+                    onOpenDetails = { onWordClick?.invoke(word) },
+                    onFuriganaClick = onFuriganaClick
+                )
+            }
             return@KaiteyoCard
         }
 
-        // ── On'yomi ──────────────────────────────────────
-        if (on.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onExpanded = !onExpanded }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    "On",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = accent.secondary,
-                    modifier = Modifier.width(28.dp)
+        ReadingSection(label = "On'yomi", tint = accent.secondary) {
+            grouped.first.forEach { (reading, words) ->
+                KaiteyoReadingRow(
+                    reading = reading,
+                    wordCount = words.size,
+                    isPlaying = isPlayingReading == reading,
+                    expanded = expandedReading == reading,
+                    onToggle = {
+                        expandedReading = if (expandedReading == reading) null else reading
+                        expandedWord = null
+                    },
+                    onPlay = { onPlayReading?.invoke(reading) }
                 )
-                FlowRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    on.forEach { reading ->
-                        ReadingPill(
-                            text = reading,
-                            isPlaying = isPlayingReading == reading,
-                            onClick = { onPlayReading?.invoke(reading) }
-                        )
-                    }
-                }
-                Text(
-                    text = if (onExpanded) "▾" else "▸",
-                    fontSize = 12.sp,
-                    color = surfaceColors.textMuted
-                )
-            }
-            // Expandable on'yomi vocab
-            if (onExpanded && vocab.isNotEmpty()) {
-                val onVocab = vocab.filter { word ->
-                    val reading = word.reading.kanjiReading ?: word.reading.kanaReading
-                    on.any { r ->
-                        // Match reading without okurigana markers
-                        val cleanReading = r.replace(".*".toRegex(), "")
-                        reading.contains(cleanReading)
-                    }
-                }
-                if (onVocab.isNotEmpty()) {
+                AnimatedVisibility(visible = expandedReading == reading) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 34.dp, top = 4.dp, bottom = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        onVocab.take(10).forEach { word ->
-                            KaiteyoVocabRow(
-                                word = word,
-                                onClick = { onWordClick?.invoke(word) },
-                                onBookmarkClick = { }
+                        if (words.isEmpty()) {
+                            Text(
+                                text = "No vocabulary loaded for this reading",
+                                fontSize = 11.sp,
+                                color = surfaceColors.textMuted,
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
                             )
                         }
-                        if (onVocab.size > 10) {
-                            Text(
-                                text = "+${onVocab.size - 10} more…",
-                                fontSize = 10.sp,
-                                color = surfaceColors.textMuted
+                        words.forEach { word ->
+                            KaiteyoVocabWithSentencesRow(
+                                word = word,
+                                sentences = wordSentences(word, expandedWord, expandedWordSentences, sentences),
+                                expanded = expandedWord == word,
+                                onToggle = {
+                                    expandedWord = if (expandedWord == word) null else word
+                                },
+                                onOpenDetails = { onWordClick?.invoke(word) },
+                                onFuriganaClick = onFuriganaClick
                             )
+                        }
+                        if (words.isNotEmpty() && canLoadMoreVocab) {
+                            KaiteyoLoadMoreChip(onClick = onLoadMoreVocab)
                         }
                     }
                 }
             }
         }
 
-        // ── Kun'yomi ─────────────────────────────────────
-        if (kun.isNotEmpty()) {
+        ReadingSection(label = "Kun'yomi", tint = accent.primary) {
+            grouped.second.forEach { (reading, words) ->
+                KaiteyoReadingRow(
+                    reading = reading,
+                    wordCount = words.size,
+                    isPlaying = isPlayingReading == reading,
+                    expanded = expandedReading == reading,
+                    onToggle = {
+                        expandedReading = if (expandedReading == reading) null else reading
+                        expandedWord = null
+                    },
+                    onPlay = { onPlayReading?.invoke(reading) }
+                )
+                AnimatedVisibility(visible = expandedReading == reading) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        if (words.isEmpty()) {
+                            Text(
+                                text = "No vocabulary loaded for this reading",
+                                fontSize = 11.sp,
+                                color = surfaceColors.textMuted,
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
+                            )
+                        }
+                        words.forEach { word ->
+                            KaiteyoVocabWithSentencesRow(
+                                word = word,
+                                sentences = wordSentences(word, expandedWord, expandedWordSentences, sentences),
+                                expanded = expandedWord == word,
+                                onToggle = {
+                                    expandedWord = if (expandedWord == word) null else word
+                                },
+                                onOpenDetails = { onWordClick?.invoke(word) },
+                                onFuriganaClick = onFuriganaClick
+                            )
+                        }
+                        if (words.isNotEmpty() && canLoadMoreVocab) {
+                            KaiteyoLoadMoreChip(onClick = onLoadMoreVocab)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Words whose reading isn't in the On/Kun lists (irregular, kana-only, …)
+        if (grouped.third.isNotEmpty()) {
+            KaiteyoDivider(modifier = Modifier.padding(vertical = 4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { kunExpanded = !kunExpanded }
-                    .padding(vertical = 4.dp),
+                    .clip(KaiteyoPillShape)
+                    .clickable { otherExpanded = !otherExpanded }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    "Kun",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = accent.primary,
-                    modifier = Modifier.width(28.dp)
+                    text = "Other vocabulary",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = surfaceColors.textSecondary,
+                    modifier = Modifier.weight(1f)
                 )
-                FlowRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    kun.forEach { reading ->
-                        ReadingPill(
-                            text = reading,
-                            isPlaying = isPlayingReading == reading,
-                            onClick = { onPlayReading?.invoke(reading) }
-                        )
-                    }
-                }
+                KaiteyoCountBadge(grouped.third.size)
                 Text(
-                    text = if (kunExpanded) "▾" else "▸",
+                    text = if (otherExpanded) "▾" else "▸",
                     fontSize = 12.sp,
                     color = surfaceColors.textMuted
                 )
             }
-            // Expandable kun'yomi vocab
-            if (kunExpanded && vocab.isNotEmpty()) {
-                val kunVocab = vocab.filter { word ->
-                    val reading = word.reading.kanjiReading ?: word.reading.kanaReading
-                    kun.any { r ->
-                        val cleanReading = r.replace(".*".toRegex(), "")
-                        reading.contains(cleanReading)
+            AnimatedVisibility(visible = otherExpanded) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    grouped.third.forEach { word ->
+                        KaiteyoVocabWithSentencesRow(
+                            word = word,
+                            sentences = wordSentences(word, expandedWord, expandedWordSentences, sentences),
+                            expanded = expandedWord == word,
+                            onToggle = {
+                                expandedWord = if (expandedWord == word) null else word
+                            },
+                            onOpenDetails = { onWordClick?.invoke(word) },
+                            onFuriganaClick = onFuriganaClick
+                        )
                     }
                 }
-                if (kunVocab.isNotEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 34.dp, top = 4.dp, bottom = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        kunVocab.take(10).forEach { word ->
-                            KaiteyoVocabRow(
-                                word = word,
-                                onClick = { onWordClick?.invoke(word) },
-                                onBookmarkClick = { }
-                            )
-                        }
-                        if (kunVocab.size > 10) {
-                            Text(
-                                text = "+${kunVocab.size - 10} more…",
-                                fontSize = 10.sp,
-                                color = surfaceColors.textMuted
-                            )
+            }
+        }
+
+        if (totalVocab > vocab.size) {
+            Text(
+                text = "Showing ${vocab.size} of $totalVocab words",
+                fontSize = 10.sp,
+                color = surfaceColors.textMuted,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadingSection(
+    label: String,
+    tint: Color,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        ReadingGroupLabel(label, tint)
+        content()
+    }
+}
+
+@Composable
+private fun ReadingGroupLabel(text: String, tint: Color) {
+    Text(
+        text = text.uppercase(),
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.8.sp,
+        color = tint.copy(alpha = 0.85f),
+        modifier = Modifier.padding(horizontal = 12.dp)
+    )
+}
+
+@Composable
+private fun KaiteyoReadingRow(
+    reading: String,
+    wordCount: Int,
+    isPlaying: Boolean,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onPlay: () -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(KaiteyoPillShape)
+            .background(
+                when {
+                    isPlaying -> accent.secondary.copy(alpha = 0.14f)
+                    hovered -> surfaceColors.surfaceInteractive.copy(alpha = 0.5f)
+                    else -> Color.Transparent
+                }
+            )
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onToggle)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = "Play reading",
+            tint = if (isPlaying) accent.secondary else surfaceColors.textMuted.copy(alpha = 0.5f),
+            modifier = Modifier
+                .size(18.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onPlay)
+        )
+        Text(
+            text = reading,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isPlaying) accent.secondary else surfaceColors.textPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        if (wordCount > 0) KaiteyoCountBadge(wordCount)
+        Text(
+            text = if (expanded) "▾" else "▸",
+            fontSize = 12.sp,
+            color = surfaceColors.textMuted
+        )
+    }
+}
+
+@Composable
+fun KaiteyoCountBadge(count: Int) {
+    val surfaceColors = LocalSurfaceColors.current
+    Text(
+        text = "$count",
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        color = surfaceColors.textSecondary,
+        modifier = Modifier
+            .clip(KaiteyoPillShape)
+            .background(surfaceColors.surfaceInteractive.copy(alpha = 0.55f))
+            .padding(horizontal = 7.dp, vertical = 2.dp)
+    )
+}
+
+@Composable
+private fun KaiteyoLoadMoreChip(onClick: () -> Unit) {
+    val accent = LocalKaiteyoAccent.current
+    Text(
+        text = "Load more words…",
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = accent.primary,
+        modifier = Modifier
+            .clip(KaiteyoPillShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    )
+}
+
+/** Sentences shown for a word row — resolved lazily for the open word. */
+private fun wordSentences(
+    word: JapaneseWord,
+    expandedWord: JapaneseWord?,
+    expandedWordSentences: List<Sentence>?,
+    sentences: List<Sentence>
+): List<Sentence>? =
+    if (expandedWord == word) expandedWordSentences
+    else sentencesForWord(word, sentences)
+
+/** Vocab row that expands inline into its example sentences. */
+@Composable
+private fun KaiteyoVocabWithSentencesRow(
+    word: JapaneseWord,
+    sentences: List<Sentence>?,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onOpenDetails: () -> Unit,
+    onFuriganaClick: (String) -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+    val accent = LocalKaiteyoAccent.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val reading = word.reading
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                when {
+                    expanded -> accent.primary.copy(alpha = 0.07f)
+                    hovered -> surfaceColors.surfaceInteractive.copy(alpha = 0.35f)
+                    else -> Color.Transparent
+                }
+            )
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onToggle)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                if (reading.furigana != null) {
+                    FuriganaText(
+                        furiganaString = reading.formattedFurigana(),
+                        color = surfaceColors.textMuted,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp),
+                        annotationTextStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 8.sp,
+                            color = surfaceColors.textMuted
+                        )
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = word.wordText(),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (expanded) accent.primary else surfaceColors.textPrimary
+                    )
+                    Text(
+                        text = word.glossary.joinToString(", "),
+                        fontSize = 11.sp,
+                        color = surfaceColors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            val sentenceCount = sentences?.size ?: 0
+            if (sentenceCount > 0) {
+                Text(
+                    text = "$sentenceCount 文",
+                    fontSize = 10.sp,
+                    color = surfaceColors.textMuted
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = "Open entry",
+                tint = surfaceColors.textMuted,
+                modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onOpenDetails)
+            )
+        }
+
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp, start = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (sentences == null) {
+                    Text(
+                        text = "Loading sentences…",
+                        fontSize = 11.sp,
+                        color = surfaceColors.textMuted
+                    )
+                } else if (sentences.isEmpty()) {
+                    Text(
+                        text = "No example sentences for this word",
+                        fontSize = 11.sp,
+                        color = surfaceColors.textMuted
+                    )
+                } else {
+                    sentences.forEach { sentence ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(surfaceColors.surfaceInteractive.copy(alpha = 0.3f))
+                                .padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                KaiteyoFuriganaClickable(
+                                    furigana = sentence.furigana,
+                                    onFuriganaClick = onFuriganaClick
+                                )
+                                Spacer(Modifier.height(3.dp))
+                                Text(
+                                    text = sentence.translation,
+                                    fontSize = 11.sp,
+                                    color = surfaceColors.textSecondary,
+                                    lineHeight = 15.sp
+                                )
+                            }
                         }
                     }
                 }

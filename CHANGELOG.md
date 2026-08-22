@@ -253,6 +253,16 @@ All notable changes to Kaiteyo are documented here. Format follows
   Added `SearchField.Id` (+ `id` field pattern and evaluation); Browse review,
   the new Library "Study these N" action and the `id:` search suggestion now
   all work.
+- **Kanji details — readings/vocab actually filtered** — the old Readings
+  card expanded every reading to the *entire* vocabulary list (the matching
+  regex stripped every reading to an empty string), and vocabulary + example
+  sentences lived in separate side panels. The kanji details page now uses a
+  single **Readings & Vocabulary explorer**: On/Kun tabs with live counts,
+  reading pills that list only the words genuinely using that reading (proper
+  kun okurigana and katakana→hiragana matching), and tapping a word expands
+  its example sentences inline from the corpus. Landscape layout is a clean
+  two-column arrangement (structure left; status/hero/explorer/mnemonic
+  right) instead of three cramped columns.
 - **Kaiteyo Game — vertical slice** (`desktop/game/`, reachable as the **Game**
   workspace destination): a real, data-driven Japanese-learning world — a dense
   seaside town (Hamanaka) with a station, shopping street, beach and aquarium,
