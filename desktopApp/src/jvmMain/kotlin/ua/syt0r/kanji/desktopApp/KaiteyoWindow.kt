@@ -30,6 +30,7 @@ import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -42,6 +43,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
@@ -75,6 +77,9 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import java.awt.Cursor
 import java.awt.Dimension
+import java.awt.event.MouseMotionAdapter
+import java.awt.event.MouseMotionListener
+import javax.swing.SwingUtilities
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -95,6 +100,9 @@ import ua.syt0r.kanji.presentation.screen.main.features.KaiteyoSearch
 
 /** How often the floating-window work-area safety check runs (ms). */
 private const val WorkAreaWatchIntervalMs = 2_000L
+
+/** Height of the title bar region that triggers the hover overlay. */
+private val TitleBarHeight = 44.dp
 
 // ============================================
 // KAITEYO WINDOW
@@ -144,6 +152,34 @@ fun FrameWindowScope.KaiteyoWindow(
     // animate (dock width, etc.) can follow the window instantly instead of
     // chasing a moving target on every frame.
     var windowResizing by remember { mutableStateOf(false) }
+
+    // Hover-tracking for the transparent title bar overlay: when the mouse
+    // enters the top TitleBarHeight region of the window the title bar
+    // fades in (logo + draggable area + controls); when it leaves, the
+    // overlay fades back out so content is fully visible.
+    var isTitlebarHovered by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        val listener: MouseMotionListener = object : MouseMotionAdapter() {
+            override fun mouseMoved(e: java.awt.event.MouseEvent) {
+                val hitTop = e.y <= with(density) { TitleBarHeight.roundToPx() }
+                if (hitTop != isTitlebarHovered) {
+                    SwingUtilities.invokeLater { isTitlebarHovered = hitTop }
+                }
+            }
+        }
+        window.addMouseMotionListener(listener)
+        onDispose { window.removeMouseMotionListener(listener) }
+    }
+    // Fade: snappy-in (spring) · relaxed-out (tween 220ms)
+    val titlebarAlpha by animateFloatAsState(
+        targetValue = if (isTitlebarHovered) 1f else 0f,
+        animationSpec = if (isTitlebarHovered) {
+            spring(dampingRatio = 0.7f, stiffness = 800f)
+        } else {
+            tween(220)
+        },
+        label = "titlebarHover"
+    )
 
     // Where the custom system menu opens (right-click on the title bar,
     // Alt+Space, or the context-menu key). Null = closed.
@@ -366,30 +402,25 @@ fun FrameWindowScope.KaiteyoWindow(
                 LocalWindowResizing provides windowResizing,
                 LocalCaptureState provides captureState
             ) {
-                Column(Modifier.fillMaxSize()) {
-                    KaiteyoTitleBar(
+                // Content fills the full window — the title bar overlays on hover.
+                WindowContentFade(Modifier.fillMaxSize()) {
+                    content()
+                }
+
+                // Transparent title bar overlay: appears on hover with a
+                // spring fade-in so the content seamlessly extends behind it.
+                if (titlebarAlpha > 0.01f) {
+                    TitleBarHoverOverlay(
+                        alpha = titlebarAlpha,
                         isMaximized = isMaximized,
                         onMinimize = { windowState.isMinimized = true },
                         onToggleMaximize = { toggleMaximize() },
                         onClose = onClose,
                         onOpenSystemMenu = { systemMenuPosition = it }
                     )
-                    // Hairline divider under the title bar.
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(surfaceColors.border.copy(alpha = 0.18f))
-                    )
-                    WindowContentFade(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        content()
-                    }
                 }
-            }
 
-            // Invisible edge/corner resize zones (only while floating — a
+                // Invisible edge/corner resize zones (only while floating — a
             // maximized window never resizes). These are the resize handles
             // for undecorated windows on macOS/Linux, and work alongside the
             // OS border on Windows. Every drag is clamped to the work area of
@@ -423,6 +454,54 @@ fun FrameWindowScope.KaiteyoWindow(
 }
 
 // ============================================
+// TITLE BAR HOVER OVERLAY
+// Transparent overlay that fades in on mouse hover
+// over the top TitleBarHeight region. Content
+// extends behind it — the overlay adds a gradient
+// scrim at the bottom for readability.
+// ============================================
+
+@Composable
+private fun FrameWindowScope.TitleBarHoverOverlay(
+    alpha: Float,
+    isMaximized: Boolean,
+    onMinimize: () -> Unit,
+    onToggleMaximize: () -> Unit,
+    onClose: () -> Unit,
+    onOpenSystemMenu: (IntOffset) -> Unit
+) {
+    val surfaceColors = LocalSurfaceColors.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(TitleBarHeight)
+            .graphicsLayer { this.alpha = alpha }
+    ) {
+        // Gradient scrim at the bottom so the title bar text
+        // remains readable regardless of content behind it.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to surfaceColors.surface.copy(alpha = 0.92f),
+                        0.55f to surfaceColors.surface.copy(alpha = 0.65f),
+                        1f to Color.Transparent
+                    )
+                )
+        )
+        KaiteyoTitleBar(
+            isMaximized = isMaximized,
+            onMinimize = onMinimize,
+            onToggleMaximize = onToggleMaximize,
+            onClose = onClose,
+            onOpenSystemMenu = onOpenSystemMenu
+        )
+    }
+}
+
+// ============================================
 // TITLE BAR — app title + window controls
 // ============================================
 
@@ -438,7 +517,7 @@ private fun FrameWindowScope.KaiteyoTitleBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp),
+            .height(TitleBarHeight),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Title region: drags the window, double-click maximizes/restores.
