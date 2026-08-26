@@ -303,7 +303,9 @@ fun FrameWindowScope.KaiteyoWindow(
     // Theme Studio's radius setting shapes the window chrome too. Maximized
     // windows are square, matching the OS. During resize we keep the rounding
     // stable to avoid the flash-to-rectangle glitch.
-    val cornerRadius = if (isMaximized) 0.dp else DsRadius.Xl
+    // Always keep rounded corners — even when maximized the app surface
+    // should look premium, not flush like a native window.
+    val cornerRadius = DsRadius.Xl
     val surfaceShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
 
     // Windows 11: hand the OS the rounding and a theme-colored hairline
@@ -315,7 +317,7 @@ fun FrameWindowScope.KaiteyoWindow(
         repeat(5) {
             if (NativeWindowChrome.update(
                     frame = window,
-                    isMaximized = isMaximized,
+                    isMaximized = false,
                     borderColorArgb = surfaceColors.border.toArgb()
                 )
             ) {
@@ -429,8 +431,7 @@ fun FrameWindowScope.KaiteyoWindow(
                 .background(surfaceColors.surface)
                 .border(
                     width = 1.dp,
-                    color = if (isMaximized) Color.Transparent
-                    else surfaceColors.border.copy(alpha = 0.35f),
+                    color = surfaceColors.border.copy(alpha = 0.35f),
                     shape = surfaceShape
                 )
         ) {
@@ -523,7 +524,20 @@ private fun FrameWindowScope.KaiteyoTitleBar(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer { this.alpha = alpha },
+            .graphicsLayer { this.alpha = alpha }
+            .onGloballyPositioned { coords ->
+                // Report title bar bounds to WindowMessageHandler so
+                // WM_NCHITTEST can return HTCAPTION for the drag zone,
+                // enabling OS snap-to-edge when dragging to screen edges.
+                val screenPos = coords.localToScreen(Offset.Zero)
+                WindowMessageHandler.titleBarBounds =
+                    WindowMessageHandler.MaximizeButtonBounds(
+                        screenPos.x.roundToInt(),
+                        screenPos.y.roundToInt(),
+                        (screenPos.x + coords.size.width).roundToInt(),
+                        (screenPos.y + coords.size.height).roundToInt()
+                    )
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Window icon — native-style: a click opens the system menu, a

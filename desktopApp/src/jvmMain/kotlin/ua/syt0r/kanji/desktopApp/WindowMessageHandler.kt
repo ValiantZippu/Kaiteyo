@@ -68,9 +68,15 @@ internal object WindowMessageHandler {
     private const val SUBCLASS_ID = 1
 
     // Bounds of the maximize button in screen pixels (left, top, right, bottom).
-    // Updated by the Compose title bar via [updateMaximizeButtonBounds].
+    // Updated by the Compose title bar via onGloballyPositioned.
     @Volatile
     var maximizeButtonBounds: MaximizeButtonBounds? = null
+
+    // Bounds of the title bar drag zone in screen pixels.
+    // When the cursor is here (and not over the maximize button),
+    // HTCAPTION is returned so Windows snap-to-edge works.
+    @Volatile
+    var titleBarBounds: MaximizeButtonBounds? = null
 
     data class MaximizeButtonBounds(
         val left: Int,
@@ -128,9 +134,10 @@ internal object WindowMessageHandler {
 
     /**
      * Returns HTMAXBUTTON when the pointer is over the maximize button
-     * area, which tells Windows 11 to show the snap layout overlay.
-     * Returns null when not over the maximize button (let DefSubclassProc
-     * handle it normally).
+     * area (triggers Windows 11 snap layout overlay), or HTCAPTION when
+     * the pointer is over the title bar drag zone (enables OS snap-to-edge
+     * when dragging the window to screen edges).
+     * Returns null to let DefSubclassProc handle everything else.
      */
     private fun handleNcHitTest(
         hWnd: WinDef.HWND?,
@@ -141,15 +148,27 @@ internal object WindowMessageHandler {
         // means the cursor position is encoded as (x, y) in the low/high word).
         if (lParam.toLong() == 0L) return null
 
-        val bounds = maximizeButtonBounds ?: return null
-
         // Extract screen coordinates from lParam.
         val screenX = (lParam.toLong() and 0xFFFF).toInt().toShort().toInt() // low word, signed
         val screenY = ((lParam.toLong() shr 16) and 0xFFFF).toInt().toShort().toInt() // high word, signed
 
-        // Check if the cursor is within the maximize button bounds.
-        if (screenX in bounds.left..bounds.right && screenY in bounds.top..bounds.bottom) {
+        // Check maximize button first — HTMAXBUTTON triggers the snap layout popup.
+        val maxBounds = maximizeButtonBounds
+        if (maxBounds != null &&
+            screenX in maxBounds.left..maxBounds.right &&
+            screenY in maxBounds.top..maxBounds.bottom
+        ) {
             return HTMAXBUTTON.toLong()
+        }
+
+        // Check title bar drag zone — HTCAPTION enables OS snap-to-edge
+        // (drag to screen edges) and native double-click maximize.
+        val tbBounds = titleBarBounds
+        if (tbBounds != null &&
+            screenX in tbBounds.left..tbBounds.right &&
+            screenY in tbBounds.top..tbBounds.bottom
+        ) {
+            return HTCAPTION.toLong()
         }
 
         return null // Let DefSubclassProc handle everything else.
