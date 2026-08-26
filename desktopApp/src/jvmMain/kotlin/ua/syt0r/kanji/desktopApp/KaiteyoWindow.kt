@@ -57,7 +57,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.Offset
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
@@ -444,9 +444,9 @@ fun FrameWindowScope.KaiteyoWindow(
                     onResizeActive = { windowResizing = it }
                 )
             }
-        }
 
-        // Resize handles close the inner Box.
+                // Resize handles close the inner Box.
+            }
         }
 
         // Custom system menu, anchored where the user opened it (right-click
