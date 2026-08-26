@@ -40,7 +40,7 @@ internal object WindowMessageHandler {
             hWnd: WinDef.HWND?,
             pfnSubclassProc: SubclassProc?,
             uIdSubclass: WinDef.UINT_PTR?,
-            dwRefData: WinDef.DWORD_PTR?
+            dwRefData: Pointer?
         ): Boolean
 
         fun RemoveWindowSubclass(
@@ -59,7 +59,7 @@ internal object WindowMessageHandler {
             wParam: WinDef.WPARAM,
             lParam: WinDef.LPARAM,
             uIdSubclass: WinDef.UINT_PTR?,
-            dwRefData: WinDef.DWORD_PTR?
+            dwRefData: Pointer?
         ): Long
     }
 
