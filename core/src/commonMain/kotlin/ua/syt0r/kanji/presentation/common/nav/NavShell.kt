@@ -383,12 +383,16 @@ private fun AdaptiveNavigation(
                 }
             }
     ) {
-        // The dock takes real layout space on its edge; the content is a
-        // weighted sibling that always receives the remaining space. The
-        // sidebar physically cannot swallow the window or blank the content.
-        if (vertical) {
-            Row(Modifier.fillMaxSize()) {
-                if (dockLeft > 0.dp) {
+        // Content fills the full window. The sidebar floats on top
+        // as an overlay panel with elevated surface — it never pushes
+        // or steals space from the content area.
+        Box(Modifier.fillMaxSize()) {
+            content()
+
+            // Docked sidebar overlay — positioned on the matching edge
+            // with margin/elevation so it visually floats above content.
+            when {
+                isSidebar && vertical && dockLeft > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -398,17 +402,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Left,
                         vertical = true,
                         dockSize = dockLeft,
-                        modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .align(Alignment.CenterStart)
                     )
                 }
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    content()
-                }
-                if (dockRight > 0.dp) {
+                isSidebar && vertical && dockRight > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -418,13 +417,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Right,
                         vertical = true,
                         dockSize = dockRight,
-                        modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .align(Alignment.CenterEnd)
                     )
                 }
-            }
-        } else {
-            Column(Modifier.fillMaxSize()) {
-                if (dockTop > 0.dp) {
+                isSidebar && !vertical && dockTop > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -434,13 +432,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Top,
                         vertical = false,
                         dockSize = dockTop,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
                     )
                 }
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    content()
-                }
-                if (dockBottom > 0.dp) {
+                isSidebar && !vertical && dockBottom > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -450,11 +447,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Bottom,
                         vertical = false,
                         dockSize = dockBottom,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
                     )
                 }
             }
-        }
 
         // Clear the opposite mode's hover exclusion zone so stale rects never
         // block the title bar when the element is no longer visible.
@@ -750,7 +748,7 @@ private fun DockedSidebar(
                     )
                 },
             shape = shape,
-            color = surfaceColors.surface
+            color = surfaceColors.surfaceElevated
         ) {
             if (vertical) {
                 Column(Modifier.fillMaxSize()) {
