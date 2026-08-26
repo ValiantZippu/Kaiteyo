@@ -446,7 +446,7 @@ fun FrameWindowScope.KaiteyoWindow(
             }
         }
 
-        // Resize handles close the inner Box content.
+        // Resize handles close the inner Box.
         }
 
         // Custom system menu, anchored where the user opened it (right-click
