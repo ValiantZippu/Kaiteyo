@@ -436,6 +436,9 @@ fun FrameWindowScope.KaiteyoWindow(
             }
         }
 
+        // Resize handles close the inner Box.
+        }
+
         // Custom system menu, anchored where the user opened it (right-click
         // position, or the title-bar corner for Alt+Space / Menu key).
         systemMenuPosition?.let { offset ->
