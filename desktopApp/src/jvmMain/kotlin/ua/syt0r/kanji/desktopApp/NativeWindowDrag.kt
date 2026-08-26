@@ -51,7 +51,7 @@ private fun osName(): String =
  */
 internal fun startNativeWindowDrag(window: Frame): Boolean {
     return when {
-        isWindows -> dragWindows()
+        isWindows -> dragWindows(window)
         isLinux -> dragLinux(window)
         else -> false
     }
@@ -70,20 +70,44 @@ private interface NativeUser32 : Library {
 // Windows — WM_NCLBUTTONDOWN / HTCAPTION
 // ------------------------------------------------------------
 
-private fun dragWindows(): Boolean {
+private fun dragWindows(frame: Frame): Boolean {
     return try {
         val user32 = User32.INSTANCE
-        val hwnd: WinDef.HWND = user32.GetForegroundWindow()
+        val hwnd: WinDef.HWND = hwndOfFrame(frame) ?: user32.GetForegroundWindow()
         if (hwnd == null) return false
         // AWT holds the mouse capture while the button is down; release it so
         // the OS drag loop can take over.
         NativeUser32.INSTANCE.ReleaseCapture()
         // WM_NCLBUTTONDOWN = 0x00A1 with HTCAPTION = 0x0002.
+        // On Windows this gives native drag, double-click maximize/restore,
+        // and edge-to-edge snap (drag to screen edges/top for snap layouts).
         user32.SendMessage(hwnd, 0x00A1, WinDef.WPARAM(0x0002), WinDef.LPARAM(0))
         true
     } catch (_: Throwable) {
         false
     }
+}
+
+/**
+ * Resolves the native HWND from the AWT Frame via the internal peer,
+ * which gives a reliable handle for SendMessage instead of
+ * GetForegroundWindow() (which can race if focus changes).
+ */
+private fun hwndOfFrame(frame: Frame): WinDef.HWND? = try {
+    val getPeer = java.awt.Component::class.java.getDeclaredMethod("getPeer")
+    getPeer.isAccessible = true
+    val peer = getPeer.invoke(frame) ?: return null
+    val value = Class.forName("sun.awt.windows.WComponentPeer")
+        .getMethod("getHWnd")
+        .invoke(peer)
+    val hwnd = when (value) {
+        is Long -> value
+        is Int -> value.toLong()
+        else -> return null
+    }
+    if (hwnd == 0L) null else WinDef.HWND(com.sun.jna.Pointer.createConstant(hwnd))
+} catch (_: Throwable) {
+    null
 }
 
 // ------------------------------------------------------------
