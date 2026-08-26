@@ -82,9 +82,11 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
@@ -193,6 +195,26 @@ val LocalWindowResizing = staticCompositionLocalOf { false }
  * mode with a non-bottom bubble snap.
  */
 val LocalNavBarBottomSpace = compositionLocalOf<MutableState<Dp>> { mutableStateOf(0.dp) }
+
+// ============================================
+// HOVER EXCLUSION REGISTRY
+// Nav elements (sidebar, floating bubble) register their window-
+// relative bounds here so the desktop title bar hover detector can
+// skip those regions.  Written on every layout pass from Compose;
+// read by the AWT MouseMotionListener on the JVM window thread.
+// ============================================
+
+object HoverExclusionRegistry {
+    private val zones = mutableMapOf<String, Rect>()
+
+    @Synchronized
+    fun update(key: String, rect: Rect?) {
+        if (rect != null) zones[key] = rect else zones.remove(key)
+    }
+
+    @Synchronized
+    fun snapshot(): List<Rect> = zones.values.toList()
+}
 
 // ============================================
 // NAV SHELL — unified adaptive navigation
@@ -432,6 +454,16 @@ private fun AdaptiveNavigation(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+            }
+        }
+
+        // Clear the opposite mode's hover exclusion zone so stale rects never
+        // block the title bar when the element is no longer visible.
+        SideEffect {
+            if (mode == NavigationMode.Sidebar) {
+                HoverExclusionRegistry.update("bubble", null)
+            } else {
+                HoverExclusionRegistry.update("sidebar", null)
             }
         }
 
@@ -710,7 +742,14 @@ private fun DockedSidebar(
                         else -> Modifier.padding(bottom = margin)
                     }
                 )
-                .shadow(NavTokens.SidebarElevation, shape),
+                .shadow(NavTokens.SidebarElevation, shape)
+                .onGloballyPositioned { coords ->
+                    val pos = coords.positionInWindow()
+                    HoverExclusionRegistry.update(
+                        "sidebar",
+                        Rect(pos.x, pos.y, pos.x + coords.size.width, pos.y + coords.size.height)
+                    )
+                },
             shape = shape,
             color = surfaceColors.surface
         ) {

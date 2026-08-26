@@ -93,6 +93,7 @@ import ua.syt0r.kanji.desktop.ui.workspace.WindowActionsMenu
 import ua.syt0r.kanji.desktop.ui.workspace.WindowControls
 import ua.syt0r.kanji.presentation.common.nav.DesktopWindowPlacement
 import ua.syt0r.kanji.presentation.common.nav.LocalWindowPlacement
+import ua.syt0r.kanji.presentation.common.nav.HoverExclusionRegistry
 import ua.syt0r.kanji.presentation.common.nav.LocalWindowResizing
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
@@ -173,8 +174,17 @@ fun FrameWindowScope.KaiteyoWindow(
         val listener: MouseMotionListener = object : MouseMotionAdapter() {
             override fun mouseMoved(e: java.awt.event.MouseEvent) {
                 val hitTop = e.y <= with(density) { (TitleBarHeight + 8.dp).roundToPx() }
-                if (hitTop != isTitlebarHovered) {
-                    SwingUtilities.invokeLater { isTitlebarHovered = hitTop }
+                // Skip if the pointer is over a registered nav element (sidebar,
+                // floating bubble) — those handle their own hover interactions
+                // and should not summon the title bar.
+                val mx = e.x.toFloat()
+                val my = e.y.toFloat()
+                val blocked = HoverExclusionRegistry.snapshot().any { r ->
+                    mx >= r.left && mx <= r.right && my >= r.top && my <= r.bottom
+                }
+                val shouldShow = hitTop && !blocked
+                if (shouldShow != isTitlebarHovered) {
+                    SwingUtilities.invokeLater { isTitlebarHovered = shouldShow }
                 }
             }
         }

@@ -89,6 +89,7 @@ import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.common.theme.LocalKaiteyoAccent
 import ua.syt0r.kanji.presentation.common.theme.LocalSurfaceColors
 import ua.syt0r.kanji.presentation.screen.main.MainNavigationState
+import ua.syt0r.kanji.presentation.common.nav.HoverExclusionRegistry
 import ua.syt0r.kanji.presentation.screen.main.screen.home.HomeNavigationState
 
 // ============================================
@@ -398,7 +399,17 @@ fun BubbleLauncher(
                 }
                 .size(bubbleSize + hitboxPadding * 2)
                 .hoverable(interactionSource)
-                .onGloballyPositioned { if (bubbleCoords != it) bubbleCoords = it }
+                .onGloballyPositioned {
+                    if (bubbleCoords != it) bubbleCoords = it
+                    val pos = it.positionInWindow()
+                    HoverExclusionRegistry.update(
+                        "bubble",
+                        androidx.compose.ui.geometry.Rect(
+                            pos.x, pos.y,
+                            pos.x + it.size.width, pos.y + it.size.height
+                        )
+                    )
+                }
                 .focusRequester(bubbleFocusRequester)
                 .focusable()
                 .onKeyEvent { keyEvent ->
