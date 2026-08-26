@@ -57,9 +57,12 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.Offset
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.localToScreen
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -290,6 +293,13 @@ fun FrameWindowScope.KaiteyoWindow(
             }
             delay(100L)
         }
+    }
+
+    // Install the native WM_NCHITTEST handler for Windows 11 snap layouts
+    // on the maximize button hover. Also removed on dispose.
+    DisposableEffect(Unit) {
+        WindowMessageHandler.install(window)
+        onDispose { WindowMessageHandler.uninstall() }
     }
 
     // Enforce the minimum size at the AWT level as well, so every resize path
@@ -654,8 +664,11 @@ private fun WindowControlButtons(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(LocalSurfaceColors.current.surfaceElevated.copy(alpha = 0.6f))
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         WindowControlButton(
@@ -667,14 +680,19 @@ private fun WindowControlButtons(
         WindowControlButton(
             icon = if (isMaximized) "\u2750" else "\u25A1",
             onClick = onToggleMaximize,
-            glowColor = Color.Transparent,
-            contentDescription = if (isMaximized) "Restore" else "Maximize"
+            glowColor = LocalKaiteyoAccent.current.secondary.copy(alpha = 0.25f),
+            hoverTextColor = LocalKaiteyoAccent.current.secondary,
+            contentDescription = if (isMaximized) "Restore" else "Maximize",
+            onBoundsChanged = { left, top, right, bottom ->
+                WindowMessageHandler.maximizeButtonBounds =
+                    WindowMessageHandler.MaximizeButtonBounds(left, top, right, bottom)
+            }
         )
         WindowControlButton(
             icon = "\u2715",
             onClick = onClose,
-            glowColor = LocalKaiteyoAccent.current.primary.copy(alpha = 0.25f),
-            hoverTextColor = LocalKaiteyoAccent.current.primary,
+            glowColor = Color(0xFFFF6B6B).copy(alpha = 0.25f),
+            hoverTextColor = Color(0xFFFF6B6B),
             contentDescription = "Close"
         )
     }
@@ -687,7 +705,8 @@ private fun WindowControlButton(
     glowColor: Color,
     hoverTextColor: Color = Color.White,
     contentDescription: String,
-    size: Dp = 40.dp
+    size: Dp = 40.dp,
+    onBoundsChanged: ((left: Int, top: Int, right: Int, bottom: Int) -> Unit)? = null
 ) {
     val sc = LocalSurfaceColors.current
     val reducedMotion = LocalAnimationConfig.current.reducedMotion
@@ -730,6 +749,19 @@ private fun WindowControlButton(
             .graphicsLayer(
                 scaleX = scale,
                 scaleY = scale
+            )
+            .then(
+                if (onBoundsChanged != null) {
+                    Modifier.onGloballyPositioned { coords ->
+                        val screenPos = coords.localToScreen(Offset.Zero)
+                        onBoundsChanged(
+                            screenPos.x.roundToInt(),
+                            screenPos.y.roundToInt(),
+                            (screenPos.x + coords.size.width).roundToInt(),
+                            (screenPos.y + coords.size.height).roundToInt()
+                        )
+                    }
+                } else Modifier
             ),
         contentAlignment = Alignment.Center
     ) {
