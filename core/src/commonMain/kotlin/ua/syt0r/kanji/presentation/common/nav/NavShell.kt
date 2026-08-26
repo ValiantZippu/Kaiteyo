@@ -453,6 +453,7 @@ private fun AdaptiveNavigation(
                     )
                 }
             }
+        } // end inner Box (overlay)
 
         // Clear the opposite mode's hover exclusion zone so stale rects never
         // block the title bar when the element is no longer visible.
