@@ -423,35 +423,39 @@ fun FrameWindowScope.KaiteyoWindow(
                 LocalWindowResizing provides windowResizing,
                 LocalCaptureState provides captureState
             ) {
-                // Column layout: title bar slides down from top on hover,
-                // pushing content below it. No floating overlay.
-                Column(Modifier.fillMaxSize()) {
-                    // Animated title bar: height goes from 0 to TitleBarHeight
-                    // on hover, smoothly pushing content down.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(titlebarHeight)
-                            .background(surfaceColors.surface)
-                    ) {
-                        if (titlebarAlpha > 0.01f) {
-                            KaiteyoTitleBar(
-                                alpha = titlebarAlpha,
-                                isMaximized = isMaximized,
-                                onMinimize = { windowState.isMinimized = true },
-                                onToggleMaximize = { toggleMaximize() },
-                                onClose = onClose,
-                                onOpenSystemMenu = { systemMenuPosition = it }
-                            )
+                // Layout: Column for title bar + content, with resize
+                // handles overlaid on top (not in the Column flow, which
+                // would steal vertical space from the content).
+                Box(Modifier.fillMaxSize()) {
+                    Column(Modifier.fillMaxSize()) {
+                        // Animated title bar: height goes from 0 to TitleBarHeight
+                        // on hover, smoothly pushing content down.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(titlebarHeight)
+                                .background(surfaceColors.surface)
+                        ) {
+                            if (titlebarAlpha > 0.01f) {
+                                KaiteyoTitleBar(
+                                    alpha = titlebarAlpha,
+                                    isMaximized = isMaximized,
+                                    onMinimize = { windowState.isMinimized = true },
+                                    onToggleMaximize = { toggleMaximize() },
+                                    onClose = onClose,
+                                    onOpenSystemMenu = { systemMenuPosition = it }
+                                )
+                            }
+                        }
+
+                        // App content fills remaining space below the title bar.
+                        WindowContentFade(Modifier.fillMaxSize().weight(1f)) {
+                            content()
                         }
                     }
 
-                    // App content fills remaining space below the title bar.
-                    WindowContentFade(Modifier.fillMaxSize().weight(1f)) {
-                        content()
-                    }
-
-                    // Invisible edge/corner resize zones (only while floating).
+                    // Invisible edge/corner resize zones (only while floating —
+                    // overlaid on top so they don't steal Column space).
                     if (!isMaximized) {
                         WindowResizeHandles(
                             windowState = windowState,
