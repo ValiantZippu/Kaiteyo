@@ -157,10 +157,18 @@ fun FrameWindowScope.KaiteyoWindow(
     var windowResizing by remember { mutableStateOf(false) }
 
     // Hover-tracking for the title bar: when the mouse enters the top
-    // region the title bar slides down (pushing content below it); when
-    // it leaves, the title bar slides back up and content reclaims the
-    // space — no floating overlay.
+    // region the title bar fades in; the content push-down is delayed
+    // so clicking sidebar buttons near the top isn't jarring.
     var isTitlebarHovered by remember { mutableStateOf(false) }
+    var pushContentDown by remember { mutableStateOf(false) }
+    LaunchedEffect(isTitlebarHovered) {
+        if (isTitlebarHovered) {
+            delay(150L) // commit to the push only after a short dwell
+            pushContentDown = true
+        } else {
+            pushContentDown = false
+        }
+    }
     DisposableEffect(Unit) {
         val listener: MouseMotionListener = object : MouseMotionAdapter() {
             override fun mouseMoved(e: java.awt.event.MouseEvent) {
@@ -173,18 +181,19 @@ fun FrameWindowScope.KaiteyoWindow(
         window.addMouseMotionListener(listener)
         onDispose { window.removeMouseMotionListener(listener) }
     }
-    // Title bar height: slides from 0 to TitleBarHeight on hover.
+    // Title bar height: only pushes content after the 150ms dwell delay.
     // Snappy spring-in, relaxed tween-out.
     val titlebarHeight by animateDpAsState(
-        targetValue = if (isTitlebarHovered) TitleBarHeight else 0.dp,
-        animationSpec = if (isTitlebarHovered) {
+        targetValue = if (pushContentDown) TitleBarHeight else 0.dp,
+        animationSpec = if (pushContentDown) {
             spring(dampingRatio = 0.7f, stiffness = 800f)
         } else {
             spring(dampingRatio = 1f, stiffness = 300f)
         },
         label = "titlebarHeight"
     )
-    // Fade content behind the title bar for smooth visual transition
+    // Alpha fades in immediately on hover (no delay) so the user sees
+    // the title bar appear right away, even before the push starts.
     val titlebarAlpha by animateFloatAsState(
         targetValue = if (isTitlebarHovered) 1f else 0f,
         animationSpec = if (isTitlebarHovered) {
