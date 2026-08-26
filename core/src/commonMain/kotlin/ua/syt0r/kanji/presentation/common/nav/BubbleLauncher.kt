@@ -184,9 +184,12 @@ fun BubbleLauncher(
     } else 0
     // Every snap anchor and drag clamp derives from the configured safe margin
     // so the bubble can never end up clipped, off-screen or under system areas.
+    // The effective margin also accounts for the hitbox padding so the clickable
+    // area never extends beyond the container edges.
     val safeMarginPx = with(density) { bubbleSettings.safeMargin.coerceIn(4, 48).dp.roundToPx() }
-    val topMarginPx = max(safeMarginPx, topInsetPx)
-    val bottomMarginPx = max(safeMarginPx, bottomInsetPx)
+    val effectiveMarginPx = max(safeMarginPx, hitboxPaddingPx)
+    val topMarginPx = max(effectiveMarginPx, topInsetPx)
+    val bottomMarginPx = max(effectiveMarginPx, bottomInsetPx)
 
     val snapPositionFor: (BubbleSnapPoint) -> Offset = { snap ->
         val size = bubbleDiameterPx.toFloat()
@@ -194,7 +197,7 @@ fun BubbleLauncher(
         val h = containerSize.height.toFloat()
         val top = topMarginPx.toFloat()
         val bottom = bottomMarginPx.toFloat()
-        val side = safeMarginPx.toFloat()
+        val side = effectiveMarginPx.toFloat()
         when (snap) {
             BubbleSnapPoint.TopLeft, BubbleSnapPoint.LeftTop -> Offset(side, top)
             BubbleSnapPoint.TopCenter -> Offset((w - size) / 2f, top)
@@ -255,9 +258,9 @@ fun BubbleLauncher(
             with(density) { persistedOffsetY.dp.roundToPx() }.toFloat()
         )
         val target = anchorPos + drift
-        val minX = safeMarginPx.toFloat()
+        val minX = effectiveMarginPx.toFloat()
         val minY = topMarginPx.toFloat()
-        val maxX = (containerSize.width - bubbleDiameterPx - safeMarginPx).coerceAtLeast(0).toFloat()
+        val maxX = (containerSize.width - bubbleDiameterPx - effectiveMarginPx).coerceAtLeast(0).toFloat()
         val maxY = (containerSize.height - bubbleDiameterPx - bottomMarginPx).coerceAtLeast(0).toFloat()
         val inBounds = target.x >= minX && target.x <= maxX && target.y >= minY && target.y <= maxY
         bubbleOffset.snapTo(if (inBounds) target else anchorPos)
@@ -289,9 +292,9 @@ fun BubbleLauncher(
         // heading toward.
         val vel = velocity
         val speed = vel.getDistance()
-        val minX = safeMarginPx.toFloat()
+        val minX = effectiveMarginPx.toFloat()
         val minY = topMarginPx.toFloat()
-        val maxX = (containerSize.width - bubbleDiameterPx - safeMarginPx).coerceAtLeast(0).toFloat()
+        val maxX = (containerSize.width - bubbleDiameterPx - effectiveMarginPx).coerceAtLeast(0).toFloat()
         val maxY = (containerSize.height - bubbleDiameterPx - bottomMarginPx).coerceAtLeast(0).toFloat()
         val projectedPos = if (speed > 120f) {
             Offset(
@@ -353,15 +356,15 @@ fun BubbleLauncher(
     )
 
     // Hover / press response on the bubble glyph itself.
-    val bubbleInteraction = remember { MutableInteractionSource() }
-    val bubbleHovered by bubbleInteraction.collectIsHoveredAsState()
+    // Uses the same interactionSource as the outer hitbox to avoid
+    // hover-state flickering between two competing sources.
     val draggingNow = dragOffset != null
     val hoverScale by animateFloatAsState(
         // While dragging, the pointer can cross the hitbox edge and flip the
         // hover state — ignore hover entirely mid-drag so the bubble never
         // flashes between sizes while being moved.
         targetValue = if (draggingNow || launchpadOpen || modePanelOpen) 1f
-        else if (bubbleHovered) 1.06f else 1f,
+        else if (isBubbleHovered) 1.06f else 1f,
         animationSpec = spring(dampingRatio = 0.5f, stiffness = 420f),
         label = "bubbleHoverScale"
     )
@@ -419,9 +422,9 @@ fun BubbleLauncher(
                     bubbleSettings.holdDurationMs,
                     bubbleSettings.safeMargin
                 ) {
-                    val minX = safeMarginPx.toFloat()
+                    val minX = effectiveMarginPx.toFloat()
                     val minY = topMarginPx.toFloat()
-                    val maxX = (containerSize.width - bubbleDiameterPx - safeMarginPx).coerceAtLeast(0).toFloat()
+                    val maxX = (containerSize.width - bubbleDiameterPx - effectiveMarginPx).coerceAtLeast(0).toFloat()
                     val maxY = (containerSize.height - bubbleDiameterPx - bottomMarginPx).coerceAtLeast(0).toFloat()
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
@@ -445,15 +448,15 @@ fun BubbleLauncher(
 
                         try {
                             if (isSecondary) {
-                                // Right-click → launchpad (quick access to navigation).
+                                // Right-click → mode panel (same as hold / long-press).
                                 longPressJob.cancel()
                                 while (true) {
                                     val event = awaitPointerEvent()
                                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                     if (event.type == PointerEventType.Release) {
                                         if (!dragged) {
-                                            launchpadOpen = true
-                                            modePanelOpen = false
+                                            modePanelOpen = true
+                                            launchpadOpen = false
                                         }
                                         break
                                     }
@@ -571,7 +574,6 @@ fun BubbleLauncher(
                         scaleX = hoverScale * pressScale * grabScale * (1f + squashFactor)
                         scaleY = hoverScale * pressScale * grabScale * (1f - squashFactor)
                     }
-                    .hoverable(bubbleInteraction)
                     // Shadow first so it renders behind the bubble — ordered
                     // after background it painted a dark shape on top of the
                     // glyph, flattening the depth instead of adding it.
@@ -642,6 +644,7 @@ fun BubbleLauncher(
             )
 
             // Fading trail — ghost copies of previous anchor positions.
+            // Clamp ring offsets so they never extend off-screen.
             val trailCount = trailEntries.size
             trailEntries.forEachIndexed { i, trailPos ->
                 val progress = (i + 1).toFloat() / (trailCount + 1).coerceAtLeast(1)
@@ -651,8 +654,8 @@ fun BubbleLauncher(
                     modifier = Modifier
                         .offset {
                             IntOffset(
-                                (trailPos.x - ringPx / 2f).roundToInt(),
-                                (trailPos.y - ringPx / 2f).roundToInt()
+                                (trailPos.x - ringPx / 2f).coerceIn(0f, (containerSize.width - ringPx).toFloat()).roundToInt(),
+                                (trailPos.y - ringPx / 2f).coerceIn(0f, (containerSize.height - ringPx).toFloat()).roundToInt()
                             )
                         }
                         .size(ringSize)
@@ -665,13 +668,14 @@ fun BubbleLauncher(
                 )
             }
 
-            // Main pulsing ring at the current nearest anchor.
+            // Main pulsing ring at the current nearest anchor — clamped to stay
+            // fully visible within the container so it never clips at corners.
             Box(
                 modifier = Modifier
                     .offset {
                         IntOffset(
-                            (previewAnchor.x - ringPx / 2f).roundToInt(),
-                            (previewAnchor.y - ringPx / 2f).roundToInt()
+                            (previewAnchor.x - ringPx / 2f).coerceIn(0f, (containerSize.width - ringPx).toFloat()).roundToInt(),
+                            (previewAnchor.y - ringPx / 2f).coerceIn(0f, (containerSize.height - ringPx).toFloat()).roundToInt()
                         )
                     }
                     .size(ringSize)
