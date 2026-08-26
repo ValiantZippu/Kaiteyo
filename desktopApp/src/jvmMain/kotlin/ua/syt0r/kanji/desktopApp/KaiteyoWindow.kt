@@ -541,66 +541,45 @@ private fun FrameWindowScope.KaiteyoTitleBar(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = 8.dp)
         )
-        // Draggable area: native drag on Windows/Linux gives OS-level
-        // snap-to-edge, snap layouts, and double-click maximize/restore.
-        // WindowDraggableArea (Compose's pointer-based drag) conflicts with
-        // the native drag because it consumes pointer events first — so on
-        // Windows/Linux we use a plain Box with only the native pointerInput.
-        // macOS falls back to WindowDraggableArea (no native drag available).
-        val dragModifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()
-            .then(
-                if (isNativeDragAvailable) {
-                    // Native drag: send WM_NCLBUTTONDOWN/HTCAPTION on press.
-                    // The OS takes over the gesture, giving native snap, edge
-                    // snapping, and smooth 1:1 cursor tracking.
-                    Modifier.pointerInput(Unit) {
-                        awaitEachGesture {
-                            awaitFirstDown()
-                            startNativeWindowDrag(window)
+        // Draggable area: double-click maximizes, native drag on Windows/Linux.
+        WindowDraggableArea(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .then(
+                    if (isNativeDragAvailable) {
+                        Modifier.pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown()
+                                startNativeWindowDrag(window)
+                            }
                         }
+                    } else {
+                        Modifier
                     }
-                } else {
-                    Modifier
-                }
-            )
-            .then(
-                if (!isWindows) {
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures(onDoubleTap = { onToggleMaximize() })
+                )
+                .then(
+                    if (!isWindows) {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures(onDoubleTap = { onToggleMaximize() })
+                        }
+                    } else {
+                        Modifier
                     }
-                } else {
-                    // On Windows, double-click maximize is handled natively
-                    // by the OS drag loop (WM_NCLBUTTONDOWN/HTCAPTION).
-                    Modifier
-                }
-            )
-            // Right-click opens the system menu.
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        if (event.type == PointerEventType.Press && event.button == PointerButton.Secondary) {
-                            val pos = event.changes.first().position
-                            onOpenSystemMenu(IntOffset(pos.x.roundToInt(), pos.y.roundToInt()))
+                )
+                // Right-click opens the system menu.
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            if (event.type == PointerEventType.Press && event.button == PointerButton.Secondary) {
+                                val pos = event.changes.first().position
+                                onOpenSystemMenu(IntOffset(pos.x.roundToInt(), pos.y.roundToInt()))
+                            }
                         }
                     }
                 }
-            }
-        if (isNativeDragAvailable) {
-            // On Windows/Linux: plain Box with native drag only.
-            // WindowDraggableArea's Compose-based drag conflicts with native
-            // drag and prevents OS snap from working.
-            Box(modifier = dragModifier)
-        } else {
-            // On macOS: fall back to Compose's WindowDraggableArea.
-            WindowDraggableArea(
-                modifier = dragModifier
-            ) {
-                // Empty — the area is sized by the modifier.
-            }
-        }
+        )
 
         // Pill-shaped window control buttons with accent color design.
         WindowControlButtons(
