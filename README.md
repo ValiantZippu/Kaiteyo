@@ -1,168 +1,29 @@
 <div align="center">
 
-  <img src="preview_assets/kaiteyo_logo.svg" height="140" alt="Kaiteyo Logo">
+  <img src="preview_assets/kaiteyo_logo.svg" height="130" alt="Kaiteyo">
 
-  <h1>Kaiteyo<span style="opacity:0.5"> (書いてよ)</span></h1>
+  <h1><code style="color:#C2FC8B; background:transparent; font-size:42px; font-weight:700; letter-spacing:-0.02em;">Kaiteyo</code> <span style="color:#606060; font-size:24px;">書いてよ</span></h1>
 
-  <p><strong>Write it. Practice. Master it.</strong></p>
-
-  <p>A premium, cross-platform Japanese language learning application.<br>
-  Offline-first · Desktop-focused · Free and open source.</p>
+  <p style="color:#A0A0A0; font-size:17px; max-width:520px; margin:12px auto 0;">
+    Write it. Practice. Master it.<br>
+    <span style="color:#606060;">A premium, cross-platform Japanese learning app.</span>
+  </p>
 
   <br>
 
-  <img src="https://img.shields.io/badge/version-v2.2.1-blue?style=flat-square&labelColor=1A1A1A&color=C2FC8B" alt="Version">
-  <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square&labelColor=1A1A1A&color=FEAB57" alt="License">
-  <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-1A1A1A?style=flat-square" alt="Platforms">
-  <img src="https://img.shields.io/badge/Kotlin_2.1.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
-  <img src="https://img.shields.io/badge/Compose_1.8.2-4285F4?style=flat-square" alt="Compose">
+  <a href="https://github.com/ValiantZippu/Kaiteyo/releases"><img src="https://img.shields.io/badge/v2.2.1-C2FC8B?style=flat-square&labelColor=1A1A1A&label=version" alt="Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/GPL--3.0-FEAB57?style=flat-square&labelColor=1A1A1A&label=license" alt="License"></a>
+  <img src="https://img.shields.io/badge/Windows%20·%20macOS%20·%20Linux%20·%20Android%20·%20iOS-2A2A2A?style=flat-square&labelColor=1A1A1A&color=606060" alt="Platforms">
+  <a href="https://kotlinlang.org/docs/multiplatform.html"><img src="https://img.shields.io/badge/Kotlin_2.1-7F52FF?style=flat-square&logo=kotlin&logoColor=white&labelColor=1A1A1A" alt="Kotlin"></a>
+  <a href="https://www.jetbrains.com/lp/compose-multiplatform/"><img src="https://img.shields.io/badge/Compose_1.8-4285F4?style=flat-square&labelColor=1A1A1A" alt="Compose"></a>
 
 </div>
 
 <br>
-
----
-
-<br>
-
-## What is Kaiteyo?
-
-Kaiteyo — *"write it!"* in Japanese — is a complete immersion workspace for learning
-Japanese. It started as a fork of [Kanji Dojo](https://github.com/syt0r/Kanji-Dojo) and
-has grown into an independent project with its own design language, data pipeline, and
-feature set.
-
-**Desktop is the flagship.** The Windows/macOS/Linux app bundles a dictionary, media
-player, sentence mining, OCR, browser, and study engine into one cohesive window. Mobile
-apps share the same core learning engine (kanji, kana, vocabulary, SRS, writing practice)
-via Kotlin Multiplatform.
-
-<br>
-
-## The Kaiteyo Workflow
-
-Most Japanese learning tools split study into disconnected silos. Kaiteyo connects them:
-
-```
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  📖 Read or watch something in Japanese                         │
-  │     ↓                                                           │
-  │  🔍 Hover a word → dictionary popup appears instantly           │
-  │     ↓                                                           │
-  │  ✂️  Mine a sentence → card lands in your SRS queue             │
-  │     (with screenshot + audio + timestamp)                       │
-  │     ↓                                                           │
-  │  🧠 Review with spaced repetition → jump back to the scene      │
-  └──────────────────────────────────────────────────────────────────┘
-```
-
-Everything works **offline by default**. Your data is yours — import/export, Anki
-compatibility, backup, and sync are all built in.
-
-<br>
-
----
-
-<br>
-
-## Core Study Engine
-
-*All platforms — Desktop, Android, iOS*
-
-| | Feature | Status |
-|---|---|---|
-| ✅ | **Kanji & Kana** — JLPT N5–N1 + school-grade decks | Implemented |
-| ✅ | **Vocabulary** — readings, meanings, furigana, example sentences | Implemented |
-| ✅ | **Writing Practice** — stroke-order diagrams, drawing canvas, evaluation | Implemented |
-| ✅ | **Spaced Repetition** — FSRS-5 scheduling, custom intervals, daily limits | Implemented |
-| ✅ | **Deck Management** — create, edit, archive, duplicate, bulk actions | Implemented |
-| ✅ | **Radical & Reading Search** — 6000+ characters, dictionary-backed | Implemented |
-| ✅ | **Text Analysis** — word-by-word breakdown (Ichiran-style) | Implemented |
-| ✅ | **Statistics & Achievements** — heatmap, curves, goals, exams | Implemented |
-| ✅ | **Anki Import/Export** — `.apkg` on all platforms | Implemented |
-| ✅ | **Backup & Restore** — profile archives, settings, window state | Implemented |
-| 🚧 | **Sync** — GitHub device-flow + private-gist (desktop) | Partial |
-| 🚧 | **Grammar Study** — explanation-first practice with starter deck | Partial |
-
-<br>
-
-## Desktop Suite
-
-*Windows · macOS · Linux — the flagship experience*
-
-| | Feature | Status |
-|---|---|---|
-| ✅ | **Yomitan-Style Dictionary** — import ZIP/JSON dictionaries; JMdict, KANJIDIC, KanjiVG | Implemented |
-| ✅ | **Dictionary Popup** — hover/click any Japanese text for instant lookup + mining + TTS | Implemented |
-| ✅ | **Media Center** — VLC / mpv / Java Sound backends; SRT/ASS/SSA/VTT subtitles | Implemented |
-| ✅ | **Subtitle Mining** — sentence cards with screenshot + audio + timestamp | Implemented |
-| ✅ | **Learning Browser** — reader mode, bookmarks, lookup & mining from web pages | Implemented |
-| ✅ | **Local HTTP API** — bearer-token protected; media, mining, player endpoints | Implemented |
-| ✅ | **AnkiConnect** — push mined cards, import decks from Anki | Implemented |
-| ✅ | **Theme Studio** — HSV color wheel, gradients, presets, live preview | Implemented |
-| ✅ | **Onboarding** — 8-step wizard: theme, accent, scale, font, navigation, motion | Implemented |
-| ✅ | **Branded Installers** — Inno Setup, styled DMG, AppImage/deb/rpm/Flatpak/Snap | Implemented |
-| ✅ | **Native Window Shell** — custom title bar, OS-native drag, resize, snap-to-edge | Implemented |
-| ✅ | **Floating Launcher** — draggable bubble with snap-to-edge, mode switching | Implemented |
-| ✅ | **Overlay Sidebar** — floats on content, 4 positions, elevated surface | Implemented |
-| 🚧 | **OCR** — capture pipeline works; Tesseract detection when available | Partial |
-| 🚧 | **Auto-Update** — architecture complete; staged rollout | Partial |
-| 🚧 | **Plugin System** — registry + marketplace scaffold | Partial |
-
-<br>
-
-## Mobile
-
-| | Platform | Status |
-|---|---|---|
-| ✅ | **Android** — Play Store + F-Droid; Firebase analytics, billing, review | Released |
-| 🚧 | **iOS** — shared engine + app shell; macOS-only builds | Partial |
-
-<br>
-
----
-
-<br>
-
-## Screenshots
-
-<p float="left">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="380" alt="Home"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="380" alt="Study"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="380" alt="Dictionary"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="380" alt="Statistics"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" height="380" alt="Library"/>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" height="380" alt="Settings"/>
-</p>
-
-> Desktop screenshots: [docs/screenshots/](docs/screenshots/README.md)
-
-<br>
-
----
-
-<br>
-
-## Downloads
 
 <div align="center">
 
-### Desktop
-
-| Platform | Packages |
-|:---:|---|
-| **Windows** | [EXE](https://github.com/ValiantZippu/Kaiteyo/releases) · [MSI](https://github.com/ValiantZippu/Kaiteyo/releases) · Portable ZIP |
-| **macOS** | [DMG](https://github.com/ValiantZippu/Kaiteyo/releases) — arm64 + x64, signed + notarized |
-| **Linux** | AppImage · deb · rpm · Flatpak · Snap |
-
-### Android
-
-[![Google Play](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ua.syt0r.kanji)
-[![F-Droid](https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white)](https://f-droid.org/en/packages/ua.syt0r.kanji.fdroid/)
-
-### iOS
-
-[![App Store](https://img.shields.io/badge/App_Store-blue?style=for-the-badge&logo=appstore&logoColor=white)](https://apps.apple.com/ua/app/kanji-dojo/id6745169386)
+<a href="#workflow">How it works</a> · <a href="#features-core">Study</a> · <a href="#features-desktop">Desktop Suite</a> · <a href="#features-mobile">Mobile</a> · <a href="#downloads">Downloads</a> · <a href="#dev">Develop</a> · <a href="#docs">Docs</a>
 
 </div>
 
@@ -172,18 +33,36 @@ compatibility, backup, and sync are all built in.
 
 <br>
 
-## Tech Stack
+<div align="center" id="workflow">
 
-| Layer | Technology |
-|---|---|
-| **Language** | [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) 2.1.20 |
-| **UI** | [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) 1.8.2 |
-| **Architecture** | Shared `core` + thin platform entry points · Screen pattern · Koin DI |
-| **Data** | [SQLDelight](https://sqldelight.github.io/sqlldelight/) (dictionary + user DBs) · DataStore |
-| **Networking** | [Ktor](https://ktor.io/) client · `java.net.http` for OAuth |
-| **Media** | VLCJ (VLC) · mpv (JSON-RPC) · Java Sound |
-| **Data Platform** | KJD — generates the offline language database from open datasets |
-| **Build** | Gradle · Version catalog · JDK 17 |
+### <span style="color:#C2FC8B">▸</span> How Kaiteyo works
+
+</div>
+
+<br>
+
+<div align="center">
+
+```
+ ┌─────────────────────────────────────────────────────────────────────┐
+ │                                                                     │
+ │   📖  Read or watch something in Japanese                           │
+ │              │                                                      │
+ │              ▼                                                      │
+ │   🔍  Hover a word → instant dictionary popup                       │
+ │              │                                                      │
+ │              ▼                                                      │
+ │   ✂️   Mine a sentence → card with screenshot + audio + timestamp   │
+ │              │                                                      │
+ │              ▼                                                      │
+ │   🧠  Spaced repetition → jump back to the exact scene              │
+ │                                                                     │
+ └─────────────────────────────────────────────────────────────────────┘
+```
+
+</div>
+
+> Everything works **offline**. Your data is yours — import, export, Anki, backup, sync.
 
 <br>
 
@@ -191,57 +70,222 @@ compatibility, backup, and sync are all built in.
 
 <br>
 
-## Development
+<div align="center">
 
-### Prerequisites
+### <span style="color:#C2FC8B">▸</span> Core Study Engine
 
-- **JDK 17** (required)
-- **Android SDK** (for Android builds)
-- Network on first build (downloads app data assets)
+<span style="color:#606060;">All platforms — Desktop · Android · iOS</span>
 
-### Quick Start
+</div>
 
-```bash
-# Clone
-git clone https://github.com/ValiantZippu/Kaiteyo.git
-cd Kaiteyo
+<br>
 
-# Run the desktop app
-./gradlew :desktopApp:run
+| | | |
+|:---:|:---|:---|
+| ✅ | **Kanji & Kana** | JLPT N5–N1 + school-grade decks |
+| ✅ | **Vocabulary** | Readings, meanings, furigana, examples |
+| ✅ | **Writing Practice** | Stroke-order diagrams, brush canvas, evaluation |
+| ✅ | **Spaced Repetition** | FSRS-5 scheduling, custom intervals, daily limits |
+| ✅ | **Deck Management** | Create, edit, archive, duplicate, bulk actions |
+| ✅ | **Radical Search** | 6000+ characters, dictionary-backed |
+| ✅ | **Text Analysis** | Word-by-word breakdown (Ichiran-style) |
+| ✅ | **Statistics** | Heatmap, learning curves, goals, exams, achievements |
+| ✅ | **Anki Import/Export** | `.apkg` on all platforms |
+| ✅ | **Backup & Restore** | Profile archives, settings, window state |
+| 🚧 | **Sync** | GitHub device-flow + private-gist (desktop) |
+| 🚧 | **Grammar** | Explanation-first practice with starter deck |
 
-# Japanese locale
-./gradlew :desktopApp:run -Duser.language=ja -Duser.country=JP
+<br>
 
-# Compile check
-./gradlew :desktopApp:compileKotlinJvm
+---
 
-# Run all tests
-./gradlew :core:allTests
+<br>
 
-# Build installers (matching host OS only)
-./gradlew :desktopApp:packageMsi    # Windows
-./gradlew :desktopApp:packageDmg    # macOS
-./gradlew :desktopApp:packageDeb    # Linux
+<div align="center" id="features-desktop">
+
+### <span style="color:#FEAB57">▸</span> Desktop Suite
+
+<span style="color:#606060;">Windows · macOS · Linux — the flagship experience</span>
+
+</div>
+
+<br>
+
+| | | |
+|:---:|:---|:---|
+| ✅ | **Dictionary** | Yomitan-style — import ZIP/JSON, JMdict, KANJIDIC, KanjiVG |
+| ✅ | **Popup Lookup** | Hover any Japanese text → readings, definitions, mining, TTS |
+| ✅ | **Media Center** | VLC / mpv / Java Sound — SRT/ASS/SSA/VTT subtitles |
+| ✅ | **Subtitle Mining** | Sentence cards with screenshot + audio + timestamp |
+| ✅ | **Learning Browser** | Reader mode, bookmarks, lookup & mining from web pages |
+| ✅ | **Local API** | Bearer-token HTTP server — media, mining, player endpoints |
+| ✅ | **AnkiConnect** | Push mined cards, import decks from Anki |
+| ✅ | **Theme Studio** | HSV color wheel, gradients, presets, live preview |
+| ✅ | **Onboarding** | 8-step wizard — theme, accent, scale, font, navigation, motion |
+| ✅ | **Installers** | Inno Setup, styled DMG, AppImage / deb / rpm / Flatpak / Snap |
+| ✅ | **Native Window** | Custom title bar, OS drag, resize, snap-to-edge, rounded corners |
+| ✅ | **Floating Launcher** | Draggable bubble, snap-to-edge, mode switching |
+| ✅ | **Overlay Sidebar** | Floats on content, 4 positions, elevated surface |
+| 🚧 | **OCR** | Capture pipeline works; Tesseract when available |
+| 🚧 | **Auto-Update** | Architecture complete; staged rollout |
+| 🚧 | **Plugins** | Registry + marketplace scaffold |
+
+<br>
+
+---
+
+<br>
+
+<div align="center" id="features-mobile">
+
+### <span style="color:#7BC8FF">▸</span> Mobile
+
+</div>
+
+<br>
+
+| | | |
+|:---:|:---|:---|
+| ✅ | **Android** | Play Store + F-Droid · Firebase analytics, billing, review |
+| 🚧 | **iOS** | Shared engine + shell · macOS-only builds |
+
+<br>
+
+---
+
+<br>
+
+<div align="center">
+
+### <span style="color:#C2FC8B">▸</span> Screenshots
+
+</div>
+
+<br>
+
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" height="360" alt="Home"/>
+  &nbsp;&nbsp;
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" height="360" alt="Study"/>
+  &nbsp;&nbsp;
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" height="360" alt="Dictionary"/>
+  &nbsp;&nbsp;
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" height="360" alt="Statistics"/>
+</p>
+
+> Desktop captures → [docs/screenshots/](docs/screenshots/README.md)
+
+<br>
+
+---
+
+<br>
+
+<div align="center" id="downloads">
+
+### <span style="color:#C2FC8B">▸</span> Downloads
+
+</div>
+
+<br>
+
+<div align="center">
+
+| Platform | Link |
+|:---:|:---|
+| **Windows** | [EXE](https://github.com/ValiantZippu/Kaiteyo/releases) · [MSI](https://github.com/ValiantZippu/Kaiteyo/releases) · Portable ZIP |
+| **macOS** | [DMG](https://github.com/ValiantZippu/Kaiteyo/releases) — arm64 + x64, signed + notarized |
+| **Linux** | AppImage · deb · rpm · Flatpak · Snap |
+| **Android** | [![Google Play](https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ua.syt0r.kanji) [![F-Droid](https://img.shields.io/badge/F--Droid-1976D2?style=flat-square&logo=f-droid&logoColor=white)](https://f-droid.org/en/packages/ua.syt0r.kanji.fdroid/) |
+| **iOS** | [![App Store](https://img.shields.io/badge/App_Store-blue?style=flat-square&logo=appstore&logoColor=white)](https://apps.apple.com/ua/app/kanji-dojo/id6745169386) |
+
+</div>
+
+<br>
+
+---
+
+<br>
+
+<div align="center" id="dev">
+
+### <span style="color:#C2FC8B">▸</span> Development
+
+</div>
+
+<br>
+
+```
+  # Requirements: JDK 17
+  git clone https://github.com/ValiantZippu/Kaiteyo.git
+  cd Kaiteyo
+
+  # Run
+  ./gradlew :desktopApp:run
+
+  # Japanese locale
+  ./gradlew :desktopApp:run -Duser.language=ja -Duser.country=JP
+
+  # Check
+  ./gradlew :desktopApp:compileKotlinJvm
+
+  # Test
+  ./gradlew :core:allTests
+
+  # Installers (matching host OS)
+  ./gradlew :desktopApp:packageMsi     # Windows
+  ./gradlew :desktopApp:packageDmg     # macOS
+  ./gradlew :desktopApp:packageDeb     # Linux
 ```
 
-### Project Structure
+> First build downloads assets from GitHub releases — network required.
+
+<br>
+
+<details>
+<summary><b style="color:#A0A0A0;">▸ Project Structure</b></summary>
+
+<br>
 
 ```
 Kaiteyo/
-├── core/               Shared KMP code — study engine, UI, data layer (all platforms)
-├── desktopApp/         Desktop shell + suite (dictionary, media, mining, OCR, sync)
-├── app/                Android entry point (googlePlay + fdroid flavors)
-├── iosApp/             iOS entry point (Swift host + Compose UI)
-├── kjd/                KJD — Japanese Data Platform (ingests datasets → DB)
-├── mediaGenerator/     JVM utility for generating media assets
-├── installer/          Branded installer subsystem (Inno Setup, DMG, AppImage, …)
-├── website/            Static project website (Python build)
-├── buildSrc/           Gradle build logic (AppVersion, AppAssets)
-├── docs/               Full documentation (organized like a doc site)
-└── tools/cli/          Developer CLI — kaiteyo (git, gradle, doctor, …)
+├── core/               Shared KMP — study engine, UI, data layer
+├── desktopApp/         Desktop shell + suite (dictionary, media, mining, OCR)
+├── app/                Android (googlePlay + fdroid flavors)
+├── iosApp/             iOS (Swift host + Compose UI)
+├── kjd/                KJD — Japanese Data Platform
+├── mediaGenerator/     JVM media asset generator
+├── installer/          Branded installers (Inno Setup, DMG, AppImage, …)
+├── website/            Static site (Python build)
+├── buildSrc/           Gradle logic (AppVersion, AppAssets)
+├── docs/               Full documentation
+└── tools/cli/          Developer CLI — kaiteyo
 ```
 
-### Branching
+</details>
+
+<details>
+<summary><b style="color:#A0A0A0;">▸ Tech Stack</b></summary>
+
+<br>
+
+| Layer | Technology |
+|:---|:---|
+| Language | [Kotlin Multiplatform](https://kotlinlang.org/) 2.1.20 |
+| UI | [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) 1.8.2 |
+| Architecture | Shared `core` + thin platform entry points · Screen pattern · Koin DI |
+| Data | [SQLDelight](https://sqldelight.github.io/sqlldelight/) · DataStore |
+| Networking | [Ktor](https://ktor.io/) · `java.net.http` |
+| Media | VLCJ · mpv (JSON-RPC) · Java Sound |
+| Data Platform | KJD — offline language database |
+| Build | Gradle · Version catalog · JDK 17 |
+
+</details>
+
+<details>
+<summary><b style="color:#A0A0A0;">▸ Branching</b></summary>
+
+<br>
 
 ```
 main         → production-ready (releases only)
@@ -252,19 +296,25 @@ main         → production-ready (releases only)
      └── docs/*         → documentation
 ```
 
+</details>
+
 <br>
 
 ---
 
 <br>
 
-## Documentation
+<div align="center" id="docs">
 
-The full docs live in [`docs/`](docs/README.md), organized as a navigable documentation site.
+### <span style="color:#C2FC8B">▸</span> Documentation
+
+</div>
+
+<br>
 
 | | Area | Link |
-|---|---|---|
-| 📖 | **Documentation Index** | [`docs/README.md`](docs/README.md) |
+|:---:|:---|:---|
+| 📖 | **Index** | [`docs/README.md`](docs/README.md) |
 | 📦 | **Product Blueprint** | [`docs/product/PRODUCT.md`](docs/product/PRODUCT.md) |
 | 🏛️ | **Architecture** | [`docs/architecture/OVERVIEW.md`](docs/architecture/OVERVIEW.md) |
 | 🎨 | **Design System** | [`docs/design/README.md`](docs/design/README.md) |
@@ -278,10 +328,10 @@ The full docs live in [`docs/`](docs/README.md), organized as a navigable docume
 | 📊 | **Current State** | [`docs/planning/CURRENT_STATE.md`](docs/planning/CURRENT_STATE.md) |
 | 🤖 | **AI Agent Guide** | [`docs/ai/AI_AGENT_GUIDE.md`](docs/ai/AI_AGENT_GUIDE.md) |
 | ⌨️ | **Developer CLI** | [`docs/cli/README.md`](docs/cli/README.md) |
-| 📦 | **Release Process** | [`docs/releases/RELEASE_PROCESS.md`](docs/releases/RELEASE_PROCESS.md) |
+| 📦 | **Releases** | [`docs/releases/RELEASE_PROCESS.md`](docs/releases/RELEASE_PROCESS.md) |
 | 🔐 | **Security** | [`SECURITY.md`](SECURITY.md) |
-| ⚖️ | **Legal & Attribution** | [`docs/legal/README.md`](docs/legal/README.md) |
-| 🐞 | **Known Issues** | [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) |
+| ⚖️ | **Legal** | [`docs/legal/README.md`](docs/legal/README.md) |
+| 🐞 | **Issues** | [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) |
 | 📜 | **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |
 
 <br>
@@ -290,29 +340,32 @@ The full docs live in [`docs/`](docs/README.md), organized as a navigable docume
 
 <br>
 
-## Contributing
+<div align="center">
 
-Contributions welcome — code, docs, design, data, translations.
+### <span style="color:#C2FC8B">▸</span> Contributing
 
-1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md)
-2. Check [`docs/planning/CURRENT_ISSUES.md`](docs/planning/CURRENT_ISSUES.md) for open issues
-3. Read [`docs/development/CODING_STANDARDS.md`](docs/development/CODING_STANDARDS.md)
-4. Read [`docs/development/AI_CONTEXT.md`](docs/development/AI_CONTEXT.md)
+</div>
+
+<br>
 
 ```bash
 # Fork → clone → branch from develop
 git checkout -b feature/my-feature
 
-# Make changes, verify
+# Verify
 ./gradlew :desktopApp:compileKotlinJvm
 ./gradlew :core:allTests
 
-# Commit with conventional format
+# Commit & push
 git commit -m "feat: add my feature"
-
-# Push and open a PR targeting develop
 git push origin feature/my-feature
+
+# Open a PR targeting develop
 ```
+
+1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md)
+2. Read [`docs/development/CODING_STANDARDS.md`](docs/development/CODING_STANDARDS.md)
+3. Read [`docs/development/AI_CONTEXT.md`](docs/development/AI_CONTEXT.md)
 
 <br>
 
@@ -320,45 +373,41 @@ git push origin feature/my-feature
 
 <br>
 
-## Data Attribution
+<details>
+<summary><b style="color:#A0A0A0;">▸ Data Attribution</b></summary>
 
-Kaiteyo bundles openly licensed Japanese-language datasets. Original code and third-party
-data remain distinct.
+<br>
 
 | Dataset | License |
-|---|---|
+|:---|:---|
 | [KanjiVG](https://kanjivg.tagaini.net/) — stroke order | CC BY-SA 3.0 |
 | [KANJIDIC](https://www.edrdg.org/kanjidic/kanjdicindex.html) — character info | CC BY-SA 3.0 |
 | [JMdict](https://www.edrdg.org/jmdict/j_jmdict.html) — dictionary | CC BY-SA 4.0 |
 | [JmdictFurigana](https://github.com/Doublevil/JmdictFurigana) | CC BY-SA 4.0 |
-| [Tanos JLPT lists](http://www.tanos.co.uk/jlpt/) | CC BY 3.0 |
-| [Leeds frequency data](https://corpus.leeds.ac.uk/list.html) | CC BY 2.5 |
+| [Tanos JLPT](http://www.tanos.co.uk/jlpt/) | CC BY 3.0 |
+| [Leeds frequency](https://corpus.leeds.ac.uk/list.html) | CC BY 2.5 |
 | [yomichan-jlpt-vocab](https://github.com/stephenmk/yomichan-jlpt-vocab) | CC BY-SA 4.0 |
 
-> Full provenance: [`docs/data/SOURCES.md`](docs/data/SOURCES.md)
+> Full provenance → [`docs/data/SOURCES.md`](docs/data/SOURCES.md)
+
+</details>
 
 <br>
 
 ---
-
-<br>
-
-## License
-
-Kaiteyo is free software licensed under the **GNU General Public License v3.0**
-(or, at your option, any later version). See [`LICENSE`](LICENSE).
-
-> © 2022–2023 Yaroslav Shuliak (original Kanji Dojo). Kaiteyo is a fork of Kanji Dojo,
-> independently developed with its own design language, branding, and feature set.
->
-> This program is distributed in the hope that it will be useful, but **WITHOUT ANY
-> WARRANTY**; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-> PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 <br>
 
 <div align="center">
 
-  <sub>Built with Kotlin · Compose · Compose Multiplatform</sub>
+<sub style="color:#606060;">Kaiteyo is free and open source under the <a href="LICENSE">GNU General Public License v3.0</a></sub>
+
+<br>
+
+<sub style="color:#404040;">© 2022–2023 Yaroslav Shuliak (original Kanji Dojo) · Kaiteyo is independently developed</sub>
+
+<br><br>
+
+<img src="preview_assets/kaiteyo_icon_simple.svg" height="32" alt="Kaiteyo" style="opacity:0.3;">
 
 </div>
