@@ -1,7 +1,6 @@
 package ua.syt0r.kanji.desktopApp
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -44,7 +43,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
@@ -80,9 +78,6 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import java.awt.Cursor
 import java.awt.Dimension
-import java.awt.event.MouseMotionAdapter
-import java.awt.event.MouseMotionListener
-import javax.swing.SwingUtilities
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -93,7 +88,6 @@ import ua.syt0r.kanji.desktop.ui.workspace.WindowActionsMenu
 import ua.syt0r.kanji.desktop.ui.workspace.WindowControls
 import ua.syt0r.kanji.presentation.common.nav.DesktopWindowPlacement
 import ua.syt0r.kanji.presentation.common.nav.LocalWindowPlacement
-import ua.syt0r.kanji.presentation.common.nav.HoverExclusionRegistry
 import ua.syt0r.kanji.presentation.common.nav.LocalWindowResizing
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.resources.brand.BrandMark
@@ -157,62 +151,10 @@ fun FrameWindowScope.KaiteyoWindow(
     // chasing a moving target on every frame.
     var windowResizing by remember { mutableStateOf(false) }
 
-    // Hover-tracking for the title bar: when the mouse enters the top
-    // region the title bar fades in; the content push-down is delayed
-    // so clicking sidebar buttons near the top isn't jarring.
-    var isTitlebarHovered by remember { mutableStateOf(false) }
-    var pushContentDown by remember { mutableStateOf(false) }
-    LaunchedEffect(isTitlebarHovered) {
-        if (isTitlebarHovered) {
-            delay(150L) // commit to the push only after a short dwell
-            pushContentDown = true
-        } else {
-            pushContentDown = false
-        }
-    }
-    DisposableEffect(Unit) {
-        val listener: MouseMotionListener = object : MouseMotionAdapter() {
-            override fun mouseMoved(e: java.awt.event.MouseEvent) {
-                val hitTop = e.y <= with(density) { (TitleBarHeight + 8.dp).roundToPx() }
-                // Skip if the pointer is over a registered nav element (sidebar,
-                // floating bubble) — those handle their own hover interactions
-                // and should not summon the title bar.
-                val mx = e.x.toFloat()
-                val my = e.y.toFloat()
-                val blocked = HoverExclusionRegistry.snapshot().any { r ->
-                    mx >= r.left && mx <= r.right && my >= r.top && my <= r.bottom
-                }
-                val shouldShow = hitTop && !blocked
-                if (shouldShow != isTitlebarHovered) {
-                    SwingUtilities.invokeLater { isTitlebarHovered = shouldShow }
-                }
-            }
-        }
-        window.addMouseMotionListener(listener)
-        onDispose { window.removeMouseMotionListener(listener) }
-    }
-    // Title bar height: only pushes content after the 150ms dwell delay.
-    // Snappy spring-in, relaxed tween-out.
-    val titlebarHeight by animateDpAsState(
-        targetValue = if (pushContentDown) TitleBarHeight else 0.dp,
-        animationSpec = if (pushContentDown) {
-            spring(dampingRatio = 0.7f, stiffness = 800f)
-        } else {
-            spring(dampingRatio = 1f, stiffness = 300f)
-        },
-        label = "titlebarHeight"
-    )
-    // Alpha fades in immediately on hover (no delay) so the user sees
-    // the title bar appear right away, even before the push starts.
-    val titlebarAlpha by animateFloatAsState(
-        targetValue = if (isTitlebarHovered) 1f else 0f,
-        animationSpec = if (isTitlebarHovered) {
-            spring(dampingRatio = 0.7f, stiffness = 800f)
-        } else {
-            tween(220)
-        },
-        label = "titlebarHover"
-    )
+    // The title bar is always visible (44dp). The hover tracking was
+    // removed because it caused content dodge — the title bar pushed
+    // content down the moment the mouse entered the top zone, moving
+    // sidebar buttons and floating bubbles out from under the cursor.
 
     // Where the custom system menu opens (right-click on the title bar,
     // Alt+Space, or the context-menu key). Null = closed.
@@ -443,48 +385,43 @@ fun FrameWindowScope.KaiteyoWindow(
                 LocalWindowResizing provides windowResizing,
                 LocalCaptureState provides captureState
             ) {
-                // Layout: Column for title bar + content, with resize
-                // handles overlaid on top (not in the Column flow, which
-                // would steal vertical space from the content).
-                Box(Modifier.fillMaxSize()) {
-                    Column(Modifier.fillMaxSize()) {
-                        // Animated title bar: height goes from 0 to TitleBarHeight
-                        // on hover, smoothly pushing content down.
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(titlebarHeight)
-                                .background(surfaceColors.surface)
-                        ) {
-                            if (titlebarAlpha > 0.01f) {
-                                KaiteyoTitleBar(
-                                    alpha = titlebarAlpha,
-                                    isMaximized = isMaximized,
-                                    onMinimize = { windowState.isMinimized = true },
-                                    onToggleMaximize = { toggleMaximize() },
-                                    onClose = onClose,
-                                    onOpenSystemMenu = { systemMenuPosition = it }
-                                )
-                            }
-                        }
-
-                        // App content fills remaining space below the title bar.
-                        WindowContentFade(Modifier.fillMaxSize().weight(1f)) {
-                            content()
-                        }
-                    }
-
-                    // Invisible edge/corner resize zones (only while floating —
-                    // overlaid on top so they don't steal Column space).
-                    if (!isMaximized) {
-                        WindowResizeHandles(
-                            windowState = windowState,
-                            frame = window,
-                            minSize = minSize,
-                            onResizeActive = { windowResizing = it }
-                        )
+                Column(Modifier.fillMaxSize()) {
+                    // Title bar: always visible at fixed 44dp height.
+                    KaiteyoTitleBar(
+                        isMaximized = isMaximized,
+                        onMinimize = { windowState.isMinimized = true },
+                        onToggleMaximize = { toggleMaximize() },
+                        onClose = onClose,
+                        onOpenSystemMenu = { systemMenuPosition = it }
+                    )
+                    // Hairline divider under the title bar.
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(surfaceColors.border.copy(alpha = 0.18f))
+                    )
+                    // App content fills remaining space below the title bar.
+                    WindowContentFade(modifier = Modifier.weight(1f)) {
+                        content()
                     }
                 }
+            }
+
+            // Invisible edge/corner resize zones (only while floating —
+            // a maximized window never resizes). These are the resize
+            // handles for undecorated windows on macOS/Linux, and work
+            // alongside the OS border on Windows. Every drag is clamped
+            // to the work area of the display the window is on, so
+            // resizing can never push the window under the taskbar or
+            // off the usable desktop.
+            if (!isMaximized) {
+                WindowResizeHandles(
+                    windowState = windowState,
+                    frame = window,
+                    minSize = minSize,
+                    onResizeActive = { windowResizing = it }
+                )
             }
         }
 
@@ -514,7 +451,6 @@ fun FrameWindowScope.KaiteyoWindow(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun FrameWindowScope.KaiteyoTitleBar(
-    alpha: Float,
     isMaximized: Boolean,
     onMinimize: () -> Unit,
     onToggleMaximize: () -> Unit,
@@ -522,22 +458,7 @@ private fun FrameWindowScope.KaiteyoTitleBar(
     onOpenSystemMenu: (IntOffset) -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer { this.alpha = alpha }
-            .onGloballyPositioned { coords ->
-                // Report title bar bounds to WindowMessageHandler so
-                // WM_NCHITTEST can return HTCAPTION for the drag zone,
-                // enabling OS snap-to-edge when dragging to screen edges.
-                val screenPos = coords.localToScreen(Offset.Zero)
-                WindowMessageHandler.titleBarBounds =
-                    WindowMessageHandler.MaximizeButtonBounds(
-                        screenPos.x.roundToInt(),
-                        screenPos.y.roundToInt(),
-                        (screenPos.x + coords.size.width).roundToInt(),
-                        (screenPos.y + coords.size.height).roundToInt()
-                    )
-            },
+        modifier = Modifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Window icon — native-style: a click opens the system menu, a
@@ -550,7 +471,7 @@ private fun FrameWindowScope.KaiteyoTitleBar(
         // Brand text — clearly readable
         Text(
             text = "Kaiteyo",
-            color = LocalSurfaceColors.current.textPrimary.copy(alpha = alpha),
+            color = LocalSurfaceColors.current.textPrimary,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = 8.dp)
