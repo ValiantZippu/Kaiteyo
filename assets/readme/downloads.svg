@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" width="1200" height="220">
+  <defs>
+    <linearGradient id="dlBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0D0D0D"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="dlGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C2FC8B"/>
+      <stop offset="100%" stop-color="#9CE85E"/>
+    </linearGradient>
+    <linearGradient id="dlAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FEAB57"/>
+      <stop offset="100%" stop-color="#FD8A2E"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="220" fill="url(#dlBg)" rx="16"/>
+  <rect x="0" y="0" width="1200" height="1" fill="#2A2A2A"/>
+
+  <text x="60" y="40" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#C2FC8B">▸ Downloads</text>
+
+  <!-- Windows -->
+  <g transform="translate(60, 65)">
+    <rect x="0" y="0" width="200" height="130" rx="12" fill="#101010" stroke="#2A2A2A" stroke-width="1"/>
+    <text x="20" y="30" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#F0F0F0">Windows</text>
+    <text x="20" y="50" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060">EXE · MSI · Portable ZIP</text>
+    <rect x="20" y="70" width="80" height="32" rx="8" fill="url(#dlGreen)" opacity="0.15"/>
+    <text x="60" y="91" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500" fill="#C2FC8B">Download</text>
+  </g>
+
+  <!-- macOS -->
+  <g transform="translate(280, 65)">
+    <rect x="0" y="0" width="200" height="130" rx="12" fill="#101010" stroke="#2A2A2A" stroke-width="1"/>
+    <text x="20" y="30" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#F0F0F0">macOS</text>
+    <text x="20" y="50" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060">DMG — arm64 + x64, signed</text>
+    <rect x="20" y="70" width="80" height="32" rx="8" fill="url(#dlGreen)" opacity="0.15"/>
+    <text x="60" y="91" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500" fill="#C2FC8B">Download</text>
+  </g>
+
+  <!-- Linux -->
+  <g transform="translate(500, 65)">
+    <rect x="0" y="0" width="200" height="130" rx="12" fill="#101010" stroke="#2A2A2A" stroke-width="1"/>
+    <text x="20" y="30" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#F0F0F0">Linux</text>
+    <text x="20" y="50" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060">AppImage · deb · rpm · Flatpak</text>
+    <rect x="20" y="70" width="80" height="32" rx="8" fill="url(#dlGreen)" opacity="0.15"/>
+    <text x="60" y="91" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500" fill="#C2FC8B">Download</text>
+  </g>
+
+  <!-- Android -->
+  <g transform="translate(720, 65)">
+    <rect x="0" y="0" width="200" height="130" rx="12" fill="#101010" stroke="#2A2A2A" stroke-width="1"/>
+    <text x="20" y="30" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#F0F0F0">Android</text>
+    <text x="20" y="50" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060">Play Store · F-Droid</text>
+    <rect x="20" y="70" width="80" height="32" rx="8" fill="url(#dlAmber)" opacity="0.15"/>
+    <text x="60" y="91" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500" fill="#FEAB57">Get App</text>
+  </g>
+
+  <!-- iOS -->
+  <g transform="translate(940, 65)">
+    <rect x="0" y="0" width="200" height="130" rx="12" fill="#101010" stroke="#2A2A2A" stroke-width="1"/>
+    <text x="20" y="30" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#F0F0F0">iOS</text>
+    <text x="20" y="50" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060">App Store</text>
+    <rect x="20" y="70" width="80" height="32" rx="8" fill="url(#dlAmber)" opacity="0.15"/>
+    <text x="60" y="91" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="500" fill="#FEAB57">Get App</text>
+  </g>
+</svg>

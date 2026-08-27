@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 80" width="1200" height="80">
+  <defs>
+    <linearGradient id="ftGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C2FC8B" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#C2FC8B" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#C2FC8B" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="80" fill="#050505"/>
+  <rect x="100" y="0" width="1000" height="1" fill="url(#ftGrad)"/>
+
+  <!-- Logo mark -->
+  <g transform="translate(588, 20)">
+    <path d="M2,1 Q8,0 11,4 Q13,7 12,10 Q11,12 10,13"
+          stroke="#C2FC8B" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+    <path d="M3,7 Q8,5 12,8"
+          stroke="#C2FC8B" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.2"/>
+    <circle cx="12" cy="10" r="1" fill="#FEAB57" opacity="0.3"/>
+  </g>
+
+  <text x="600" y="52" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060">
+    Free and open source under the GNU General Public License v3.0
+  </text>
+  <text x="600" y="68" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" fill="#606060" opacity="0.5">
+    © 2022–2023 Yaroslav Shuliak (original Kanji Dojo) · Kaiteyo is independently developed
+  </text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" width="560" height="160">
+  <rect width="560" height="160" fill="#050505"/>
+  <g transform="translate(0, 0)">
+    <rect x="0" y="0" width="540" height="128" rx="12" fill="#101010" stroke="#2A2A2A" stroke-width="1"/>
+    <rect x="0" y="0" width="540" height="3" rx="12" fill="#7BC8FF" opacity="0.6"/>
+    <text x="24" y="36" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" fill="#F0F0F0">Mobile</text>
+    <text x="24" y="52" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#606060"></text>
+    <text x="24" y="66" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#C2FC8B">✅</text>
+    <text x="44" y="66" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="500" fill="#F0F0F0">Android</text>
+    <text x="200" y="66" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#606060">Play Store + F-Droid · Firebase, billing</text>
+    <text x="24" y="92" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#FEAB57">🚧</text>
+    <text x="44" y="92" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="500" fill="#F0F0F0">iOS</text>
+    <text x="200" y="92" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#606060">Shared engine + shell · macOS-only builds</text>
+  </g>
+</svg>

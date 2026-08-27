@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 50" width="1200" height="50">
+  <defs>
+    <linearGradient id="navBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0D0D0D"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="50" fill="url(#navBg)"/>
+  <rect x="0" y="49" width="1200" height="1" fill="#2A2A2A"/>
+
+  <g font-family="Inter, system-ui, sans-serif" font-size="13" text-anchor="middle">
+    <text x="150" y="30" fill="#C2FC8B">▸ How it works</text>
+    <text x="320" y="30" fill="#A0A0A0">Study</text>
+    <text x="460" y="30" fill="#A0A0A0">Desktop Suite</text>
+    <text x="620" y="30" fill="#A0A0A0">Mobile</text>
+    <text x="750" y="30" fill="#A0A0A0">Downloads</text>
+    <text x="880" y="30" fill="#A0A0A0">Develop</text>
+    <text x="990" y="30" fill="#A0A0A0">Docs</text>
+  </g>
+</svg>
