@@ -12,6 +12,22 @@ All notable changes to Kaiteyo are documented here. Format follows
 ## Unreleased
 
 ### Added
+- **Title bar smart hover exclusion** — the auto-showing title bar now tracks where
+  the sidebar and floating bubble are via `HoverExclusionRegistry` and only appears
+  when the cursor enters the content area, never when hovering on the sidebar or bubble
+  itself, regardless of their position (left, right, top, bottom).
+- **Sidebar overlay layout** — the docked sidebar now floats on top of the content
+  (overlay) instead of taking layout space beside it. Uses `surfaceColors.surfaceElevated`
+  for a lighter, elevated appearance that visually sits above the content.
+- **Window snappable to screen edges** — `WindowMessageHandler` returns `HTCAPTION` for
+  the title bar drag zone, enabling native OS snap-to-edge when dragging to screen
+  edges (Windows 11 snap layouts, Linux tiling).
+- **Always-rounded window corners** — the undecorated window keeps its rounded corners
+  at all times (including maximized), with the DWM chrome always applying rounding and
+  the border always visible.
+- **Right-click opens mode panel** — right-clicking the floating bubble now opens the
+  Floating ↔ Sidebar mode switch panel (identical to holding/long-pressing), instead of
+  opening the launchpad navigation grid.
 - **Home — interactive activity heatmap**: the Dashboard now embeds the full
   heatmap panel (rolling 52 weeks + per-year calendars) with smooth
   push/slide year transitions, hover tooltips (date, cards, reviews, study
@@ -247,6 +263,14 @@ All notable changes to Kaiteyo are documented here. Format follows
     teleport, category coverage).
 
 ### Fixed
+- **Floating bubble snap points no longer cut off** — introduced `effectiveMarginPx =
+  max(safeMarginPx, hitboxPaddingPx)` so the bubble's clickable hitbox always stays
+  within container bounds. The snap preview ring (main ring + trail ghosts) offsets are
+  clamped to `[0, containerSize - ringSize]` so the pulsing ring never extends off-screen.
+- **Floating bubble no longer flashes** — removed the duplicate `MutableInteractionSource`
+  on the inner bubble glyph that was fighting with the outer hitbox source, causing hover
+  state to flicker between them. A single unified interaction source now handles all hover
+  detection.
 - **`id:` search filter was silently broken** — the Browse "Review this card"
   action built a query with `id:<cardId>` but the search engine had no `id`
   field, so the query fell back to a plain-text token that never matched.
