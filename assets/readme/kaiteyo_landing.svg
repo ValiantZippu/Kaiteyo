@@ -1,0 +1,531 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 3200" width="1200" height="3200">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="acG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C2FC8B"/><stop offset="100%" stop-color="#9CE85E"/>
+    </linearGradient>
+    <linearGradient id="abG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FEAB57"/><stop offset="100%" stop-color="#FD8A2E"/>
+    </linearGradient>
+    <linearGradient id="blG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7BC8FF"/>
+    </linearGradient>
+    <linearGradient id="grD" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#C2FC8B" stop-opacity="0"/><stop offset="100%" stop-color="#C2FC8B" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="wfLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C2FC8B"/><stop offset="100%" stop-color="#FEAB57"/>
+    </linearGradient>
+
+    <!-- Glow filters -->
+    <filter id="gl"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="sg"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="bg"><feGaussianBlur stdDeviation="50" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="cg"><feGaussianBlur stdDeviation="20" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- CANVAS BACKGROUND                                          -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <rect width="1200" height="3200" fill="#050505"/>
+
+  <!-- Ambient glow orbs -->
+  <ellipse cx="600" cy="200" rx="400" ry="200" fill="#C2FC8B" opacity="0.03" filter="url(#bg)">
+    <animate attributeName="opacity" values="0.03;0.06;0.03" dur="4s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="200" cy="800" rx="300" ry="300" fill="#FEAB57" opacity="0.02" filter="url(#bg)">
+    <animate attributeName="opacity" values="0.02;0.04;0.02" dur="6s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="1000" cy="1600" rx="350" ry="250" fill="#7BC8FF" opacity="0.02" filter="url(#bg)">
+    <animate attributeName="opacity" values="0.02;0.035;0.02" dur="5s" repeatCount="indefinite"/>
+  </ellipse>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- HERO SECTION (0–450)                                       -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="2" fill="url(#acG)" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="3s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Logo mark with pulse -->
+  <g transform="translate(570, 80)" filter="url(#gl)">
+    <circle cx="30" cy="30" r="50" fill="#C2FC8B" opacity="0.06">
+      <animate attributeName="r" values="50;58;50" dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.06;0.1;0.06" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <path d="M12,5 Q28,3 38,16 Q44,24 42,34 Q41,38 38,42"
+          stroke="#C2FC8B" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M14,22 Q28,17 40,26"
+          stroke="#C2FC8B" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <circle cx="42" cy="34" r="2.5" fill="#FEAB57"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="185" text-anchor="middle"
+        font-family="Inter,system-ui,sans-serif" font-size="52" font-weight="700"
+        fill="#F0F0F0" letter-spacing="-0.03em">Kaiteyo</text>
+
+  <!-- Japanese -->
+  <text x="600" y="222" text-anchor="middle"
+        font-family="'Noto Sans JP',Hiragino Sans,sans-serif" font-size="22"
+        fill="#606060" letter-spacing="0.1em">書いてよ</text>
+
+  <!-- Tagline -->
+  <text x="600" y="265" text-anchor="middle"
+        font-family="Inter,system-ui,sans-serif" font-size="17"
+        fill="#A0A0A0">Write it. Practice. Master it.</text>
+
+  <text x="600" y="292" text-anchor="middle"
+        font-family="Inter,system-ui,sans-serif" font-size="13"
+        fill="#404040">A premium, cross-platform Japanese learning application</text>
+
+  <!-- Badge row -->
+  <g transform="translate(300, 320)">
+    <rect x="0" y="0" width="90" height="28" rx="6" fill="#101010" stroke="#2A2A2A"/>
+    <text x="45" y="18" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#C2FC8B">v2.2.1</text>
+    <rect x="100" y="0" width="90" height="28" rx="6" fill="#101010" stroke="#2A2A2A"/>
+    <text x="145" y="18" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#FEAB57">GPL-3.0</text>
+    <rect x="210" y="0" width="280" height="28" rx="6" fill="#101010" stroke="#2A2A2A"/>
+    <text x="350" y="18" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#606060">Windows · macOS · Linux · Android · iOS</text>
+    <rect x="510" y="0" width="100" height="28" rx="6" fill="#101010" stroke="#7F52FF" stroke-opacity="0.4"/>
+    <text x="560" y="18" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#7F52FF">Kotlin 2.1</text>
+  </g>
+
+  <!-- Navigation pills -->
+  <g transform="translate(340, 390)">
+    <rect x="0" y="0" width="80" height="32" rx="16" fill="#C2FC8B" fill-opacity="0.12" stroke="#C2FC8B" stroke-opacity="0.3"/>
+    <text x="40" y="21" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#C2FC8B">How it works</text>
+    <rect x="90" y="0" width="70" height="32" rx="16" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="125" y="21" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Study</text>
+    <rect x="170" y="0" width="100" height="32" rx="16" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="220" y="21" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Desktop Suite</text>
+    <rect x="280" y="0" width="70" height="32" rx="16" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="315" y="21" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Mobile</text>
+    <rect x="360" y="0" width="80" height="32" rx="16" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="400" y="21" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Downloads</text>
+    <rect x="450" y="0" width="80" height="32" rx="16" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="490" y="21" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Develop</text>
+  </g>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- WORKFLOW SECTION (450–850)                                 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <rect x="60" y="480" width="1080" height="340" rx="16" fill="#0D0D0D" stroke="#2A2A2A"/>
+
+  <text x="100" y="520" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#C2FC8B">▸ How Kaiteyo works</text>
+
+  <!-- Step 1 -->
+  <g transform="translate(100, 550)">
+    <rect width="230" height="220" rx="12" fill="#101010" stroke="#2A2A2A"/>
+    <rect width="230" height="3" rx="12" fill="#C2FC8B" opacity="0.5"/>
+    <text x="20" y="40" font-size="28">📖</text>
+    <text x="55" y="40" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">Read or Watch</text>
+    <text x="20" y="70" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">Japanese content in the</text>
+    <text x="20" y="87" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">built-in browser, media</text>
+    <text x="20" y="104" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">player, or reading env.</text>
+    <rect x="20" y="130" width="75" height="26" rx="6" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="57" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#606060">Browser</text>
+    <rect x="105" y="130" width="60" height="26" rx="6" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="135" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#606060">Media</text>
+    <rect x="175" y="130" width="40" height="26" rx="6" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="195" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#606060">EPUB</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <g transform="translate(340, 650)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#C2FC8B" stroke-width="2" opacity="0.4"/>
+    <polygon points="60,-5 70,0 60,5" fill="#C2FC8B" opacity="0.4"/>
+  </g>
+
+  <!-- Step 2 -->
+  <g transform="translate(420, 550)">
+    <rect width="230" height="220" rx="12" fill="#101010" stroke="#2A2A2A"/>
+    <rect width="230" height="3" rx="12" fill="#C2FC8B" opacity="0.5"/>
+    <text x="20" y="40" font-size="28">🔍</text>
+    <text x="55" y="40" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">Hover a Word</text>
+    <text x="20" y="70" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">Instant dictionary popup</text>
+    <text x="20" y="87" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">with readings, definitions,</text>
+    <text x="20" y="104" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">and TTS pronunciation.</text>
+    <rect x="20" y="130" width="65" height="26" rx="6" fill="#C2FC8B" fill-opacity="0.12" stroke="#C2FC8B" stroke-opacity="0.3"/>
+    <text x="52" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#C2FC8B">Yomitan</text>
+    <rect x="95" y="130" width="60" height="26" rx="6" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="125" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#606060">JMdict</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <g transform="translate(660, 650)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#FEAB57" stroke-width="2" opacity="0.4"/>
+    <polygon points="60,-5 70,0 60,5" fill="#FEAB57" opacity="0.4"/>
+  </g>
+
+  <!-- Step 3 -->
+  <g transform="translate(740, 550)">
+    <rect width="230" height="220" rx="12" fill="#101010" stroke="#2A2A2A"/>
+    <rect width="230" height="3" rx="12" fill="#FEAB57" opacity="0.5"/>
+    <text x="20" y="40" font-size="28">✂️</text>
+    <text x="55" y="40" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">Mine a Sentence</text>
+    <text x="20" y="70" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">Card with screenshot,</text>
+    <text x="20" y="87" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">audio clip, and timestamp</text>
+    <text x="20" y="104" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#A0A0A0">lands in your SRS queue.</text>
+    <rect x="20" y="130" width="75" height="26" rx="6" fill="#FEAB57" fill-opacity="0.12" stroke="#FEAB57" stroke-opacity="0.3"/>
+    <text x="57" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#FEAB57">Mining</text>
+    <rect x="105" y="130" width="55" height="26" rx="6" fill="#1A1A1A" stroke="#2A2A2A"/>
+    <text x="132" y="147" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#606060">Anki</text>
+  </g>
+
+  <!-- Arrow 3 -->
+  <g transform="translate(980, 650)">
+    <line x1="0" y1="0" x2="60" y2="0" stroke="#7BC8FF" stroke-width="2" opacity="0.4"/>
+    <polygon points="60,-5 70,0 60,5" fill="#7BC8FF" opacity="0.4"/>
+  </g>
+
+  <!-- Step 4 -->
+  <g transform="translate(1060, 550)">
+    <rect width="110" height="220" rx="12" fill="#101010" stroke="#2A2A2A"/>
+    <rect width="110" height="3" rx="12" fill="#7BC8FF" opacity="0.5"/>
+    <text x="20" y="40" font-size="28">🧠</text>
+    <text x="55" y="40" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">Review</text>
+    <text x="20" y="70" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Spaced repetition</text>
+    <text x="20" y="87" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">with FSRS-5.</text>
+    <text x="20" y="104" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">Jump back to the</text>
+    <text x="20" y="121" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#A0A0A0">exact scene.</text>
+    <rect x="20" y="140" width="70" height="26" rx="6" fill="#7BC8FF" fill-opacity="0.12" stroke="#7BC8FF" stroke-opacity="0.3"/>
+    <text x="55" y="157" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7BC8FF">FSRS-5</text>
+  </g>
+
+  <!-- Bottom note -->
+  <text x="600" y="805" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#404040">
+    Everything works offline. Your data is yours — import, export, Anki, backup, sync.
+  </text>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- CORE STUDY ENGINE (870–1450)                               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text x="600" y="910" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600" fill="#C2FC8B">▸ Core Study Engine</text>
+  <text x="600" y="935" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#404040">All platforms — Desktop · Android · iOS</text>
+
+  <rect x="60" y="955" width="1080" height="480" rx="16" fill="#0D0D0D" stroke="#2A2A2A"/>
+  <rect x="60" y="955" width="1080" height="3" rx="16" fill="#C2FC8B" opacity="0.4"/>
+
+  <!-- Features grid: 2 columns -->
+  <g font-family="Inter,system-ui,sans-serif">
+    <!-- Column 1 -->
+    <text x="100" y="1000" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1000" font-size="13" font-weight="500" fill="#F0F0F0">Kanji &amp; Kana</text>
+    <text x="260" y="1000" font-size="12" fill="#606060">JLPT N5–N1 + school-grade decks</text>
+
+    <text x="100" y="1035" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1035" font-size="13" font-weight="500" fill="#F0F0F0">Vocabulary</text>
+    <text x="260" y="1035" font-size="12" fill="#606060">Readings, meanings, furigana, examples</text>
+
+    <text x="100" y="1070" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1070" font-size="13" font-weight="500" fill="#F0F0F0">Writing Practice</text>
+    <text x="260" y="1070" font-size="12" fill="#606060">Stroke-order, brush canvas, evaluation</text>
+
+    <text x="100" y="1105" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1105" font-size="13" font-weight="500" fill="#F0F0F0">Spaced Repetition</text>
+    <text x="260" y="1105" font-size="12" fill="#606060">FSRS-5, custom intervals, daily limits</text>
+
+    <text x="100" y="1140" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1140" font-size="13" font-weight="500" fill="#F0F0F0">Deck Management</text>
+    <text x="260" y="1140" font-size="12" fill="#606060">Create, edit, archive, bulk actions</text>
+
+    <text x="100" y="1175" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1175" font-size="13" font-weight="500" fill="#F0F0F0">Radical Search</text>
+    <text x="260" y="1175" font-size="12" fill="#606060">6000+ characters, dictionary-backed</text>
+
+    <!-- Column 2 -->
+    <text x="640" y="1000" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1000" font-size="13" font-weight="500" fill="#F0F0F0">Text Analysis</text>
+    <text x="790" y="1000" font-size="12" fill="#606060">Word-by-word (Ichiran-style)</text>
+
+    <text x="640" y="1035" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1035" font-size="13" font-weight="500" fill="#F0F0F0">Statistics</text>
+    <text x="790" y="1035" font-size="12" fill="#606060">Heatmap, curves, goals, exams</text>
+
+    <text x="640" y="1070" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1070" font-size="13" font-weight="500" fill="#F0F0F0">Anki Import/Export</text>
+    <text x="790" y="1070" font-size="12" fill="#606060">.apkg on all platforms</text>
+
+    <text x="640" y="1105" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1105" font-size="13" font-weight="500" fill="#F0F0F0">Backup &amp; Restore</text>
+    <text x="790" y="1105" font-size="12" fill="#606060">Profile archives, settings</text>
+
+    <text x="640" y="1140" font-size="13" fill="#FEAB57">🚧</text>
+    <text x="664" y="1140" font-size="13" font-weight="500" fill="#F0F0F0">Sync</text>
+    <text x="790" y="1140" font-size="12" fill="#606060">GitHub device-flow + private-gist</text>
+
+    <text x="640" y="1175" font-size="13" fill="#FEAB57">🚧</text>
+    <text x="664" y="1175" font-size="13" font-weight="500" fill="#F0F0F0">Grammar</text>
+    <text x="790" y="1175" font-size="12" fill="#606060">Explanation-first with starter deck</text>
+  </g>
+
+  <!-- Separator line -->
+  <line x1="100" y1="1210" x2="1100" y2="1210" stroke="#1E1E1E" stroke-width="1"/>
+
+  <!-- Bottom accent strip -->
+  <rect x="60" y="1420" width="1080" height="3" rx="16" fill="url(#acG)" opacity="0.2"/>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DESKTOP SUITE (1460–2100)                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text x="600" y="1500" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600" fill="#FEAB57">▸ Desktop Suite</text>
+  <text x="600" y="1525" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" fill="#404040">Windows · macOS · Linux — the flagship experience</text>
+
+  <rect x="60" y="1545" width="1080" height="520" rx="16" fill="#0D0D0D" stroke="#2A2A2A"/>
+  <rect x="60" y="1545" width="1080" height="3" rx="16" fill="#FEAB57" opacity="0.4"/>
+
+  <g font-family="Inter,system-ui,sans-serif">
+    <!-- Column 1 -->
+    <text x="100" y="1590" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1590" font-size="13" font-weight="500" fill="#F0F0F0">Dictionary</text>
+    <text x="260" y="1590" font-size="12" fill="#606060">Yomitan-style — ZIP/JSON, JMdict, KANJIDIC</text>
+
+    <text x="100" y="1625" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1625" font-size="13" font-weight="500" fill="#F0F0F0">Popup Lookup</text>
+    <text x="260" y="1625" font-size="12" fill="#606060">Hover any text → readings, mining, TTS</text>
+
+    <text x="100" y="1660" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1660" font-size="13" font-weight="500" fill="#F0F0F0">Media Center</text>
+    <text x="260" y="1660" font-size="12" fill="#606060">VLC / mpv — SRT/ASS/SSA/VTT subtitles</text>
+
+    <text x="100" y="1695" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1695" font-size="13" font-weight="500" fill="#F0F0F0">Subtitle Mining</text>
+    <text x="260" y="1695" font-size="12" fill="#606060">Cards with screenshot + audio + timestamp</text>
+
+    <text x="100" y="1730" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1730" font-size="13" font-weight="500" fill="#F0F0F0">Learning Browser</text>
+    <text x="260" y="1730" font-size="12" fill="#606060">Reader mode, bookmarks, lookup &amp; mining</text>
+
+    <text x="100" y="1765" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1765" font-size="13" font-weight="500" fill="#F0F0F0">Local API</text>
+    <text x="260" y="1765" font-size="12" fill="#606060">Bearer-token HTTP — media, mining, player</text>
+
+    <text x="100" y="1800" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1800" font-size="13" font-weight="500" fill="#F0F0F0">AnkiConnect</text>
+    <text x="260" y="1800" font-size="12" fill="#606060">Push mined cards, import from Anki</text>
+
+    <text x="100" y="1835" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="1835" font-size="13" font-weight="500" fill="#F0F0F0">Theme Studio</text>
+    <text x="260" y="1835" font-size="12" fill="#606060">HSV wheel, gradients, presets, live preview</text>
+
+    <!-- Column 2 -->
+    <text x="640" y="1590" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1590" font-size="13" font-weight="500" fill="#F0F0F0">Onboarding</text>
+    <text x="790" y="1590" font-size="12" fill="#606060">8-step wizard — theme, accent, scale, font</text>
+
+    <text x="640" y="1625" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1625" font-size="13" font-weight="500" fill="#F0F0F0">Installers</text>
+    <text x="790" y="1625" font-size="12" fill="#606060">Inno Setup, DMG, AppImage/deb/rpm/Flatpak</text>
+
+    <text x="640" y="1660" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1660" font-size="13" font-weight="500" fill="#F0F0F0">Native Window</text>
+    <text x="790" y="1660" font-size="12" fill="#606060">Title bar, OS drag, resize, snap, rounded</text>
+
+    <text x="640" y="1695" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1695" font-size="13" font-weight="500" fill="#F0F0F0">Float Launcher</text>
+    <text x="790" y="1695" font-size="12" fill="#606060">Draggable bubble, snap-to-edge, modes</text>
+
+    <text x="640" y="1730" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="664" y="1730" font-size="13" font-weight="500" fill="#F0F0F0">Overlay Sidebar</text>
+    <text x="790" y="1730" font-size="12" fill="#606060">Floats on content, 4 positions, elevated</text>
+
+    <text x="640" y="1765" font-size="13" fill="#FEAB57">🚧</text>
+    <text x="664" y="1765" font-size="13" font-weight="500" fill="#F0F0F0">OCR</text>
+    <text x="790" y="1765" font-size="12" fill="#606060">Capture works; Tesseract detection</text>
+
+    <text x="640" y="1800" font-size="13" fill="#FEAB57">🚧</text>
+    <text x="664" y="1800" font-size="13" font-weight="500" fill="#F0F0F0">Auto-Update</text>
+    <text x="790" y="1800" font-size="12" fill="#606060">Architecture complete; staged rollout</text>
+
+    <text x="640" y="1835" font-size="13" fill="#FEAB57">🚧</text>
+    <text x="664" y="1835" font-size="13" font-weight="500" fill="#F0F0F0">Plugins</text>
+    <text x="790" y="1835" font-size="12" fill="#606060">Registry + marketplace scaffold</text>
+  </g>
+
+  <rect x="60" y="2050" width="1080" height="3" rx="16" fill="url(#abG)" opacity="0.2"/>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MOBILE (2100–2250)                                         -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text x="600" y="2130" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600" fill="#7BC8FF">▸ Mobile</text>
+
+  <rect x="60" y="2150" width="1080" height="80" rx="16" fill="#0D0D0D" stroke="#2A2A2A"/>
+  <rect x="60" y="2150" width="1080" height="3" rx="16" fill="#7BC8FF" opacity="0.3"/>
+
+  <g font-family="Inter,system-ui,sans-serif">
+    <text x="100" y="2195" font-size="13" fill="#C2FC8B">✅</text>
+    <text x="124" y="2195" font-size="13" font-weight="500" fill="#F0F0F0">Android</text>
+    <text x="230" y="2195" font-size="12" fill="#606060">Play Store + F-Droid · Firebase, billing</text>
+
+    <text x="640" y="2195" font-size="13" fill="#FEAB57">🚧</text>
+    <text x="664" y="2195" font-size="13" font-weight="500" fill="#F0F0F0">iOS</text>
+    <text x="730" y="2195" font-size="12" fill="#606060">Shared engine + shell · macOS-only builds</text>
+  </g>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DOWNLOADS (2280–2530)                                      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text x="600" y="2320" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600" fill="#C2FC8B">▸ Downloads</text>
+
+  <!-- 5 download cards -->
+  <g transform="translate(60, 2345)">
+    <!-- Windows -->
+    <g>
+      <rect width="216" height="160" rx="12" fill="#101010" stroke="#2A2A2A"/>
+      <rect width="216" height="3" rx="12" fill="#C2FC8B" opacity="0.3"/>
+      <text x="20" y="35" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">🪟 Windows</text>
+      <text x="20" y="58" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#606060">EXE · MSI · Portable ZIP</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="#C2FC8B" fill-opacity="0.1" stroke="#C2FC8B" stroke-opacity="0.3"/>
+      <text x="108" y="103" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="500" fill="#C2FC8B">Download</text>
+      <!-- Pulse glow on button -->
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="none" stroke="#C2FC8B" stroke-opacity="0.1">
+        <animate attributeName="stroke-opacity" values="0.1;0.3;0.1" dur="2s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <!-- macOS -->
+    <g transform="translate(236, 0)">
+      <rect width="216" height="160" rx="12" fill="#101010" stroke="#2A2A2A"/>
+      <rect width="216" height="3" rx="12" fill="#C2FC8B" opacity="0.3"/>
+      <text x="20" y="35" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">🍎 macOS</text>
+      <text x="20" y="58" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#606060">DMG — arm64 + x64, signed</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="#C2FC8B" fill-opacity="0.1" stroke="#C2FC8B" stroke-opacity="0.3"/>
+      <text x="108" y="103" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="500" fill="#C2FC8B">Download</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="none" stroke="#C2FC8B" stroke-opacity="0.1">
+        <animate attributeName="stroke-opacity" values="0.1;0.3;0.1" dur="2.3s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <!-- Linux -->
+    <g transform="translate(472, 0)">
+      <rect width="216" height="160" rx="12" fill="#101010" stroke="#2A2A2A"/>
+      <rect width="216" height="3" rx="12" fill="#C2FC8B" opacity="0.3"/>
+      <text x="20" y="35" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">🐧 Linux</text>
+      <text x="20" y="58" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#606060">AppImage · deb · rpm · Flatpak</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="#C2FC8B" fill-opacity="0.1" stroke="#C2FC8B" stroke-opacity="0.3"/>
+      <text x="108" y="103" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="500" fill="#C2FC8B">Download</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="none" stroke="#C2FC8B" stroke-opacity="0.1">
+        <animate attributeName="stroke-opacity" values="0.1;0.3;0.1" dur="2.6s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <!-- Android -->
+    <g transform="translate(708, 0)">
+      <rect width="216" height="160" rx="12" fill="#101010" stroke="#2A2A2A"/>
+      <rect width="216" height="3" rx="12" fill="#FEAB57" opacity="0.3"/>
+      <text x="20" y="35" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">🤖 Android</text>
+      <text x="20" y="58" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#606060">Play Store · F-Droid</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="#FEAB57" fill-opacity="0.1" stroke="#FEAB57" stroke-opacity="0.3"/>
+      <text x="108" y="103" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="500" fill="#FEAB57">Get App</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="none" stroke="#FEAB57" stroke-opacity="0.1">
+        <animate attributeName="stroke-opacity" values="0.1;0.3;0.1" dur="2s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+
+    <!-- iOS -->
+    <g transform="translate(944, 0)">
+      <rect width="216" height="160" rx="12" fill="#101010" stroke="#2A2A2A"/>
+      <rect width="216" height="3" rx="12" fill="#FEAB57" opacity="0.3"/>
+      <text x="20" y="35" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="600" fill="#F0F0F0">📱 iOS</text>
+      <text x="20" y="58" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#606060">App Store</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="#FEAB57" fill-opacity="0.1" stroke="#FEAB57" stroke-opacity="0.3"/>
+      <text x="108" y="103" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="500" fill="#FEAB57">Get App</text>
+      <rect x="20" y="80" width="176" height="36" rx="8" fill="none" stroke="#FEAB57" stroke-opacity="0.1">
+        <animate attributeName="stroke-opacity" values="0.1;0.3;0.1" dur="2.4s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+  </g>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DEVELOPMENT (2550–2800)                                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text x="600" y="2580" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600" fill="#C2FC8B">▸ Development</text>
+
+  <rect x="60" y="2600" width="1080" height="190" rx="12" fill="#0A0A0A" stroke="#1E1E1E"/>
+  <!-- Window chrome -->
+  <rect x="60" y="2600" width="1080" height="32" rx="12" fill="#101010"/>
+  <rect x="60" y="2620" width="1080" height="12" fill="#101010"/>
+  <circle cx="80" cy="2616" r="4" fill="#FF6B6B" opacity="0.6"/>
+  <circle cx="96" cy="2616" r="4" fill="#FEAB57" opacity="0.6"/>
+  <circle cx="112" cy="2616" r="4" fill="#C2FC8B" opacity="0.6"/>
+  <text x="600" y="2620" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#404040">terminal</text>
+
+  <g font-family="JetBrains Mono,monospace" font-size="12">
+    <text x="80" y="2665" fill="#606060"># Requirements: JDK 17</text>
+    <text x="80" y="2690" fill="#C2FC8B">$</text>
+    <text x="96" y="2690" fill="#F0F0F0">git clone https://github.com/ValiantZippu/Kaiteyo.git</text>
+    <text x="80" y="2715" fill="#C2FC8B">$</text>
+    <text x="96" y="2715" fill="#F0F0F0">./gradlew :desktopApp:run</text>
+    <text x="80" y="2740" fill="#C2FC8B">$</text>
+    <text x="96" y="2740" fill="#F0F0F0">./gradlew :desktopApp:compileKotlinJvm</text>
+    <text x="80" y="2765" fill="#C2FC8B">$</text>
+    <text x="96" y="2765" fill="#F0F0F0">./gradlew :core:allTests</text>
+  </g>
+
+  <!-- Blinking cursor -->
+  <rect x="80" y="2775" width="8" height="14" fill="#C2FC8B" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0;0.8" dur="1s" repeatCount="indefinite"/>
+  </rect>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DOCUMENTATION (2810–2980)                                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <text x="600" y="2850" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="600" fill="#C2FC8B">▸ Documentation</text>
+
+  <rect x="60" y="2870" width="1080" height="100" rx="16" fill="#0D0D0D" stroke="#2A2A2A"/>
+  <rect x="60" y="2870" width="1080" height="3" rx="16" fill="#C2FC8B" opacity="0.2"/>
+
+  <!-- Doc links in 4 columns -->
+  <g font-family="Inter,system-ui,sans-serif" font-size="12">
+    <text x="100" y="2910" fill="#F0F0F0">📖 Index</text>
+    <text x="250" y="2910" fill="#F0F0F0">📦 Product</text>
+    <text x="400" y="2910" fill="#F0F0F0">🏛️ Architecture</text>
+    <text x="570" y="2910" fill="#F0F0F0">🎨 Design</text>
+    <text x="710" y="2910" fill="#F0F0F0">🧠 Features</text>
+    <text x="850" y="2910" fill="#F0F0F0">🗺️ Roadmap</text>
+    <text x="1000" y="2910" fill="#F0F0F0">🎮 Game</text>
+
+    <text x="100" y="2940" fill="#F0F0F0">🔌 Integrations</text>
+    <text x="250" y="2940" fill="#F0F0F0">👤 User Guide</text>
+    <text x="400" y="2940" fill="#F0F0F0">⚙️ Development</text>
+    <text x="570" y="2940" fill="#F0F0F0">🧪 Testing</text>
+    <text x="710" y="2940" fill="#F0F0F0">📊 State</text>
+    <text x="850" y="2940" fill="#F0F0F0">🤖 AI Guide</text>
+    <text x="1000" y="2940" fill="#F0F0F0">⌨️ CLI</text>
+  </g>
+
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- FOOTER (3000–3200)                                         -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Gradient divider -->
+  <line x1="200" y1="3050" x2="1000" y2="3050" stroke="url(#grD)" stroke-width="1"/>
+
+  <!-- Mini logo -->
+  <g transform="translate(590, 3070)">
+    <path d="M2,1 Q6,0 8,4 Q9,6 8,8" stroke="#C2FC8B" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.25"/>
+    <circle cx="8" cy="8" r="1" fill="#FEAB57" opacity="0.25"/>
+  </g>
+
+  <text x="600" y="3110" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#404040">
+    Free and open source under the GNU General Public License v3.0
+  </text>
+  <text x="600" y="3130" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="10" fill="#404040" opacity="0.5">
+    © 2022–2023 Yaroslav Shuliak (original Kanji Dojo) · Kaiteyo is independently developed
+  </text>
+
+  <!-- Bottom accent -->
+  <rect x="0" y="3198" width="1200" height="2" fill="url(#acG)" opacity="0.3"/>
+
+</svg>
