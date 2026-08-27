@@ -85,6 +85,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
@@ -193,6 +194,26 @@ val LocalWindowResizing = staticCompositionLocalOf { false }
  * mode with a non-bottom bubble snap.
  */
 val LocalNavBarBottomSpace = compositionLocalOf<MutableState<Dp>> { mutableStateOf(0.dp) }
+
+// ============================================
+// HOVER EXCLUSION REGISTRY
+// Nav elements (sidebar, floating bubble) register their window-
+// relative bounds here so the desktop title bar hover detector can
+// skip those regions.  Written on every layout pass from Compose;
+// read by the AWT MouseMotionListener on the JVM window thread.
+// ============================================
+
+object HoverExclusionRegistry {
+    private val zones = mutableMapOf<String, Rect>()
+
+    @Synchronized
+    fun update(key: String, rect: Rect?) {
+        if (rect != null) zones[key] = rect else zones.remove(key)
+    }
+
+    @Synchronized
+    fun snapshot(): List<Rect> = zones.values.toList()
+}
 
 // ============================================
 // NAV SHELL — unified adaptive navigation
@@ -362,12 +383,16 @@ private fun AdaptiveNavigation(
                 }
             }
     ) {
-        // The dock takes real layout space on its edge; the content is a
-        // weighted sibling that always receives the remaining space. The
-        // sidebar physically cannot swallow the window or blank the content.
-        if (vertical) {
-            Row(Modifier.fillMaxSize()) {
-                if (dockLeft > 0.dp) {
+        // Content fills the full window. The sidebar floats on top
+        // as an overlay panel with elevated surface — it never pushes
+        // or steals space from the content area.
+        Box(Modifier.fillMaxSize()) {
+            content()
+
+            // Docked sidebar overlay — positioned on the matching edge
+            // with margin/elevation so it visually floats above content.
+            when {
+                isSidebar && vertical && dockLeft > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -377,17 +402,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Left,
                         vertical = true,
                         dockSize = dockLeft,
-                        modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .align(Alignment.CenterStart)
                     )
                 }
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    content()
-                }
-                if (dockRight > 0.dp) {
+                isSidebar && vertical && dockRight > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -397,13 +417,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Right,
                         vertical = true,
                         dockSize = dockRight,
-                        modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .align(Alignment.CenterEnd)
                     )
                 }
-            }
-        } else {
-            Column(Modifier.fillMaxSize()) {
-                if (dockTop > 0.dp) {
+                isSidebar && !vertical && dockTop > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -413,13 +432,12 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Top,
                         vertical = false,
                         dockSize = dockTop,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
                     )
                 }
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    content()
-                }
-                if (dockBottom > 0.dp) {
+                isSidebar && !vertical && dockBottom > 0.dp -> {
                     DockedSidebar(
                         sections = sections,
                         navigationState = navigationState,
@@ -429,9 +447,21 @@ private fun AdaptiveNavigation(
                         edge = SidebarPosition.Bottom,
                         vertical = false,
                         dockSize = dockBottom,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
                     )
                 }
+            }
+        } // end inner Box (overlay)
+
+        // Clear the opposite mode's hover exclusion zone so stale rects never
+        // block the title bar when the element is no longer visible.
+        SideEffect {
+            if (mode == NavigationMode.Sidebar) {
+                HoverExclusionRegistry.update("bubble", null)
+            } else {
+                HoverExclusionRegistry.update("sidebar", null)
             }
         }
 
@@ -710,9 +740,16 @@ private fun DockedSidebar(
                         else -> Modifier.padding(bottom = margin)
                     }
                 )
-                .shadow(NavTokens.SidebarElevation, shape),
+                .shadow(NavTokens.SidebarElevation, shape)
+                .onGloballyPositioned { coords ->
+                    val pos = coords.positionInWindow()
+                    HoverExclusionRegistry.update(
+                        "sidebar",
+                        Rect(pos.x, pos.y, pos.x + coords.size.width, pos.y + coords.size.height)
+                    )
+                },
             shape = shape,
-            color = surfaceColors.surface
+            color = surfaceColors.surfaceElevated
         ) {
             if (vertical) {
                 Column(Modifier.fillMaxSize()) {
