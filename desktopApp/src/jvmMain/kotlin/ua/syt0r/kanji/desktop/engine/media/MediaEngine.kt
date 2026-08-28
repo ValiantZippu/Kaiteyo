@@ -548,6 +548,19 @@ class MediaEngine(private val state: AppState) {
         currentItem?.let { item ->
             library.updateProgress(item.id, durationMs, durationMs)
             library.recordHistory(item, subtitleUsed = subtitles.activeTrack?.name.orEmpty())
+            // Domain event: media ended — feeds completion + stats.
+            runCatching {
+                state.eventLog.record(
+                    ua.syt0r.kanji.desktop.engine.events.EventType.MediaEnded,
+                    source = "media",
+                    payload = mapOf(
+                        "mediaId" to item.id,
+                        "mediaName" to item.name,
+                        "durationMs" to durationMs.toString(),
+                        "kind" to item.kind.name
+                    )
+                )
+            }
         }
         loopMode = LoopMode.Off
         replayRemaining = 0
@@ -821,6 +834,7 @@ class MediaEngine(private val state: AppState) {
                 subtitles.clear()
                 subtitles.loadFile(File(subPath))
                 library.setSubtitle(item.id, subPath)
+                indexCurrentSubtitlesToGraph()
             }
             speed.let { backend.setSpeed(it) }
             volume.let { backend.setVolume(it) }
@@ -860,9 +874,22 @@ class MediaEngine(private val state: AppState) {
             currentItem?.let { library.setSubtitle(it.id, file.absolutePath) }
             subtitleVisible = true
             state.toastHost.show("Loaded subtitles: ${entry.name} (${entry.track.cues.size} cues)")
+            // Full subtitle index → node graph (idempotent, feeds "Where did I see this?").
+            indexCurrentSubtitlesToGraph()
         }.onFailure {
             playbackError = PlaybackError.SubtitleInvalid(it.message ?: "Parse failed")
             state.toastHost.show("Could not parse subtitles", kind = ToastKind.Warning)
+        }
+    }
+
+    /** Push the active subtitle track into the media node graph (idempotent). */
+    private fun indexCurrentSubtitlesToGraph() {
+        val item = currentItem ?: return
+        val cues = subtitles.activeTrack?.track?.cues ?: return
+        runCatching {
+            // Accessing mediaNodeGraph triggers its lazy init if not yet created; that's intentional —
+            // the graph should exist as soon as real subtitles are present.
+            state.mediaNodeGraph.indexSubtitleTrack(item.path, item.name, cues)
         }
     }
 
@@ -946,7 +973,24 @@ class MediaEngine(private val state: AppState) {
         when (event.type) {
             PlaybackEventType.Started -> {
                 isPlaying = true
-                if (!wasPlaying) notifyPlayback("Playing", currentItem)
+                if (!wasPlaying) {
+                    notifyPlayback("Playing", currentItem)
+                    // Domain event: media session started — feeds statistics + history.
+                    runCatching {
+                        currentItem?.let { item ->
+                            state.eventLog.record(
+                                ua.syt0r.kanji.desktop.engine.events.EventType.MediaStarted,
+                                source = "media",
+                                payload = mapOf(
+                                    "mediaId" to item.id,
+                                    "mediaName" to item.name,
+                                    "path" to item.path,
+                                    "kind" to item.kind.name
+                                )
+                            )
+                        }
+                    }
+                }
                 wasPlaying = true
                 if (sessionStartMs == 0L) sessionStartMs = System.currentTimeMillis()
                 sessionCounted = false
@@ -1489,6 +1533,29 @@ class MediaEngine(private val state: AppState) {
             "Dictionary lookup: ${text.take(40)}",
             details = currentItem?.name.orEmpty()
         )
+        // Domain events: word looked up + subtitle selected (media context).
+        runCatching {
+            state.eventLog.record(
+                ua.syt0r.kanji.desktop.engine.events.EventType.DictionaryLookup,
+                source = "media",
+                payload = mapOf(
+                    "query" to text.take(60),
+                    "mediaId" to (currentItem?.id.orEmpty()),
+                    "cueText" to (activeCue?.text?.take(80).orEmpty())
+                )
+            )
+            activeCue?.let { cue ->
+                state.eventLog.record(
+                    ua.syt0r.kanji.desktop.engine.events.EventType.SubtitleSelected,
+                    source = "media",
+                    payload = mapOf(
+                        "cueText" to cue.text.take(80),
+                        "mediaId" to (currentItem?.id.orEmpty()),
+                        "timestampMs" to cue.startMs.toString()
+                    )
+                )
+            }
+        }
     }
 
     fun lookupText(text: String) {
@@ -1916,6 +1983,8 @@ class MediaEngine(private val state: AppState) {
         miningEvents.add(0, event)
         while (miningEvents.size > 500) miningEvents.removeAt(miningEvents.lastIndex)
         save()
+        // Live graph update: mined line becomes exposureCount=1 without waiting for lazy init.
+        runCatching { state.mediaNodeGraph.addMiningEvent(event) }
         // Knowledge ⇄ media bridge (spec §28, ADR-0013): surface the real
         // card id so the core media-reference store can record a MINED
         // reference and the node layer can build the mined_from edge.
@@ -2300,6 +2369,19 @@ class MediaEngine(private val state: AppState) {
         bookmarks.add(bm)
         save()
         onBookmarkCreated?.invoke(bm)
+        runCatching { state.mediaNodeGraph.addBookmark(bm) }
+        runCatching {
+            state.eventLog.record(
+                ua.syt0r.kanji.desktop.engine.events.EventType.BookmarkAdded,
+                source = "media",
+                payload = mapOf(
+                    "mediaId" to item.id,
+                    "mediaName" to item.name,
+                    "timestampMs" to positionMs.toString(),
+                    "label" to bm.label.take(80)
+                )
+            )
+        }
         state.toastHost.show("Bookmarked at ${formatTime(positionMs)}", kind = ToastKind.Success)
     }
 

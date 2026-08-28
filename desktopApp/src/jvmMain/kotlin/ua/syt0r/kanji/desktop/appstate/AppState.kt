@@ -341,6 +341,8 @@ class AppState(
     /** All-source mining counters (per day + per source) for Statistics/Dashboard. */
     val miningStatistics = MiningStatisticsStore()
     val media = MediaEngine(this)
+    /** Download manager for browser/media acquisition (honest http(s) only, see P4-3). */
+    val mediaDownloads = ua.syt0r.kanji.desktop.engine.media.MediaDownloadService()
     val browserEngine = BrowserEngine()
     val ocr = OcrEngine()
     /**

@@ -1,6 +1,7 @@
 package ua.syt0r.kanji.desktop.engine.media
 
 import kotlinx.serialization.Serializable
+import ua.syt0r.kanji.desktop.engine.media.SubtitleCue
 
 // ============================================
 // MEDIA NODE FAMILY (KT-MEDIA-005)
@@ -110,6 +111,54 @@ class MediaNodeGraph {
         }
         episode.watchTimeMs = maxOf(episode.watchTimeMs, bookmark.timestampMs)
         if (!series.episodes.contains(episode)) series.episodes.add(episode)
+    }
+
+    /**
+     * Index a full subtitle track into the graph. Idempotent: previous lines for
+     * [mediaPath] are replaced, so re-indexing after subtitle edits is safe and
+     * version-safe without duplicating nodes. Mined lines (exposureCount=1) are
+     * preserved — merged by cue timestamp proximity (±500ms) so mining provenance
+     * is never lost on re-index.
+     */
+    fun indexSubtitleTrack(mediaPath: String, mediaName: String, cues: List<SubtitleCue>) {
+        if (cues.isEmpty()) return
+        val seriesTitle = inferSeriesTitle(mediaName)
+        val series = seriesById.getOrPut(seriesTitle) { MediaSeries(seriesTitle, seriesTitle) }
+        val episode = episodeByPath.getOrPut(mediaPath) {
+            MediaEpisode(number = series.episodes.size + 1, path = mediaPath, name = mediaName)
+        }
+        if (episode !in series.episodes) series.episodes.add(episode)
+        // Preserve mined lines — snapshot exposure within this episode.
+        val minedByStart = episode.scenes.flatMap { it.lines }.filter { it.exposureCount > 0 }
+            .associateBy { it.startMs }
+        // Replace scenes for this episode with fresh indexed lines (single synthetic scene).
+        episode.scenes.removeAll { it.id.startsWith("idx-") || it.id.startsWith("scene-$mediaPath-") && minedByStart.isEmpty() }
+        // If mined lines exist, keep their scenes and just add missing indexed lines as a separate scene.
+        val indexedScene = MediaScene(
+            id = "idx-$mediaPath-${cues.size}",
+            startMs = cues.first().startMs,
+            endMs = cues.last().endMs,
+            lines = cues.mapIndexed { idx, cue ->
+                val preserved = minedByStart.entries.firstOrNull { kotlin.math.abs(it.key - cue.startMs) < 500 }?.value
+                SubtitleLine(
+                    index = idx + 1,
+                    startMs = cue.startMs,
+                    endMs = cue.endMs,
+                    text = cue.text,
+                    exposureCount = preserved?.exposureCount ?: 0
+                )
+            }.toMutableList()
+        )
+        // Idempotency: collapse duplicate indexed scenes.
+        episode.scenes.removeAll { it.id.startsWith("idx-$mediaPath-") }
+        episode.scenes.add(indexedScene)
+    }
+
+    fun clearMedia(mediaPath: String) {
+        episodeByPath.remove(mediaPath)?.let { ep ->
+            seriesById.values.forEach { it.episodes.remove(ep) }
+            seriesById.entries.removeIf { it.value.episodes.isEmpty() }
+        }
     }
 
     fun series(): List<MediaSeries> = seriesById.values.toList()

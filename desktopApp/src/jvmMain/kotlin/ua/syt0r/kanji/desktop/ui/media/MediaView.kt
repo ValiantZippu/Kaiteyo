@@ -67,7 +67,7 @@ import ua.syt0r.kanji.desktop.engine.media.AutoPauseMode
 // ============================================
 
 enum class MediaPanel(val label: String) {
-    Home("Home"), Player("Player"), Library("Library"), Stats("Stats"), Bookmarks("Bookmarks"), Tuning("Video & Audio"), Settings("Settings")
+    Home("Home"), Player("Player"), Library("Library"), Stats("Stats"), Bookmarks("Bookmarks"), Downloads("Downloads"), Tuning("Video & Audio"), Settings("Settings")
 }
 
 @Composable
@@ -219,6 +219,7 @@ fun MediaView(state: AppState, onBack: (() -> Unit)? = null) {
                     MediaPanel.Library -> MediaLibraryPanel(state, onOpenDetail = { detailItemId = it })
                     MediaPanel.Stats -> MediaStatsPanel(state)
                     MediaPanel.Bookmarks -> MediaBookmarksPanel(state)
+                    MediaPanel.Downloads -> MediaDownloadsPanel(state)
                     MediaPanel.Tuning -> MediaTuningPanel(state)
                     MediaPanel.Settings -> MediaSettingsPanel(state)
                 }
@@ -239,6 +240,7 @@ private fun MediaToolbar(
     val item = media.currentItem
 
     var urlPromptOpen by remember { mutableStateOf(false) }
+    var downloadPromptOpen by remember { mutableStateOf(false) }
     var urlDraft by remember { mutableStateOf("") }
 
     Column(
@@ -332,6 +334,13 @@ private fun MediaToolbar(
                         }
                     )
                     DropdownMenuItem(
+                        text = { Text("Download media URL…") },
+                        onClick = {
+                            moreOpen = false
+                            downloadPromptOpen = true
+                        }
+                    )
+                    DropdownMenuItem(
                         text = { Text("Load secondary subtitles (dual-language)…") },
                         onClick = {
                             moreOpen = false
@@ -361,6 +370,25 @@ private fun MediaToolbar(
                 media.openUrl(raw)
             },
             onDismiss = { urlPromptOpen = false }
+        )
+    }
+    if (downloadPromptOpen) {
+        DsPromptDialog(
+            title = "Download media",
+            placeholder = "https://… (direct file URL, http(s) only)",
+            initialValue = urlDraft,
+            onConfirm = { raw ->
+                urlDraft = raw
+                downloadPromptOpen = false
+                val job = state.mediaDownloads.enqueue(raw)
+                if (job == null) {
+                    state.toastHost.show(state.mediaDownloads.lastError ?: "Invalid URL", kind = ua.syt0r.kanji.desktop.model.ToastKind.Warning)
+                } else {
+                    state.toastHost.show("Download queued: ${job.fileName}", kind = ua.syt0r.kanji.desktop.model.ToastKind.Info)
+                    onSelectPanel(MediaPanel.Downloads)
+                }
+            },
+            onDismiss = { downloadPromptOpen = false }
         )
     }
 }

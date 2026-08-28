@@ -857,6 +857,25 @@ fun StatsView(state: AppState) {
             }
         }
 
+        // Media immersion heatmap — kanji-heatmap inspired calendar (watch time per day).
+        DsCard {
+            Column(Modifier.padding(DsSpacing.Lg)) {
+                DsSectionHeader(
+                    title = "Immersion Heatmap",
+                    subtitle = "Media watch time per day — GitHub-style calendar",
+                    action = {
+                        Text(
+                            text = "${mediaStats.totalWatchMs / 60000}m total · ${mediaStats.days.size} active days",
+                            color = sc.textMuted,
+                            fontSize = DsType.Caption
+                        )
+                    }
+                )
+                Spacer(Modifier.height(DsSpacing.Lg))
+                MediaImmersionHeatmap(state.media.statistics)
+            }
+        }
+
         // Mining activity — every source, real records from MiningStatisticsStore.
         DsCard {
             Column(Modifier.padding(DsSpacing.Lg)) {
@@ -1428,4 +1447,56 @@ private fun deckLabel(decks: List<String>): String {
     if (decks.isEmpty()) return "—"
     val shown = decks.take(3).joinToString(" · ")
     return if (decks.size > 3) "$shown +${decks.size - 3}" else shown
+}
+
+@Composable
+private fun MediaImmersionHeatmap(stats: ua.syt0r.kanji.desktop.engine.media.MediaStatisticsStore) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    // 52 weeks of media watch intensity (kanji-heatmap style, repurposed for immersion).
+    val weeks = remember(stats.days.size, today) {
+        val byDate = stats.days.associateBy { it.date }
+        (0 until 52).map { w ->
+            (0 until 7).map { d ->
+                val day = today.minus((51 - w) * 7 + (6 - d), DateTimeUnit.DAY)
+                val watchMs = byDate[day.toString()]?.watchMs ?: 0L
+                val level = when {
+                    watchMs == 0L -> 0
+                    watchMs < 15 * 60_000 -> 1
+                    watchMs < 30 * 60_000 -> 2
+                    watchMs < 60 * 60_000 -> 3
+                    else -> 4
+                }
+                day to level
+            }
+        }
+    }
+    if (stats.days.isEmpty()) {
+        Text("No immersion heatmap yet — watch time accumulates per local day.", color = sc.textMuted, fontSize = DsType.Body)
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(DsSpacing.Sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            weeks.forEach { week ->
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    week.forEach { (day, level) ->
+                        Box(
+                            Modifier
+                                .size(11.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(heatColor(level, sc, ac))
+                        )
+                    }
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs), verticalAlignment = Alignment.CenterVertically) {
+            Text("Less", color = sc.textMuted, fontSize = DsType.Caption)
+            repeat(5) { l -> Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(heatColor(l, sc, ac))) }
+            Text("More", color = sc.textMuted, fontSize = DsType.Caption)
+            Spacer(Modifier.weight(1f))
+            Text("52 weeks · watch minutes per day", color = sc.textMuted, fontSize = DsType.Caption)
+        }
+    }
 }
