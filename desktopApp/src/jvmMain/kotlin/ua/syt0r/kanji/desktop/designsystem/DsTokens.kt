@@ -111,6 +111,7 @@ val learningColor: Color = Color(0xFFFFA726)
 val reviewColor: Color = Color(0xFF42A5F5)
 val relearningColor: Color = Color(0xFFEF5350)
 val dueColor: Color = Color(0xFFFFA726)
+val favoriteColor: Color = Color(0xFFFFD54F)
 
 // --- Spacing (4dp grid) ---
 
@@ -129,11 +130,14 @@ object DsSpacing {
 object DsType {
     val DisplayLarge: TextUnit = 36.sp
     val DisplayMedium: TextUnit = 28.sp
+    val Display: TextUnit = 28.sp
+    val Heading: TextUnit = 18.sp
     val Title: TextUnit = 20.sp
     val TitleLarge: TextUnit = 24.sp
     val BodyLarge: TextUnit = 16.sp
     val Body: TextUnit = 14.sp
     val BodySmall: TextUnit = 13.sp
+    val Label: TextUnit = 13.sp
     val Caption: TextUnit = 12.sp
     val Overline: TextUnit = 11.sp
     val Tiny: TextUnit = 10.sp

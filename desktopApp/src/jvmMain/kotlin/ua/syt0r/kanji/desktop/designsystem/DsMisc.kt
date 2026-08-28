@@ -1,297 +1,171 @@
 package ua.syt0r.kanji.desktop.designsystem
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 
 // ============================================
-// KAITEYO DESIGN SYSTEM — MISC PRIMITIVES
-// Badges, stat tiles, progress, tooltip, toggle.
+// KAITEYO DESIGN SYSTEM — MISC COMPONENTS
+// DsChip, DsContextMenuHost, DsFavoriteToggle, DsFlagBadge
 // ============================================
 
-/** Small numeric badge (e.g. review counts). */
+// --- DsChip ---
+
 @Composable
-fun DsBadge(
+fun DsChip(
     text: String,
-    modifier: Modifier = Modifier,
-    tint: Color = Color.Unspecified
-) {
-    val sc = surfaceColors()
-    val ac = accent()
-    val color = if (tint != Color.Unspecified) tint else ac.primary
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(DsRadius.Full))
-            .background(color.copy(alpha = 0.16f))
-            .padding(horizontal = DsSpacing.Sm, vertical = 2.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = color,
-            fontSize = DsType.Caption,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-/** Stat tile: label + big value + optional delta. */
-@Composable
-fun DsStatTile(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    delta: String? = null,
-    deltaPositive: Boolean = true
-) {
-    val sc = surfaceColors()
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(DsRadius.Lg))
-            .background(sc.surface)
-            .padding(DsSpacing.Lg)
-    ) {
-        Text(
-            text = label.uppercase(),
-            color = sc.textMuted,
-            fontSize = DsType.Caption,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(Modifier.height(DsSpacing.Xs))
-        Text(
-            text = value,
-            color = sc.textPrimary,
-            fontSize = DsType.Heading,
-            fontWeight = FontWeight.Bold
-        )
-        if (delta != null) {
-            Spacer(Modifier.height(DsSpacing.Xs))
-            Text(
-                text = delta,
-                color = if (deltaPositive) successColor() else errorColor(),
-                fontSize = DsType.Caption
-            )
-        }
-    }
-}
-
-/** Inline progress bar. */
-@Composable
-fun DsProgressBar(
-    fraction: Float,
-    modifier: Modifier = Modifier,
-    height: androidx.compose.ui.unit.Dp = 6.dp,
-    color: Color = Color.Unspecified
-) {
-    val sc = surfaceColors()
-    val ac = accent()
-    val fill = if (color != Color.Unspecified) color else ac.primary
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .clip(RoundedCornerShape(height / 2))
-            .background(sc.surfaceInteractive)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                .height(height)
-                .clip(RoundedCornerShape(height / 2))
-                .background(fill)
-        )
-    }
-}
-
-/** Kaiteyo-native toggle switch — no Material3 dependency. */
-@Composable
-fun DsSwitch(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    val sc = surfaceColors()
-    val ac = accent()
-    val interaction = remember { MutableInteractionSource() }
-    val hovered by interaction.collectIsHoveredAsState()
-
-    val thumbOffset by animateFloatAsState(
-        targetValue = if (checked) 20f else 0f,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f),
-        label = "switchThumb"
-    )
-    val trackColor by animateColorAsState(
-        targetValue = when {
-            checked -> ac.primary
-            hovered -> sc.surfaceInteractive
-            else -> sc.surfaceInteractive.copy(alpha = 0.6f)
-        },
-        animationSpec = tween(160),
-        label = "switchTrack"
-    )
-    val thumbColor = if (checked) ac.onPrimary else sc.textSecondary
-
-    Box(
-        modifier = modifier
-            .size(width = 40.dp, height = 22.dp)
-            .clip(RoundedCornerShape(DsRadius.Full))
-            .background(trackColor)
-            .then(
-                if (enabled) Modifier
-                    .clickable(interactionSource = interaction, indication = null) { onCheckedChange(!checked) }
-                    .hoverable(interaction)
-                else Modifier
-            ),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Box(
-            modifier = Modifier
-                .padding(start = 2.dp)
-                .offset(x = thumbOffset.dp)
-                .size(18.dp)
-                .clip(RoundedCornerShape(9.dp))
-                .background(thumbColor)
-        )
-    }
-}
-
-/** Simple labeled toggle switch. */
-@Composable
-fun DsToggle(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    label: String? = null,
-    enabled: Boolean = true
-) {
-    val sc = surfaceColors()
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (label != null) {
-            Text(
-                text = label,
-                color = if (enabled) sc.textPrimary else sc.textMuted,
-                fontSize = DsType.Body,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(DsSpacing.Md))
-        }
-        DsSwitch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled
-        )
-    }
-}
-
-/** Link-style action row (e.g. "Open browser →"). */
-@Composable
-fun DsLink(
-    text: String,
+    selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
-    val ac = accent()
-    Row(
+    val sc = surfaceColors()
+    val shape = RoundedCornerShape(DsRadius.Full)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    val bgColor = when {
+        selected -> sc.accentSoft
+        isHovered -> sc.hoverOverlay
+        else -> Color.Transparent
+    }
+    val borderColor = when {
+        selected -> sc.accent
+        else -> sc.border
+    }
+    val textColor = when {
+        !enabled -> sc.textDisabled
+        selected -> sc.accent
+        else -> sc.textSecondary
+    }
+
+    Box(
         modifier = modifier
-            .clip(RoundedCornerShape(DsRadius.Sm))
-            .clickable(onClick = onClick)
-            .padding(vertical = DsSpacing.Xs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+            .clip(shape)
+            .background(bgColor)
+            .border(1.dp, borderColor, shape)
+            .hoverable(interactionSource)
+            .clickable(enabled = enabled) { onClick() }
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs)
     ) {
         Text(
             text = text,
-            color = ac.primary,
-            fontSize = DsType.Label,
-            fontWeight = FontWeight.Medium
-        )
-        Icon(
-            Icons.Default.ArrowForward,
-            contentDescription = null,
-            tint = ac.primary,
-            modifier = Modifier.size(12.dp)
+            color = textColor,
+            fontSize = DsType.Caption,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
     }
 }
 
-/** Section header with optional right-side content. */
+// --- DsContextMenuHost ---
+
 @Composable
-fun DsSectionHeader(
-    title: String,
+fun DsContextMenuHost(
+    enabled: Boolean,
+    menuItems: List<DsMenuItem>,
     modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    action: @Composable () -> Unit = {}
+    content: @Composable () -> Unit
 ) {
-    val sc = surfaceColors()
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+    var showMenu by remember { mutableStateOf(false) }
+    var menuPos by remember { mutableStateOf(IntOffset.Zero) }
+
+    Box(
+        modifier = modifier.onPointerEvent(PointerEventType.ContextClick) { event ->
+            if (enabled && menuItems.isNotEmpty()) {
+                val position = event.changes.firstOrNull()?.position
+                if (position != null) {
+                    menuPos = IntOffset(position.x.toInt(), position.y.toInt())
+                    showMenu = true
+                }
+            }
+        }
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                color = sc.textPrimary,
-                fontSize = DsType.BodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    color = sc.textMuted,
-                    fontSize = DsType.Caption
+        content()
+
+        if (showMenu && enabled && menuItems.isNotEmpty()) {
+            Popup(
+                alignment = androidx.compose.ui.Alignment.TopStart,
+                offset = menuPos,
+                onDismissRequest = { showMenu = false },
+                properties = PopupProperties(focusable = true)
+            ) {
+                DsMenuPanel(
+                    menuItems = menuItems,
+                    onDismiss = { showMenu = false }
                 )
             }
         }
-        action()
     }
 }
 
-/** Numeric label for grid density controls. */
+// --- DsFavoriteToggle ---
+
 @Composable
-fun DsNumberLabel(value: Int, modifier: Modifier = Modifier) {
+fun DsFavoriteToggle(
+    isFavorite: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Int = 16
+) {
+    val color = if (isFavorite) favoriteColor else surfaceColors().textMuted
+
     Text(
-        text = value.toString(),
-        color = surfaceColors().textPrimary,
-        fontSize = DsType.Body,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center,
+        text = if (isFavorite) "\u2605" else "\u2606",
+        color = color,
+        fontSize = size.sp,
         modifier = modifier
+            .clip(RoundedCornerShape(DsRadius.Sm))
+            .clickable { onToggle() }
+            .padding(2.dp)
+    )
+}
+
+// --- DsFlagBadge ---
+
+@Composable
+fun DsFlagBadge(
+    flag: String,
+    modifier: Modifier = Modifier
+) {
+    val color = when (flag.lowercase()) {
+        "red" -> Color(0xFFEF5350)
+        "orange" -> Color(0xFFFFA726)
+        "yellow" -> Color(0xFFFFEE58)
+        "green" -> Color(0xFF66BB6A)
+        "blue" -> Color(0xFF42A5F5)
+        "purple" -> Color(0xFFAB47BC)
+        else -> Color(0xFF9E9E9E)
+    }
+
+    Box(
+        modifier = modifier
+            .size(10.dp)
+            .clip(RoundedCornerShape(50))
+            .background(color)
     )
 }

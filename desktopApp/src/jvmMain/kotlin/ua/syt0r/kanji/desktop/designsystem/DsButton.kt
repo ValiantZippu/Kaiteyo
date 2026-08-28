@@ -23,13 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — BUTTON
 // ============================================
 
-enum class DsButtonKind { Primary, Secondary, Ghost }
+enum class DsButtonKind { Primary, Secondary, Ghost, Danger }
 
 @Composable
 fun DsButton(
@@ -37,7 +38,9 @@ fun DsButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     kind: DsButtonKind = DsButtonKind.Primary,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    icon: ImageVector? = null,
+    compact: Boolean = false
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Sm)
@@ -48,17 +51,23 @@ fun DsButton(
         DsButtonKind.Primary -> sc.accent
         DsButtonKind.Secondary -> sc.surface
         DsButtonKind.Ghost -> Color.Transparent
+        DsButtonKind.Danger -> errorColor
     }
     val contentColor = when (kind) {
         DsButtonKind.Primary -> sc.textOnAccent
         DsButtonKind.Secondary -> sc.textPrimary
         DsButtonKind.Ghost -> sc.textSecondary
+        DsButtonKind.Danger -> Color.White
     }
     val hoverTint = when (kind) {
         DsButtonKind.Primary -> sc.accent.copy(alpha = 0.85f)
         DsButtonKind.Secondary -> sc.hoverOverlay
         DsButtonKind.Ghost -> sc.hoverOverlay
+        DsButtonKind.Danger -> errorColor.copy(alpha = 0.85f)
     }
+
+    val horizontalPad = if (compact) DsSpacing.Md else DsSpacing.Lg
+    val verticalPad = if (compact) DsSpacing.Xs else DsSpacing.Sm
 
     Row(
         modifier = modifier
@@ -73,13 +82,60 @@ fun DsButton(
             )
             .hoverable(interactionSource)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Sm),
+            .padding(horizontal = horizontalPad, vertical = verticalPad),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
     ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) contentColor else contentColor.copy(alpha = 0.5f),
+                modifier = Modifier.size(if (compact) 14.dp else 16.dp)
+            )
+        }
         Text(
             text = text,
             color = if (enabled) contentColor else contentColor.copy(alpha = 0.5f),
+            fontSize = DsType.Body,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun DsTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector? = null
+) {
+    val sc = surfaceColors()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(DsRadius.Sm))
+            .background(if (isHovered && enabled) sc.hoverOverlay else Color.Transparent)
+            .hoverable(interactionSource)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) sc.accent else sc.textDisabled,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        Text(
+            text = text,
+            color = if (enabled) sc.accent else sc.textDisabled,
             fontSize = DsType.Body,
             fontWeight = FontWeight.Medium
         )
@@ -93,7 +149,8 @@ fun DsIconButton(
     icon: ImageVector,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    tint: Color = Color.Unspecified
+    tint: Color = Color.Unspecified,
+    size: Dp = 32.dp
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Sm)
@@ -102,7 +159,7 @@ fun DsIconButton(
 
     Box(
         modifier = modifier
-            .size(32.dp)
+            .size(size)
             .clip(shape)
             .background(if (isHovered && enabled) sc.hoverOverlay else Color.Transparent)
             .hoverable(interactionSource)

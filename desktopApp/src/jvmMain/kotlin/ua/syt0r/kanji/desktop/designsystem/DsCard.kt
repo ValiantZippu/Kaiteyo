@@ -3,7 +3,6 @@ package ua.syt0r.kanji.desktop.designsystem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -21,7 +20,8 @@ import androidx.compose.ui.unit.dp
 fun DsCard(
     modifier: Modifier = Modifier,
     elevated: Boolean = false,
-    content: @Composable BoxScope.() -> Unit
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Md)
@@ -29,22 +29,15 @@ fun DsCard(
     Box(
         modifier = modifier
             .let {
-                if (elevated) {
-                    it.shadow(DsElevation.Md, shape)
-                } else {
-                    it
-                }
+                if (elevated) it.shadow(DsElevation.Md, shape) else it
             }
             .clip(shape)
             .background(sc.surface)
             .then(
-                if (!elevated) {
-                    Modifier.border(1.dp, sc.borderSubtle, shape)
-                } else {
-                    Modifier
-                }
+                if (!elevated) Modifier.border(1.dp, sc.borderSubtle, shape) else Modifier
             )
-            .padding(DsSpacing.Lg),
-        content = content
-    )
+            .padding(DsSpacing.Lg)
+    ) {
+        content()
+    }
 }

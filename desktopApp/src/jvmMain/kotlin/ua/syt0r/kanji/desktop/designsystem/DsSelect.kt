@@ -21,14 +21,15 @@ import androidx.compose.ui.unit.dp
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — SELECT
-// Simple dropdown selector.
+// Generic typed dropdown selector.
 // ============================================
 
 @Composable
-fun DsSelect(
-    options: List<String>,
-    selected: Int,
-    onSelect: (Int) -> Unit,
+fun <T> DsSelect(
+    selected: T,
+    options: List<T>,
+    onSelected: (T) -> Unit,
+    labelOf: (T) -> String,
     modifier: Modifier = Modifier
 ) {
     val sc = surfaceColors()
@@ -45,7 +46,7 @@ fun DsSelect(
                 .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs)
         ) {
             Text(
-                text = options.getOrElse(selected) { "" },
+                text = labelOf(selected),
                 color = sc.textPrimary,
                 fontSize = DsType.Body,
                 fontWeight = FontWeight.Medium
@@ -56,17 +57,17 @@ fun DsSelect(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            options.forEachIndexed { index, label ->
+            options.forEach { option ->
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = label,
+                            text = labelOf(option),
                             fontSize = DsType.Body,
-                            fontWeight = if (index == selected) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (option == selected) FontWeight.Bold else FontWeight.Normal
                         )
                     },
                     onClick = {
-                        onSelect(index)
+                        onSelected(option)
                         expanded = false
                     }
                 )
