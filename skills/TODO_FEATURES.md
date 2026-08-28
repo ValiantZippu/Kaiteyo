@@ -121,7 +121,8 @@
 | Custom window chrome polish | AI | ✅ Done | `early-develop` |
 | ContentAreaBounds composition local | AI | ✅ Done | `early-develop` |
 | README redesign | AI | ✅ Done | `early-develop` |
-| Skills documentation | AI | 🔧 In Progress | `early-develop` |
+| Skills documentation | AI | ✅ Done | `early-develop` |
+| Browse screen redesign (Phase 1: remove Material3 chrome, accent kanji) | AI | ✅ Done | `early-develop` |
 
 ---
 
