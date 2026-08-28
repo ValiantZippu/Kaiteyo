@@ -284,7 +284,7 @@ fun DsPageError(
         DsEmptyState(
             title = "Something went wrong",
             message = message,
-            icon = androidx.compose.material.icons.Icons.Filled.Error,
+            icon = null,
             action = if (onRetry != null) {
                 { DsButton(text = "Try again", onClick = onRetry) }
             } else {
