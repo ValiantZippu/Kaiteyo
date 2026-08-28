@@ -7,10 +7,12 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -90,14 +92,15 @@ fun DsIconButton(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     contentDescription: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    tint: Color = Color.Unspecified
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Sm)
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = modifier
             .size(32.dp)
             .clip(shape)
@@ -107,10 +110,14 @@ fun DsIconButton(
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
-        androidx.compose.material3.Icon(
+        Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (enabled) sc.textSecondary else sc.textDisabled
+            tint = when {
+                tint != Color.Unspecified -> tint
+                enabled -> sc.textSecondary
+                else -> sc.textDisabled
+            }
         )
     }
 }

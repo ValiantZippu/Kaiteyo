@@ -1,12 +1,9 @@
 package ua.syt0r.kanji.desktop.designsystem
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +25,7 @@ data class SurfaceColors(
     val surface: Color,
     val surfaceVariant: Color,
     val surfaceElevated: Color,
+    val surfaceInteractive: Color,
     val textPrimary: Color,
     val textSecondary: Color,
     val textMuted: Color,
@@ -50,6 +48,7 @@ private val LightColors = SurfaceColors(
     surface = Color.White,
     surfaceVariant = Color(0xFFF3F4F6),
     surfaceElevated = Color.White,
+    surfaceInteractive = Color(0xFFE8E9EC),
     textPrimary = Color(0xFF1A1A1A),
     textSecondary = Color(0xFF4A4A4A),
     textMuted = Color(0xFF8A8A8A),
@@ -72,6 +71,7 @@ private val DarkColors = SurfaceColors(
     surface = Color(0xFF1E1E1E),
     surfaceVariant = Color(0xFF252525),
     surfaceElevated = Color(0xFF2A2A2A),
+    surfaceInteractive = Color(0xFF333333),
     textPrimary = Color(0xFFF0F0F0),
     textSecondary = Color(0xFFB0B0B0),
     textMuted = Color(0xFF707070),
@@ -92,20 +92,14 @@ private val LocalSurfaceColors = staticCompositionLocalOf { DarkColors }
 @Composable
 fun surfaceColors(): SurfaceColors = LocalSurfaceColors.current
 
+// --- Accent helper (returns object with .primary) ---
+
+data class AccentScheme(val primary: Color, val secondary: Color = primary.copy(alpha = 0.7f))
+
 @Composable
-fun ProvideSurfaceColors(
-    colors: SurfaceColors = DarkColors,
-    content: @Composable () -> Unit
-) {
-    CompositionLocalProvider(LocalSurfaceColors provides colors) {
-        content()
-    }
-}
+fun accent(): AccentScheme = AccentScheme(primary = LocalSurfaceColors.current.accent)
 
 // --- Semantic / Status Colors ---
-
-val accent: Color
-    get() = LocalSurfaceColors.current.accent
 
 val successColor: Color = Color(0xFF4CAF50)
 val warningColor: Color = Color(0xFFFFA726)
@@ -163,4 +157,18 @@ object DsElevation {
     val Md = 4.dp
     val Lg = 8.dp
     val Xl = 12.dp
+    val Floating = 16.dp
+}
+
+// --- Motion (durations in ms) ---
+
+object DsMotion {
+    /** Instant transition — no animation. */
+    val Instant: Int = 0
+    /** Fast micro-interaction (hover, focus). */
+    val Fast: Int = 100
+    /** Normal transition (panel expand, mode switch). */
+    val Normal: Int = 200
+    /** Slow transition (full page crossfade). */
+    val Slow: Int = 350
 }
