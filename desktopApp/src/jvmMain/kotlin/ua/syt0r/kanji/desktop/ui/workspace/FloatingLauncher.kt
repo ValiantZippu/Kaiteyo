@@ -925,7 +925,7 @@ private fun BubbleModeOptionRow(
 private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: () -> Unit) {
     val sc = surfaceColors()
     var leaving by remember { mutableStateOf(false) }
-    val exitMs = if (state.navigationAnimations && !state.navReducedMotion) 180 else 0
+    val exitMs = if (state.navigationAnimations && !state.navReducedMotion) LaunchpadMotion.LAUNCHPAD_EXIT_MS else 0
     var panelCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     LaunchedEffect(leaving) {
@@ -938,14 +938,12 @@ private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: (
 
     val scale by animateFloatAsState(
         targetValue = if (leaving) 0.92f else 1f,
-        // Open with a spring so the panel settles softly from the bubble;
-        // closing stays a quick tween for a decisive dismiss.
-        animationSpec = if (leaving) tween(exitMs) else spring(dampingRatio = 0.72f, stiffness = 340f),
+        animationSpec = if (leaving) LaunchpadMotion.exitScale else LaunchpadMotion.enterScale,
         label = "launchpadScale"
     )
     val alpha by animateFloatAsState(
         targetValue = if (leaving) 0f else 1f,
-        animationSpec = tween(if (leaving) exitMs else 180),
+        animationSpec = if (leaving) LaunchpadMotion.exitAlpha else LaunchpadMotion.enterAlpha,
         label = "launchpadAlpha"
     )
 
@@ -981,7 +979,13 @@ private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: (
                             this.alpha = alpha
                         }
                 ) {
-                    LaunchpadPanel(state, onDismiss = close)
+                    WorkspaceLaunchpad(
+                        state = state,
+                        onSwitchTo = { view ->
+                            state.currentView = view
+                        },
+                        onDismiss = close
+                    )
                 }
             }
         }

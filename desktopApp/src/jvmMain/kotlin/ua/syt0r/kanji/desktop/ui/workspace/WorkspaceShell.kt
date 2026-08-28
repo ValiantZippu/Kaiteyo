@@ -196,6 +196,15 @@ fun KaiteyoWorkspace(state: AppState) {
         d.register("retry") { if (state.reviewSession != null) state.retryCurrent() }
     }
 
+    // Mark the active workspace for the Launchpad preview system.
+    LaunchedEffect(state.currentView) {
+        state.markActiveWorkspace(state.currentView)
+    }
+
+    // Centralized preview bridge: pushes real state data into
+    // workspacePreviews so the Launchpad always reflects actual data.
+    WorkspacePreviewBridge(state)
+
     // Leaving Media while something plays pops up the persistent mini player.
     LaunchedEffect(state.currentView) {
         val media = state.media

@@ -56,6 +56,24 @@ import kotlinx.serialization.json.Json
 import kotlin.random.Random
 import kotlin.time.Duration
 
+/**
+ * Lightweight preview snapshot for a workspace. Used by the Launchpad
+ * (task view) to show what each workspace is currently doing without
+ * rendering the full screen. Updated by each view on state change.
+ */
+@Serializable
+data class WorkspacePreview(
+    val view: WorkspaceView,
+    val title: String = view.label,
+    val subtitle: String = "",
+    val detail: String = "",
+    val progress: Float = -1f,      // -1 = no progress, 0..1 = percentage
+    val isActive: Boolean = false,   // is this the currently displayed view?
+    val lastActiveEpochMs: Long = 0,
+    val accentEmoji: String = "",    // small visual identifier (📚 📖 🔤 📊 🎬)
+    val previewData: String = ""     // serialized lightweight preview state
+)
+
 /** A single view of the workspace. */
 @Serializable
 enum class WorkspaceView(val label: String, val icon: String) {
@@ -510,6 +528,7 @@ init {
         // curated data, never study content.
         seedDictionary()
         loadWorkspaceTabs()
+        initCorePreviews()
         // Bridge the legacy card pool into the unified learning model so new
         // systems (exams, statistics, mistakes) see the same real data.
         learning.syncFromLegacy(cards.toList())
@@ -658,6 +677,47 @@ init {
         return when (settings.getString("navigation.mode", "traditional")?.lowercase()) {
             "floating", "both", "hidden" -> NavLayout.Floating
             else -> NavLayout.Sidebar
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // Workspace preview state (Launchpad / task view)
+    // ---------------------------------------------------------------
+    /** Live preview snapshots for every workspace — updated by each view. */
+    val workspacePreviews = mutableStateMapOf<WorkspaceView, WorkspacePreview>()
+
+    /** Update the preview for a workspace (called by the view itself). */
+    fun updatePreview(view: WorkspaceView, block: (WorkspacePreview) -> WorkspacePreview) {
+        val current = workspacePreviews[view] ?: WorkspacePreview(view = view)
+        workspacePreviews[view] = block(current.copy(view = view))
+    }
+
+    /** Mark the active workspace and deactivate all others. */
+    fun markActiveWorkspace(view: WorkspaceView) {
+        workspacePreviews.forEach { (v, preview) ->
+            if (v == view) workspacePreviews[v] = preview.copy(
+                isActive = true,
+                lastActiveEpochMs = System.currentTimeMillis()
+            )
+            else if (preview.isActive) workspacePreviews[v] = preview.copy(isActive = false)
+        }
+    }
+
+    /** All workspace previews sorted by last-active (most recent first). */
+    fun sortedPreviews(): List<WorkspacePreview> =
+        workspacePreviews.values.sortedByDescending { it.lastActiveEpochMs }
+
+    /** Initialize previews for core workspaces if not already present. */
+    fun initCorePreviews() {
+        listOf(
+            WorkspaceView.Dashboard to WorkspacePreview(WorkspaceView.Dashboard, accentEmoji = "📊"),
+            WorkspaceView.Library to WorkspacePreview(WorkspaceView.Library, accentEmoji = "📚"),
+            WorkspaceView.Dictionary to WorkspacePreview(WorkspaceView.Dictionary, accentEmoji = "📖"),
+            WorkspaceView.Statistics to WorkspacePreview(WorkspaceView.Statistics, accentEmoji = "📈"),
+            WorkspaceView.Media to WorkspacePreview(WorkspaceView.Media, accentEmoji = "🎬"),
+            WorkspaceView.Settings to WorkspacePreview(WorkspaceView.Settings, accentEmoji = "⚙️"),
+        ).forEach { (view, preview) ->
+            if (view !in workspacePreviews) workspacePreviews[view] = preview
         }
     }
 
