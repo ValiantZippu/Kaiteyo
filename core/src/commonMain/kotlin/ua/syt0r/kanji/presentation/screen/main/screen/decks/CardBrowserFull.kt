@@ -241,46 +241,11 @@ fun CardBrowserFullScreen(
         else -> {}
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (embedded) "Browse" else "Card Browser") },
-                navigationIcon = {
-                    if (!embedded) {
-                        IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close") }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showColumnPicker = true }) { Icon(Icons.Default.ViewColumn, "Columns") }
-                    IconButton(onClick = { showFilterPanel = !showFilterPanel }) {
-                        Icon(Icons.Default.FilterList, "Filters",
-                            tint = if (flagFilter != null || anyFlagFilter || statusFilter.isNotEmpty() || deckFilter != null || tagFilter != null || dayCardIds.isNotEmpty())
-                                accent.primary else surfaceColors.textMuted)
-                    }
-                    if (isSelectionMode) {
-                        IconButton(onClick = { selectedCardIds = emptySet(); isSelectionMode = false }) {
-                            Icon(Icons.Default.Close, "Cancel Selection")
-                        }
-                    } else {
-                        IconButton(onClick = { isSelectionMode = true }) {
-                            Icon(Icons.Default.CheckBox, "Select")
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = surfaceColors.surface,
-                    titleContentColor = surfaceColors.textPrimary
-                )
-            )
-        }
-    ) { padding ->
-        // The Anki-style panes need width to breathe: on narrow windows the
-        // rail collapses and the note editor falls back to the detail dialog
-        // so the table never gets squeezed out.
+    // The workspace shell provides the top bar and navigation chrome.
+    // The browser is pure content — no Scaffold, no TopAppBar.
         BoxWithConstraints(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
                 // Browser-wide shortcuts: Ctrl+F jumps to search, Ctrl+A selects
                 // every visible card, Escape clears the search + filters.
                 .onPreviewKeyEvent { event ->
@@ -944,9 +909,18 @@ private fun BrowserCardRow(
                         onCheckedChange = { onToggleSelect(card.id) },
                         modifier = Modifier.size(20.dp)
                     )
-                    "kanji" -> Text(card.character, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                        color = surfaceColors.textPrimary,
-                        fontFamily = FontFamily.Default)
+                    "kanji" -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(accent.primary.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(card.character, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                                color = accent.primary, fontFamily = FontFamily.Default)
+                        }
+                    }
                     "reading" -> Text(card.reading, fontSize = 11.sp, color = surfaceColors.textMuted,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                     "meaning" -> Text(card.meaning, fontSize = 12.sp, color = surfaceColors.textPrimary,
@@ -1090,10 +1064,9 @@ private fun BrowserSelectionBar(
     surfaceColors: SurfaceColors,
     accent: KaiteyoAccentScheme
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = surfaceColors.surfaceElevated,
-        shadowElevation = 8.dp
+    Box(
+        modifier = Modifier.fillMaxWidth()
+            .background(surfaceColors.surfaceElevated)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1102,21 +1075,39 @@ private fun BrowserSelectionBar(
         ) {
             Text("$selectedCount selected", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = surfaceColors.textPrimary)
             Spacer(Modifier.weight(1f))
-            FilledTonalButton(onClick = onBulkTag, modifier = Modifier.height(32.dp)) {
-                Icon(Icons.Default.Label, null, Modifier.size(16.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(accent.primary.copy(alpha = 0.12f))
+                    .clickable(onClick = onBulkTag)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) { Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Label, null, Modifier.size(14.dp), tint = accent.primary)
                 Spacer(Modifier.width(4.dp))
-                Text("Tag", fontSize = 12.sp)
-            }
-            FilledTonalButton(onClick = onBulkFlag, modifier = Modifier.height(32.dp)) {
-                Icon(Icons.Default.Flag, null, Modifier.size(16.dp))
+                Text("Tag", fontSize = 12.sp, color = accent.primary)
+            } }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(accent.primary.copy(alpha = 0.12f))
+                    .clickable(onClick = onBulkFlag)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) { Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Flag, null, Modifier.size(14.dp), tint = accent.primary)
                 Spacer(Modifier.width(4.dp))
-                Text("Flag", fontSize = 12.sp)
-            }
-            FilledTonalButton(onClick = onBulkStatus, modifier = Modifier.height(32.dp)) {
-                Icon(Icons.Default.SwapVert, null, Modifier.size(16.dp))
+                Text("Flag", fontSize = 12.sp, color = accent.primary)
+            } }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(accent.primary.copy(alpha = 0.12f))
+                    .clickable(onClick = onBulkStatus)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) { Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.SwapVert, null, Modifier.size(14.dp), tint = accent.primary)
                 Spacer(Modifier.width(4.dp))
-                Text("Status", fontSize = 12.sp)
-            }
+                Text("Status", fontSize = 12.sp, color = accent.primary)
+            } }
             IconButton(onClick = onDeselectAll, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Default.Close, "Deselect", Modifier.size(18.dp))
             }
