@@ -105,9 +105,13 @@ import ua.syt0r.kanji.desktop.ui.writing.WritingPracticeView
 import ua.syt0r.kanji.desktop.game.ui.GameView
 import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
 import ua.syt0r.kanji.presentation.common.theme.tweenDuration
+import androidx.compose.runtime.remember
 
 /** Shared AppState accessor for every view in the suite. */
 val LocalAppState = staticCompositionLocalOf<AppState> { error("No AppState in composition") }
+
+/** Shared spatial camera for workspace navigation transitions. */
+val LocalSpatialCamera = staticCompositionLocalOf<SpatialCamera> { error("No SpatialCamera in composition") }
 
 @Composable
 fun rememberAppState(): AppState = LocalAppState.current
@@ -220,7 +224,12 @@ fun KaiteyoWorkspace(state: AppState) {
         state.media.startIntegrationsIfEnabled()
     }
 
-    CompositionLocalProvider(LocalAppState provides state) {
+    val spatialCamera = remember { SpatialCamera() }
+
+    CompositionLocalProvider(
+        LocalAppState provides state,
+        LocalSpatialCamera provides spatialCamera
+    ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()

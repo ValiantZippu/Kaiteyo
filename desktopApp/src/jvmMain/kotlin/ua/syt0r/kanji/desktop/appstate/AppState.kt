@@ -616,8 +616,11 @@ init {
      * capped on narrower windows so a tablet never loses the content area.
      */
     fun effectiveExpandedWidth(windowWidth: Float): androidx.compose.ui.unit.Dp {
-        val cap = (windowWidth * 0.34f).coerceAtLeast(170f)
-        return androidx.compose.ui.unit.Dp(minOf(sidebarWidth.dp.value, cap))
+        // Cap at 34% of window (min 170dp, max 280dp) — never exceed available space
+        // and NEVER produce a negative value (which causes the "padding must be non-negative" crash).
+        val cap = (windowWidth * 0.34f).coerceIn(170f, 280f)
+        val width = sidebarWidth.dp.value.coerceIn(170f, cap)
+        return androidx.compose.ui.unit.Dp(width.coerceAtLeast(0f))
     }
 
     fun updateNavPosition(position: NavPosition) {

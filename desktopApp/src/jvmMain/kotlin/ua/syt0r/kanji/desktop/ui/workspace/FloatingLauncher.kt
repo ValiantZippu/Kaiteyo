@@ -124,6 +124,7 @@ fun DsFloatingLauncher(state: AppState) {
     val density = LocalDensity.current
     val captureState = LocalCaptureState.current
     val scope = rememberCoroutineScope()
+    val camera = LocalSpatialCamera.current
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
@@ -719,6 +720,7 @@ fun DsFloatingLauncher(state: AppState) {
                     dragPos.x + bubbleSize.value / 2f,
                     dragPos.y + bubbleSize.value / 2f
                 ),
+                camera = camera,
                 onDismiss = {
                     menuOpen = false
                     lastActive = System.currentTimeMillis()
@@ -922,15 +924,37 @@ private fun BubbleModeOptionRow(
 // ============================================
 
 @Composable
-private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: () -> Unit) {
+private fun LaunchpadOverlay(
+    state: AppState,
+    bubbleCenter: Offset,
+    camera: SpatialCamera,
+    onDismiss: () -> Unit
+) {
     val sc = surfaceColors()
+    val scope = rememberCoroutineScope()
     var leaving by remember { mutableStateOf(false) }
-    val exitMs = if (state.navigationAnimations && !state.navReducedMotion) LaunchpadMotion.LAUNCHPAD_EXIT_MS else 0
     var panelCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    // Zoom out to overview when Launchpad opens
+    LaunchedEffect(Unit) {
+        if (state.navigationAnimations && !state.navReducedMotion) {
+            camera.zoomToOverview()
+        } else {
+            camera.resetImmediate()
+            // Jump to overview state without animation
+            camera.state = CameraState.OVERVIEW
+        }
+    }
 
     LaunchedEffect(leaving) {
         if (leaving) {
-            delay(exitMs.toLong() + 40)
+            // Zoom back to idle when dismissed without selection
+            if (state.navigationAnimations && !state.navReducedMotion) {
+                camera.zoomToIdle()
+            } else {
+                camera.resetImmediate()
+            }
+            delay(200)
             onDismiss()
         }
     }
@@ -982,7 +1006,15 @@ private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: (
                     WorkspaceLaunchpad(
                         state = state,
                         onSwitchTo = { view ->
-                            state.currentView = view
+                            // Zoom into the selected workspace
+                            scope.launch {
+                                if (state.navigationAnimations && !state.navReducedMotion) {
+                                    camera.zoomToWorkspace(view)
+                                } else {
+                                    camera.resetImmediate()
+                                }
+                                state.currentView = view
+                            }
                         },
                         onDismiss = close
                     )
