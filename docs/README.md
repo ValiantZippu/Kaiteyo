@@ -22,6 +22,18 @@ navigable documentation site, even when viewed directly on GitHub.
 | HTTP | Ktor |
 | Current version | 2.2.1 (see [CHANGELOG](../CHANGELOG.md)) |
 
+## Skills & Quick Reference
+
+For AI assistants, contributors, and maintainers — the fastest path to getting oriented:
+
+| Document | Purpose |
+|----------|---------|
+| [`../skills/BRANCH_POLICY.md`](../skills/BRANCH_POLICY.md) | Branch rules — which to touch, which to never touch |
+| [`../skills/CONTRIBUTOR_GUIDE.md`](../skills/CONTRIBUTOR_GUIDE.md) | How to contribute properly (workflow, commits, PRs) |
+| [`../skills/AI_SKILLS.md`](../skills/AI_SKILLS.md) | AI capabilities, constraints, and workflow |
+| [`../skills/TODO_FEATURES.md`](../skills/TODO_FEATURES.md) | Feature roadmap & task tracking |
+| [`../skills/ARCHITECTURE_GUIDE.md`](../skills/ARCHITECTURE_GUIDE.md) | Folder structure & module architecture |
+
 ## Documentation map
 
 ```
