@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -220,7 +221,7 @@ fun DsMenuItemRow(item: DsMenuItem, onClick: () -> Unit, modifier: Modifier = Mo
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (item.icon != null) {
-            androidx.compose.material3.Icon(
+            Icon(
                 imageVector = item.icon,
                 contentDescription = null,
                 tint = if (item.danger) Color(0xFFFF6B6B) else sc.textSecondary,

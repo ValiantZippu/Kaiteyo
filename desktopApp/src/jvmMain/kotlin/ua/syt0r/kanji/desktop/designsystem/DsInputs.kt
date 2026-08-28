@@ -154,7 +154,14 @@ fun DsSearchField(
                 .focusRequester(focusRequester)
         )
         if (value.isNotEmpty()) {
-            androidx.compose.material3.IconButton(onClick = { onValueChange("") }) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(RoundedCornerShape(DsRadius.Sm))
+                    .clickable { onValueChange("") }
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     Icons.Default.Clear,
                     contentDescription = "Clear",

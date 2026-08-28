@@ -376,9 +376,7 @@ fun DayDetailDialog(
                         fontSize = DsType.Caption
                     )
                 }
-                androidx.compose.material3.TextButton(onClick = onDismiss) {
-                    Text("Close", color = ac.primary)
-                }
+                DsTextButton(text = "Close", onClick = onDismiss)
             }
             Spacer(Modifier.height(DsSpacing.Lg))
 

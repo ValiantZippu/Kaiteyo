@@ -1,7 +1,14 @@
 package ua.syt0r.kanji.desktop.designsystem
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,14 +16,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -125,16 +136,69 @@ fun DsProgressBar(
     }
 }
 
+/** Kaiteyo-native toggle switch — no Material3 dependency. */
+@Composable
+fun DsSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val sc = surfaceColors()
+    val ac = accent()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+
+    val thumbOffset by animateFloatAsState(
+        targetValue = if (checked) 20f else 0f,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f),
+        label = "switchThumb"
+    )
+    val trackColor by animateColorAsState(
+        targetValue = when {
+            checked -> ac.primary
+            hovered -> sc.surfaceInteractive
+            else -> sc.surfaceInteractive.copy(alpha = 0.6f)
+        },
+        animationSpec = tween(160),
+        label = "switchTrack"
+    )
+    val thumbColor = if (checked) ac.onPrimary else sc.textSecondary
+
+    Box(
+        modifier = modifier
+            .size(width = 40.dp, height = 22.dp)
+            .clip(RoundedCornerShape(DsRadius.Full))
+            .background(trackColor)
+            .then(
+                if (enabled) Modifier
+                    .clickable(interactionSource = interaction, indication = null) { onCheckedChange(!checked) }
+                    .hoverable(interaction)
+                else Modifier
+            ),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(start = 2.dp)
+                .offset(x = thumbOffset.dp)
+                .size(18.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(thumbColor)
+        )
+    }
+}
+
 /** Simple labeled toggle switch. */
 @Composable
 fun DsToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    label: String? = null
+    label: String? = null,
+    enabled: Boolean = true
 ) {
     val sc = surfaceColors()
-    val ac = accent()
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -142,15 +206,16 @@ fun DsToggle(
         if (label != null) {
             Text(
                 text = label,
-                color = sc.textPrimary,
+                color = if (enabled) sc.textPrimary else sc.textMuted,
                 fontSize = DsType.Body,
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(DsSpacing.Md))
         }
-        androidx.compose.material3.Switch(
+        DsSwitch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
         )
     }
 }
@@ -177,7 +242,7 @@ fun DsLink(
             fontSize = DsType.Label,
             fontWeight = FontWeight.Medium
         )
-        androidx.compose.material3.Icon(
+        Icon(
             Icons.Default.ArrowForward,
             contentDescription = null,
             tint = ac.primary,
