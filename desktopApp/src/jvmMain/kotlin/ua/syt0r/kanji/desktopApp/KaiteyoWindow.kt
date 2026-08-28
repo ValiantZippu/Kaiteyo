@@ -667,13 +667,17 @@ private fun WindowControlButton(
             .then(
                 if (onBoundsChanged != null) {
                     Modifier.onGloballyPositioned { coords ->
-                        val screenPos = coords.localToScreen(Offset.Zero)
-                        onBoundsChanged(
-                            screenPos.x.roundToInt(),
-                            screenPos.y.roundToInt(),
-                            (screenPos.x + coords.size.width).roundToInt(),
-                            (screenPos.y + coords.size.height).roundToInt()
-                        )
+                        try {
+                            val screenPos = coords.localToScreen(Offset.Zero)
+                            onBoundsChanged(
+                                screenPos.x.roundToInt(),
+                                screenPos.y.roundToInt(),
+                                (screenPos.x + coords.size.width).roundToInt(),
+                                (screenPos.y + coords.size.height).roundToInt()
+                            )
+                        } catch (_: java.awt.IllegalComponentStateException) {
+                            // Component not yet showing on screen; will be reported on next layout pass.
+                        }
                     }
                 } else Modifier
             ),

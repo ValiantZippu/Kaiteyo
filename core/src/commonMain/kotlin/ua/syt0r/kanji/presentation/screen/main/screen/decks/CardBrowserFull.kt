@@ -494,7 +494,6 @@ fun CardBrowserFullScreen(
             }
         }
         }
-    }
 
     // ── Column Picker Dialog ──
     if (showColumnPicker) {
