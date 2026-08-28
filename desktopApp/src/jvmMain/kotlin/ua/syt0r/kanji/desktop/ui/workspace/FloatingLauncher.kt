@@ -403,8 +403,9 @@ fun DsFloatingLauncher(state: AppState) {
                                 var previous = down.position
                                 var longPressFired = false
 
-                                // Right-click opens the launchpad (navigation destinations).
-                                // Long-press opens the mode switch panel (Floating ↔ Sidebar).
+                                // Left-click → launchpad (workspace overview).
+                                // Right-click → mode switcher panel (Floating ↔ Sidebar).
+                                // Long-press → same as right-click (mode switcher).
                                 fun openLaunchpad() {
                                     menuOpen = true
                                     modePanelOpen = false
@@ -416,22 +417,23 @@ fun DsFloatingLauncher(state: AppState) {
                                     lastActive = System.currentTimeMillis()
                                 }
 
-                                val longPressJob = scope.launch {
+                                // Long-press timer only for left-clicks — right-click
+                                // handles its own action immediately on release.
+                                val longPressJob = if (!isSecondary) scope.launch {
                                     delay(LongPressTimeoutMs)
                                     longPressFired = true
                                     openModePanel()
-                                }
+                                } else null
 
                                 try {
                                     if (isSecondary) {
-                                        // Right-click → launchpad (navigation destinations).
+                                        // Right-click → mode switcher panel (same as hold).
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                             when (event.type) {
                                                 PointerEventType.Release, PointerEventType.Exit -> {
-                                                    longPressJob.cancel()
-                                                    if (!longPressFired) openLaunchpad()
+                                                    openModePanel()
                                                     return@awaitEachGesture
                                                 }
                                                 else -> {}
@@ -504,7 +506,7 @@ fun DsFloatingLauncher(state: AppState) {
                                                     }
                                                 }
                                                 PointerEventType.Release -> {
-                                                    longPressJob.cancel()
+                                                    longPressJob?.cancel()
                                                     if (dragged) {
                                                         dragging = false
                                                         grabProgress = 0f
@@ -516,7 +518,7 @@ fun DsFloatingLauncher(state: AppState) {
                                                     finished = true
                                                 }
                                                 PointerEventType.Exit -> {
-                                                    longPressJob.cancel()
+                                                    longPressJob?.cancel()
                                                     if (dragged) {
                                                         dragging = false
                                                         grabProgress = 0f
@@ -530,7 +532,7 @@ fun DsFloatingLauncher(state: AppState) {
                                         }
                                     }
                                 } finally {
-                                    longPressJob.cancel()
+                                    longPressJob?.cancel()
                                     dragging = false
                                 }
                             }
@@ -647,13 +649,11 @@ fun DsFloatingLauncher(state: AppState) {
                     }
                     .border(2.dp, ac.primary.copy(alpha = 0.7f), ringShape)
             )
-        }
-
-        // Bubble tooltip while hovering.
+        }                                // Bubble tooltip while hovering.
         val tipCoords = bubbleAnchor
         if (hitboxHovered && !menuOpen && !modePanelOpen && !dragging && !faded && tipCoords != null) {
             val pos = tipCoords.positionInWindow()
-            val tip = "${state.currentView.label} — click/right-click for launchpad · hold for modes · drag to move"
+            val tip = "${state.currentView.label} — click for launchpad · right-click/hold for modes · drag to move"
             val estW = with(density) { (tip.length * 5.4f + 24).dp.toPx() }
             val estH = with(density) { 30.dp.toPx() }
             val showAbove = dragPos.y > h.value / 2f
