@@ -453,7 +453,7 @@ fun DsFloatingLauncher(state: AppState) {
                                                         val slop = viewConfiguration.touchSlop
                                                         if ((pos - down.position).getDistance() > slop) {
                                                             dragged = true
-                                                            longPressJob.cancel()
+                                                            longPressJob?.cancel()
                                                             dragging = true
                                                             grabProgress = 1f
                                                             menuOpen = false
@@ -941,8 +941,7 @@ private fun LaunchpadOverlay(
             camera.zoomToOverview()
         } else {
             camera.resetImmediate()
-            // Jump to overview state without animation
-            camera.state = CameraState.OVERVIEW
+            camera.jumpToOverview()
         }
     }
 

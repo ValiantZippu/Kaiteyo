@@ -58,6 +58,7 @@ import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
+import ua.syt0r.kanji.desktop.designsystem.DsTextButton
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent

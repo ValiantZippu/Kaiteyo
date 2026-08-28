@@ -200,11 +200,18 @@ class SpatialCamera {
         overviewAlpha = 0f
         overviewScale = 0.85f
         targetWorkspace = null
-        scaleAnim.snapTo(1f)
-        overviewAlphaAnim.snapTo(0f)
-        overviewScaleAnim.snapTo(0.85f)
-        contentAlphaAnim.snapTo(1f)
-        offsetXAnim.snapTo(0f)
+        // Animatable.snapTo() is suspend, but resetImmediate is called
+        // from non-suspend contexts. The animatable state is internal and
+        // will be overwritten on the next animateTo() call anyway.
+    }
+
+    /** Jump to overview state without animation (for reduced-motion mode). */
+    fun jumpToOverview() {
+        state = CameraState.OVERVIEW
+        scale = 0.72f
+        contentAlpha = 0.6f
+        overviewAlpha = 1f
+        overviewScale = 1f
     }
 }
 

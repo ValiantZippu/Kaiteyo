@@ -54,6 +54,7 @@ import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
+import ua.syt0r.kanji.desktop.designsystem.DsTextButton
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsRadius

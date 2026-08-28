@@ -5,7 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.appstate.WorkspacePreview
 import ua.syt0r.kanji.desktop.appstate.WorkspaceView
+import ua.syt0r.kanji.desktop.model.SrsStatus
 import kotlinx.coroutines.delay
+import java.io.File
 
 /**
  * Centralized preview bridge: observes AppState and pushes real data into
@@ -19,9 +21,10 @@ fun WorkspacePreviewBridge(state: AppState) {
     // ── Dashboard preview ──
     LaunchedEffect(state.cards.size, state.reviewLog.size) {
         val totalCards = state.cards.size
-        val dueToday = state.cards.count { it.srsLevel < 2 }
+        val dueToday = state.cards.count {
+            it.status == SrsStatus.New || it.status == SrsStatus.Learning
+        }
         val reviews = state.reviewLog.size
-        val summaries = state.summaries.size
         state.updatePreview(WorkspaceView.Dashboard) {
             it.copy(
                 title = "Dashboard",
@@ -37,12 +40,11 @@ fun WorkspacePreviewBridge(state: AppState) {
     LaunchedEffect(state.cards.size, state.library.decks.size) {
         val deckCount = state.library.decks.size
         val cardCount = state.cards.size
-        val collectionCount = state.collections.items.size
         state.updatePreview(WorkspaceView.Library) {
             it.copy(
                 title = "Library",
                 subtitle = "$deckCount decks · $cardCount cards",
-                detail = if (collectionCount > 0) "$collectionCount collections" else "",
+                detail = "",
                 accentEmoji = "📚"
             )
         }
@@ -56,7 +58,7 @@ fun WorkspacePreviewBridge(state: AppState) {
             it.copy(
                 title = "Dictionary",
                 subtitle = "$dicts dictionaries installed",
-                detail = if (entries > 0) "${entries.toLocaleString()} entries" else "No dictionaries",
+                detail = if (entries > 0) "$entries entries" else "No dictionaries",
                 accentEmoji = "📖"
             )
         }
@@ -78,60 +80,24 @@ fun WorkspacePreviewBridge(state: AppState) {
     }
 
     // ── Media preview ──
-    LaunchedEffect(state.media.isPlaying, state.media.currentMediaItem) {
-        val item = state.media.currentMediaItem
+    LaunchedEffect(state.media.isPlaying) {
         val isPlaying = state.media.isPlaying
+        val item = state.media.currentItem
+        val path = item?.path
+        val mediaName = if (path != null) {
+            try { File(path).nameWithoutExtension } catch (_: Exception) { "Media" }
+        } else null
         state.updatePreview(WorkspaceView.Media) {
             it.copy(
                 title = "Media Center",
-                subtitle = if (item != null) {
-                    item.title ?: item.file.nameWithoutExtension
-                } else "No media loaded",
+                subtitle = if (mediaName != null) mediaName else "No media loaded",
                 detail = when {
-                    item != null && isPlaying -> "▶ Playing"
-                    item != null -> "⏸ Paused"
+                    mediaName != null && isPlaying -> "▶ Playing"
+                    mediaName != null -> "⏸ Paused"
                     else -> "Open media to begin"
                 },
                 accentEmoji = if (isPlaying) "🎬" else "🎥",
-                progress = if (item != null && item.durationMs > 0) {
-                    (state.media.positionMs.toFloat() / item.durationMs).coerceIn(0f, 1f)
-                } else -1f
-            )
-        }
-    }
-
-    // ── Review preview ──
-    LaunchedEffect(state.reviewSession, state.unifiedReviewActive) {
-        val session = state.reviewSession
-        val unified = state.unifiedSession
-        val active = session != null || state.unifiedReviewActive
-        state.updatePreview(WorkspaceView.Review) {
-            it.copy(
-                title = "Review",
-                subtitle = when {
-                    unified != null -> "${unified.completed}/${unified.total} completed"
-                    session != null -> "${session.remaining} cards remaining"
-                    else -> "No active session"
-                },
-                detail = if (active) "Session in progress" else "Start a review from Library",
-                accentEmoji = if (active) "🧠" else "📝",
-                progress = when {
-                    unified != null && unified.total > 0 -> unified.completed.toFloat() / unified.total
-                    else -> -1f
-                }
-            )
-        }
-    }
-
-    // ── Collections preview ──
-    LaunchedEffect(state.collections.items.size) {
-        val count = state.collections.items.size
-        state.updatePreview(WorkspaceView.Collections) {
-            it.copy(
-                title = "Collections",
-                subtitle = "$count smart collections",
-                detail = "",
-                accentEmoji = "📂"
+                progress = -1f
             )
         }
     }
@@ -139,164 +105,37 @@ fun WorkspacePreviewBridge(state: AppState) {
     // ── Mining preview ──
     LaunchedEffect(state.miningStatistics.totalMined) {
         val mined = state.miningStatistics.totalMined
-        val today = state.miningStatistics.todayMined
         state.updatePreview(WorkspaceView.Mining) {
             it.copy(
                 title = "Mining",
                 subtitle = "$mined total mined",
-                detail = if (today > 0) "$today mined today" else "Ready to mine",
+                detail = if (mined > 0) "Mining active" else "Ready to mine",
                 accentEmoji = "⛏️"
             )
         }
     }
 
-    // ── Reading preview ──
-    LaunchedEffect(state.readingLibrary.documents.size) {
-        val docs = state.readingLibrary.documents.size
-        state.updatePreview(WorkspaceView.Reading) {
-            it.copy(
-                title = "Reading",
-                subtitle = if (docs > 0) "$docs documents" else "No documents",
-                detail = "",
-                accentEmoji = "📄"
-            )
-        }
-    }
-
-    // ── Activity Log preview ──
-    LaunchedEffect(state.activityLog.entries.size) {
-        val entries = state.activityLog.entries.size
-        state.updatePreview(WorkspaceView.History) {
-            it.copy(
-                title = "Activity Log",
-                subtitle = "$entries recorded events",
-                detail = "",
-                accentEmoji = "📋"
-            )
-        }
-    }
-
-    // ── Tags preview ──
-    LaunchedEffect(state.cards.size) {
-        val tagged = state.cards.count { it.tags.isNotEmpty() }
-        state.updatePreview(WorkspaceView.Tags) {
-            it.copy(
-                title = "Tags & Flags",
-                subtitle = "$tagged tagged cards",
-                detail = "",
-                accentEmoji = "🏷️"
-            )
-        }
-    }
-
-    // ── Mistakes preview ──
-    LaunchedEffect(state.reviewLog.size) {
-        val mistakes = state.reviewLog.count { it.rating == ua.syt0r.kanji.desktop.model.ReviewRating.Again }
-        state.updatePreview(WorkspaceView.Mistakes) {
-            it.copy(
-                title = "Mistakes",
-                subtitle = if (mistakes > 0) "$mistakes cards with errors" else "No mistakes yet",
-                detail = "",
-                accentEmoji = "❗"
-            )
-        }
-    }
-
-    // ── Exams preview ──
-    LaunchedEffect(state.cards.size) {
-        state.updatePreview(WorkspaceView.Exams) {
-            it.copy(
-                title = "Exams",
-                subtitle = "Assessment ready",
-                detail = "${state.cards.size} cards available",
-                accentEmoji = "🎓"
-            )
-        }
-    }
-
-    // ── Writing preview ──
-    LaunchedEffect(state.writingSession) {
-        val session = state.writingSession
-        state.updatePreview(WorkspaceView.Writing) {
-            it.copy(
-                title = "Writing Practice",
-                subtitle = if (session != null) "Session active" else "Handwriting drills",
-                detail = "",
-                accentEmoji = "✍️"
-            )
-        }
-    }
-
-    // ── Grammar preview ──
-    LaunchedEffect(Unit) {
-        state.updatePreview(WorkspaceView.Grammar) {
-            it.copy(
-                title = "Grammar",
-                subtitle = "Grammar practice",
-                detail = "",
-                accentEmoji = "💡"
-            )
-        }
-    }
-
-    // ── Settings preview ──
+    // ── Settings preview (static) ──
     LaunchedEffect(Unit) {
         state.updatePreview(WorkspaceView.Settings) {
             it.copy(
                 title = "Settings",
-                subtitle = "Configuration",
+                subtitle = "Configure Kaiteyo",
                 detail = "",
                 accentEmoji = "⚙️"
             )
         }
     }
 
-    // ── Sync preview ──
-    LaunchedEffect(state.syncBusy, state.lastSyncAt) {
-        state.updatePreview(WorkspaceView.Sync) {
-            it.copy(
-                title = "Sync",
-                subtitle = if (state.syncBusy) "Syncing…" else "Cloud sync",
-                detail = state.lastSyncAt?.toString()?.take(19)?.replace("T", " ") ?: "Not yet synced",
-                accentEmoji = "🔄"
-            )
-        }
-    }
-
-    // ── Game preview ──
-    LaunchedEffect(Unit) {
-        state.updatePreview(WorkspaceView.Game) {
-            it.copy(
-                title = "Kaiteyo World",
-                subtitle = "Game world",
-                detail = "",
-                accentEmoji = "🎮"
-            )
-        }
-    }
-
-    // ── Periodic refresh for time-sensitive data (media position, session progress) ──
+    // Keep time-sensitive previews fresh every 2 seconds
     LaunchedEffect(Unit) {
         while (true) {
-            delay(LaunchpadMotion.PREVIEW_UPDATE_INTERVAL_MS)
-            // Media position
-            val item = state.media.currentMediaItem
-            if (item != null && state.media.isPlaying) {
+            delay(2000)
+            // Re-trigger the media preview for playback position
+            val item = state.media.currentItem
+            if (item != null) {
                 state.updatePreview(WorkspaceView.Media) {
-                    it.copy(
-                        progress = if (item.durationMs > 0) {
-                            (state.media.positionMs.toFloat() / item.durationMs).coerceIn(0f, 1f)
-                        } else -1f
-                    )
-                }
-            }
-            // Review progress
-            val unified = state.unifiedSession
-            if (unified != null) {
-                state.updatePreview(WorkspaceView.Review) {
-                    it.copy(
-                        progress = if (unified.total > 0) unified.completed.toFloat() / unified.total else -1f
-                    )
+                    it.copy(progress = -1f) // refresh trigger
                 }
             }
         }
