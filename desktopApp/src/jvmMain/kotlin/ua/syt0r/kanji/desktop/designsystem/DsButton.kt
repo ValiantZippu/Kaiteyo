@@ -38,8 +38,8 @@ fun DsButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     kind: DsButtonKind = DsButtonKind.Primary,
-    enabled: Boolean = true,
     icon: ImageVector? = null,
+    enabled: Boolean = true,
     compact: Boolean = false
 ) {
     val sc = surfaceColors()
@@ -108,8 +108,8 @@ fun DsTextButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    enabled: Boolean = true
 ) {
     val sc = surfaceColors()
     val interactionSource = remember { MutableInteractionSource() }

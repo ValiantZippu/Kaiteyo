@@ -1,5 +1,6 @@
 package ua.syt0r.kanji.desktop.designsystem
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,7 +24,6 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
@@ -84,6 +84,7 @@ fun DsChip(
 
 // --- DsContextMenuHost ---
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DsContextMenuHost(
     enabled: Boolean,
@@ -95,7 +96,7 @@ fun DsContextMenuHost(
     var menuPos by remember { mutableStateOf(IntOffset.Zero) }
 
     Box(
-        modifier = modifier.onPointerEvent(PointerEventType.ContextClick) { event ->
+        modifier = modifier.onPointerEvent(PointerEventType.SecondaryPressDown) { event ->
             if (enabled && menuItems.isNotEmpty()) {
                 val position = event.changes.firstOrNull()?.position
                 if (position != null) {
