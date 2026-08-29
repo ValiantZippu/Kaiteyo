@@ -96,7 +96,7 @@ fun DsContextMenuHost(
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent()
-                    if (event.type == androidx.compose.ui.input.pointer.PointerEventType.SecondaryPress) {
+                    if (event.type == androidx.compose.ui.input.pointer.PointerEventType.Secondary) {
                         val pos = event.changes.first().position
                         if (enabled && menuItems.isNotEmpty()) {
                             menuPos = IntOffset(pos.x.toInt(), pos.y.toInt())
