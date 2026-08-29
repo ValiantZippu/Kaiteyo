@@ -466,7 +466,7 @@ object ThemeMapper {
                 fontWeight = weight,
                 fontSize = style.fontSize * factor,
                 lineHeight = style.lineHeight * lineHeight,
-                letterSpacing = ((if (style.letterSpacing.isSpecified) style.letterSpacing.value else 0f) + tracking).sp
+                letterSpacing = runCatching { (style.letterSpacing.value + tracking).sp }.getOrDefault(tracking.sp)
             )
         }
 
