@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme as CoreAccentScheme
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — TOKENS
@@ -89,10 +90,36 @@ fun surfaceColors(): SurfaceColors = LocalSurfaceColors.current
 
 // --- Accent helper ---
 
-data class AccentScheme(val primary: Color, val secondary: Color = primary.copy(alpha = 0.7f))
+data class AccentScheme(
+    val primary: Color,
+    val secondary: Color = primary.copy(alpha = 0.7f),
+    val onPrimary: Color = Color.White,
+    val onSecondary: Color = Color.White,
+    val name: String = "",
+    val primaryDark: Color = primary,
+    val secondaryDark: Color = secondary,
+    val tertiary: Color? = null,
+    val previewColors: List<Color> = listOf(primary, secondary),
+    val gradientStart: Color? = primary,
+    val gradientEnd: Color? = secondary
+)
 
 @Composable
-fun accent(): AccentScheme = AccentScheme(primary = LocalSurfaceColors.current.accent)
+fun accent(): CoreAccentScheme {
+    val c = LocalSurfaceColors.current.accent
+    return CoreAccentScheme(
+        name = "",
+        primary = c,
+        primaryDark = c.copy(alpha = 0.8f),
+        secondary = c.copy(alpha = 0.7f),
+        secondaryDark = c.copy(alpha = 0.5f),
+        onPrimary = Color.White,
+        onSecondary = Color.White,
+        previewColors = listOf(c),
+        gradientStart = c,
+        gradientEnd = c.copy(alpha = 0.7f)
+    )
+}
 
 // --- Semantic / Status Colors ---
 // Both val and function forms so callers can use `errorColor` or `errorColor()`
@@ -167,15 +194,17 @@ object DsElevation {
 
 // --- Hex Color Parser ---
 
-fun parseHexColor(hex: String): Color {
+fun parseHexColor(hex: String?): Color {
+    if (hex.isNullOrBlank()) return Color(0xFF9E9E9E)
     return try {
         val clean = hex.trim().removePrefix("#")
         val argb = when (clean.length) {
-            6 -> 0xFF000000u or clean.toLong(16).toULong()
-            8 -> clean.toLong(16).toULong()
+            6 -> "FF$clean"
+            8 -> clean
             else -> return Color(0xFF9E9E9E)
         }
-        Color(argb.toInt())
+        val value = argb.toLong(16)
+        Color(value.toInt())
     } catch (_: Exception) {
         Color(0xFF9E9E9E)
     }

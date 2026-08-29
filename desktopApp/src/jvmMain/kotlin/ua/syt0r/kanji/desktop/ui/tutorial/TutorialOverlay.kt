@@ -846,7 +846,7 @@ private fun ChapterStudy(state: AppState) {
 }
 
 @Composable
-private fun ReviewDemoButton(label: String, sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme) {
+private fun ReviewDemoButton(label: String, sc: ua.syt0r.kanji.desktop.designsystem.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))

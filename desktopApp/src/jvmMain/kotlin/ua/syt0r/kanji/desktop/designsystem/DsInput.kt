@@ -38,6 +38,7 @@ fun DsTextField(
     label: String? = null,
     enabled: Boolean = true,
     singleLine: Boolean = false,
+    autoFocus: Boolean = false,
     leadingIcon: ImageVector? = null,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {

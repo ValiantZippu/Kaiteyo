@@ -3,7 +3,6 @@ package ua.syt0r.kanji.desktop.designsystem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -84,7 +83,7 @@ fun DsChip(
 
 @Composable
 fun DsContextMenuHost(
-    enabled: Boolean,
+    enabled: Boolean = true,
     menuItems: List<DsMenuItem>,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
@@ -94,14 +93,18 @@ fun DsContextMenuHost(
 
     Box(
         modifier = modifier.pointerInput(enabled, menuItems.size) {
-            detectTapGestures(
-                onSecondaryClick = { offset ->
-                    if (enabled && menuItems.isNotEmpty()) {
-                        menuPos = IntOffset(offset.x.toInt(), offset.y.toInt())
-                        showMenu = true
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent()
+                    if (event.type == androidx.compose.ui.input.pointer.PointerEventType.SecondaryPress) {
+                        val pos = event.changes.first().position
+                        if (enabled && menuItems.isNotEmpty()) {
+                            menuPos = IntOffset(pos.x.toInt(), pos.y.toInt())
+                            showMenu = true
+                        }
                     }
                 }
-            )
+            }
         }
     ) {
         content()
@@ -126,15 +129,17 @@ fun DsContextMenuHost(
 
 @Composable
 fun DsFavoriteToggle(
-    isFavorite: Boolean,
+    isFavorite: Boolean = false,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    size: Int = 16
+    size: Int = 16,
+    favorite: Boolean = isFavorite
 ) {
-    val color = if (isFavorite) favoriteColor else surfaceColors().textMuted
+    val shown = isFavorite || favorite
+    val color = if (shown) favoriteColor else surfaceColors().textMuted
 
     Text(
-        text = if (isFavorite) "\u2605" else "\u2606",
+        text = if (shown) "\u2605" else "\u2606",
         color = color,
         fontSize = size.sp,
         modifier = modifier

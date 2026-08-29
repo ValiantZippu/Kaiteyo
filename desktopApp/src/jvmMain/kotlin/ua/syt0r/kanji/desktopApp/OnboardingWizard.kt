@@ -765,7 +765,7 @@ private fun StepTheme(state: AppState) {
 }
 
 @Composable
-private fun ThemeModePreview(mode: BaseMode, surf: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: KaiteyoAccentScheme) {
+private fun ThemeModePreview(mode: BaseMode, surf: ua.syt0r.kanji.desktop.designsystem.SurfaceColors, ac: KaiteyoAccentScheme) {
     Box(
         modifier = Modifier
             .fillMaxWidth()

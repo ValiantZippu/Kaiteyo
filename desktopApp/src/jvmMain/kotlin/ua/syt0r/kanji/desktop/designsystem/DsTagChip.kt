@@ -7,6 +7,7 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,22 +66,33 @@ fun DsTagChip(
 }
 
 /**
- * Tag chip with explicit label and color — used by ReviewView.
+ * Tag chip with explicit label and color — used by ReviewView and BrowserView.
  */
 @Composable
 fun DsTagChip(
     label: String,
-    colorHex: String,
-    modifier: Modifier = Modifier
+    colorHex: String = "",
+    modifier: Modifier = Modifier,
+    removable: Boolean = false,
+    onRemove: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null
 ) {
-    val tagColor = parseHexColor(colorHex)
+    val tagColor = if (colorHex.isNotEmpty()) parseHexColor(colorHex) else surfaceColors().accent
     val shape = RoundedCornerShape(DsRadius.Full)
+    val clickableModifier = if (onClick != null) {
+        Modifier.clickable { onClick() }
+    } else if (onRemove != null && removable) {
+        Modifier.clickable { onRemove() }
+    } else {
+        Modifier
+    }
 
     Row(
         modifier = modifier
             .clip(shape)
             .background(tagColor.copy(alpha = 0.15f))
             .border(1.dp, tagColor.copy(alpha = 0.3f), shape)
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
@@ -90,6 +102,16 @@ fun DsTagChip(
             color = tagColor,
             fontSize = DsType.Caption
         )
+        if (removable && onRemove != null) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Remove",
+                tint = tagColor,
+                modifier = Modifier
+                    .size(12.dp)
+                    .clickable { onRemove() }
+            )
+        }
     }
 }
 
@@ -100,7 +122,7 @@ fun DsToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "",
+    label: String? = "",
     enabled: Boolean = true
 ) {
     val sc = surfaceColors()
@@ -139,7 +161,7 @@ fun DsToggle(
                     )
             )
         }
-        if (label.isNotEmpty()) {
+        if (!label.isNullOrEmpty()) {
             Text(
                 text = label,
                 color = if (enabled) sc.textSecondary else sc.textDisabled,
