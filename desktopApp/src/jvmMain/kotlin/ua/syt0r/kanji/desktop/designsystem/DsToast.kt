@@ -1,24 +1,18 @@
 package ua.syt0r.kanji.desktop.designsystem
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -31,42 +25,54 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ua.syt0r.kanji.desktop.model.ToastKind
-import ua.syt0r.kanji.desktop.model.ToastMessage
-import ua.syt0r.kanji.presentation.common.theme.AnimationSpeed
-import ua.syt0r.kanji.presentation.common.theme.LocalAnimationConfig
-import ua.syt0r.kanji.presentation.common.theme.tweenDuration
 
 // ============================================
-// KAITEYO DESIGN SYSTEM — TOASTS
+// KAITEYO DESIGN SYSTEM — TOAST
 // ============================================
 
-/** State holder for the toast host; shared via CompositionLocal. */
+/**
+ * Mutable toast host that queues toast messages.
+ * Owned by [AppState.toastHost].
+ */
 class DsToastHost {
-    val messages = androidx.compose.runtime.mutableStateListOf<ToastMessage>()
+    private var _message = mutableStateOf("")
+    private var _kind = mutableStateOf(ToastKind.Info)
+    private var _visible = mutableStateOf(false)
+    private val scope = CoroutineScope(Dispatchers.Default)
 
-    fun show(text: String, kind: ToastKind = ToastKind.Info, durationMs: Long = 3500) {
-        val msg = ToastMessage(text, kind, durationMs)
-        messages.add(msg)
-        // Auto-dismiss handled by DsToastHostView.
+    val message: String get() = _message.value
+    val kind: ToastKind get() = _kind.value
+    val visible: Boolean get() = _visible.value
+
+    fun show(message: String, kind: ToastKind = ToastKind.Info, durationMs: Long = 3000) {
+        _message.value = message
+        _kind.value = kind
+        _visible.value = true
+        scope.launch {
+            delay(durationMs)
+            _visible.value = false
+        }
     }
 
-    fun dismiss(message: ToastMessage) {
-        messages.remove(message)
+    fun dismiss() {
+        _visible.value = false
     }
 }
 
+/**
+ * Toast host view — wraps content and shows toast notifications at the bottom-center.
+ */
 @Composable
 fun DsToastHostView(
     host: DsToastHost,
@@ -75,88 +81,48 @@ fun DsToastHostView(
 ) {
     Box(modifier = modifier) {
         content()
-        // Toast motion honors the animation speed / reduced-motion config and
-        // is identical for every message, so it is computed once per host.
-        val duration = tweenDuration(LocalAnimationConfig.current, 240)
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = DsSpacing.Xl)
+
+        // Toast overlay
+        Box(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(DsSpacing.Lg)
         ) {
-            host.messages.forEach { msg ->
-                var visible by remember(msg) { mutableStateOf(true) }
-                LaunchedEffect(msg) {
-                    kotlinx.coroutines.delay(msg.durationMs)
-                    visible = false
-                    // Wait for the exit animation to finish before removing
-                    // the message, so the fade/slide never gets clipped.
-                    kotlinx.coroutines.delay(duration.toLong() + 50)
-                    host.dismiss(msg)
+            AnimatedVisibility(
+                visible = host.visible,
+                enter = slideInVertically(tween(200)) { it / 2 } + fadeIn(tween(200)),
+                exit = slideOutVertically(tween(200)) { it / 2 } + fadeOut(tween(200))
+            ) {
+                val sc = surfaceColors()
+                val shape = RoundedCornerShape(DsRadius.Lg)
+                val (icon, tint) = when (host.kind) {
+                    ToastKind.Success -> Icons.Default.CheckCircle to successColor
+                    ToastKind.Warning -> Icons.Default.Warning to warningColor
+                    ToastKind.Error -> Icons.Default.Error to errorColor
+                    ToastKind.Info -> Icons.Default.Info to infoColor
                 }
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = slideInVertically(tween<IntOffset>(duration), initialOffsetY = { it / 4 }) +
-                        fadeIn(tween(duration)),
-                    exit = slideOutVertically(tween<IntOffset>(duration), targetOffsetY = { it / 4 }) +
-                        fadeOut(tween(duration))
+
+                Row(
+                    modifier = Modifier
+                        .clip(shape)
+                        .background(sc.surfaceElevated)
+                        .border(1.dp, sc.border.copy(alpha = 0.3f), shape)
+                        .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DsSpacing.Md)
                 ) {
-                    DsToastItem(msg, onDismiss = { host.dismiss(msg) })
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = host.message,
+                        color = sc.textPrimary,
+                        fontSize = DsType.Body,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
-                Spacer(Modifier.height(DsSpacing.Sm))
             }
         }
     }
 }
-
-@Composable
-private fun DsToastItem(message: ToastMessage, onDismiss: () -> Unit) {
-    val sc = surfaceColors()
-    val (bg, icon, tint) = when (message.kind) {
-        ToastKind.Success -> Triple(Color(0xFF1E3A24), Icons.Default.CheckCircle, Color(0xFFC2FC8B))
-        ToastKind.Warning -> Triple(Color(0xFF3A2C1E), Icons.Default.Warning, Color(0xFFFEAB57))
-        ToastKind.Error -> Triple(Color(0xFF3A1E1E), Icons.Default.Error, Color(0xFFFF6B6B))
-        ToastKind.Info -> Triple(sc.surfaceInteractive, Icons.Default.Info, sc.textSecondary)
-    }
-
-    // Gentle spring pop on the icon as the toast appears, layered over the
-    // slide-up entrance. Skipped under reduced motion / instant speed.
-    val config = LocalAnimationConfig.current
-    val iconScale = remember(message) { Animatable(0.5f) }
-    LaunchedEffect(message) {
-        if (config.reducedMotion || config.speed == AnimationSpeed.Instant) {
-            iconScale.snapTo(1f)
-        } else {
-            iconScale.animateTo(1.08f, spring(dampingRatio = 0.45f, stiffness = 480f))
-            iconScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 900f))
-        }
-    }
-
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(DsRadius.Md))
-            .background(bg)
-            .padding(horizontal = DsSpacing.Lg, vertical = DsSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier
-                .size(18.dp)
-                .graphicsLayer {
-                    scaleX = iconScale.value
-                    scaleY = iconScale.value
-                }
-        )
-        Text(
-            text = message.text,
-            color = sc.textPrimary,
-            fontSize = DsType.Body,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-val LocalToastHost = androidx.compose.runtime.staticCompositionLocalOf { DsToastHost() }
