@@ -473,7 +473,6 @@ fun CardBrowserFullScreen(
                     accent = accent
                 )
             }
-            }
 
             // ── RIGHT PANE — Anki-style note editor for the selected note ──
             if (noteEditorCard != null && wideLayout) {
