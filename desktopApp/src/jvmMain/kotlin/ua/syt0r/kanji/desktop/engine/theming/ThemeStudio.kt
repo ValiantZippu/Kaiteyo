@@ -459,33 +459,40 @@ object ThemeMapper {
         val lineHeight = theme.typography.lineHeight.coerceIn(0.8f, 2f)
         val tracking = theme.typography.letterSpacing.coerceIn(-2f, 4f)
 
-        fun scale(style: TextStyle, weight: FontWeight, title: Boolean = false): TextStyle {
+        fun scaleSafe(style: TextStyle, weight: FontWeight, title: Boolean = false): TextStyle {
             val factor = size * (if (title) theme.typography.titleScale.coerceIn(0.6f, 2f) else 1f)
+            val origFont = runCatching { (style.fontSize.value * factor).sp }.getOrDefault(style.fontSize)
+            val origLH = runCatching { (style.lineHeight.value * lineHeight).sp }.getOrDefault(style.lineHeight)
+            val origLS = runCatching { (style.letterSpacing.value + tracking).sp }.getOrDefault(tracking.sp)
             return style.copy(
                 fontFamily = family,
                 fontWeight = weight,
-                fontSize = style.fontSize * factor,
-                lineHeight = style.lineHeight * lineHeight,
-                letterSpacing = runCatching { (style.letterSpacing.value + tracking).sp }.getOrDefault(tracking.sp)
+                fontSize = origFont,
+                lineHeight = origLH,
+                letterSpacing = origLS
             )
         }
 
-        return Typography(
-            displayLarge = scale(AppTypography.displayLarge, heading, title = true),
-            displayMedium = scale(AppTypography.displayMedium, heading, title = true),
-            displaySmall = scale(AppTypography.displaySmall, heading, title = true),
-            headlineLarge = scale(AppTypography.headlineLarge, heading, title = true),
-            headlineMedium = scale(AppTypography.headlineMedium, heading, title = true),
-            headlineSmall = scale(AppTypography.headlineSmall, heading, title = true),
-            titleLarge = scale(AppTypography.titleLarge, heading, title = true),
-            titleMedium = scale(AppTypography.titleMedium, heading, title = true),
-            titleSmall = scale(AppTypography.titleSmall, heading, title = true),
-            bodyLarge = scale(AppTypography.bodyLarge, body),
-            bodyMedium = scale(AppTypography.bodyMedium, body),
-            bodySmall = scale(AppTypography.bodySmall, body),
-            labelLarge = scale(AppTypography.labelLarge, body),
-            labelMedium = scale(AppTypography.labelMedium, body),
-            labelSmall = scale(AppTypography.labelSmall, body)
-        )
+        return try {
+            Typography(
+                displayLarge = scaleSafe(AppTypography.displayLarge, heading, title = true),
+                displayMedium = scaleSafe(AppTypography.displayMedium, heading, title = true),
+                displaySmall = scaleSafe(AppTypography.displaySmall, heading, title = true),
+                headlineLarge = scaleSafe(AppTypography.headlineLarge, heading, title = true),
+                headlineMedium = scaleSafe(AppTypography.headlineMedium, heading, title = true),
+                headlineSmall = scaleSafe(AppTypography.headlineSmall, heading, title = true),
+                titleLarge = scaleSafe(AppTypography.titleLarge, heading, title = true),
+                titleMedium = scaleSafe(AppTypography.titleMedium, heading, title = true),
+                titleSmall = scaleSafe(AppTypography.titleSmall, heading, title = true),
+                bodyLarge = scaleSafe(AppTypography.bodyLarge, body),
+                bodyMedium = scaleSafe(AppTypography.bodyMedium, body),
+                bodySmall = scaleSafe(AppTypography.bodySmall, body),
+                labelLarge = scaleSafe(AppTypography.labelLarge, body),
+                labelMedium = scaleSafe(AppTypography.labelMedium, body),
+                labelSmall = scaleSafe(AppTypography.labelSmall, body)
+            )
+        } catch (e: Exception) {
+            Typography()
+        }
     }
 }
