@@ -22,7 +22,8 @@ fun DsSearchField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Search…"
+    placeholder: String = "Search…",
+    autoFocus: Boolean = false
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Sm)

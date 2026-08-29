@@ -96,11 +96,14 @@ fun DsContextMenuHost(
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent()
-                    if (event.type == androidx.compose.ui.input.pointer.PointerEventType.Secondary) {
-                        val pos = event.changes.first().position
-                        if (enabled && menuItems.isNotEmpty()) {
-                            menuPos = IntOffset(pos.x.toInt(), pos.y.toInt())
-                            showMenu = true
+                    if (event.type == androidx.compose.ui.input.pointer.PointerEventType.Down) {
+                        val change = event.changes.firstOrNull()
+                        if (change != null && change.button == androidx.compose.ui.input.pointer.PointerButton.Secondary) {
+                            val pos = change.position
+                            if (enabled && menuItems.isNotEmpty()) {
+                                menuPos = IntOffset(pos.x.toInt(), pos.y.toInt())
+                                showMenu = true
+                            }
                         }
                     }
                 }
