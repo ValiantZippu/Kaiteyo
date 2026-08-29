@@ -530,7 +530,6 @@ init {
         // Bundled reference dictionary (offline lookup) — installed once, real
         // curated data, never study content.
         seedDictionary()
-        initCorePreviews()
         // Bridge the legacy card pool into the unified learning model so new
         // systems (exams, statistics, mistakes) see the same real data.
         learning.syncFromLegacy(cards.toList())
@@ -732,10 +731,11 @@ init {
     var browserQuery by mutableStateOf("")
     var browserViewMode by mutableStateOf(BrowserViewMode.Grid)
 
-    // Workspace tabs must be restored AFTER all MutableState delegates
-    // are declared (browserQuery, etc.) — calling during the first init
-    // block above would hit null delegates.
+    // Workspace tabs and core previews must be restored AFTER all
+    // MutableState / property delegates are declared — calling during
+    // the first init block above would hit null delegates.
     init {
+        initCorePreviews()
         loadWorkspaceTabs()
     }
     var browserShowPreview by mutableStateOf(true)
