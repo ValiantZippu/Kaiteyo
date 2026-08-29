@@ -731,13 +731,6 @@ init {
     var browserQuery by mutableStateOf("")
     var browserViewMode by mutableStateOf(BrowserViewMode.Grid)
 
-    // Workspace tabs and core previews must be restored AFTER all
-    // MutableState / property delegates are declared — calling during
-    // the first init block above would hit null delegates.
-    init {
-        initCorePreviews()
-        loadWorkspaceTabs()
-    }
     var browserShowPreview by mutableStateOf(true)
     var selectedCard by mutableStateOf<DesktopCard?>(null)
     val selectedCardIds = mutableStateListOf<String>()
@@ -748,6 +741,14 @@ init {
      * collection from anywhere lands inside it.
      */
     var pendingCollectionId by mutableStateOf<String?>(null)
+
+    // Workspace tabs and core previews must be restored AFTER all
+    // MutableState / property delegates are declared — calling during
+    // the first init block above would hit null delegates.
+    init {
+        initCorePreviews()
+        loadWorkspaceTabs()
+    }
 
     // ---------------------------------------------------------------
     // Workspace tab lifecycle
