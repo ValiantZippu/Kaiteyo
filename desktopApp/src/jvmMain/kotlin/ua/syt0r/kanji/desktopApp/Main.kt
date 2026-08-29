@@ -1,7 +1,5 @@
 package ua.syt0r.kanji.desktopApp
 
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -33,8 +31,8 @@ import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseLocator
 import ua.syt0r.kanji.desktop.engine.updates.kjd.KjdDatabaseUpdater
 import ua.syt0r.kanji.desktop.engine.updates.kjd.kjdUpdatesDataDir
 import ua.syt0r.kanji.desktop.engine.monitoring.SentryBridge
+import ua.syt0r.kanji.desktop.ui.KaiteyoDesktopSuite
 import ua.syt0r.kanji.di.appModules
-import ua.syt0r.kanji.presentation.KaiteyoApp
 import ua.syt0r.kanji.presentation.common.resources.string.resolveString
 import ua.syt0r.kanji.presentation.screen.main.screen.credits.GetCreditLibrariesUseCase
 import ua.syt0r.kanji.presentation.screen.main.screen.game.GameCentreContent
@@ -96,7 +94,6 @@ val desktopAppModule = module {
 /** The dev-only `--capture-state=` values accepted by the launcher. */
 private val captureStates = setOf("shell", "menu", "launchpad", "strip")
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 fun main(args: Array<String>) = application {
 
     // Initialize Sentry error tracking early so uncaught exceptions are
@@ -174,22 +171,22 @@ fun main(args: Array<String>) = application {
                 .checkOnStartup("stable")
         }
 
-        // The KaiteyoApp theme root lives ABOVE the window shell, so the
-        // custom title bar and chrome render with the real Kaiteyo theme
-        // (never the untinted OLED default) and live Theme Studio edits reach
-        // the window surface immediately. `shell` mounts KaiteyoWindow inside
-        // that theme, wrapping the app content.
-        KaiteyoApp(
-            windowSizeClass = calculateWindowSizeClass()
-        ) { appContent ->
-            KaiteyoWindow(
-                windowState = windowState,
-                onClose = { exitApplication() },
-                rememberWindowBounds = captureState == null,
-                captureState = captureState,
-                content = { appContent() }
-            )
-        }
+        // The desktop suite owns AppState, the live theme, onboarding,
+        // and the full workspace shell (navigation dock, tab bar, all views).
+        // KaiteyoWindow provides the custom title bar and window chrome
+        // inside the suite's AppTheme so Theme Studio edits reach the
+        // window surface immediately.
+        KaiteyoDesktopSuite(
+            shell = { content ->
+                KaiteyoWindow(
+                    windowState = windowState,
+                    onClose = { exitApplication() },
+                    rememberWindowBounds = captureState == null,
+                    captureState = captureState,
+                    content = { content() }
+                )
+            }
+        )
     }
 
     // Capture mode: exit on our own once the script has had time to shoot.
