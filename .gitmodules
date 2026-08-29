@@ -1,0 +1,3 @@
+[submodule "reference/kanji-heatmap"]
+	path = reference/kanji-heatmap
+	url = https://github.com/ValiantZippu/kanji-heatmap.git
