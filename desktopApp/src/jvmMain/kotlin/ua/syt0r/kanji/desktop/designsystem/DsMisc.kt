@@ -1,9 +1,9 @@
 package ua.syt0r.kanji.desktop.designsystem
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -20,8 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -31,7 +30,6 @@ import androidx.compose.ui.window.PopupProperties
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — MISC COMPONENTS
-// DsChip, DsContextMenuHost, DsFavoriteToggle, DsFlagBadge
 // ============================================
 
 // --- DsChip ---
@@ -84,7 +82,6 @@ fun DsChip(
 
 // --- DsContextMenuHost ---
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DsContextMenuHost(
     enabled: Boolean,
@@ -96,14 +93,15 @@ fun DsContextMenuHost(
     var menuPos by remember { mutableStateOf(IntOffset.Zero) }
 
     Box(
-        modifier = modifier.onPointerEvent(PointerEventType.SecondaryPressDown) { event ->
-            if (enabled && menuItems.isNotEmpty()) {
-                val position = event.changes.firstOrNull()?.position
-                if (position != null) {
-                    menuPos = IntOffset(position.x.toInt(), position.y.toInt())
-                    showMenu = true
+        modifier = modifier.pointerInput(enabled, menuItems.size) {
+            detectTapGestures(
+                onSecondaryClick = { offset ->
+                    if (enabled && menuItems.isNotEmpty()) {
+                        menuPos = IntOffset(offset.x.toInt(), offset.y.toInt())
+                        showMenu = true
+                    }
                 }
-            }
+            )
         }
     ) {
         content()
@@ -147,6 +145,7 @@ fun DsFavoriteToggle(
 }
 
 // --- DsFlagBadge ---
+// Supports both (flag) and (label, colorHex) call signatures
 
 @Composable
 fun DsFlagBadge(
@@ -162,6 +161,22 @@ fun DsFlagBadge(
         "purple" -> Color(0xFFAB47BC)
         else -> Color(0xFF9E9E9E)
     }
+
+    Box(
+        modifier = modifier
+            .size(10.dp)
+            .clip(RoundedCornerShape(50))
+            .background(color)
+    )
+}
+
+@Composable
+fun DsFlagBadge(
+    label: String,
+    colorHex: String,
+    modifier: Modifier = Modifier
+) {
+    val color = parseHexColor(colorHex)
 
     Box(
         modifier = modifier

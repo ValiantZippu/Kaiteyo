@@ -13,24 +13,32 @@ import androidx.compose.ui.unit.dp
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — BADGE
-// Small labeled chip for status/tags.
 // ============================================
 
 @Composable
 fun DsBadge(
     text: String,
-    color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tint: Color = Color.Unspecified,
+    label: String = text,
+    colorHex: String? = null
 ) {
-    val shape = RoundedCornerShape(DsRadius.Full)
+    val sc = surfaceColors()
+    val resolvedColor = when {
+        colorHex != null -> parseHexColor(colorHex)
+        tint != Color.Unspecified -> tint
+        else -> sc.textSecondary
+    }
+    val bgColor = resolvedColor.copy(alpha = 0.15f)
+
     Text(
-        text = text,
-        color = Color.White,
-        fontSize = DsType.Overline,
+        text = label,
+        color = resolvedColor,
+        fontSize = DsType.Caption,
         fontWeight = FontWeight.Medium,
         modifier = modifier
-            .clip(shape)
-            .background(color)
-            .padding(horizontal = DsSpacing.Sm, vertical = 2.dp)
+            .clip(RoundedCornerShape(DsRadius.Full))
+            .background(bgColor)
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs)
     )
 }

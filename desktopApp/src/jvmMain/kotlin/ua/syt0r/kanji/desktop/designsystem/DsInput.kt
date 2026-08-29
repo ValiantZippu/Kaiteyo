@@ -2,15 +2,22 @@ package ua.syt0r.kanji.desktop.designsystem
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -30,12 +37,13 @@ fun DsTextField(
     placeholder: String = "",
     label: String? = null,
     enabled: Boolean = true,
-    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    singleLine: Boolean = false,
+    leadingIcon: ImageVector? = null,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Sm)
-    androidx.compose.foundation.layout.Column(modifier) {
+    Column(modifier) {
         if (label != null) {
             Text(
                 text = label,
@@ -54,37 +62,26 @@ fun DsTextField(
                 fontSize = DsType.Body
             ),
             cursorBrush = SolidColor(sc.accent),
+            singleLine = singleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(shape)
                 .background(sc.surfaceVariant)
                 .border(1.dp, sc.border, shape)
-                .then(
-                    if (leadingIcon != null || trailingIcon != null) {
-                        Modifier.padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm)
-                    } else {
-                        Modifier.padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm)
-                    }
-                ),
+                .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
             decorationBox = { innerTextField ->
-                androidx.compose.foundation.layout.Row(
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (leadingIcon != null) {
-                        androidx.compose.material3.Icon(
+                        Icon(
                             imageVector = leadingIcon,
                             contentDescription = null,
                             tint = sc.textMuted,
                             modifier = Modifier.padding(end = DsSpacing.Sm)
                         )
                     }
-                    androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
+                    Box(modifier = Modifier.weight(1f)) {
                         if (value.isEmpty() && placeholder.isNotEmpty()) {
-                            Text(
-                                text = placeholder,
-                                color = sc.textDisabled,
-                                fontSize = DsType.Body
-                            )
+                            Text(text = placeholder, color = sc.textDisabled, fontSize = DsType.Body)
                         }
                         innerTextField()
                     }
@@ -99,15 +96,22 @@ fun DsTextField(
 
 @Composable
 fun DsNumericField(
-    value: String,
-    onValueChange: (String) -> Unit,
+    value: Any,
+    onValueChange: (Any) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "",
     label: String? = null
 ) {
+    val strValue = value.toString()
     DsTextField(
-        value = value,
-        onValueChange = { if (it.isEmpty() || it.all { c -> c.isDigit() || c == '.' || c == '-' }) onValueChange(it) },
+        value = strValue,
+        onValueChange = { newText ->
+            if (newText.isEmpty() || newText.all { c -> c.isDigit() || c == '.' || c == '-' }) {
+                val intValue = newText.toIntOrNull()
+                if (intValue != null) onValueChange(intValue)
+                else onValueChange(newText)
+            }
+        },
         modifier = modifier,
         placeholder = placeholder,
         label = label
@@ -146,13 +150,9 @@ fun DsTextArea(
             .border(1.dp, sc.border, shape)
             .padding(DsSpacing.Md),
         decorationBox = { innerTextField ->
-            androidx.compose.foundation.layout.Box {
+            Box {
                 if (value.isEmpty() && placeholder.isNotEmpty()) {
-                    Text(
-                        text = placeholder,
-                        color = sc.textDisabled,
-                        fontSize = DsType.Body
-                    )
+                    Text(text = placeholder, color = sc.textDisabled, fontSize = DsType.Body)
                 }
                 innerTextField()
             }

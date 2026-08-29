@@ -10,12 +10,7 @@ import androidx.compose.ui.unit.sp
 
 // ============================================
 // KAITEYO DESIGN SYSTEM — TOKENS
-// Single source of truth for colors, spacing,
-// and typography. Every component must consume
-// these — never hardcode values.
 // ============================================
-
-// --- Surface Colors ---
 
 @Immutable
 data class SurfaceColors(
@@ -92,7 +87,7 @@ private val LocalSurfaceColors = staticCompositionLocalOf { DarkColors }
 @Composable
 fun surfaceColors(): SurfaceColors = LocalSurfaceColors.current
 
-// --- Accent helper (returns object with .primary) ---
+// --- Accent helper ---
 
 data class AccentScheme(val primary: Color, val secondary: Color = primary.copy(alpha = 0.7f))
 
@@ -100,11 +95,17 @@ data class AccentScheme(val primary: Color, val secondary: Color = primary.copy(
 fun accent(): AccentScheme = AccentScheme(primary = LocalSurfaceColors.current.accent)
 
 // --- Semantic / Status Colors ---
+// Both val and function forms so callers can use `errorColor` or `errorColor()`
 
 val successColor: Color = Color(0xFF4CAF50)
 val warningColor: Color = Color(0xFFFFA726)
 val errorColor: Color = Color(0xFFEF5350)
 val infoColor: Color = Color(0xFF42A5F5)
+
+fun successColor(): Color = successColor
+fun warningColor(): Color = warningColor
+fun errorColor(): Color = errorColor
+fun infoColor(): Color = infoColor
 
 val newColor: Color = Color(0xFF66BB6A)
 val learningColor: Color = Color(0xFFFFA726)
@@ -164,15 +165,27 @@ object DsElevation {
     val Floating = 16.dp
 }
 
+// --- Hex Color Parser ---
+
+fun parseHexColor(hex: String): Color {
+    return try {
+        val clean = hex.trim().removePrefix("#")
+        val argb = when (clean.length) {
+            6 -> 0xFF000000u or clean.toLong(16).toULong()
+            8 -> clean.toLong(16).toULong()
+            else -> return Color(0xFF9E9E9E)
+        }
+        Color(argb.toInt())
+    } catch (_: Exception) {
+        Color(0xFF9E9E9E)
+    }
+}
+
 // --- Motion (durations in ms) ---
 
 object DsMotion {
-    /** Instant transition — no animation. */
     val Instant: Int = 0
-    /** Fast micro-interaction (hover, focus). */
     val Fast: Int = 100
-    /** Normal transition (panel expand, mode switch). */
     val Normal: Int = 200
-    /** Slow transition (full page crossfade). */
     val Slow: Int = 350
 }

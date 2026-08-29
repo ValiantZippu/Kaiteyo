@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 // ============================================
@@ -17,28 +18,29 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun DsProgressBar(
-    value: Float,
-    color: Color,
     modifier: Modifier = Modifier,
-    trackColor: Color? = null
+    value: Float = 0f,
+    color: Color = Color.Unspecified,
+    fraction: Float = value,
+    height: Dp = 6.dp
 ) {
     val sc = surfaceColors()
     val shape = RoundedCornerShape(DsRadius.Full)
-    val resolvedTrack = trackColor ?: sc.surfaceVariant
+    val resolvedColor = if (color == Color.Unspecified) sc.accent else color
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(6.dp)
+            .height(height)
             .clip(shape)
-            .background(resolvedTrack)
+            .background(sc.surfaceVariant)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(fraction = value.coerceIn(0f, 1f))
-                .height(6.dp)
+                .fillMaxWidth(fraction = fraction.coerceIn(0f, 1f))
+                .height(height)
                 .clip(shape)
-                .background(color)
+                .background(resolvedColor)
         )
     }
 }

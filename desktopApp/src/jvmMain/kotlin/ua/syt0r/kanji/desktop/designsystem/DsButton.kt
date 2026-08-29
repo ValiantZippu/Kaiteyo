@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 // KAITEYO DESIGN SYSTEM — BUTTON
 // ============================================
 
-enum class DsButtonKind { Primary, Secondary, Ghost, Danger }
+enum class DsButtonKind { Primary, Secondary, Ghost, Danger, AccentTint }
 
 @Composable
 fun DsButton(
@@ -40,9 +40,11 @@ fun DsButton(
     kind: DsButtonKind = DsButtonKind.Primary,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    compact: Boolean = false
+    compact: Boolean = false,
+    tint: Color = Color.Unspecified
 ) {
     val sc = surfaceColors()
+    val ac = accent()
     val shape = RoundedCornerShape(DsRadius.Sm)
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
@@ -52,18 +54,21 @@ fun DsButton(
         DsButtonKind.Secondary -> sc.surface
         DsButtonKind.Ghost -> Color.Transparent
         DsButtonKind.Danger -> errorColor
+        DsButtonKind.AccentTint -> sc.accent.copy(alpha = 0.12f)
     }
     val contentColor = when (kind) {
         DsButtonKind.Primary -> sc.textOnAccent
         DsButtonKind.Secondary -> sc.textPrimary
         DsButtonKind.Ghost -> sc.textSecondary
         DsButtonKind.Danger -> Color.White
+        DsButtonKind.AccentTint -> sc.accent
     }
     val hoverTint = when (kind) {
         DsButtonKind.Primary -> sc.accent.copy(alpha = 0.85f)
         DsButtonKind.Secondary -> sc.hoverOverlay
         DsButtonKind.Ghost -> sc.hoverOverlay
         DsButtonKind.Danger -> errorColor.copy(alpha = 0.85f)
+        DsButtonKind.AccentTint -> sc.accent.copy(alpha = 0.18f)
     }
 
     val horizontalPad = if (compact) DsSpacing.Md else DsSpacing.Lg
@@ -72,7 +77,7 @@ fun DsButton(
     Row(
         modifier = modifier
             .clip(shape)
-            .background(if (isHovered && enabled) hoverTint else containerColor)
+            .background(if (tint != Color.Unspecified) tint else if (isHovered && enabled) hoverTint else containerColor)
             .then(
                 if (kind == DsButtonKind.Secondary) {
                     Modifier.border(1.dp, sc.border, shape)

@@ -53,48 +53,98 @@ fun DsTagChip(
         )
         if (onRemove != null) {
             Icon(
-                Icons.Default.Close,
+                imageVector = Icons.Default.Close,
                 contentDescription = "Remove",
                 tint = sc.accent,
                 modifier = Modifier
                     .size(12.dp)
-                    .clip(RoundedCornerShape(50))
                     .clickable { onRemove() }
-                    .padding(1.dp)
             )
         }
     }
 }
+
+/**
+ * Tag chip with explicit label and color — used by ReviewView.
+ */
+@Composable
+fun DsTagChip(
+    label: String,
+    colorHex: String,
+    modifier: Modifier = Modifier
+) {
+    val tagColor = parseHexColor(colorHex)
+    val shape = RoundedCornerShape(DsRadius.Full)
+
+    Row(
+        modifier = modifier
+            .clip(shape)
+            .background(tagColor.copy(alpha = 0.15f))
+            .border(1.dp, tagColor.copy(alpha = 0.3f), shape)
+            .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Xs)
+    ) {
+        Text(
+            text = label,
+            color = tagColor,
+            fontSize = DsType.Caption
+        )
+    }
+}
+
+// --- DsToggle ---
 
 @Composable
 fun DsToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    label: String = "",
     enabled: Boolean = true
 ) {
     val sc = surfaceColors()
+    val shape = RoundedCornerShape(DsRadius.Full)
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    val thumbColor = if (checked) sc.accent else sc.textMuted
-    val trackColor = when {
-        !enabled -> sc.surfaceVariant
-        checked -> sc.accentSoft
-        isHovered -> sc.hoverOverlay
-        else -> sc.surfaceInteractive
+    Row(
+        modifier = modifier
+            .clip(shape)
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .hoverable(interactionSource)
+            .padding(horizontal = DsSpacing.Sm, vertical = DsSpacing.Xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp, 20.dp)
+                .clip(shape)
+                .background(
+                    if (checked) sc.accent
+                    else if (isHovered) sc.surfaceInteractive
+                    else sc.surfaceVariant
+                )
+                .clickable(enabled = enabled) { onCheckedChange(!checked) }
+                .padding(2.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(shape)
+                    .background(Color.White)
+                    .then(
+                        if (checked) Modifier.padding(start = 16.dp) else Modifier
+                    )
+            )
+        }
+        if (label.isNotEmpty()) {
+            Text(
+                text = label,
+                color = if (enabled) sc.textSecondary else sc.textDisabled,
+                fontSize = DsType.Body
+            )
+        }
     }
-
-    androidx.compose.material3.Switch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = modifier,
-        enabled = enabled,
-        colors = androidx.compose.material3.SwitchDefaults.colors(
-            checkedThumbColor = thumbColor,
-            checkedTrackColor = trackColor,
-            uncheckedThumbColor = thumbColor,
-            uncheckedTrackColor = trackColor
-        )
-    )
 }
