@@ -94,12 +94,17 @@ fun GraphExplorerView(state: AppState, modifier: Modifier = Modifier) {
         DsToolbar(
             title = resolveSuiteString { graphTitle },
             subtitle = resolveSuiteString { graphSubtitle },
-            backIcon = if (current != null) Icons.AutoMirrored.Filled.ArrowBack else null,
-            onBack = {
-                if (visited.isNotEmpty()) {
-                    current = visited.removeAt(visited.lastIndex)
-                } else {
-                    current = null
+            actions = {
+                if (current != null) {
+                    androidx.compose.material3.IconButton(onClick = {
+                        if (visited.isNotEmpty()) {
+                            current = visited.removeAt(visited.lastIndex)
+                        } else {
+                            current = null
+                        }
+                    }) {
+                        androidx.compose.material3.Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
                 }
             }
         )
