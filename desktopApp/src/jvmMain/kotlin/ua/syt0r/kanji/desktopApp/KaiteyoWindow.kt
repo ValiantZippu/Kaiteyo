@@ -458,7 +458,7 @@ private fun FrameWindowScope.KaiteyoTitleBar(
     onOpenSystemMenu: (IntOffset) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth().height(TitleBarHeight),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Window icon — native-style: a click opens the system menu, a
