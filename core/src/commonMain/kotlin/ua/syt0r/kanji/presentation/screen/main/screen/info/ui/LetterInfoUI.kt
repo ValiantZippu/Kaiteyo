@@ -99,15 +99,16 @@ private fun KanjiInfoLayout(
     onSaveUserNote: ((String) -> Unit)?
 ) {
     val appDataRepository = koinInject<AppDataRepository>()
-    val sentenceProvider: suspend (JapaneseWord) -> List<Sentence> =
-        remember(appDataRepository) {
-            suspend { word: JapaneseWord ->
+    val sentenceProvider = remember(appDataRepository) {
+        object : suspend (JapaneseWord) -> List<Sentence> {
+            override suspend fun invoke(word: JapaneseWord): List<Sentence> {
                 val query = word.reading.kanjiReading ?: word.reading.kanaReading
-                runCatching {
+                return runCatching {
                     appDataRepository.getSentencesWithText(query, offset = 0, limit = 5)
                 }.getOrDefault(emptyList())
             }
         }
+    }
 
     val vocab = letterData.vocab.collectAsState()
     val sentences = letterData.sentences.collectAsState()
