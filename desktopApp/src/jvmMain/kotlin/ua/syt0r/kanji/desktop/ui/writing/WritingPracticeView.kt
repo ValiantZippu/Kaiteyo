@@ -124,7 +124,7 @@ private fun WritingLaunchPanel(state: AppState) {
                     Text("Cards", color = sc.textSecondary, fontSize = DsType.Body)
                     DsNumericField(
                         value = count,
-                        onValueChange = { count = it.coerceIn(1, 100) },
+                        onValueChange = { v -> val i = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 1; else -> 1 }; count = i.coerceIn(1, 100) },
                         modifier = Modifier.width(110.dp)
                     )
                     DsToggle(

@@ -1667,7 +1667,7 @@ private fun DeckDetail(
                 icon = if (deck.favorite) Icons.Default.Star else Icons.Default.StarBorder,
                 onClick = { state.library.toggleFavorite(deck.id) },
                 contentDescription = "Favorite",
-                tint = if (deck.favorite) favoriteColor() else null
+                tint = if (deck.favorite) favoriteColor() else Color.Unspecified
             )
             var manageAnchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
             Box(
@@ -2528,8 +2528,8 @@ private fun DeckStudySettingsDialog(state: AppState, deck: DeckDef, onDismiss: (
 
     DsDialog(title = "Study settings — ${deck.name}", onDismiss = onDismiss) {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(DsSpacing.Md)) {
-            DsNumericField(value = dailyNew, onValueChange = { dailyNew = it }, label = "New cards / day")
-            DsNumericField(value = dailyReview, onValueChange = { dailyReview = it }, label = "Reviews / day")
+            DsNumericField(value = dailyNew, onValueChange = { v -> dailyNew = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 } }, label = "New cards / day")
+            DsNumericField(value = dailyReview, onValueChange = { v -> dailyReview = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 } }, label = "Reviews / day")
             DsTextField(
                 value = stepsText,
                 onValueChange = { stepsText = it },
@@ -3551,7 +3551,7 @@ private fun EntryDetail(
                     }
                 },
                 contentDescription = "Favorite",
-                tint = if (card.favorite) favoriteColor() else null
+                tint = if (card.favorite) favoriteColor() else Color.Unspecified
             )
             DsButton(
                 text = "Dictionary",
@@ -4109,7 +4109,7 @@ private fun DeckEntriesView(
             Spacer(Modifier.height(DsSpacing.Md))
             DsNumericField(
                 value = days,
-                onValueChange = { days = it.coerceIn(0, 3650) },
+                onValueChange = { v -> val i = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 }; days = i.coerceIn(0, 3650) },
                 label = "Days from now (0 = due immediately)"
             )
             Spacer(Modifier.height(DsSpacing.Xl))

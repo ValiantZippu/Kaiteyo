@@ -184,13 +184,13 @@ private fun ReviewLaunchPanel(state: AppState) {
                     Text("New limit", color = sc.textSecondary, fontSize = DsType.Body)
                     DsNumericField(
                         value = settings.newLimit,
-                        onValueChange = { settings = settings.copy(newLimit = it) },
+                        onValueChange = { v -> val i = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 }; settings = settings.copy(newLimit = i) },
                         modifier = Modifier.width(120.dp)
                     )
                     Text("Review limit", color = sc.textSecondary, fontSize = DsType.Body)
                     DsNumericField(
                         value = settings.reviewLimit,
-                        onValueChange = { settings = settings.copy(reviewLimit = it) },
+                        onValueChange = { v -> val i = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 }; settings = settings.copy(reviewLimit = i) },
                         modifier = Modifier.width(120.dp)
                     )
                 }
@@ -554,7 +554,7 @@ private fun SessionPanel(state: AppState, session: ReviewSession) {
                 fontSize = DsType.Body
             )
             Spacer(Modifier.height(DsSpacing.Lg))
-            DsNumericField(value = days, onValueChange = { days = it }, label = "Days from now")
+            DsNumericField(value = days, onValueChange = { v -> val i = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 }; days = i }, label = "Days from now")
             Spacer(Modifier.height(DsSpacing.Xl))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DsSpacing.Sm, Alignment.End)) {
                 DsButton(text = "Cancel", kind = DsButtonKind.Ghost, onClick = { rescheduleDialog = false })

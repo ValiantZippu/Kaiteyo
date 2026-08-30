@@ -795,8 +795,8 @@ private fun MediaBrowsePanel(
             }
             Spacer(Modifier.weight(1f))
             Text("${filtered.size} item${if (filtered.size == 1) "" else "s"}", color = sc.textMuted, fontSize = DsType.Caption)
-            DsIconButton(icon = Icons.Default.GridView, onClick = { listMode = false }, contentDescription = "Grid view", tint = if (!listMode) accent().primary else null, size = 30.dp)
-            DsIconButton(icon = Icons.Default.ViewList, onClick = { listMode = true }, contentDescription = "List view", tint = if (listMode) accent().primary else null, size = 30.dp)
+            DsIconButton(icon = Icons.Default.GridView, onClick = { listMode = false }, contentDescription = "Grid view", tint = if (!listMode) accent().primary else Color.Unspecified, size = 30.dp)
+            DsIconButton(icon = Icons.Default.ViewList, onClick = { listMode = true }, contentDescription = "List view", tint = if (listMode) accent().primary else Color.Unspecified, size = 30.dp)
         }
 
         if (filtered.isEmpty()) {
@@ -1047,7 +1047,7 @@ private fun PlaylistRow(
                 icon = if (playlist.favorite) Icons.Default.Star else Icons.Default.StarBorder,
                 onClick = { library.togglePlaylistFavorite(playlist.id) },
                 contentDescription = "Favorite playlist",
-                tint = if (playlist.favorite) favoriteColor() else null,
+                tint = if (playlist.favorite) favoriteColor() else Color.Unspecified,
                 size = 26.dp
             )
             PlaylistMenu(state, playlist, onRename = onRename, onMove = onMove)
@@ -1381,13 +1381,13 @@ private fun DetailHeader(state: AppState, item: MediaItem, missing: Boolean, onB
             icon = if (item.favorite) Icons.Default.Star else Icons.Default.StarBorder,
             onClick = { library.toggleFavorite(item.id) },
             contentDescription = "Favorite",
-            tint = if (item.favorite) favoriteColor() else null
+            tint = if (item.favorite) favoriteColor() else Color.Unspecified
         )
         DsIconButton(
             icon = Icons.Default.WatchLater,
             onClick = { media.toggleWatchLater(item.id) },
             contentDescription = "Watch later",
-            tint = if (library.isWatchLater(item.id)) accent().primary else null
+            tint = if (library.isWatchLater(item.id)) accent().primary else Color.Unspecified
         )
         DsButton(text = if (item.lastPositionMs > 5000 && !item.completed) "Resume" else "Play", icon = Icons.Default.PlayArrow, onClick = { media.openItem(item) })
         if (!missing) {

@@ -256,7 +256,7 @@ fun ReadingDocumentView(
                     state.readingLibrary.save()
                 },
                 contentDescription = if (bookmarkedAtCurrent) "Remove bookmark" else "Bookmark this position",
-                tint = if (bookmarkedAtCurrent) ac.primary else null
+                tint = if (bookmarkedAtCurrent) ac.primary else Color.Unspecified
             )
         }
 

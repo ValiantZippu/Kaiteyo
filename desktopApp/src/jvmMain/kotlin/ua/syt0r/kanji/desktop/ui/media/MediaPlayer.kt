@@ -939,7 +939,7 @@ fun CurrentCueBar(state: AppState) {
                 icon = Icons.Default.Loop,
                 onClick = { media.toggleLoopCue() },
                 contentDescription = "Loop subtitle",
-                tint = if (media.loopMode == LoopMode.CurrentCue) accent().primary else null,
+                tint = if (media.loopMode == LoopMode.CurrentCue) accent().primary else Color.Unspecified,
                 size = 32.dp
             )
             DsIconButton(
