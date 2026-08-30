@@ -1,0 +1,9 @@
+# Kaiteyo AI rules — shim for Cursor/Windsurf
+# Source of truth: .ai/README.md and .ai/TAKEOVER.md
+# This file exists so Cursor/Windsurf/Copilot also find the autonomous loop.
+
+include: .ai/README.md
+takeover: .ai/TAKEOVER.md
+rules: .ai/RULES.md
+state: .ai/STATE.md
+loop: .ai/skills/autonomous-loop.md

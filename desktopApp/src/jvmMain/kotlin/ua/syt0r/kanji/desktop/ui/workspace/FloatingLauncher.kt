@@ -124,7 +124,6 @@ fun DsFloatingLauncher(state: AppState) {
     val density = LocalDensity.current
     val captureState = LocalCaptureState.current
     val scope = rememberCoroutineScope()
-    val camera = LocalSpatialCamera.current
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
@@ -403,9 +402,8 @@ fun DsFloatingLauncher(state: AppState) {
                                 var previous = down.position
                                 var longPressFired = false
 
-                                // Left-click → launchpad (workspace overview).
-                                // Right-click → mode switcher panel (Floating ↔ Sidebar).
-                                // Long-press → same as right-click (mode switcher).
+                                // Right-click opens the launchpad (navigation destinations).
+                                // Long-press opens the mode switch panel (Floating ↔ Sidebar).
                                 fun openLaunchpad() {
                                     menuOpen = true
                                     modePanelOpen = false
@@ -417,23 +415,22 @@ fun DsFloatingLauncher(state: AppState) {
                                     lastActive = System.currentTimeMillis()
                                 }
 
-                                // Long-press timer only for left-clicks — right-click
-                                // handles its own action immediately on release.
-                                val longPressJob = if (!isSecondary) scope.launch {
+                                val longPressJob = scope.launch {
                                     delay(LongPressTimeoutMs)
                                     longPressFired = true
                                     openModePanel()
-                                } else null
+                                }
 
                                 try {
                                     if (isSecondary) {
-                                        // Right-click → mode switcher panel (same as hold).
+                                        // Right-click → launchpad (navigation destinations).
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                             when (event.type) {
                                                 PointerEventType.Release, PointerEventType.Exit -> {
-                                                    openModePanel()
+                                                    longPressJob.cancel()
+                                                    if (!longPressFired) openLaunchpad()
                                                     return@awaitEachGesture
                                                 }
                                                 else -> {}
@@ -453,7 +450,7 @@ fun DsFloatingLauncher(state: AppState) {
                                                         val slop = viewConfiguration.touchSlop
                                                         if ((pos - down.position).getDistance() > slop) {
                                                             dragged = true
-                                                            longPressJob?.cancel()
+                                                            longPressJob.cancel()
                                                             dragging = true
                                                             grabProgress = 1f
                                                             menuOpen = false
@@ -506,7 +503,7 @@ fun DsFloatingLauncher(state: AppState) {
                                                     }
                                                 }
                                                 PointerEventType.Release -> {
-                                                    longPressJob?.cancel()
+                                                    longPressJob.cancel()
                                                     if (dragged) {
                                                         dragging = false
                                                         grabProgress = 0f
@@ -518,7 +515,7 @@ fun DsFloatingLauncher(state: AppState) {
                                                     finished = true
                                                 }
                                                 PointerEventType.Exit -> {
-                                                    longPressJob?.cancel()
+                                                    longPressJob.cancel()
                                                     if (dragged) {
                                                         dragging = false
                                                         grabProgress = 0f
@@ -532,7 +529,7 @@ fun DsFloatingLauncher(state: AppState) {
                                         }
                                     }
                                 } finally {
-                                    longPressJob?.cancel()
+                                    longPressJob.cancel()
                                     dragging = false
                                 }
                             }
@@ -649,11 +646,13 @@ fun DsFloatingLauncher(state: AppState) {
                     }
                     .border(2.dp, ac.primary.copy(alpha = 0.7f), ringShape)
             )
-        }                                // Bubble tooltip while hovering.
+        }
+
+        // Bubble tooltip while hovering.
         val tipCoords = bubbleAnchor
         if (hitboxHovered && !menuOpen && !modePanelOpen && !dragging && !faded && tipCoords != null) {
             val pos = tipCoords.positionInWindow()
-            val tip = "${state.currentView.label} — click for launchpad · right-click/hold for modes · drag to move"
+            val tip = "${state.currentView.label} — click/right-click for launchpad · hold for modes · drag to move"
             val estW = with(density) { (tip.length * 5.4f + 24).dp.toPx() }
             val estH = with(density) { 30.dp.toPx() }
             val showAbove = dragPos.y > h.value / 2f
@@ -720,7 +719,6 @@ fun DsFloatingLauncher(state: AppState) {
                     dragPos.x + bubbleSize.value / 2f,
                     dragPos.y + bubbleSize.value / 2f
                 ),
-                camera = camera,
                 onDismiss = {
                     menuOpen = false
                     lastActive = System.currentTimeMillis()
@@ -924,36 +922,15 @@ private fun BubbleModeOptionRow(
 // ============================================
 
 @Composable
-private fun LaunchpadOverlay(
-    state: AppState,
-    bubbleCenter: Offset,
-    camera: SpatialCamera,
-    onDismiss: () -> Unit
-) {
+private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: () -> Unit) {
     val sc = surfaceColors()
-    val scope = rememberCoroutineScope()
     var leaving by remember { mutableStateOf(false) }
+    val exitMs = if (state.navigationAnimations && !state.navReducedMotion) 180 else 0
     var panelCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
-
-    // Zoom out to overview when Launchpad opens
-    LaunchedEffect(Unit) {
-        if (state.navigationAnimations && !state.navReducedMotion) {
-            camera.zoomToOverview()
-        } else {
-            camera.resetImmediate()
-            camera.jumpToOverview()
-        }
-    }
 
     LaunchedEffect(leaving) {
         if (leaving) {
-            // Zoom back to idle when dismissed without selection
-            if (state.navigationAnimations && !state.navReducedMotion) {
-                camera.zoomToIdle()
-            } else {
-                camera.resetImmediate()
-            }
-            delay(200)
+            delay(exitMs.toLong() + 40)
             onDismiss()
         }
     }
@@ -961,12 +938,14 @@ private fun LaunchpadOverlay(
 
     val scale by animateFloatAsState(
         targetValue = if (leaving) 0.92f else 1f,
-        animationSpec = if (leaving) LaunchpadMotion.exitScale else LaunchpadMotion.enterScale,
+        // Open with a spring so the panel settles softly from the bubble;
+        // closing stays a quick tween for a decisive dismiss.
+        animationSpec = if (leaving) tween(exitMs) else spring(dampingRatio = 0.72f, stiffness = 340f),
         label = "launchpadScale"
     )
     val alpha by animateFloatAsState(
         targetValue = if (leaving) 0f else 1f,
-        animationSpec = if (leaving) LaunchpadMotion.exitAlpha else LaunchpadMotion.enterAlpha,
+        animationSpec = tween(if (leaving) exitMs else 180),
         label = "launchpadAlpha"
     )
 
@@ -1002,21 +981,7 @@ private fun LaunchpadOverlay(
                             this.alpha = alpha
                         }
                 ) {
-                    WorkspaceLaunchpad(
-                        state = state,
-                        onSwitchTo = { view ->
-                            // Zoom into the selected workspace
-                            scope.launch {
-                                if (state.navigationAnimations && !state.navReducedMotion) {
-                                    camera.zoomToWorkspace(view)
-                                } else {
-                                    camera.resetImmediate()
-                                }
-                                state.currentView = view
-                            }
-                        },
-                        onDismiss = close
-                    )
+                    LaunchpadPanel(state, onDismiss = close)
                 }
             }
         }

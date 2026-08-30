@@ -1,0 +1,5 @@
+{
+  "$schema": "https://opencode.ai/schema.json",
+  "extends": "../opencode.json",
+  "note": "OpenCode also loads opencode.json at root. This file is a shim that points to the same .ai source."
+}

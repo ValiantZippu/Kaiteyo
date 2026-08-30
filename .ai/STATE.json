@@ -1,0 +1,31 @@
+{
+  "head": {
+    "branch": "early-develop",
+    "version": "2.2.1",
+    "versionCode": 2210,
+    "appDataVersion": 15,
+    "kotlin": "2.1.20",
+    "compose": "1.8.2",
+    "jdk": 17
+  },
+  "build": {
+    "verifyCommand": "./gradlew :desktopApp:compileKotlinJvm",
+    "testsCommand": "./gradlew :core:allTests",
+    "expected": "green",
+    "notes": "gradle daemon=false 2GB heap, slow, do not parallelize"
+  },
+  "nextTaskSource": "docs/planning/MASTER_TODO.md P0 topmost TODO with unblocked deps; fallback docs/planning/TODO.md P0; fallback docs/planning/CURRENT_ISSUES.md P0 bugs",
+  "gates": [
+    { "id": "KT-INFRA-001", "title": "ADR-0017 one-product decision", "blocks": "all suite→Core migration + duplication removal" },
+    { "id": "ADR-0018", "title": "Game engine decision", "blocks": "Journey runtime code" },
+    { "id": "ADR-0020", "title": "Chromium JCEF gate (proposed)", "blocks": "JCEF bundling" }
+  ],
+  "loop": {
+    "pick": ".ai/skills/pick-task.md",
+    "implement": ".ai/skills/feature.md",
+    "verify": ".ai/skills/verify.md",
+    "commit": ".ai/skills/git.md",
+    "log": ".ai/memory/progress.md + .ai/STATE.md"
+  },
+  "lastAudit": "docs/planning/MASTER_AUDIT_2026.md 2026-08-30 HEAD 6e7fcf7d"
+}

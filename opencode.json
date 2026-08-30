@@ -1,0 +1,32 @@
+{
+  "$schema": "https://opencode.ai/schema.json",
+  "instructions": ["AGENTS.md", ".ai/README.md", ".ai/TAKEOVER.md", ".ai/RULES.md"],
+  "agents": {
+    "orchestrator": { "description": "Orchestrator — picks next task, runs the autonomous loop forever", "prompt": ".ai/agents/orchestrator.md" },
+    "builder": { "description": "Builder — writes Kotlin/Compose code, 4-file screens, DI, theme tokens", "prompt": ".ai/agents/builder.md" },
+    "architect": { "description": "Architect — system coherence, Core services, ADRs", "prompt": ".ai/agents/architect.md" },
+    "designer": { "description": "Designer — UI polish, design system, 60fps", "prompt": ".ai/agents/designer.md" },
+    "tester": { "description": "Tester — unit/integration/UI/DB/media tests", "prompt": ".ai/agents/tester.md" },
+    "reviewer": { "description": "Reviewer — last gate before commit", "prompt": ".ai/agents/reviewer.md" },
+    "docs": { "description": "Docs — keeps specs true to code", "prompt": ".ai/agents/docs.md" }
+  },
+  "skills": {
+    "takeover": { "description": "Take over Kaiteyo and understand the project", "prompt": ".ai/TAKEOVER.md" },
+    "loop": { "description": "Autonomous loop — keep picking and shipping features forever", "prompt": ".ai/skills/autonomous-loop.md" },
+    "pick": { "description": "Pick next task from MASTER_TODO", "prompt": ".ai/skills/pick-task.md" },
+    "build": { "description": "Compile & test (desktop + core)", "prompt": ".ai/skills/build.md" },
+    "feature": { "description": "Add a feature end-to-end (CoRe → UI → verify)", "prompt": ".ai/skills/feature.md" },
+    "screen": { "description": "Scaffold a 4-file screen + register in AppModule", "prompt": ".ai/skills/screen.md" },
+    "strings": { "description": "Add i18n strings (interface + both locales)", "prompt": ".ai/skills/strings.md" },
+    "verify": { "description": "Verification gate (DoD checklist)", "prompt": ".ai/skills/verify.md" },
+    "git": { "description": "Branch / commit / push to early-develop", "prompt": ".ai/skills/git.md" },
+    "fix-bug": { "description": "Bug fix workflow", "prompt": ".ai/skills/fix-bug.md" }
+  },
+  "commands": {
+    "takeover": { "description": "Take over — read TAKEOVER.md and start", "agent": "orchestrator" },
+    "loop": { "description": "Start autonomous loop (pick → implement → verify → commit → repeat)", "agent": "orchestrator" },
+    "pick": { "description": "Pick next task", "agent": "orchestrator" },
+    "verify": { "description": "Verify build + DoD", "agent": "reviewer" },
+    "build": { "description": "Compile desktop", "agent": "builder" }
+  }
+}

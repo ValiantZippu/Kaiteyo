@@ -4,7 +4,10 @@ Kaiteyo is a premium cross-platform Japanese language learning app (fork of Kanj
 Kotlin Multiplatform + Compose Multiplatform 1.8.2, targeting Desktop (Windows/macOS/Linux),
 Android, and iOS. Desktop is the primary focus.
 
+**🤖 AI — TAKE OVER HERE:** ` .ai/README.md` (60s) → `.ai/TAKEOVER.md` (full protocol) → `.ai/RULES.md` → `.ai/STATE.md` → pick highest-priority unblocked TODO from `docs/planning/MASTER_TODO.md` and ship it. Loop forever via `.ai/skills/autonomous-loop.md` (slash: `/loop`). Any AI (Muse / Muse Spark / Cursor / Codex) follows the same `.ai/` loop. Config: `opencode.json` → `.opencode/`.
+
 **Read first before changing anything:**
+- `.ai/README.md` / `.ai/TAKEOVER.md` — autonomous loop entry (any AI)
 - `docs/development/AI_CONTEXT.md` — written explicitly for AI assistants (workflow, "never change" list)
 - `docs/development/COMMANDS.md` — command library (build/test/release)
 - `docs/planning/CURRENT_ISSUES.md` — living bug tracker

@@ -257,7 +257,7 @@ fun StudyCalendar(
             StatItem(
                 label = "Avg/Day",
                 value = if (state.streak > 0) "${state.totalReviewsThisMonth / maxOf(state.streak, 1)}" else "0",
-                accent = accent.primary,
+                accent = Color(0xFF4CAF50),
                 surfaceColors = surfaceColors
             )
         }
@@ -361,19 +361,19 @@ private fun CalendarDayCell(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .padding(2.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .padding(1.dp)
+            .clip(CircleShape)
             .background(
                 when {
-                    isSelected -> accent.copy(alpha = 0.2f)
-                    isToday -> accent.copy(alpha = 0.1f)
-                    animatedIntensity > 0f -> accent.copy(alpha = animatedIntensity * 0.18f)
+                    isSelected -> accent.copy(alpha = 0.3f)
+                    isToday -> accent.copy(alpha = 0.15f)
+                    animatedIntensity > 0f -> Color(0xFF4CAF50).copy(alpha = animatedIntensity * 0.5f)
                     else -> Color.Transparent
                 }
             )
             .then(
-                if (isToday) Modifier.border(1.5.dp, accent, RoundedCornerShape(6.dp))
-                else if (isSelected) Modifier.border(1.dp, accent.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                if (isToday) Modifier.border(1.5.dp, accent, CircleShape)
+                else if (isSelected) Modifier.border(1.dp, accent.copy(alpha = 0.5f), CircleShape)
                 else Modifier
             )
             .hoverable(interactionSource)
@@ -382,7 +382,7 @@ private fun CalendarDayCell(
     ) {
         Text(
             text = "${day.dayOfMonth}",
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = when {
                 isToday -> FontWeight.Bold
                 isSelected -> FontWeight.SemiBold
@@ -391,7 +391,7 @@ private fun CalendarDayCell(
             color = when {
                 isToday -> accent
                 isSelected -> accent
-                isFuture -> surfaceColors.textMuted.copy(alpha = 0.4f)
+                isFuture -> surfaceColors.textMuted.copy(alpha = 0.5f)
                 else -> surfaceColors.textPrimary
             }
         )
@@ -445,10 +445,10 @@ private fun HeatmapLegend(
         listOf(0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f).forEach { intensity ->
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(12.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(
-                        accent.copy(alpha = if (intensity == 0f) 0.08f else intensity * 0.25f)
+                        Color(0xFF4CAF50).copy(alpha = if (intensity == 0f) 0.1f else intensity * 0.5f)
                     )
             )
             Spacer(modifier = Modifier.width(2.dp))

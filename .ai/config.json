@@ -1,0 +1,25 @@
+{
+  "project": "Kaiteyo (書いてよ)",
+  "language": "Kotlin Multiplatform + Compose Multiplatform 1.8.2",
+  "defaultBranch": "early-develop",
+  "protectedBranches": ["main", "develop"],
+  "autonomous": {
+    "enabled": true,
+    "instruction": "Keep picking highest-priority unblocked TODO and shipping it. One task at a time. Verified.",
+    "maxTasksPerSession": 0,
+    "maxFilesPerTask": 12,
+    "requireBuildGreen": true,
+    "requireTestsWhenTouched": true
+  },
+  "gates": {
+    "neverChangeWithoutHuman": ["SRS FSRS", ".sq schemas", "ua.syt0r.kanji namespace", "buildSrc/AppVersion.kt bumps"],
+    "blockedByAdr": {
+      "KT-INFRA-001": "ADR-0017 one-product decision",
+      "KT-GAME-*": "ADR-0018 game engine",
+      "KT-CHROM-*": "ADR-0020 chromium"
+    }
+  },
+  "skillsPath": ".ai/skills",
+  "agentsPath": ".ai/agents",
+  "tasksSource": "docs/planning/MASTER_TODO.md"
+}
