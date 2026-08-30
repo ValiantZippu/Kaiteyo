@@ -27,6 +27,28 @@ bash installer/scripts/bump-version.sh 2.3.0 2310
 | Stable | tag `v{version}` | `{version}` | everyone |
 | Hotfix | from `main` | `{version}` | production fixes |
 
+## Tag System (date-first, channel-aware)
+
+New canonical format: `YYYY.MM.DD-<channel>-v<VERSION>-<CODE>-<SHA>[-N]` — see [`TAG_SYSTEM.md`](./TAG_SYSTEM.md).
+
+* **Year / month / date** — `2026.08.31` (UTC), chronological sort
+* **Title channel** — `alpha` (`early-alpha-develop`), `beta` (`early-beta-develop`), `release` (`early-release-develop`), `stable` (`main`)
+* **Version number** — `v<VERSION>` + `<CODE>` from `AppVersion.kt` (`2.2.1` / `2210`)
+* **Unique** — short SHA + auto `-N` suffix on collision
+
+Generate correctly via script (reads `AppVersion.kt`, no hand-typing):
+
+```powershell
+.\scripts\tag.ps1 alpha -Push   # or beta / release / stable
+.\scripts\tag.ps1 -DryRun
+```
+```bash
+./scripts/tag.sh alpha --push
+./scripts/tag.sh --dry-run
+```
+
+Legacy `v2.3.0` tags still work, but all new tags must use the date-first system.
+
 ## Workflow
 
 ### 1. Prepare
@@ -50,11 +72,21 @@ Then build at least one platform installer per `installer/docs/BUILD.md` and
 verify it: Windows EXE upgrades cleanly, macOS `spctl` accepts the DMG, Linux
 AppImage runs on a clean machine.
 
-### 3. Tag & release
+### 3. Tag & release (new system)
 
-```bash
-git tag v2.3.0 && git push origin v2.3.0
+```powershell
+# PowerShell (Windows)
+.\scripts\tag.ps1 release -Push   # early-release-develop
+.\scripts\tag.ps1 stable -Push    # main
+.\scripts\tag.ps1 alpha -Push     # early-alpha-develop
+.\scripts\tag.ps1 beta -Push      # early-beta-develop
 ```
+```bash
+# Bash (macOS/Linux)
+./scripts/tag.sh release --push
+./scripts/tag.sh stable --push
+```
+Legacy `git tag v2.3.0` still works but is deprecated — use date-first tags. See [`TAG_SYSTEM.md`](./TAG_SYSTEM.md) for format `YYYY.MM.DD-<channel>-v<VERSION>-<CODE>-<SHA>`.
 
 `build-release.yml` triggers `build-all.yml`:
 
