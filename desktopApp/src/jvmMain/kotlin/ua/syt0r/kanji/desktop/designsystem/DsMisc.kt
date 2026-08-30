@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -81,6 +82,7 @@ fun DsChip(
 
 // --- DsContextMenuHost ---
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DsContextMenuHost(
     enabled: Boolean = true,
