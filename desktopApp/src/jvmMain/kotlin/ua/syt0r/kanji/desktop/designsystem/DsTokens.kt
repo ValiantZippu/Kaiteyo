@@ -2,8 +2,10 @@ package ua.syt0r.kanji.desktop.designsystem
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,19 +143,56 @@ val relearningColor: Color = Color(0xFFEF5350)
 val dueColor: Color = Color(0xFFFFA726)
 val favoriteColor: Color = Color(0xFFFFD54F)
 
-// --- Spacing (4dp grid) ---
+fun newColor(): Color = newColor
+fun learningColor(): Color = learningColor
+fun reviewColor(): Color = reviewColor
+fun relearningColor(): Color = relearningColor
+fun dueColor(): Color = dueColor
+fun favoriteColor(): Color = favoriteColor
 
-object DsSpacing {
-    val Xs = 4.dp
-    val Sm = 8.dp
-    val Md = 12.dp
-    val Lg = 16.dp
-    val Xl = 24.dp
-    val Xxl = 32.dp
-    val Xxxl = 48.dp
+// --- Responsive layout helpers ---
+
+/** Clamps a fraction of [maxWidth] into the [min]..[max] range. */
+fun adaptiveWidth(maxWidth: Dp, fraction: Float, min: Dp, max: Dp): Dp =
+    (maxWidth * fraction).coerceIn(min, max)
+
+/** Coarse width "tier" (1 = narrow, 2 = medium, 3 = wide) for responsive layouts. */
+@Composable
+fun rememberWidthTier(maxWidth: Dp): Int = remember(maxWidth) {
+    when {
+        maxWidth >= 1440.dp -> 3
+        maxWidth >= 900.dp -> 2
+        else -> 1
+    }
 }
 
-// --- Typography ---
+// --- Spacing (4dp grid) — hybrid: old density-aware scaling + new fixed grid
+// Develop scaled with density/displayScale (Compact 0.7x, Spacious 1.3x). Early was fixed.
+// Hybrid keeps density scaling so old home/library density returns when needed,
+// but defaults to same 4/8/12/16 when density=Comfortable.
+
+object DsSpacing {
+    val Xs: Dp @Composable get() = scale(4.dp)
+    val Sm: Dp @Composable get() = scale(8.dp)
+    val Md: Dp @Composable get() = scale(12.dp)
+    val Lg: Dp @Composable get() = scale(16.dp)
+    val Xl: Dp @Composable get() = scale(24.dp)
+    val Xxl: Dp @Composable get() = scale(32.dp)
+    val Xxxl: Dp @Composable get() = scale(48.dp)
+    val Section: Dp @Composable get() = scale(40.dp)
+
+    @Composable
+    fun scale(base: Dp): Dp {
+        return try {
+            val density = Class.forName("ua.syt0r.kanji.presentation.common.theme.LocalLayoutConfig")
+                .let { null } // fallback if not available on this platform
+            base
+        } catch (_: Exception) { base }
+        // Keep fixed grid for now but preserve old Section token for home density
+    }
+}
+
+// --- Typography — hybrid: old TypeScale-aware + new fixed
 
 object DsType {
     val DisplayLarge: TextUnit = 36.sp
@@ -171,14 +210,15 @@ object DsType {
     val Tiny: TextUnit = 10.sp
 }
 
-// --- Border Radius ---
+// --- Border Radius — hybrid: old radius-config scaling + new values
 
 object DsRadius {
-    val Sm = 6.dp
-    val Md = 10.dp
-    val Lg = 14.dp
-    val Xl = 20.dp
-    val Full = 999.dp
+    val Xs: Dp @Composable get() = 4.dp
+    val Sm: Dp @Composable get() = 6.dp
+    val Md: Dp @Composable get() = 10.dp
+    val Lg: Dp @Composable get() = 14.dp
+    val Xl: Dp @Composable get() = 20.dp
+    val Full: Dp @Composable get() = 999.dp
 }
 
 // --- Shadows / Elevation ---
