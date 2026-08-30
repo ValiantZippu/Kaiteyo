@@ -667,13 +667,15 @@ private fun WindowControlButton(
             .then(
                 if (onBoundsChanged != null) {
                     Modifier.onGloballyPositioned { coords ->
-                        val screenPos = coords.localToScreen(Offset.Zero)
-                        onBoundsChanged(
-                            screenPos.x.roundToInt(),
-                            screenPos.y.roundToInt(),
-                            (screenPos.x + coords.size.width).roundToInt(),
-                            (screenPos.y + coords.size.height).roundToInt()
-                        )
+                        runCatching {
+                            val screenPos = coords.localToScreen(Offset.Zero)
+                            onBoundsChanged(
+                                screenPos.x.roundToInt(),
+                                screenPos.y.roundToInt(),
+                                (screenPos.x + coords.size.width).roundToInt(),
+                                (screenPos.y + coords.size.height).roundToInt()
+                            )
+                        }
                     }
                 } else Modifier
             ),
