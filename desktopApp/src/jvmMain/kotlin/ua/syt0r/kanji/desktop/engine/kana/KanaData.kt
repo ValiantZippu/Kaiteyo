@@ -285,12 +285,19 @@ val kanaCatalog: List<KanaChar> by lazy {
         fun addYoOn(script: KanaScript, rows: List<Pair<String, String>>) {
             val baseTable = if (script == KanaScript.Hiragana) HIRAGANA_BASE + HIRAGANA_DAKUTEN + HIRAGANA_HANDAKUTEN
             else KATAKANA_BASE + KATAKANA_DAKUTEN + KATAKANA_HANDAKUTEN
+            // Small kana (ゃ ゅ ょ / ャ ュ ョ) are not in the base tables,
+            // so build a supplementary lookup from the base row that
+            // owns the full-size version (や→ゃ, ヤ→ャ etc.).
+            val smallKanaLookup = mapOf(
+                "ゃ" to Triple("や", "ya", 3), "ゅ" to Triple("ゆ", "yu", 2), "ょ" to Triple("よ", "yo", 2),
+                "ャ" to Triple("ヤ", "ya", 2), "ュ" to Triple("ユ", "yu", 2), "ョ" to Triple("ヨ", "yo", 3)
+            )
             rows.forEach { (base, small) ->
                 val baseRow = baseTable.first { it.first == base }
-                val smallRow = when (script) {
-                    KanaScript.Hiragana -> HIRAGANA_BASE.first { it.first == small }
-                    KanaScript.Katakana -> KATAKANA_BASE.first { it.first == small }
-                }
+                val smallRow = smallKanaLookup[small]
+                    ?: (if (script == KanaScript.Hiragana) HIRAGANA_BASE else KATAKANA_BASE)
+                        .firstOrNull { it.first == small }
+                        ?: Triple(small, "?", 1)
                 val combo = base + small
                 val rom = yoonRomanization(baseRow.second, smallRow.second)
                 add(

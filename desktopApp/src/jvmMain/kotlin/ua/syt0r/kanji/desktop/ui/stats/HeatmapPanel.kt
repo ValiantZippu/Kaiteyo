@@ -538,7 +538,7 @@ private fun HeatmapScopeChip(label: String, selected: Boolean, onClick: () -> Un
 }
 
 @Composable
-internal fun heatColor(level: Int, sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme): Color = when (level) {
+internal fun heatColor(level: Int, sc: ua.syt0r.kanji.desktop.designsystem.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme): Color = when (level) {
     0 -> sc.surfaceInteractive
     1 -> ac.primary.copy(alpha = 0.25f)
     2 -> ac.primary.copy(alpha = 0.45f)
