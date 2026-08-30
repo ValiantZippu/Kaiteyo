@@ -206,8 +206,7 @@ fun CardEditorDialog(state: AppState) {
                         selected = name in draft.flags,
                         onClick = {
                             if (name in draft.flags) draft.flags.remove(name) else draft.flags.add(name)
-                        },
-                        trailing = null
+                        }
                     )
                 }
             }
@@ -236,19 +235,19 @@ fun CardEditorDialog(state: AppState) {
                 )
                 DsNumericField(
                     value = draft.intervalDays,
-                    onValueChange = { draft.intervalDays = it },
+                    onValueChange = { v -> draft.intervalDays = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 } },
                     modifier = Modifier.width(110.dp),
                     label = "Interval (days)"
                 )
                 DsNumericField(
                     value = draft.lapses,
-                    onValueChange = { draft.lapses = it },
+                    onValueChange = { v -> draft.lapses = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 } },
                     modifier = Modifier.width(90.dp),
                     label = "Lapses"
                 )
                 DsNumericField(
                     value = draft.reps,
-                    onValueChange = { draft.reps = it },
+                    onValueChange = { v -> draft.reps = when (v) { is Int -> v; is String -> v.toIntOrNull() ?: 0; else -> 0 } },
                     modifier = Modifier.width(90.dp),
                     label = "Reps"
                 )

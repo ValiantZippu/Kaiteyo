@@ -83,11 +83,11 @@ fun ActivityLogView(state: AppState) {
             DsChip(text = "All", selected = filter == null, onClick = { filter = null })
             ActivityCategory.entries.forEach { category ->
                 if (summary.byCategory[category] != null) {
+                    val count = summary.byCategory[category]
                     DsChip(
-                        text = category.name,
+                        text = if (count != null) "${category.name} ($count)" else category.name,
                         selected = filter == category,
-                        onClick = { filter = if (filter == category) null else category },
-                        trailing = summary.byCategory[category].toString()
+                        onClick = { filter = if (filter == category) null else category }
                     )
                 }
             }
