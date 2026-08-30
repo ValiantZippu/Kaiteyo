@@ -58,7 +58,6 @@ import ua.syt0r.kanji.desktop.appstate.AppState
 import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
-import ua.syt0r.kanji.desktop.designsystem.DsTextButton
 import ua.syt0r.kanji.desktop.designsystem.DsSpacing
 import ua.syt0r.kanji.desktop.designsystem.DsType
 import ua.syt0r.kanji.desktop.designsystem.accent
@@ -377,7 +376,9 @@ fun DayDetailDialog(
                         fontSize = DsType.Caption
                     )
                 }
-                DsTextButton(text = "Close", onClick = onDismiss)
+                androidx.compose.material3.TextButton(onClick = onDismiss) {
+                    Text("Close", color = ac.primary)
+                }
             }
             Spacer(Modifier.height(DsSpacing.Lg))
 
@@ -537,7 +538,7 @@ private fun HeatmapScopeChip(label: String, selected: Boolean, onClick: () -> Un
 }
 
 @Composable
-internal fun heatColor(level: Int, sc: ua.syt0r.kanji.desktop.designsystem.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme): Color = when (level) {
+internal fun heatColor(level: Int, sc: ua.syt0r.kanji.presentation.common.theme.SurfaceColors, ac: ua.syt0r.kanji.presentation.common.theme.KaiteyoAccentScheme): Color = when (level) {
     0 -> sc.surfaceInteractive
     1 -> ac.primary.copy(alpha = 0.25f)
     2 -> ac.primary.copy(alpha = 0.45f)

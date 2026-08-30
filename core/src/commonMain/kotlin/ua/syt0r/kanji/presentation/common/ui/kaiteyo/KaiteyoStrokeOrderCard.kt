@@ -1,8 +1,8 @@
 package ua.syt0r.kanji.presentation.common.ui.kaiteyo
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -62,7 +63,11 @@ import ua.syt0r.kanji.presentation.common.ui.kanji.KanjiBackground
 import ua.syt0r.kanji.presentation.common.ui.kanji.StrokeWidth
 
 /**
- * Stroke order card with smooth animation, scrubbing, and stroke number popups.
+ * Stroke order card with:
+ * - Animated stroke drawing (smooth spring physics)
+ * - Playback progress slider with scrubbing
+ * - Speed control (0.5x to 3x)
+ * - Stroke number popups at each stroke endpoint (dynamically positioned)
  */
 @Composable
 fun KaiteyoStrokeOrderCard(
@@ -72,45 +77,70 @@ fun KaiteyoStrokeOrderCard(
     val surfaceColors = LocalSurfaceColors.current
     val accent = LocalKaiteyoAccent.current
     val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
+    // Animation state
+    var isPlaying by remember { mutableStateOf(false) }
+    var completedStrokeCount by remember { mutableIntStateOf(0) }
+    var playbackSpeed by remember { mutableFloatStateOf(1f) }
+    var playbackProgress by remember { mutableFloatStateOf(0f) }
+    val strokeAnimProgress = remember { Animatable(0f) }
     val totalStrokes = strokes.size.coerceAtLeast(1)
 
-    // Core state
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentStrokeIndex by remember { mutableIntStateOf(0) }
-    var playbackSpeed by remember { mutableFloatStateOf(1f) }
-    val strokeProgress = remember { Animatable(0f) }
+    // Track which strokes have shown their number popup
+    var shownStrokeNumbers by remember { mutableStateOf(setOf<Int>()) }
+
+    // Canvas size for popup positioning
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
 
-    // For computing a smooth playback head (0..1) that maps all strokes
-    val progressFraction: Float =
-        if (totalStrokes == 0) 0f
-        else (currentStrokeIndex + strokeProgress.value) / totalStrokes
+    // Scrubbing state — separate from isPlaying to avoid LaunchedEffect restarts
+    var isScrubbing by remember { mutableStateOf(false) }
 
-    // --- auto-play loop ---
-    LaunchedEffect(isPlaying, totalStrokes) {
-        if (!isPlaying) return@LaunchedEffect
-        for (s in currentStrokeIndex until totalStrokes) {
-            if (!isPlaying) return@LaunchedEffect
-            currentStrokeIndex = s
-            strokeProgress.snapTo(0f)
-            val durationMs = (400f / playbackSpeed).toInt().coerceIn(80, 2000)
-            strokeProgress.animateTo(
-                1f,
-                tween(durationMs, easing = LinearEasing)
-            )
-            delay(80)
-        }
+    // Handle scrubbing: when user releases slider, jump to target stroke
+    LaunchedEffect(isScrubbing) {
+        if (!isScrubbing) return@LaunchedEffect
+        val target = (playbackProgress * totalStrokes).toInt().coerceIn(0, totalStrokes)
+        completedStrokeCount = target
+        shownStrokeNumbers = (0 until target).toSet()
+        strokeAnimProgress.snapTo(1f)
         isPlaying = false
-        currentStrokeIndex = totalStrokes
-        strokeProgress.snapTo(1f)
     }
 
-    // --- reset when strokes change ---
-    LaunchedEffect(strokes) {
+    // Auto-play animation — uses coroutine so changing speed doesn't restart
+    LaunchedEffect(isPlaying, totalStrokes) {
+        if (!isPlaying) return@LaunchedEffect
+
+        val strokeDurationMs = (500 / playbackSpeed).toInt().coerceAtLeast(80)
+
+        for (s in completedStrokeCount until totalStrokes) {
+            if (!isPlaying) return@LaunchedEffect
+            completedStrokeCount = s
+            playbackProgress = s.toFloat() / totalStrokes
+            strokeAnimProgress.snapTo(0f)
+            strokeAnimProgress.animateTo(
+                1f,
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow * playbackSpeed
+                )
+            )
+            shownStrokeNumbers = shownStrokeNumbers + s
+            playbackProgress = (s + 1).toFloat() / totalStrokes
+            delay(120) // Brief pause between strokes for clarity
+        }
         isPlaying = false
-        currentStrokeIndex = 0
-        strokeProgress.snapTo(0f)
+        completedStrokeCount = totalStrokes
+        playbackProgress = 1f
+    }
+
+    // Reset when strokes change
+    LaunchedEffect(strokes) {
+        completedStrokeCount = 0
+        playbackProgress = 0f
+        isPlaying = false
+        isScrubbing = false
+        shownStrokeNumbers = emptySet()
+        strokeAnimProgress.snapTo(0f)
     }
 
     KaiteyoCard(modifier = modifier, contentPadding = PaddingValues(16.dp)) {
@@ -135,102 +165,82 @@ fun KaiteyoStrokeOrderCard(
         ) {
             KanjiBackground(Modifier.fillMaxSize())
 
-            // Draw completed strokes + current animating stroke
-            Canvas(Modifier.fillMaxSize()) {
-                val drawStrokeWidth = StrokeWidth * 1.1f
-                val style = Stroke(
-                    width = drawStrokeWidth,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
-                val measure = PathMeasure()
-
-                // Completed strokes (dimmed)
-                strokes.take(currentStrokeIndex).forEach { stroke ->
-                    drawPath(stroke, accent.primary.copy(alpha = 0.45f), style = style)
-                }
-
-                // Currently animating stroke
-                if (currentStrokeIndex < totalStrokes) {
-                    val stroke = strokes[currentStrokeIndex]
-                    val progress = strokeProgress.value.coerceIn(0f, 1f)
-                    if (progress > 0f) {
-                        measure.setPath(stroke, false)
-                        val len = measure.length * progress
-                        val partial = Path()
-                        measure.getSegment(0f, len, partial, startWithMoveTo = true)
-                        drawPath(partial, accent.primary, style = style)
-                    }
+            // Draw completed strokes
+            strokes.take(completedStrokeCount).forEach { stroke ->
+                Canvas(Modifier.fillMaxSize()) {
+                    drawPathMeasureStroke(stroke, accent.primary.copy(alpha = 0.6f), StrokeWidth * 1.1f, 1f)
                 }
             }
 
-            // Stroke number popups at stroke endpoints
-            if (canvasSize.width > 0 && canvasSize.height > 0 && strokes.isNotEmpty()) {
-                // Compute the bounding box of ALL strokes to fit the canvas
-                val allBounds = remember(strokes) {
-                    var minX = Float.MAX_VALUE; var minY = Float.MAX_VALUE
-                    var maxX = Float.MIN_VALUE; var maxY = Float.MIN_VALUE
-                    strokes.forEach { p ->
-                        val b = p.getBounds()
-                        minX = minOf(minX, b.left); minY = minOf(minY, b.top)
-                        maxX = maxOf(maxX, b.right); maxY = maxOf(maxY, b.bottom)
-                    }
-                    androidx.compose.ui.geometry.Rect(minX, minY, maxX, maxY)
+            // Draw currently animating stroke
+            if (isPlaying && completedStrokeCount < totalStrokes) {
+                Canvas(Modifier.fillMaxSize()) {
+                    drawPathMeasureStroke(
+                        strokes[completedStrokeCount],
+                        accent.primary,
+                        StrokeWidth * 1.2f,
+                        strokeAnimProgress.value
+                    )
                 }
+            }
 
-                val padding = 40f
-                val availW = canvasSize.width.toFloat() - padding * 2
-                val availH = canvasSize.height.toFloat() - padding * 2
-                val contentW = allBounds.right - allBounds.left
-                val contentH = allBounds.bottom - allBounds.top
-                val scale = minOf(
-                    availW / contentW.coerceAtLeast(1f),
-                    availH / contentH.coerceAtLeast(1f),
-                    1f
-                )
-                val offsetX = (canvasSize.width - contentW * scale) / 2f - allBounds.left * scale
-                val offsetY = (canvasSize.height - contentH * scale) / 2f - allBounds.top * scale
+            // Stroke number popups — dynamically positioned using actual canvas bounds
+            if (canvasSize.width > 0 && canvasSize.height > 0) {
+                shownStrokeNumbers.forEach { strokeIdx ->
+                    if (strokeIdx < strokes.size) {
+                        val stroke = strokes[strokeIdx]
+                        val measure = PathMeasure().apply { setPath(stroke, false) }
+                        val endPoint = measure.getPosition(measure.length)
 
-                val pm = PathMeasure()
-                val shownCount = currentStrokeIndex.coerceAtMost(totalStrokes)
+                        // Get the bounding box of this individual stroke
+                        val bounds = stroke.getBounds()
+                        val strokeW = bounds.right - bounds.left
+                        val strokeH = bounds.bottom - bounds.top
 
-                for (i in 0 until shownCount) {
-                    val stroke = strokes[i]
-                    pm.setPath(stroke, false)
-                    val endPt = pm.getPosition(pm.length)
+                        // Scale to fit within canvas, maintaining aspect ratio
+                        val padding = 40f
+                        val availW = canvasSize.width.toFloat() - padding * 2
+                        val availH = canvasSize.height.toFloat() - padding * 2
+                        val scaleX = availW / (strokeW.coerceAtLeast(1f))
+                        val scaleY = availH / (strokeH.coerceAtLeast(1f))
+                        val scale = minOf(scaleX, scaleY, 1f)
 
-                    val sx = endPt.x * scale + offsetX
-                    val sy = endPt.y * scale + offsetY
+                        val offsetX = (canvasSize.width - strokeW * scale) / 2f - bounds.left * scale
+                        val offsetY = (canvasSize.height - strokeH * scale) / 2f - bounds.top * scale
 
-                    Box(
-                        modifier = Modifier
-                            .offset(
-                                x = with(LocalDensity.current) { (sx - 10).toDp() },
-                                y = with(LocalDensity.current) { (sy - 10).toDp() }
+                        val screenX = endPoint.x * scale + offsetX
+                        val screenY = endPoint.y * scale + offsetY
+
+                        Box(
+                            modifier = Modifier
+                                .offset(
+                                    x = with(density) { (screenX - 10).toDp() },
+                                    y = with(density) { (screenY - 10).toDp() }
+                                )
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(accent.primary)
+                                .wrapContentSize(Alignment.Center)
+                        ) {
+                            Text(
+                                text = "${strokeIdx + 1}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(accent.primary)
-                            .padding(0.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${i + 1}",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        }
                     }
                 }
             }
 
-            // Play overlay when idle at start
-            if (!isPlaying && currentStrokeIndex == 0 && strokeProgress.value == 0f) {
+            // Play overlay when idle
+            if (!isPlaying && completedStrokeCount == 0) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .clickable {
-                            currentStrokeIndex = 0
+                            completedStrokeCount = 0
+                            shownStrokeNumbers = emptySet()
                             isPlaying = true
                         },
                     contentAlignment = Alignment.Center
@@ -248,13 +258,14 @@ fun KaiteyoStrokeOrderCard(
             }
 
             // Replay overlay when finished
-            if (!isPlaying && currentStrokeIndex >= totalStrokes && totalStrokes > 0) {
+            if (!isPlaying && completedStrokeCount >= totalStrokes && totalStrokes > 0) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .clickable {
-                            currentStrokeIndex = 0
-                            coroutineScope.launch { strokeProgress.snapTo(0f) }
+                            completedStrokeCount = 0
+                            shownStrokeNumbers = emptySet()
+                            coroutineScope.launch { strokeAnimProgress.snapTo(0f) }
                             isPlaying = true
                         },
                     contentAlignment = Alignment.Center
@@ -281,7 +292,7 @@ fun KaiteyoStrokeOrderCard(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "${currentStrokeIndex.coerceAtMost(totalStrokes)} / $totalStrokes",
+                    text = "${completedStrokeCount.coerceAtMost(totalStrokes)} / $totalStrokes",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White
@@ -309,9 +320,10 @@ fun KaiteyoStrokeOrderCard(
                         if (isPlaying) {
                             isPlaying = false
                         } else {
-                            if (currentStrokeIndex >= totalStrokes) {
-                                currentStrokeIndex = 0
-                                coroutineScope.launch { strokeProgress.snapTo(0f) }
+                            if (completedStrokeCount >= totalStrokes) {
+                                completedStrokeCount = 0
+                                shownStrokeNumbers = emptySet()
+                                coroutineScope.launch { strokeAnimProgress.snapTo(0f) }
                             }
                             isPlaying = true
                         }
@@ -320,19 +332,14 @@ fun KaiteyoStrokeOrderCard(
                 tint = accent.primary
             )
 
-            // Progress slider — smooth 0..1
+            // Progress slider
             Slider(
-                value = progressFraction,
-                onValueChange = { target ->
-                    // Scrub: compute which stroke and progress to jump to
-                    val targetStroke = (target * totalStrokes).toInt().coerceIn(0, totalStrokes - 1)
-                    val targetProgress = (target * totalStrokes - targetStroke).coerceIn(0f, 1f)
-                    isPlaying = false
-                    currentStrokeIndex = targetStroke
-                    coroutineScope.launch {
-                        strokeProgress.snapTo(targetProgress)
-                    }
+                value = playbackProgress,
+                onValueChange = { v ->
+                    playbackProgress = v
+                    isScrubbing = true
                 },
+                onValueChangeFinished = { isScrubbing = false },
                 modifier = Modifier.weight(1f),
                 colors = SliderDefaults.colors(
                     thumbColor = accent.primary,
@@ -350,8 +357,10 @@ fun KaiteyoStrokeOrderCard(
                     .clip(CircleShape)
                     .clickable {
                         isPlaying = false
-                        currentStrokeIndex = 0
-                        coroutineScope.launch { strokeProgress.snapTo(0f) }
+                        completedStrokeCount = 0
+                        playbackProgress = 0f
+                        shownStrokeNumbers = emptySet()
+                        coroutineScope.launch { strokeAnimProgress.snapTo(0f) }
                     }
                     .padding(2.dp),
                 tint = surfaceColors.textMuted
@@ -400,4 +409,29 @@ fun KaiteyoStrokeOrderCard(
             )
         }
     }
+}
+
+/** Draw a kanji stroke using Compose PathMeasure */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPathMeasureStroke(
+    path: Path,
+    color: Color,
+    strokeWidth: Float,
+    progress: Float
+) {
+    if (progress <= 0f) return
+    val measure = PathMeasure().apply { setPath(path, false) }
+    val totalLen = measure.length
+    val drawLen = totalLen * progress.coerceIn(0f, 1f)
+    val partial = Path()
+    measure.getSegment(0f, drawLen, partial, startWithMoveTo = true)
+
+    drawPath(
+        partial,
+        color = color,
+        style = Stroke(
+            width = strokeWidth,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    )
 }

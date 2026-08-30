@@ -54,7 +54,6 @@ import ua.syt0r.kanji.desktop.designsystem.DsBadge
 import ua.syt0r.kanji.desktop.designsystem.DsButton
 import ua.syt0r.kanji.desktop.designsystem.DsButtonKind
 import ua.syt0r.kanji.desktop.designsystem.DsCard
-import ua.syt0r.kanji.desktop.designsystem.DsTextButton
 import ua.syt0r.kanji.desktop.designsystem.DsIconButton
 import ua.syt0r.kanji.desktop.designsystem.DsProgressBar
 import ua.syt0r.kanji.desktop.designsystem.DsRadius
@@ -360,7 +359,9 @@ fun DashboardView(state: AppState) {
                 DsSectionHeader(
                     title = resolveSuiteString { recentActivityTitle },
                     action = {
-                        DsTextButton(text = resolveSuiteString { viewAllLabel }, onClick = { state.currentView = WorkspaceView.History })
+                        androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.History }) {
+                            androidx.compose.material3.Text(resolveSuiteString { viewAllLabel }, color = accent().primary)
+                        }
                     }
                 )
                 Spacer(Modifier.height(DsSpacing.Sm))
@@ -507,7 +508,9 @@ private fun GoalsCard(state: AppState, modifier: Modifier = Modifier) {
                 title = resolveSuiteString { goalsTitle },
                 subtitle = resolveSuiteString { goalsSubtitle },
                 action = {
-                    DsTextButton(text = resolveSuiteString { allStatsLabel }, onClick = { state.currentView = WorkspaceView.Statistics })
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Statistics }) {
+                        androidx.compose.material3.Text(resolveSuiteString { allStatsLabel }, color = accent().primary)
+                    }
                 }
             )
             Spacer(Modifier.height(DsSpacing.Md))
@@ -1085,7 +1088,9 @@ private fun PinnedDecksCard(state: AppState, modifier: Modifier = Modifier) {
             DsSectionHeader(
                 title = resolveSuiteString { pinnedDecksTitle },
                 action = {
-                    DsTextButton(text = "Library", onClick = { state.currentView = WorkspaceView.Library })
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Library }) {
+                        androidx.compose.material3.Text("Library", color = accent().primary)
+                    }
                 }
             )
             if (pinned.isEmpty()) {
@@ -1106,7 +1111,7 @@ private fun PinnedDecksCard(state: AppState, modifier: Modifier = Modifier) {
                         .padding(horizontal = DsSpacing.Md, vertical = DsSpacing.Sm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
+                    androidx.compose.material3.Icon(
                         Icons.Default.PushPin,
                         contentDescription = null,
                         tint = accent().primary,
@@ -1154,7 +1159,9 @@ private fun RecentImportsCard(state: AppState, modifier: Modifier = Modifier) {
             DsSectionHeader(
                 title = resolveSuiteString { recentImportsTitle },
                 action = {
-                    DsTextButton(text = "Transfer", onClick = { state.currentView = WorkspaceView.Transfer })
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Transfer }) {
+                        androidx.compose.material3.Text("Transfer", color = accent().primary)
+                    }
                 }
             )
             if (imports.isEmpty()) {
@@ -1292,7 +1299,9 @@ private fun RecentDecksCard(state: AppState, modifier: Modifier = Modifier) {
             DsSectionHeader(
                 title = "Collections",
                 action = {
-                    DsTextButton(text = "Library", onClick = { state.currentView = WorkspaceView.Library })
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Library }) {
+                        androidx.compose.material3.Text("Library", color = accent().primary)
+                    }
                 }
             )
             if (recent.isEmpty()) {
@@ -1367,7 +1376,9 @@ private fun RecentlyAddedCard(state: AppState, modifier: Modifier = Modifier) {
             DsSectionHeader(
                 title = "Recently added",
                 action = {
-                    DsTextButton(text = "Browse", onClick = { state.currentView = WorkspaceView.Browser })
+                    androidx.compose.material3.TextButton(onClick = { state.currentView = WorkspaceView.Browser }) {
+                        androidx.compose.material3.Text("Browse", color = accent().primary)
+                    }
                 }
             )
             if (recent.isEmpty()) {
