@@ -352,12 +352,7 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
         if (rail) {
             Row(Modifier.fillMaxSize()) {
                 if (position == NavPosition.Left) {
-                    AnimatedVisibility(
-                        visible = dockVisible,
-                        enter = slideInHorizontally(motion) { -it } + fadeIn(fadeMotion),
-                        exit = slideOutHorizontally(motion) { -it } + fadeOut(fadeMotion),
-                        modifier = Modifier.fillMaxHeight()
-                    ) {
+                    if (dockVisible) {
                         DsDockIsland(Modifier.fillMaxHeight()) {
                             DsNavRail(state, onOpenPalette)
                         }
@@ -365,12 +360,7 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxHeight())
                 } else {
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxHeight())
-                    AnimatedVisibility(
-                        visible = dockVisible,
-                        enter = slideInHorizontally(motion) { it } + fadeIn(fadeMotion),
-                        exit = slideOutHorizontally(motion) { it } + fadeOut(fadeMotion),
-                        modifier = Modifier.fillMaxHeight()
-                    ) {
+                    if (dockVisible) {
                         DsDockIsland(Modifier.fillMaxHeight()) {
                             DsNavRail(state, onOpenPalette)
                         }
@@ -380,12 +370,7 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
         } else {
             Column(Modifier.fillMaxSize()) {
                 if (position == NavPosition.Top) {
-                    AnimatedVisibility(
-                        visible = dockVisible,
-                        enter = slideInVertically(motion) { -it } + fadeIn(fadeMotion),
-                        exit = slideOutVertically(motion) { -it } + fadeOut(fadeMotion),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    if (dockVisible) {
                         DsDockIsland(Modifier.fillMaxWidth()) {
                             DsNavBar(state, onOpenPalette)
                         }
@@ -393,12 +378,7 @@ private fun DesktopLayout(state: AppState, onOpenPalette: () -> Unit) {
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
                 } else {
                     ContentColumn(state, onOpenPalette, Modifier.weight(1f).fillMaxWidth())
-                    AnimatedVisibility(
-                        visible = dockVisible,
-                        enter = slideInVertically(motion) { it } + fadeIn(fadeMotion),
-                        exit = slideOutVertically(motion) { it } + fadeOut(fadeMotion),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    if (dockVisible) {
                         DsDockIsland(Modifier.fillMaxWidth()) {
                             DsNavBar(state, onOpenPalette)
                         }

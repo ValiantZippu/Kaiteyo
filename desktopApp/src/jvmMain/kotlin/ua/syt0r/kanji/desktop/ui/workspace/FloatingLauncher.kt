@@ -1,11 +1,7 @@
 package ua.syt0r.kanji.desktop.ui.workspace
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateOffsetAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -44,7 +40,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -124,7 +119,6 @@ fun DsFloatingLauncher(state: AppState) {
     val density = LocalDensity.current
     val captureState = LocalCaptureState.current
     val scope = rememberCoroutineScope()
-    val camera = LocalSpatialCamera.current
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val w = maxWidth
@@ -152,14 +146,11 @@ fun DsFloatingLauncher(state: AppState) {
         // Restore validates against the current window (sizes change between
         // sessions) and clamps/re-snaps instead of ever crashing or going
         // off-screen — see LauncherSnapMath.restorePosition.
-        // 8dp safe margin so the bubble never sits flush against the window
-        // edge (premium feel: always a small breathing room).
         val snapLayout = LauncherSnapMath.SnapLayout(
             windowWidth = w.value,
             windowHeight = h.value,
             bubbleSize = bubbleSize.value,
-            edgeInset = edgeInset.value,
-            safeMargin = 8f
+            edgeInset = edgeInset.value
         )
         var dragPos by remember(w, h, compactWindow) {
             mutableStateOf(
@@ -179,27 +170,16 @@ fun DsFloatingLauncher(state: AppState) {
         val animatedPos by animateOffsetAsState(
             targetValue = target,
             animationSpec = if (state.navigationAnimations && !state.navReducedMotion) {
-                // Slightly underdamped spring for a satisfying overshoot on
-                // snap — the bubble lands past the target then settles back,
-                // like a real object with mass. Higher animation speed = snappier.
+                // Higher animation speed = snappier spring (stiffness scales inversely).
                 spring(
-                    dampingRatio = 0.48f,
-                    stiffness = 280f / state.launcherAnimationSpeed.coerceAtLeast(0.25f)
+                    dampingRatio = 0.55f,
+                    stiffness = 320f / state.launcherAnimationSpeed.coerceAtLeast(0.25f)
                 )
             } else {
                 tween(0)
             },
             label = "launcherPos"
         )
-        // ── State declared early so finishDrag() and displayPos can reference them ──
-        var dragging by remember { mutableStateOf(false) }
-        var velocity by remember { mutableStateOf(Offset.Zero) }
-        val flingProjectionFactor = 0.35f
-
-        // During drag the bubble follows the pointer directly (no animation)
-        // so it never lags behind or flashes. The animated offset only kicks
-        // in for the snap-back on release and the settings-triggered reposition.
-        val displayPos = if (dragging) dragPos else animatedPos
 
         val bubbleDiameterPx = with(density) { bubbleSize.roundToPx() }
         val hitboxPaddingPx = with(density) { hitboxExtra.roundToPx() }
@@ -224,24 +204,10 @@ fun DsFloatingLauncher(state: AppState) {
         }
 
         fun finishDrag() {
-            // Velocity-aware snap: project the release position forward in the
-            // fling direction so the bubble lands on the edge the user was
-            // heading toward, not just the geometrically closest one.
-            val vel = velocity
-            val speed = vel.getDistance()
-            val projectedPos = if (speed > 120f) {
-                Offset(
-                    (dragPos.x + vel.x * flingProjectionFactor).coerceIn(0f, w.value - bubbleSize.value),
-                    (dragPos.y + vel.y * flingProjectionFactor).coerceIn(0f, h.value - bubbleSize.value)
-                )
-            } else {
-                dragPos
-            }
-            val settled = LauncherSnapMath.settle(projectedPos, snapLayout)
+            val settled = LauncherSnapMath.settle(dragPos, snapLayout)
             state.updateLauncherSnapPoint(settled.snap)
             dragPos = settled.anchor
             target = settled.anchor
-            velocity = Offset.Zero
             state.setLauncherPos(settled.posX, settled.posY, compact = compactWindow)
         }
 
@@ -252,47 +218,9 @@ fun DsFloatingLauncher(state: AppState) {
         var menuOpen by remember { mutableStateOf(captureState == "launchpad" || captureState == "strip") }
         var modePanelOpen by remember { mutableStateOf(captureState == "menu") }
         var bubbleAnchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        var dragging by remember { mutableStateOf(false) }
         var openingPanelViaKeyboard by remember { mutableStateOf(false) }
         val bubbleFocusRequester = remember { FocusRequester() }
-
-        // ── Physics: magnetic pull ──
-        // Magnetic pull radius: within this distance the bubble is gently
-        // attracted to the nearest snap anchor. Uses dp-space to match
-        // the snapLayout coordinates.
-        val magneticRadius = 100f
-        // Grab/release scale: the bubble grows when grabbed and shrinks
-        // back on release for a tactile "picked up" feel.
-        var grabProgress by remember { mutableStateOf(0f) }
-        val animatedGrabProgress by animateFloatAsState(
-            targetValue = grabProgress,
-            animationSpec = spring(dampingRatio = 0.55f, stiffness = 380f),
-            label = "grabProgress"
-        )
-        val grabScale = 1f + animatedGrabProgress * 0.1f
-        // Edge proximity glow: 0 = far from any edge, 1 = snapped/touching.
-        var edgeProximity by remember { mutableStateOf(0f) }
-
-        // Snap ring trail — fading ghost copies of previous anchor positions
-        // that linger briefly as the ring moves between snap points.
-        val trailEntries = remember { mutableStateListOf<Offset>() }
-        var lastTrailSnap by remember { mutableStateOf<LauncherSnapPoint?>(null) }
-        LaunchedEffect(dragging, dragPos) {
-            if (!dragging) {
-                trailEntries.clear()
-                lastTrailSnap = null
-                return@LaunchedEffect
-            }
-            val currentSnap = LauncherSnapMath.nearestSnap(dragPos, snapLayout)
-            if (lastTrailSnap != null && currentSnap != lastTrailSnap) {
-                // The ring moved — push the old anchor as a fading ghost.
-                val oldAnchor = snapPositionFor(lastTrailSnap!!)
-                trailEntries.add(oldAnchor)
-                // Prune after 400 ms so old ghosts don't linger.
-                delay(400)
-                if (trailEntries.isNotEmpty()) trailEntries.removeAt(0)
-            }
-            lastTrailSnap = currentSnap
-        }
 
         // Turning auto-fade off restores full visibility immediately.
         LaunchedEffect(state.launcherAutoFade) {
@@ -348,7 +276,7 @@ fun DsFloatingLauncher(state: AppState) {
         // The launcher bubble, positioned at the animated offset.
         Box(
             modifier = Modifier.offset {
-                IntOffset(displayPos.x.roundToInt(), displayPos.y.roundToInt())
+                IntOffset(animatedPos.x.roundToInt(), animatedPos.y.roundToInt())
             }
         ) {
             Box(
@@ -367,14 +295,11 @@ fun DsFloatingLauncher(state: AppState) {
                         .size(bubbleSize)
                         .graphicsLayer {
                             alpha = opacity
-                            // Velocity-proportional squash/stretch: the faster
-                            // the drag the more the bubble deforms along the
-                            // movement axis — reads as organic, not rigid.
-                            val speed = if (dragging) velocity.getDistance() else 0f
-                            val squashFactor = (speed / 2000f).coerceIn(0f, 1f) * 0.06f
-                            val grabS = grabScale
-                            scaleX = hoverScale * pressScale * grabS * (1f + squashFactor)
-                            scaleY = hoverScale * pressScale * grabS * (1f - squashFactor)
+                            // Subtle squash/stretch while dragging — the press
+                            // dip compresses further into the drag axis so the
+                            // bubble reads as "being pulled", not rigid.
+                            scaleX = hoverScale * pressScale * (if (dragging) 1.05f else 1f)
+                            scaleY = hoverScale * pressScale * (if (dragging) 0.95f else 1f)
                         }
                         .focusRequester(bubbleFocusRequester)
                         .focusable()
@@ -403,37 +328,30 @@ fun DsFloatingLauncher(state: AppState) {
                                 var previous = down.position
                                 var longPressFired = false
 
-                                // Left-click → launchpad (workspace overview).
-                                // Right-click → mode switcher panel (Floating ↔ Sidebar).
-                                // Long-press → same as right-click (mode switcher).
-                                fun openLaunchpad() {
-                                    menuOpen = true
-                                    modePanelOpen = false
-                                    lastActive = System.currentTimeMillis()
-                                }
-                                fun openModePanel() {
+                                // The one command behind both long-press and
+                                // right-click — never duplicated per gesture.
+                                fun openFloatingBubbleMenu() {
                                     modePanelOpen = true
                                     menuOpen = false
                                     lastActive = System.currentTimeMillis()
                                 }
 
-                                // Long-press timer only for left-clicks — right-click
-                                // handles its own action immediately on release.
-                                val longPressJob = if (!isSecondary) scope.launch {
+                                val longPressJob = scope.launch {
                                     delay(LongPressTimeoutMs)
                                     longPressFired = true
-                                    openModePanel()
-                                } else null
+                                    openFloatingBubbleMenu()
+                                }
 
                                 try {
                                     if (isSecondary) {
-                                        // Right-click → mode switcher panel (same as hold).
+                                        // Right-click → the same mode panel.
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                             when (event.type) {
                                                 PointerEventType.Release, PointerEventType.Exit -> {
-                                                    openModePanel()
+                                                    longPressJob.cancel()
+                                                    if (!longPressFired) openFloatingBubbleMenu()
                                                     return@awaitEachGesture
                                                 }
                                                 else -> {}
@@ -441,8 +359,6 @@ fun DsFloatingLauncher(state: AppState) {
                                         }
                                     } else {
                                         var finished = false
-                                        var lastMoveTime = System.nanoTime()
-                                        var prevMovePos = down.position
                                         while (!finished) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
@@ -453,64 +369,23 @@ fun DsFloatingLauncher(state: AppState) {
                                                         val slop = viewConfiguration.touchSlop
                                                         if ((pos - down.position).getDistance() > slop) {
                                                             dragged = true
-                                                            longPressJob?.cancel()
+                                                            longPressJob.cancel()
                                                             dragging = true
-                                                            grabProgress = 1f
                                                             menuOpen = false
                                                             modePanelOpen = false
                                                         }
                                                     }
                                                     if (dragged && previous.x.isFinite() && previous.y.isFinite() && pos.x.isFinite() && pos.y.isFinite()) {
                                                         change.consume()
-                                                        val delta = pos - previous
-
-                                                        // ── Velocity tracking (exponential moving average) ──
-                                                        val now = System.nanoTime()
-                                                        val dtMs = ((now - lastMoveTime) / 1_000_000f).coerceAtLeast(1f)
-                                                        val instantVel = Offset(delta.x / dtMs * 16f, delta.y / dtMs * 16f)
-                                                        velocity = Offset(
-                                                            velocity.x * 0.6f + instantVel.x * 0.4f,
-                                                            velocity.y * 0.6f + instantVel.y * 0.4f
-                                                        )
-                                                        lastMoveTime = now
-                                                        prevMovePos = pos
-
-                                                        // ── Magnetic pull ──
-                                                        // If the bubble is within the magnetic radius of any
-                                                        // snap anchor, gently pull it closer — the closer it
-                                                        // gets, the stronger the pull (like a real magnet).
-                                                        var newPos = dragPos + delta
-                                                        var bestDist = Float.MAX_VALUE
-                                                        var bestAnchor = Offset.Zero
-                                                        LauncherSnapPoint.entries.forEach { snap ->
-                                                            val anchor = snapPositionFor(snap)
-                                                            val d = Offset(newPos.x - anchor.x, newPos.y - anchor.y).getDistance()
-                                                            if (d < bestDist) {
-                                                                bestDist = d
-                                                                bestAnchor = anchor
-                                                            }
-                                                        }
-                                                        if (bestDist < magneticRadius && bestDist > 1f) {
-                                                            // Pull strength: 0 at radius edge → 0.18 at center.
-                                                            val pull = (1f - bestDist / magneticRadius) * 0.18f
-                                                            newPos = Offset(
-                                                                newPos.x + (bestAnchor.x - newPos.x) * pull,
-                                                                newPos.y + (bestAnchor.y - newPos.y) * pull
-                                                            )
-                                                        }
-                                                        dragPos = newPos
+                                                        dragPos += pos - previous
+                                                        target = dragPos
                                                         previous = pos
-
-                                                        // ── Edge proximity glow ──
-                                                        edgeProximity = (1f - (bestDist / magneticRadius).coerceIn(0f, 1f))
                                                     }
                                                 }
                                                 PointerEventType.Release -> {
-                                                    longPressJob?.cancel()
+                                                    longPressJob.cancel()
                                                     if (dragged) {
                                                         dragging = false
-                                                        grabProgress = 0f
-                                                        edgeProximity = 0f
                                                         finishDrag()
                                                     } else if (!longPressFired) {
                                                         menuOpen = !menuOpen
@@ -518,11 +393,12 @@ fun DsFloatingLauncher(state: AppState) {
                                                     finished = true
                                                 }
                                                 PointerEventType.Exit -> {
-                                                    longPressJob?.cancel()
+                                                    // Gesture interrupted (pointer left the window, focus
+                                                    // change…). Never leave the bubble mid-drag or stuck
+                                                    // in a "pressed" state — settle it like a release.
+                                                    longPressJob.cancel()
                                                     if (dragged) {
                                                         dragging = false
-                                                        grabProgress = 0f
-                                                        edgeProximity = 0f
                                                         finishDrag()
                                                     }
                                                     finished = true
@@ -532,7 +408,7 @@ fun DsFloatingLauncher(state: AppState) {
                                         }
                                     }
                                 } finally {
-                                    longPressJob?.cancel()
+                                    longPressJob.cancel()
                                     dragging = false
                                 }
                             }
@@ -555,17 +431,6 @@ fun DsFloatingLauncher(state: AppState) {
                                 )
                             )
                     )
-                    // Edge proximity glow: a subtle white overlay that brightens
-                    // the bubble as it nears a snap anchor, like a magnetic field
-                    // charging up before connection.
-                    if (edgeProximity > 0.01f) {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .clip(bubbleShape)
-                                .background(Color.White.copy(alpha = edgeProximity * 0.15f))
-                        )
-                    }
                     Icon(
                         imageVector = launcherIconFor(state.currentView),
                         contentDescription = "Open launcher",
@@ -576,84 +441,11 @@ fun DsFloatingLauncher(state: AppState) {
             }
         }
 
-        // Snap target preview while dragging: the nearest anchor is always
-        // shown so the release destination is telegraphed. Unconditional — the
-        // ring moves between anchors instead of appearing/disappearing, so it
-        // can never blink mid-drag. A subtle scale + alpha pulse gives it a
-        // premium "magnetic" feel.
-        if (dragging) {
-            val infiniteTransition = rememberInfiniteTransition()
-            // Gentle 1.8 s cycle: scale 0.92 → 1.08, alpha 0.35 → 0.65.
-            val pulseScale by infiniteTransition.animateFloat(
-                initialValue = 0.92f,
-                targetValue = 1.08f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(900),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "snapRingPulseScale"
-            )
-            val pulseAlpha by infiniteTransition.animateFloat(
-                initialValue = 0.35f,
-                targetValue = 0.65f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(900),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "snapRingPulseAlpha"
-            )
-            val nearestAnchor = snapPositionFor(
-                LauncherSnapMath.nearestSnap(dragPos, snapLayout)
-            )
-            val ringSize = 72f
-            val ringShape = RoundedCornerShape(bubbleSize * 0.32f)
-
-            // Fading trail — ghost copies of previous anchor positions that
-            // linger briefly as the ring moves between snap points.
-            val trailCount = trailEntries.size
-            trailEntries.forEachIndexed { i, trailPos ->
-                // Oldest → most recent: alpha 0.08 → 0.25, scale 0.7 → 0.9.
-                val progress = (i + 1).toFloat() / (trailCount + 1).coerceAtLeast(1)
-                val trailAlpha = 0.08f + progress * 0.17f
-                val trailScale = 0.7f + progress * 0.2f
-                Box(
-                    modifier = Modifier
-                        .offset {
-                            IntOffset(
-                                (trailPos.x + (bubbleSize.value - ringSize) / 2f).roundToInt(),
-                                (trailPos.y + (bubbleSize.value - ringSize) / 2f).roundToInt()
-                            )
-                        }
-                        .graphicsLayer {
-                            scaleX = trailScale
-                            scaleY = trailScale
-                            alpha = trailAlpha
-                        }
-                        .border(1.5.dp, ac.primary.copy(alpha = trailAlpha + 0.1f), ringShape)
-                )
-            }
-
-            // Main pulsing ring at the current nearest anchor.
-            Box(
-                modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            (nearestAnchor.x + (bubbleSize.value - ringSize) / 2f).roundToInt(),
-                            (nearestAnchor.y + (bubbleSize.value - ringSize) / 2f).roundToInt()
-                        )
-                    }
-                    .graphicsLayer {
-                        scaleX = pulseScale
-                        scaleY = pulseScale
-                        alpha = pulseAlpha
-                    }
-                    .border(2.dp, ac.primary.copy(alpha = 0.7f), ringShape)
-            )
-        }                                // Bubble tooltip while hovering.
+        // Bubble tooltip while hovering.
         val tipCoords = bubbleAnchor
         if (hitboxHovered && !menuOpen && !modePanelOpen && !dragging && !faded && tipCoords != null) {
             val pos = tipCoords.positionInWindow()
-            val tip = "${state.currentView.label} — click for launchpad · right-click/hold for modes · drag to move"
+            val tip = "${state.currentView.label} — click for launchpad · right-click or hold for modes · drag to move"
             val estW = with(density) { (tip.length * 5.4f + 24).dp.toPx() }
             val estH = with(density) { 30.dp.toPx() }
             val showAbove = dragPos.y > h.value / 2f
@@ -720,7 +512,6 @@ fun DsFloatingLauncher(state: AppState) {
                     dragPos.x + bubbleSize.value / 2f,
                     dragPos.y + bubbleSize.value / 2f
                 ),
-                camera = camera,
                 onDismiss = {
                     menuOpen = false
                     lastActive = System.currentTimeMillis()
@@ -924,36 +715,15 @@ private fun BubbleModeOptionRow(
 // ============================================
 
 @Composable
-private fun LaunchpadOverlay(
-    state: AppState,
-    bubbleCenter: Offset,
-    camera: SpatialCamera,
-    onDismiss: () -> Unit
-) {
+private fun LaunchpadOverlay(state: AppState, bubbleCenter: Offset, onDismiss: () -> Unit) {
     val sc = surfaceColors()
-    val scope = rememberCoroutineScope()
     var leaving by remember { mutableStateOf(false) }
+    val exitMs = if (state.navigationAnimations && !state.navReducedMotion) 180 else 0
     var panelCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
-
-    // Zoom out to overview when Launchpad opens
-    LaunchedEffect(Unit) {
-        if (state.navigationAnimations && !state.navReducedMotion) {
-            camera.zoomToOverview()
-        } else {
-            camera.resetImmediate()
-            camera.jumpToOverview()
-        }
-    }
 
     LaunchedEffect(leaving) {
         if (leaving) {
-            // Zoom back to idle when dismissed without selection
-            if (state.navigationAnimations && !state.navReducedMotion) {
-                camera.zoomToIdle()
-            } else {
-                camera.resetImmediate()
-            }
-            delay(200)
+            delay(exitMs.toLong() + 40)
             onDismiss()
         }
     }
@@ -961,12 +731,14 @@ private fun LaunchpadOverlay(
 
     val scale by animateFloatAsState(
         targetValue = if (leaving) 0.92f else 1f,
-        animationSpec = if (leaving) LaunchpadMotion.exitScale else LaunchpadMotion.enterScale,
+        // Open with a spring so the panel settles softly from the bubble;
+        // closing stays a quick tween for a decisive dismiss.
+        animationSpec = if (leaving) tween(exitMs) else spring(dampingRatio = 0.72f, stiffness = 340f),
         label = "launchpadScale"
     )
     val alpha by animateFloatAsState(
         targetValue = if (leaving) 0f else 1f,
-        animationSpec = if (leaving) LaunchpadMotion.exitAlpha else LaunchpadMotion.enterAlpha,
+        animationSpec = tween(if (leaving) exitMs else 180),
         label = "launchpadAlpha"
     )
 
@@ -1002,21 +774,7 @@ private fun LaunchpadOverlay(
                             this.alpha = alpha
                         }
                 ) {
-                    WorkspaceLaunchpad(
-                        state = state,
-                        onSwitchTo = { view ->
-                            // Zoom into the selected workspace
-                            scope.launch {
-                                if (state.navigationAnimations && !state.navReducedMotion) {
-                                    camera.zoomToWorkspace(view)
-                                } else {
-                                    camera.resetImmediate()
-                                }
-                                state.currentView = view
-                            }
-                        },
-                        onDismiss = close
-                    )
+                    LaunchpadPanel(state, onDismiss = close)
                 }
             }
         }
